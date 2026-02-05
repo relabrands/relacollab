@@ -23,9 +23,11 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
         return <Navigate to="/login" replace />;
     }
 
-    if (allowedRoles && role && !allowedRoles.includes(role)) {
-        // User authorized but wrong role, redirect to their home or authorized dashboard
-        return <Navigate to="/" replace />;
+    if (allowedRoles) {
+        if (!role || !allowedRoles.includes(role)) {
+            // User authorized but wrong role or no role assigned yet
+            return <Navigate to="/" replace />;
+        }
     }
 
     return <>{children}</>;

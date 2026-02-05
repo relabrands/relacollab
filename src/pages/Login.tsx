@@ -51,9 +51,10 @@ const Login = () => {
             if (finalRole) {
                 navigate(`/${finalRole}`);
             } else {
-                navigate('/');
+                toast.error("Tu cuenta no tiene un rol asignado. Contacta a soporte.");
             }
         } catch (error) {
+            console.error(error);
             toast.error("Credenciales inválidas");
         } finally {
             setIsLoggingIn(false);
