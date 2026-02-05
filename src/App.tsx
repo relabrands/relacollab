@@ -14,6 +14,7 @@ import CreatorOnboarding from "./pages/onboarding/CreatorOnboarding";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataDeletion from "./pages/DataDeletion";
 import TermsAndConditions from "./pages/TermsAndConditions";
+import InstagramCallback from "./pages/auth/InstagramCallback";
 
 // Brand pages
 import BrandDashboard from "./pages/brand/BrandDashboard";
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/politica-de-privacidad" element={<PrivacyPolicy />} />
             <Route path="/eliminacion-de-datos" element={<DataDeletion />} />
             <Route path="/terminos-y-condiciones" element={<TermsAndConditions />} />
+            <Route path="/auth/facebook/callback" element={<InstagramCallback />} />
 
             {/* Onboarding Routes */}
             <Route path="/onboarding" element={<OnboardingLayout />}>

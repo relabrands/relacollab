@@ -12,7 +12,7 @@
         ],
         "rewrites": [
             {
-                "source": "/auth/facebook/callback",
+                "source": "/api/auth/instagram/exchange",
                 "function": "auth"
             },
             {
