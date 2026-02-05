@@ -17,6 +17,9 @@ import BrandDashboard from "./pages/brand/BrandDashboard";
 import CreateCampaign from "./pages/brand/CreateCampaign";
 import BrandMatches from "./pages/brand/BrandMatches";
 import ContentLibrary from "./pages/brand/ContentLibrary";
+import BrandAnalytics from "./pages/brand/BrandAnalytics";
+import BrandPayments from "./pages/brand/BrandPayments";
+import BrandSettings from "./pages/brand/BrandSettings";
 
 // Creator pages
 import CreatorDashboard from "./pages/creator/CreatorDashboard";
@@ -78,17 +81,17 @@ const App = () => (
             } />
             <Route path="/brand/analytics" element={
               <ProtectedRoute allowedRoles={['brand']}>
-                <ContentLibrary />
+                <BrandAnalytics />
               </ProtectedRoute>
             } />
             <Route path="/brand/payments" element={
               <ProtectedRoute allowedRoles={['brand']}>
-                <BrandDashboard />
+                <BrandPayments />
               </ProtectedRoute>
             } />
             <Route path="/brand/settings" element={
               <ProtectedRoute allowedRoles={['brand']}>
-                <BrandDashboard />
+                <BrandSettings />
               </ProtectedRoute>
             } />
 
