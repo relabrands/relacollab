@@ -26,6 +26,9 @@ import CreatorDashboard from "./pages/creator/CreatorDashboard";
 import Opportunities from "./pages/creator/Opportunities";
 import CreatorProfile from "./pages/creator/CreatorProfile";
 import MyContent from "./pages/creator/MyContent";
+import ActiveCampaigns from "./pages/creator/ActiveCampaigns";
+import CreatorEarnings from "./pages/creator/CreatorEarnings";
+import CreatorSettings from "./pages/creator/CreatorSettings";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -108,7 +111,7 @@ const App = () => (
             } />
             <Route path="/creator/active" element={
               <ProtectedRoute allowedRoles={['creator']}>
-                <CreatorDashboard />
+                <ActiveCampaigns />
               </ProtectedRoute>
             } />
             <Route path="/creator/content" element={
@@ -123,12 +126,12 @@ const App = () => (
             } />
             <Route path="/creator/earnings" element={
               <ProtectedRoute allowedRoles={['creator']}>
-                <CreatorDashboard />
+                <CreatorEarnings />
               </ProtectedRoute>
             } />
             <Route path="/creator/settings" element={
               <ProtectedRoute allowedRoles={['creator']}>
-                <CreatorDashboard />
+                <CreatorSettings />
               </ProtectedRoute>
             } />
 

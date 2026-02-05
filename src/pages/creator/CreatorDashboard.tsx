@@ -90,12 +90,21 @@ export default function CreatorDashboard() {
         }));
         setOpportunities(opps);
 
+        // 3. Fetch Active Applications count
+        const activeAppsQuery = query(
+          collection(db, "applications"),
+          where("userId", "==", user.uid),
+          where("status", "==", "approved")
+        );
+        const activeAppsSnap = await getDocs(activeAppsQuery);
+        const activeCount = activeAppsSnap.size;
+
         // Update stats
         setStats(prev => [
           { ...prev[0], value: opps.length },
-          { ...prev[1], value: 0 }, // Placeholder for active participations
+          { ...prev[1], value: activeCount },
           { ...prev[2], value: opps.length > 0 ? "88%" : "0%" },
-          { ...prev[3], value: "$0" }
+          { ...prev[3], value: "$0" } // Still mocked until earnings logic is fully connected
         ]);
 
       } catch (error) {
