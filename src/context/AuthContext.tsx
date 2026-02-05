@@ -10,6 +10,7 @@ interface AuthContextType {
     user: User | null;
     role: UserRole;
     loading: boolean;
+    onboardingCompleted: boolean;
     signInWithGoogle: (role: UserRole) => Promise<UserRole>;
     loginWithEmail: (email: string, pass: string) => Promise<UserRole>;
     registerWithEmail: (email: string, pass: string, name: string, role: UserRole) => Promise<UserRole>;
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
     user: null,
     role: null,
     loading: true,
+    onboardingCompleted: false,
     signInWithGoogle: async () => null,
     loginWithEmail: async () => null,
     registerWithEmail: async () => null,
@@ -34,6 +36,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [role, setRole] = useState<UserRole>(null);
     const [loading, setLoading] = useState(true);
+    const [onboardingCompleted, setOnboardingCompleted] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -44,17 +47,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 try {
                     const userDoc = await getDoc(doc(db, "users", currentUser.uid));
                     if (userDoc.exists()) {
-                        setRole(userDoc.data().role as UserRole);
+                        const userData = userDoc.data();
+                        setRole(userData.role as UserRole);
+                        setOnboardingCompleted(!!userData.onboardingCompleted);
                     } else {
                         // New user, wait for sign up process to set role or handle it here
                         setRole(null);
+                        setOnboardingCompleted(false);
                     }
                 } catch (error) {
                     console.error("Error fetching user role:", error);
                     setRole(null);
+                    setOnboardingCompleted(false);
                 }
             } else {
                 setRole(null);
+                setOnboardingCompleted(false);
             }
 
             setLoading(false);
@@ -162,7 +170,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, role, loading, signInWithGoogle, loginWithEmail, registerWithEmail, updateRole, logout }}>
+        <AuthContext.Provider value={{ user, role, loading, onboardingCompleted, signInWithGoogle, loginWithEmail, registerWithEmail, updateRole, logout }}>
             {children}
         </AuthContext.Provider>
     );

@@ -8,6 +8,9 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import OnboardingLayout from "./pages/onboarding/OnboardingLayout";
+import BrandOnboarding from "./pages/onboarding/BrandOnboarding";
+import CreatorOnboarding from "./pages/onboarding/CreatorOnboarding";
 
 // Brand pages
 import BrandDashboard from "./pages/brand/BrandDashboard";
@@ -40,6 +43,12 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+
+            {/* Onboarding Routes */}
+            <Route path="/onboarding" element={<OnboardingLayout />}>
+              <Route path="brand" element={<BrandOnboarding />} />
+              <Route path="creator" element={<CreatorOnboarding />} />
+            </Route>
 
             {/* Brand Routes */}
             <Route path="/brand" element={

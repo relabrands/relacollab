@@ -1,134 +1,190 @@
- import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
- import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
- import { StatCard } from "@/components/dashboard/StatCard";
- import { OpportunityCard } from "@/components/dashboard/OpportunityCard";
- import { Button } from "@/components/ui/button";
- import { Inbox, DollarSign, TrendingUp, CheckCircle, ArrowRight } from "lucide-react";
- import { Link } from "react-router-dom";
- 
- const stats = [
-   {
-     title: "New Opportunities",
-     value: 8,
-     change: "+3 today",
-     changeType: "positive" as const,
-     icon: Inbox,
-     iconColor: "primary" as const,
-   },
-   {
-     title: "Active Campaigns",
-     value: 3,
-     change: "In progress",
-     changeType: "neutral" as const,
-     icon: CheckCircle,
-     iconColor: "accent" as const,
-   },
-   {
-     title: "Avg. Match Score",
-     value: "89%",
-     change: "+5%",
-     changeType: "positive" as const,
-     icon: TrendingUp,
-     iconColor: "success" as const,
-   },
-   {
-     title: "This Month",
-     value: "$2,450",
-     change: "Pending: $800",
-     changeType: "neutral" as const,
-     icon: DollarSign,
-     iconColor: "primary" as const,
-   },
- ];
- 
- const topOpportunities = [
-   {
-     id: "1",
-     brandName: "Sunrise Cafe",
-     brandLogo: "https://images.unsplash.com/photo-1559305616-3f99cd43e353?w=100&h=100&fit=crop",
-     title: "Summer Wellness Launch",
-     location: "Los Angeles, CA",
-     reward: "$500 + Free dining",
-     rewardType: "hybrid" as const,
-     matchScore: 95,
-     deadline: "Feb 28",
-     tags: ["Wellness", "Food", "Instagram"],
-   },
-   {
-     id: "2",
-     brandName: "FitLife Gym",
-     brandLogo: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=100&h=100&fit=crop",
-     title: "New Year Fitness Push",
-     location: "Los Angeles, CA",
-     reward: "$350",
-     rewardType: "paid" as const,
-     matchScore: 88,
-     deadline: "Mar 5",
-     tags: ["Fitness", "Reels", "TikTok"],
-   },
- ];
- 
- export default function CreatorDashboard() {
-   return (
-     <div className="flex min-h-screen bg-background">
-       <DashboardSidebar type="creator" />
- 
-       <main className="flex-1 ml-64 p-8">
-         <DashboardHeader
-           title="Welcome back, Maria"
-           subtitle="Here are your personalized opportunities"
-         />
- 
-         {/* Stats Grid */}
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-           {stats.map((stat) => (
-             <StatCard key={stat.title} {...stat} />
-           ))}
-         </div>
- 
-         {/* Top Opportunities */}
-         <div className="flex items-center justify-between mb-6">
-           <h2 className="text-xl font-semibold">Top Matches for You</h2>
-           <Link to="/creator/opportunities">
-             <Button variant="ghost">
-               View All
-               <ArrowRight className="w-4 h-4" />
-             </Button>
-           </Link>
-         </div>
- 
-         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-           {topOpportunities.map((opportunity) => (
-             <OpportunityCard key={opportunity.id} opportunity={opportunity} />
-           ))}
-         </div>
- 
-         {/* Profile Completion */}
-         <div className="glass-card p-6">
-           <div className="flex items-center justify-between">
-             <div>
-               <h3 className="font-semibold text-lg mb-1">Complete Your Profile</h3>
-               <p className="text-muted-foreground text-sm">
-                 A complete profile helps us find better matches for you
-               </p>
-             </div>
-             <div className="flex items-center gap-6">
-               <div className="text-right">
-                 <div className="text-2xl font-bold text-primary">75%</div>
-                 <div className="text-sm text-muted-foreground">Complete</div>
-               </div>
-               <Link to="/creator/profile">
-                 <Button variant="hero">
-                   Complete Profile
-                 </Button>
-               </Link>
-             </div>
-           </div>
-           <div className="mt-4 h-2 bg-muted rounded-full overflow-hidden">
-             <div className="h-full w-3/4 bg-gradient-primary rounded-full" />
-           </div>
-         </div>
-       </main>
-     </div>
-   );
- }
+import { useEffect, useState } from "react";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { OpportunityCard } from "@/components/dashboard/OpportunityCard";
+import { Button } from "@/components/ui/button";
+import { Inbox, DollarSign, TrendingUp, CheckCircle, ArrowRight, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
+export default function CreatorDashboard() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [profileCompletion, setProfileCompletion] = useState(0);
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [stats, setStats] = useState<{
+    title: string;
+    value: string | number;
+    change: string;
+    changeType: "positive" | "negative" | "neutral";
+    icon: any;
+    iconColor: "primary" | "accent" | "success";
+  }[]>([
+    {
+      title: "New Opportunities",
+      value: 0,
+      change: "0 today",
+      changeType: "neutral",
+      icon: Inbox,
+      iconColor: "primary",
+    },
+    {
+      title: "Active Campaigns",
+      value: 0,
+      change: "In progress",
+      changeType: "neutral",
+      icon: CheckCircle,
+      iconColor: "accent",
+    },
+    {
+      title: "Avg. Match Score",
+      value: "0%",
+      change: "+0%",
+      changeType: "neutral",
+      icon: TrendingUp,
+      iconColor: "success",
+    },
+    {
+      title: "This Month",
+      value: "$0",
+      change: "Pending: $0",
+      changeType: "neutral",
+      icon: DollarSign,
+      iconColor: "primary",
+    },
+  ]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user) return;
+      try {
+        // 1. Calculate Profile Completion being real
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        let completion = 20; // Base for being registered
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.niche) completion += 20;
+          if (data.bio) completion += 20;
+          if (data.socialLinks?.instagram) completion += 20;
+          if (data.photoURL) completion += 20;
+        }
+        setProfileCompletion(completion);
+
+        // 2. Fetch Opportunities (Active campaigns)
+        // For now, fetch all active campaigns. In future, filter by niche match.
+        const q = query(
+          collection(db, "campaigns"),
+          where("status", "==", "active"),
+          orderBy("createdAt", "desc"),
+          limit(4)
+        );
+        const querySnapshot = await getDocs(q);
+        const opps = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          matchScore: 85 + Math.floor(Math.random() * 10) // Mock match score
+        }));
+        setOpportunities(opps);
+
+        // Update stats
+        setStats(prev => [
+          { ...prev[0], value: opps.length },
+          { ...prev[1], value: 0 }, // Placeholder for active participations
+          { ...prev[2], value: opps.length > 0 ? "88%" : "0%" },
+          { ...prev[3], value: "$0" }
+        ]);
+
+      } catch (error) {
+        console.error("Error loading dashboard:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user]);
+
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <DashboardSidebar type="creator" />
+
+      <main className="flex-1 ml-64 p-8">
+        <DashboardHeader
+          title={`Welcome back, ${user?.displayName || 'Creator'}`}
+          subtitle="Here are your personalized opportunities"
+        />
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat) => (
+            <StatCard key={stat.title} {...stat} />
+          ))}
+        </div>
+
+        {/* Top Opportunities */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold">Top Matches for You</h2>
+          <Link to="/creator/opportunities">
+            <Button variant="ghost">
+              View All
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
+        </div>
+
+        {opportunities.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {opportunities.map((opportunity) => (
+              <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+            ))}
+          </div>
+        ) : (
+          <div className="p-8 text-center border rounded-lg bg-white mb-8">
+            <p className="text-muted-foreground">No active opportunities found at the moment.</p>
+          </div>
+        )}
+
+        {/* Profile Completion */}
+        <div className="glass-card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-lg mb-1">Complete Your Profile</h3>
+              <p className="text-muted-foreground text-sm">
+                A complete profile helps us find better matches for you
+              </p>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <div className="text-2xl font-bold text-primary">{profileCompletion}%</div>
+                <div className="text-sm text-muted-foreground">Complete</div>
+              </div>
+              <Link to="/creator/profile">
+                <Button variant="hero">
+                  Complete Profile
+                </Button>
+              </Link>
+            </div>
+          </div>
+          <div className="mt-4 h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-primary rounded-full transition-all duration-1000"
+              style={{ width: `${profileCompletion}%` }}
+            />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
