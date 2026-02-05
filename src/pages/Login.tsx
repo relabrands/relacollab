@@ -15,7 +15,7 @@ const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoggingIn, setIsLoggingIn] = useState(false);
-    const { signInWithGoogle, loginWithEmail, registerWithEmail, user, role: userRole } = useAuth();
+    const { signInWithGoogle, loginWithEmail, registerWithEmail, updateRole, logout, user, role: userRole } = useAuth();
     const navigate = useNavigate();
 
     // Redirect if already logged in
@@ -81,6 +81,59 @@ const Login = () => {
             setIsLoggingIn(false);
         }
     };
+
+    const handleRoleUpdate = async () => {
+        if (!role) {
+            toast.error("Selecciona un rol para continuar");
+            return;
+        }
+        setIsLoggingIn(true);
+        try {
+            const updatedRole = await updateRole(role);
+            if (updatedRole) {
+                toast.success("Perfil actualizado correctamente");
+                navigate(`/${updatedRole}`);
+            }
+        } catch (error) {
+            toast.error("Error al actualizar el perfil");
+        } finally {
+            setIsLoggingIn(false);
+        }
+    };
+
+    if (user && !userRole && !isLoggingIn) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+                <Card className="w-full max-w-md">
+                    <CardHeader className="text-center">
+                        <CardTitle className="text-2xl font-bold">Completa tu Perfil</CardTitle>
+                        <CardDescription>Parece que tu cuenta no tiene un rol asignado. Por favor selecciona uno para continuar.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Soy un...</label>
+                            <Select value={role || ""} onValueChange={(val) => setRole(val as UserRole)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecciona tu rol" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="brand">Marca (Brand)</SelectItem>
+                                    <SelectItem value="creator">Creador (Creator)</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button onClick={handleRoleUpdate} className="w-full">
+                            Guardar y Continuar
+                        </Button>
+                        <Button variant="outline" onClick={() => logout()} className="w-full">
+                            Cerrar Sesión
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">

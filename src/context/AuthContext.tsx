@@ -13,6 +13,7 @@ interface AuthContextType {
     signInWithGoogle: (role: UserRole) => Promise<UserRole>;
     loginWithEmail: (email: string, pass: string) => Promise<UserRole>;
     registerWithEmail: (email: string, pass: string, name: string, role: UserRole) => Promise<UserRole>;
+    updateRole: (role: UserRole) => Promise<UserRole>;
     logout: () => Promise<void>;
 }
 
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
     signInWithGoogle: async () => null,
     loginWithEmail: async () => null,
     registerWithEmail: async () => null,
+    updateRole: async () => null,
     logout: async () => { },
 });
 
@@ -142,7 +144,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, role, loading, signInWithGoogle, loginWithEmail, registerWithEmail, logout }}>
+        <AuthContext.Provider value={{ user, role, loading, signInWithGoogle, loginWithEmail, registerWithEmail, updateRole, logout }}>
             {children}
         </AuthContext.Provider>
     );
