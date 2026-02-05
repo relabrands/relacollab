@@ -133,6 +133,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const updateRole = async (selectedRole: UserRole): Promise<UserRole> => {
+        if (!user || !selectedRole) return null;
+        try {
+            await setDoc(doc(db, "users", user.uid), {
+                email: user.email,
+                role: selectedRole,
+                createdAt: new Date().toISOString(),
+                displayName: user.displayName,
+                photoURL: user.photoURL
+            });
+            setRole(selectedRole);
+            return selectedRole;
+        } catch (error) {
+            console.error("Error updating role:", error);
+            throw error;
+        }
+    };
+
     const logout = async () => {
         try {
             await signOut(auth);
