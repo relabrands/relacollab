@@ -13,6 +13,7 @@ import BrandOnboarding from "./pages/onboarding/BrandOnboarding";
 import CreatorOnboarding from "./pages/onboarding/CreatorOnboarding";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataDeletion from "./pages/DataDeletion";
+import TermsAndConditions from "./pages/TermsAndConditions";
 
 // Brand pages
 import BrandDashboard from "./pages/brand/BrandDashboard";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/politica-de-privacidad" element={<PrivacyPolicy />} />
             <Route path="/eliminacion-de-datos" element={<DataDeletion />} />
+            <Route path="/terminos-y-condiciones" element={<TermsAndConditions />} />
 
             {/* Onboarding Routes */}
             <Route path="/onboarding" element={<OnboardingLayout />}>
