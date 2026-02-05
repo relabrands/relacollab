@@ -1,0 +1,74 @@
+ import { Link, useLocation } from "react-router-dom";
+ import { cn } from "@/lib/utils";
+ import {
+   LayoutDashboard,
+   Building2,
+   Users,
+   Settings,
+   CreditCard,
+   BarChart3,
+   Sparkles,
+   LogOut,
+   Shield,
+   FileText,
+   TrendingUp,
+ } from "lucide-react";
+ 
+ const adminNavItems = [
+   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
+   { icon: Building2, label: "Brands", path: "/admin/brands" },
+   { icon: Users, label: "Creators", path: "/admin/creators" },
+   { icon: FileText, label: "Campaigns", path: "/admin/campaigns" },
+   { icon: CreditCard, label: "Subscriptions", path: "/admin/subscriptions" },
+   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
+   { icon: Settings, label: "Settings", path: "/admin/settings" },
+ ];
+ 
+ export function AdminSidebar() {
+   const location = useLocation();
+ 
+   return (
+     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar text-sidebar-foreground flex flex-col">
+       {/* Logo */}
+       <Link to="/" className="flex items-center gap-3 px-6 py-6">
+         <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center">
+           <Sparkles className="w-5 h-5 text-primary-foreground" />
+         </div>
+         <span className="font-bold text-lg">RELA Collab</span>
+       </Link>
+ 
+       {/* Admin badge */}
+       <div className="px-6 mb-6">
+         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-destructive/20 text-destructive">
+           <Shield className="w-3 h-3" />
+           Admin Panel
+         </div>
+       </div>
+ 
+       {/* Navigation */}
+       <nav className="flex-1 px-4 space-y-1">
+         {adminNavItems.map((item) => {
+           const isActive = location.pathname === item.path;
+           return (
+             <Link
+               key={item.path}
+               to={item.path}
+               className={cn("sidebar-item", isActive && "active")}
+             >
+               <item.icon className="w-5 h-5" />
+               {item.label}
+             </Link>
+           );
+         })}
+       </nav>
+ 
+       {/* Footer */}
+       <div className="p-4 border-t border-sidebar-border">
+         <Link to="/" className="sidebar-item w-full text-sidebar-foreground/50 hover:text-sidebar-foreground">
+           <LogOut className="w-5 h-5" />
+           Exit Admin
+         </Link>
+       </div>
+     </aside>
+   );
+ }
