@@ -12,6 +12,10 @@
         ],
         "rewrites": [
             {
+                "source": "/auth/facebook/callback",
+                "function": "auth"
+            },
+            {
                 "source": "**",
                 "destination": "/index.html"
             }
