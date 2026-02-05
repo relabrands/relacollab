@@ -4,19 +4,22 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Brand pages
 import BrandDashboard from "./pages/brand/BrandDashboard";
 import CreateCampaign from "./pages/brand/CreateCampaign";
 import BrandMatches from "./pages/brand/BrandMatches";
- import ContentLibrary from "./pages/brand/ContentLibrary";
+import ContentLibrary from "./pages/brand/ContentLibrary";
 
 // Creator pages
 import CreatorDashboard from "./pages/creator/CreatorDashboard";
 import Opportunities from "./pages/creator/Opportunities";
 import CreatorProfile from "./pages/creator/CreatorProfile";
- import MyContent from "./pages/creator/MyContent";
+import MyContent from "./pages/creator/MyContent";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -28,48 +31,139 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          
-          {/* Brand Routes */}
-          <Route path="/brand" element={<BrandDashboard />} />
-          <Route path="/brand/campaigns" element={<BrandDashboard />} />
-          <Route path="/brand/campaigns/new" element={<CreateCampaign />} />
-          <Route path="/brand/matches" element={<BrandMatches />} />
-           <Route path="/brand/content" element={<ContentLibrary />} />
-           <Route path="/brand/analytics" element={<ContentLibrary />} />
-          <Route path="/brand/payments" element={<BrandDashboard />} />
-          <Route path="/brand/settings" element={<BrandDashboard />} />
-          
-          {/* Creator Routes */}
-          <Route path="/creator" element={<CreatorDashboard />} />
-          <Route path="/creator/opportunities" element={<Opportunities />} />
-          <Route path="/creator/active" element={<CreatorDashboard />} />
-           <Route path="/creator/content" element={<MyContent />} />
-          <Route path="/creator/profile" element={<CreatorProfile />} />
-          <Route path="/creator/earnings" element={<CreatorDashboard />} />
-          <Route path="/creator/settings" element={<CreatorDashboard />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/brands" element={<AdminBrands />} />
-          <Route path="/admin/creators" element={<AdminCreators />} />
-          <Route path="/admin/campaigns" element={<AdminDashboard />} />
-          <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
-          <Route path="/admin/analytics" element={<AdminAnalytics />} />
-          <Route path="/admin/settings" element={<AdminDashboard />} />
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+
+            {/* Brand Routes */}
+            <Route path="/brand" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <BrandDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/brand/campaigns" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <BrandDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/brand/campaigns/new" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <CreateCampaign />
+              </ProtectedRoute>
+            } />
+            <Route path="/brand/matches" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <BrandMatches />
+              </ProtectedRoute>
+            } />
+            <Route path="/brand/content" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <ContentLibrary />
+              </ProtectedRoute>
+            } />
+            <Route path="/brand/analytics" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <ContentLibrary />
+              </ProtectedRoute>
+            } />
+            <Route path="/brand/payments" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <BrandDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/brand/settings" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <BrandDashboard />
+              </ProtectedRoute>
+            } />
+
+            {/* Creator Routes */}
+            <Route path="/creator" element={
+              <ProtectedRoute allowedRoles={['creator']}>
+                <CreatorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/creator/opportunities" element={
+              <ProtectedRoute allowedRoles={['creator']}>
+                <Opportunities />
+              </ProtectedRoute>
+            } />
+            <Route path="/creator/active" element={
+              <ProtectedRoute allowedRoles={['creator']}>
+                <CreatorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/creator/content" element={
+              <ProtectedRoute allowedRoles={['creator']}>
+                <MyContent />
+              </ProtectedRoute>
+            } />
+            <Route path="/creator/profile" element={
+              <ProtectedRoute allowedRoles={['creator']}>
+                <CreatorProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/creator/earnings" element={
+              <ProtectedRoute allowedRoles={['creator']}>
+                <CreatorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/creator/settings" element={
+              <ProtectedRoute allowedRoles={['creator']}>
+                <CreatorDashboard />
+              </ProtectedRoute>
+            } />
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/brands" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminBrands />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/creators" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminCreators />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/campaigns" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/subscriptions" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminSubscriptions />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/analytics" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminAnalytics />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </AuthProvider>
 );
 
 export default App;
