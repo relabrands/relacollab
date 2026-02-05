@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import OnboardingLayout from "./pages/onboarding/OnboardingLayout";
 import BrandOnboarding from "./pages/onboarding/BrandOnboarding";
 import CreatorOnboarding from "./pages/onboarding/CreatorOnboarding";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 // Brand pages
 import BrandDashboard from "./pages/brand/BrandDashboard";
@@ -49,6 +50,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/politica-de-privacidad" element={<PrivacyPolicy />} />
 
             {/* Onboarding Routes */}
             <Route path="/onboarding" element={<OnboardingLayout />}>
