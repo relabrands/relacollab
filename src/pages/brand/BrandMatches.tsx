@@ -279,9 +279,30 @@ export default function BrandMatches() {
 
         {/* AI Summary */}
         <motion.div
-          // ...
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-6 mb-8 bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg mb-2">AI Match Summary</h3>
+              {activeCampaign ? (
+                <p className="text-muted-foreground">
+                  We found <span className="font-semibold text-primary">{creators.length} potential matches</span> based on your campaign criteria.
+                </p>
+              ) : (
+                <p className="text-muted-foreground">
+                  No active campaign found. <Link to="/brand/campaigns/new" className="text-primary hover:underline">Create a campaign</Link> to get better matches.
+                </p>
+              )}
+            </div>
+          </div>
+        </motion.div>
 
-          {/* Filters */}
+        {/* Filters */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Button
