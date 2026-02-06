@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Sparkles, Check, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { toast } from "sonner";
@@ -35,6 +35,11 @@ const rewardOptions = [
   { id: "hybrid", label: "Hybrid", description: "Experience + cash" },
 ];
 
+import { useState, useEffect } from "react";
+// ... imports
+
+// ...
+
 export default function CreateCampaign() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -53,6 +58,28 @@ export default function CreateCampaign() {
     endDate: "",
     creatorCount: "1",
   });
+
+  useEffect(() => {
+    const fetchBrandProfile = async () => {
+      if (!user) return;
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setFormData(prev => ({
+            ...prev,
+            location: userData.location || "",
+            // Only pre-fill description if the user hasn't typed anything yet (though on mount it's empty)
+            description: userData.description || ""
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching brand profile:", error);
+      }
+    };
+
+    fetchBrandProfile();
+  }, [user]);
 
   const handleVibeToggle = (vibeId: string) => {
     setFormData((prev) => ({

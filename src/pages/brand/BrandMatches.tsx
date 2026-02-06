@@ -38,6 +38,13 @@ export default function BrandMatches() {
       if (!user) return;
 
       try {
+        // 0. Fetch Brand Profile (New)
+        let brandProfile: any = null;
+        const userDocSnap = await getDoc(doc(db, "users", user.uid));
+        if (userDocSnap.exists()) {
+          brandProfile = userDocSnap.data();
+        }
+
         // 1. Fetch Active Campaign
         let campaign: any = null;
 
@@ -83,7 +90,9 @@ export default function BrandMatches() {
           let score = 60; // Base score
           const reasons: string[] = [];
           const analysisPoints: string[] = [];
+          const creatorCategories = creator.categories || [];
 
+          // A. Campaign-Based Matching
           if (campaign) {
             // Location Match
             if (creator.location && campaign.location &&
@@ -96,7 +105,6 @@ export default function BrandMatches() {
             // Niche/Vibe Match
             // Campaign has 'vibes', Creator has 'categories'
             const campaignVibes = campaign.vibes || [];
-            const creatorCategories = creator.categories || [];
 
             // Simple intersection check (loose matching)
             const matchedVibes = campaignVibes.filter((v: string) =>
@@ -113,6 +121,28 @@ export default function BrandMatches() {
               // Fallback: if no direct match but creator has categories, give partial points
               score += 5;
               analysisPoints.push(`While not an exact niche match, their content in ${creatorCategories[0]} is relevant.`);
+            }
+          }
+
+          // B. Brand Profile-Based Matching (Fallback/Boost)
+          if (brandProfile && brandProfile.industry) {
+            const brandIndustry = brandProfile.industry.toLowerCase();
+            const isIndustryMatch = creatorCategories.some((c: string) => c.toLowerCase().includes(brandIndustry));
+
+            if (isIndustryMatch) {
+              // Boost score if industry matches, even if campaign vibes don't perfectly align
+              score += 15;
+              // Only add reason if not already covered by campaign match
+              if (!reasons.includes("Niche/Vibe")) {
+                analysisPoints.push(`They create content in the ${brandProfile.industry} space, a perfect fit for your brand.`);
+              }
+            }
+
+            if (brandProfile.location && creator.location && !reasons.includes("Location")) {
+              if (creator.location.toLowerCase().includes(brandProfile.location.toLowerCase())) {
+                score += 10;
+                analysisPoints.push(`They are located in ${creator.location}, near your brand headquarters.`);
+              }
             }
           }
 

@@ -41,7 +41,9 @@ export default function BrandOnboarding() {
         companyName: "",
         website: "",
         industry: "",
-        selectedPlan: ""
+        selectedPlan: "",
+        location: "",
+        description: ""
     });
 
     const handleUpdate = (key: string, value: string) => {
@@ -73,6 +75,8 @@ export default function BrandOnboarding() {
                 brandName: formData.companyName,
                 website: formData.website,
                 industry: formData.industry,
+                location: formData.location,
+                description: formData.description,
                 plan: formData.selectedPlan,
                 onboardingCompleted: true,
                 updatedAt: new Date().toISOString()
@@ -137,8 +141,28 @@ export default function BrandOnboarding() {
                                     <SelectItem value="food">Food & Beverage</SelectItem>
                                     <SelectItem value="fitness">Fitness</SelectItem>
                                     <SelectItem value="lifestyle">Lifestyle</SelectItem>
+                                    <SelectItem value="travel">Travel</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="location">Location</Label>
+                            <Input
+                                id="location"
+                                placeholder="City, Country (e.g. New York, USA)"
+                                value={formData.location}
+                                onChange={(e) => handleUpdate("location", e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Brand Description</Label>
+                            <Input
+                                id="description"
+                                placeholder="Short bio or mission statement..."
+                                value={formData.description}
+                                onChange={(e) => handleUpdate("description", e.target.value)}
+                            />
                         </div>
                         <Button onClick={handleNext} className="w-full">Next: Select Plan</Button>
                     </CardContent>
