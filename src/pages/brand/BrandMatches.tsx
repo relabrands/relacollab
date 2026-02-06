@@ -167,7 +167,10 @@ export default function BrandMatches() {
   }, [user]);
 
   const handleSendProposal = async (id: string, creatorName: string) => {
-    if (!activeCampaign || !user) return;
+    if (!activeCampaign || !user) {
+      if (!activeCampaign) console.error("No active campaign found");
+      return;
+    }
 
     try {
       // 1. Create Invitation Document
@@ -178,7 +181,7 @@ export default function BrandMatches() {
         status: "pending",
         createdAt: new Date().toISOString(),
         campaignData: {
-          title: activeCampaign.title,
+          title: activeCampaign.title || "Untitled Campaign",
           brandName: activeCampaign.brandName || "Brand",
           image: activeCampaign.images?.[0] || "",
           budget: activeCampaign.budget || "Negotiable"
@@ -193,7 +196,7 @@ export default function BrandMatches() {
       });
     } catch (error) {
       console.error("Error sending proposal:", error);
-      toast.error("Failed to send proposal.");
+      toast.error("Failed to send proposal. Check console for details.");
     }
   };
 
