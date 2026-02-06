@@ -208,9 +208,18 @@ export default function BrandMatches() {
     fetchData();
   }, [user]);
 
+  const [viewMode, setViewMode] = useState<'matches' | 'invited'>('matches');
+
+  // ... (existing code)
+
   const handleSendProposal = async (id: string, creatorName: string) => {
     if (!activeCampaign || !user) {
       if (!activeCampaign) console.error("No active campaign found");
+      return;
+    }
+
+    if (approvedIds.includes(id)) {
+      toast.info(`Already sent a proposal to ${creatorName}`);
       return;
     }
 
@@ -242,18 +251,16 @@ export default function BrandMatches() {
     }
   };
 
-  const handleReject = (id: string) => {
-    setRejectedIds((prev) => [...prev, id]);
-  };
+  // ...
 
-  const handleCardClick = (creator: any) => {
-    setSelectedCreator(creator);
-    setIsDialogOpen(true);
-  };
-
-  const visibleCreators = creators.filter(
-    (c) => !approvedIds.includes(c.id) && !rejectedIds.includes(c.id)
-  );
+  const visibleCreators = creators.filter((c) => {
+    if (viewMode === 'matches') {
+      return !approvedIds.includes(c.id) && !rejectedIds.includes(c.id);
+    } else {
+      // 'invited' mode
+      return approvedIds.includes(c.id);
+    }
+  });
 
   if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
@@ -265,44 +272,31 @@ export default function BrandMatches() {
       <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <div className="max-w-7xl mx-auto">
           <DashboardHeader
-            title="Your Matches"
-            subtitle="Creators that perfectly fit your campaigns"
+            title={viewMode === 'matches' ? "Your Matches" : "Invited Creators"}
+            subtitle={viewMode === 'matches' ? "Creators that perfectly fit your campaigns" : "Creators you have sent proposals to"}
           />
         </div>
 
         {/* AI Summary */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-6 mb-8 bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10"
-        >
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg mb-2">AI Match Summary</h3>
-              {activeCampaign ? (
-                <p className="text-muted-foreground">
-                  We found <span className="font-semibold text-primary">{creators.length} potential matches</span> based on your campaign criteria.
-                </p>
-              ) : (
-                <p className="text-muted-foreground">
-                  No active campaign found. <Link to="/brand/campaigns/new" className="text-primary hover:underline">Create a campaign</Link> to get better matches.
-                </p>
-              )}
-            </div>
-          </div>
-        </motion.div>
+          // ...
 
-        {/* Filters */}
+          {/* Filters */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm">
+            <Button
+              variant={viewMode === 'matches' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode('matches')}
+            >
               <Filter className="w-4 h-4 mr-2" />
-              All Matches ({visibleCreators.length})
+              New Matches
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button
+              variant={viewMode === 'invited' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode('invited')}
+            >
               Invited ({approvedIds.length})
             </Button>
           </div>
@@ -329,7 +323,8 @@ export default function BrandMatches() {
                   handleSendProposal(id, creator.name);
                 }}
                 onReject={handleReject}
-                isInvite={true}
+                isInvite={viewMode === 'matches'} // Only show send button in matches view
+                hideActions={viewMode === 'invited'} // Hide actions in invited view
               />
             </motion.div>
           ))}
