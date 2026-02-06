@@ -56,7 +56,8 @@ exports.auth = functions.https.onRequest((req, res) => {
 
                 // Save to Firestore if userId provided
                 if (userId) {
-                    await db.collection("users").doc(userId).update({
+                    await db.collection("users").doc(userId).set({
+                        socialHandles: { instagram: userData.username }, // update this
                         instagramConnected: true,
                         instagramId: userData.id,
                         instagramUsername: userData.username,
@@ -66,7 +67,7 @@ exports.auth = functions.https.onRequest((req, res) => {
                             engagementRate: parseFloat(engagementRate || "0"),
                             lastUpdated: new Date().toISOString()
                         }
-                    });
+                    }, { merge: true });
                 }
 
                 return res.json({

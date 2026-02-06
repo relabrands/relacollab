@@ -66,8 +66,8 @@ export default function InstagramCallback() {
                 if (response.data.success) {
                     setStatus("Success! Redirecting...");
                     toast.success("Instagram connected successfully!");
-                    // Success redirect
-                    navigate("/creator/profile");
+                    // Force refresh to ensure AuthContext updates with new Firestore data
+                    window.location.href = "/creator/profile";
                 } else {
                     console.error("Backend error:", response.data);
                     const errorMsg = response.data.error || "Unknown error";
