@@ -60,6 +60,7 @@ export default function BrandMatches() {
         const matchedCreators = validCreators.map((creator: any) => {
           let score = 60; // Base score
           const reasons: string[] = [];
+          const analysisPoints: string[] = [];
 
           if (campaign) {
             // Location Match
@@ -67,6 +68,7 @@ export default function BrandMatches() {
               creator.location.toLowerCase().includes(campaign.location.toLowerCase())) {
               score += 20;
               reasons.push("Location");
+              analysisPoints.push(`Their location in ${creator.location} perfectly aligns with your campaign target.`);
             }
 
             // Niche/Vibe Match
@@ -75,37 +77,46 @@ export default function BrandMatches() {
             const creatorCategories = creator.categories || [];
 
             // Simple intersection check (loose matching)
-            const hasNicheMatch = campaignVibes.some((v: string) =>
+            const matchedVibes = campaignVibes.filter((v: string) =>
               creatorCategories.some((c: string) =>
                 c.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(c.toLowerCase())
               )
             );
 
-            if (hasNicheMatch) {
+            if (matchedVibes.length > 0) {
               score += 20;
               reasons.push("Niche/Vibe");
+              analysisPoints.push(`Their content content categories (${matchedVibes.join(", ")}) match your desired campaign vibe.`);
             } else if (creatorCategories.length > 0) {
               // Fallback: if no direct match but creator has categories, give partial points
               score += 5;
+              analysisPoints.push(`While not an exact niche match, their content in ${creatorCategories[0]} is relevant.`);
             }
           }
 
           // Engagement Boost
           const engagementRate = creator.instagramMetrics?.engagementRate || 0;
-          if (engagementRate > 3) score += 10;
+          if (engagementRate > 3) {
+            score += 10;
+            analysisPoints.push(`They have a solid engagement rate of ${engagementRate}%, indicating an active audience.`);
+          }
           if (engagementRate > 5) score += 5;
 
           // Cap score
           if (score > 99) score = 99;
 
-          const matchReason = reasons.length > 0
-            ? `Matches your campaign ${reasons.join(" and ")}.`
-            : "Based on general profile fit.";
+          // Build Detailed Reason
+          let matchReason = "AI Analysis: ";
+          if (analysisPoints.length > 0) {
+            matchReason += analysisPoints.join(" ");
+          } else {
+            matchReason += "This creator was matched based on general platform fit and availability.";
+          }
 
           return {
             ...creator,
-            name: creator.displayName || "Unknown Creator",
-            avatar: creator.photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop",
+            name: creator.displayName || "Unnamed Creator",
+            avatar: creator.photoURL || creator.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop",
             location: creator.location || "Unknown",
             followers: creator.instagramMetrics?.followers
               ? (creator.instagramMetrics.followers > 1000
@@ -115,7 +126,6 @@ export default function BrandMatches() {
             engagement: `${engagementRate}%`,
             matchScore: score,
             tags: creator.categories || ["General"],
-            matchReason,
             rawEngagement: engagementRate, // for sorting
             instagramUsername: creator.instagramUsername,
             bio: creator.bio

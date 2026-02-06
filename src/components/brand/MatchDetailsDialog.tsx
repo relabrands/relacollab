@@ -43,6 +43,7 @@ interface InstagramMedia {
 export function MatchDetailsDialog({ isOpen, onClose, creator }: MatchDetailsDialogProps) {
     const [loadingPosts, setLoadingPosts] = useState(false);
     const [posts, setPosts] = useState<InstagramMedia[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen && creator.id) {
@@ -52,6 +53,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator }: MatchDetailsDia
 
     const fetchCreatorPosts = async () => {
         setLoadingPosts(true);
+        setError(null);
         try {
             // Trying to fetch creator's posts via Cloud Function
             // Note: This relies on the function allowing brand to fetch creator media, 
@@ -63,10 +65,13 @@ export function MatchDetailsDialog({ isOpen, onClose, creator }: MatchDetailsDia
 
             if (response.data.success) {
                 setPosts(response.data.data.slice(0, 6)); // Show top 6
+            } else {
+                console.error("Failed to load posts:", response.data.error);
+                setError(response.data.error || "Failed to load posts");
             }
         } catch (error) {
             console.error("Error fetching creator posts:", error);
-            // Fail silently for posts if permissions deny, just show empty
+            setError("Could not load posts. Instagram token might be expired.");
         } finally {
             setLoadingPosts(false);
         }
@@ -198,7 +203,8 @@ export function MatchDetailsDialog({ isOpen, onClose, creator }: MatchDetailsDia
                         ) : (
                             <div className="text-center py-12 bg-muted/30 rounded-xl border border-dashed">
                                 <Instagram className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                                <p className="text-muted-foreground">Unable to load recent posts.</p>
+                                <p className="text-muted-foreground">{error || "Unable to load recent posts."}</p>
+                                {error && <p className="text-xs text-muted-foreground mt-1">Try connecting with the creator directly.</p>}
                             </div>
                         )}
                     </div>

@@ -92,18 +92,22 @@ exports.auth = functions.https.onRequest((req, res) => {
 
 exports.getInstagramMedia = functions.https.onRequest((req, res) => {
     return cors(req, res, async () => {
-        if (req.method !== 'POST') {
+        // Allow GET for testing if needed, but primarily POST
+        if (req.method !== 'POST' && req.method !== 'GET') {
             return res.status(405).json({ error: "Method Not Allowed" });
         }
 
-        const { userId } = req.body;
+        const userId = req.body.userId || req.query.userId;
         if (!userId) {
+            console.error("getInstagramMedia: Missing userId");
             return res.status(400).json({ error: "Missing userId" });
         }
 
         try {
+            console.log(`Fetching media for user: ${userId}`);
             const userDoc = await db.collection("users").doc(userId).get();
             if (!userDoc.exists) {
+                console.error(`User ${userId} not found`);
                 return res.status(404).json({ error: "User not found" });
             }
 
@@ -111,31 +115,42 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
             const accessToken = userData.instagramAccessToken;
 
             if (!accessToken) {
+                console.warn(`User ${userId} has no Instagram access token`);
                 return res.status(400).json({ error: "Instagram not connected" });
             }
 
             // Fetch Media from Instagram Graph API
-            const response = await axios.get(
-                `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp&limit=18&access_token=${accessToken}`
-            );
+            try {
+                const response = await axios.get(
+                    `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp&limit=18&access_token=${accessToken}`
+                );
 
-            const mediaItems = response.data.data.map(item => ({
-                id: item.id,
-                caption: item.caption || "",
-                media_type: item.media_type,
-                // For VIDEO, use thumbnail_url. For IMAGE/CAROUSEL, use media_url
-                thumbnail: item.media_type === 'VIDEO' ? item.thumbnail_url : item.media_url,
-                permalink: item.permalink,
-                timestamp: item.timestamp
-            }));
+                const mediaItems = response.data.data.map(item => ({
+                    id: item.id,
+                    caption: item.caption || "",
+                    media_type: item.media_type,
+                    // For VIDEO, use thumbnail_url. For IMAGE/CAROUSEL, use media_url
+                    thumbnail: item.media_type === 'VIDEO' ? item.thumbnail_url : item.media_url,
+                    permalink: item.permalink,
+                    timestamp: item.timestamp
+                }));
 
-            return res.json({ success: true, data: mediaItems });
+                return res.json({ success: true, data: mediaItems });
+            } catch (apiError) {
+                console.error("Instagram API Error:", apiError.response?.data || apiError.message);
+                // Return a 200 with success: false so client doesn't throw generic 500
+                return res.json({
+                    success: false,
+                    error: "Instagram API Error",
+                    details: apiError.response?.data?.error?.message || apiError.message
+                });
+            }
 
         } catch (error) {
-            console.error("Error fetching media:", error.response?.data || error.message);
+            console.error("System Error fetching media:", error.message);
             return res.status(500).json({
-                error: "Failed to fetch media",
-                details: error.response?.data?.error?.message || error.message
+                error: "System Error",
+                details: error.message
             });
         }
     });
