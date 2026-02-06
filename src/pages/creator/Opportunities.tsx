@@ -76,20 +76,20 @@ export default function Opportunities() {
         </motion.div>
 
         {/* Filters */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto no-scrollbar">
+            <Button variant="outline" size="sm" className="whitespace-nowrap">
               <Filter className="w-4 h-4 mr-2" />
               All ({opportunities.length})
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="whitespace-nowrap">
               Paid Only
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="whitespace-nowrap">
               Experience
             </Button>
           </div>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="w-full md:w-auto">
             <SlidersHorizontal className="w-4 h-4 mr-2" />
             Filters
           </Button>

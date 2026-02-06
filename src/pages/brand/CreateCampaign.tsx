@@ -11,6 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 import { toast } from "sonner";
 
 const goalOptions = [
