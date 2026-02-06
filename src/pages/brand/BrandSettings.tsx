@@ -4,32 +4,81 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
-import { useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
 import { MobileNav } from "@/components/dashboard/MobileNav";
+import { Loader2 } from "lucide-react";
 
 export default function BrandSettings() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [name, setName] = useState(user?.displayName || "");
+    const [fetching, setFetching] = useState(true);
+    const [formData, setFormData] = useState({
+        brandName: "",
+        contactPerson: "",
+        phone: "",
+        website: "",
+        industry: "",
+        location: "",
+        description: ""
+    });
 
-    const handleUpdate = async () => {
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (!user) return;
+            try {
+                const docSnap = await getDoc(doc(db, "users", user.uid));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setFormData({
+                        brandName: data.brandName || data.displayName || "",
+                        contactPerson: data.contactPerson || "",
+                        phone: data.phone || "",
+                        website: data.website || "",
+                        industry: data.industry || "",
+                        location: data.location || "",
+                        description: data.description || ""
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching settings:", error);
+            } finally {
+                setFetching(false);
+            }
+        };
+        fetchUserData();
+    }, [user]);
+
+    const handleUpdate = (key: string, value: string) => {
+        setFormData(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleSave = async () => {
         if (!user) return;
         setLoading(true);
         try {
             await updateDoc(doc(db, "users", user.uid), {
-                displayName: name
+                ...formData,
+                displayName: formData.brandName, // Sync display name
+                updatedAt: new Date().toISOString()
             });
-            toast.success("Profile updated");
+            toast.success("Settings updated successfully");
         } catch (error) {
-            toast.error("Failed to update profile");
+            console.error("Error saving settings:", error);
+            toast.error("Failed to update settings");
         } finally {
             setLoading(false);
         }
     };
+
+    if (fetching) {
+        return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
+    }
 
     return (
         <div className="flex min-h-screen bg-background">
@@ -37,25 +86,102 @@ export default function BrandSettings() {
             <MobileNav type="brand" />
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
-                <DashboardHeader title="Settings" subtitle="Manage your account preferences" />
+                <DashboardHeader title="Settings" subtitle="Manage your brand profile and preferences" />
 
-                <Card className="max-w-2xl">
+                <Card className="max-w-3xl">
                     <CardHeader>
-                        <CardTitle>Profile Details</CardTitle>
-                        <CardDescription>Update your brand information</CardDescription>
+                        <CardTitle>Brand Profile</CardTitle>
+                        <CardDescription>This information will be visible to creators matching with your campaigns.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Display Name</Label>
-                            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                    <CardContent className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="brandName">Brand Name</Label>
+                                <Input
+                                    id="brandName"
+                                    value={formData.brandName}
+                                    onChange={(e) => handleUpdate("brandName", e.target.value)}
+                                    placeholder="Acme Inc."
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="contactPerson">Contact Person</Label>
+                                <Input
+                                    id="contactPerson"
+                                    value={formData.contactPerson}
+                                    onChange={(e) => handleUpdate("contactPerson", e.target.value)}
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="phone">Phone Number</Label>
+                                <Input
+                                    id="phone"
+                                    type="tel"
+                                    value={formData.phone}
+                                    onChange={(e) => handleUpdate("phone", e.target.value)}
+                                    placeholder="+1 (555) 000-0000"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="website">Website</Label>
+                                <Input
+                                    id="website"
+                                    type="url"
+                                    value={formData.website}
+                                    onChange={(e) => handleUpdate("website", e.target.value)}
+                                    placeholder="https://example.com"
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Email</Label>
-                            <Input value={user?.email || ""} disabled className="bg-muted" />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="industry">Industry</Label>
+                                <Select value={formData.industry} onValueChange={(val) => handleUpdate("industry", val)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select industry" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="fashion">Fashion</SelectItem>
+                                        <SelectItem value="beauty">Beauty</SelectItem>
+                                        <SelectItem value="tech">Technology</SelectItem>
+                                        <SelectItem value="food">Food & Beverage</SelectItem>
+                                        <SelectItem value="fitness">Fitness</SelectItem>
+                                        <SelectItem value="lifestyle">Lifestyle</SelectItem>
+                                        <SelectItem value="travel">Travel</SelectItem>
+                                        <SelectItem value="other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="location">Location</Label>
+                                <Input
+                                    id="location"
+                                    value={formData.location}
+                                    onChange={(e) => handleUpdate("location", e.target.value)}
+                                    placeholder="City, Country"
+                                />
+                            </div>
                         </div>
-                        <Button onClick={handleUpdate} disabled={loading}>
-                            {loading ? "Saving..." : "Save Changes"}
-                        </Button>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Brand Bio / Description</Label>
+                            <Textarea
+                                id="description"
+                                value={formData.description}
+                                onChange={(e) => handleUpdate("description", e.target.value)}
+                                placeholder="Tell creators about your brand mission..."
+                                className="min-h-[100px]"
+                            />
+                        </div>
+
+                        <div className="pt-4 flex justify-end">
+                            <Button onClick={handleSave} disabled={loading} className="w-full md:w-auto">
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Save Changes
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             </main>

@@ -71,9 +71,13 @@ const App = () => (
                 <BrandDashboard />
               </ProtectedRoute>
             } />
+            import BrandCampaigns from "./pages/brand/BrandCampaigns";
+
+            // ...
+
             <Route path="/brand/campaigns" element={
               <ProtectedRoute allowedRoles={['brand']}>
-                <BrandDashboard />
+                <BrandCampaigns />
               </ProtectedRoute>
             } />
             <Route path="/brand/campaigns/new" element={

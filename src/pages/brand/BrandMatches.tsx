@@ -73,6 +73,17 @@ export default function BrandMatches() {
           }
         }
 
+        // 1.5 Fetch Existing Invitations for this Campaign
+        if (campaign) {
+          const invitationsQuery = query(
+            collection(db, "invitations"),
+            where("campaignId", "==", campaign.id)
+          );
+          const invitationsSnapshot = await getDocs(invitationsQuery);
+          const invitedCreatorIds = invitationsSnapshot.docs.map(doc => doc.data().creatorId);
+          setApprovedIds(invitedCreatorIds);
+        }
+
         // 2. Fetch All Creators
         // In a real app with many users, this should be a backend function or more specific query
         const creatorsQuery = query(collection(db, "users"), where("role", "==", "creator"));
