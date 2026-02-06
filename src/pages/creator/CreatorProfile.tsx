@@ -9,9 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { db, storage } from "@/lib/firebase";
+import { db, storage, auth } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { updateProfile } from "firebase/auth";
 import {
   Instagram,
   Globe,
@@ -42,6 +43,7 @@ export default function CreatorProfile() {
     location: "",
     phone: "",
     bio: "",
+    photoURL: "", // Add photoURL to state
     instagramMetrics: null
   });
 
@@ -73,6 +75,7 @@ export default function CreatorProfile() {
             location: data.location || "",
             phone: data.phone || "",
             bio: data.bio || "",
+            photoURL: data.photoURL || user.photoURL || "", // Fetch photoURL
             instagramMetrics: data.instagramMetrics || null
           });
 
@@ -228,13 +231,21 @@ export default function CreatorProfile() {
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
 
+      // 1. Update Firestore
       await updateDoc(doc(db, "users", user.uid), {
         photoURL: downloadURL,
         avatar: downloadURL
       });
 
+      // 2. Update Auth Profile (so user.photoURL is accurate for other parts of app)
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { photoURL: downloadURL });
+      }
+
+      // 3. Update Local State (for immediate feedback)
+      setProfile((prev: any) => ({ ...prev, photoURL: downloadURL }));
+
       toast.success("Profile photo updated!", { id: toastId });
-      window.location.reload();
     } catch (error) {
       console.error("Error uploading photo:", error);
       toast.error("Failed to upload photo", { id: toastId });
@@ -276,7 +287,7 @@ export default function CreatorProfile() {
 
               <div className="flex items-center gap-6 mb-6">
                 <img
-                  src={user?.photoURL || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop"}
+                  src={profile.photoURL || user?.photoURL || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop"}
                   alt="Profile"
                   className="w-24 h-24 rounded-2xl object-cover"
                 />
