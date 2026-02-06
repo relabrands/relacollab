@@ -134,118 +134,240 @@ export default function AdminDashboard() {
       <AdminSidebar />
 
       <main className="flex-1 ml-64 p-8">
-        <DashboardHeader
-          title="Admin Dashboard"
-          subtitle="Platform overview and management"
-        />
+        import {
+          AlertDialog,
+          AlertDialogAction,
+          AlertDialogCancel,
+          AlertDialogContent,
+          AlertDialogDescription,
+          AlertDialogFooter,
+          AlertDialogHeader,
+          AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+        import {Trash2} from "lucide-react";
+        import {toast} from "sonner";
+        import {writeBatch, collection, getDocs, deleteDoc, doc} from "firebase/firestore";
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <StatCard {...stat} />
-            </motion.div>
-          ))}
-        </div>
+        // ... imports
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <Link to="/admin/brands" className="glass-card p-6 hover-lift cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Manage Brands</h3>
-                <p className="text-sm text-muted-foreground">Add, edit, or remove brands</p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-primary" />
-              </div>
+        export default function AdminDashboard() {
+  // ... existing state
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+        const [isResetting, setIsResetting] = useState(false);
+
+  // ... fetchAdminData ...
+
+  const handleResetDatabase = async () => {
+          setIsResetting(true);
+        try {
+        const collectionsToReset = ["campaigns", "matches", "invitations", "jobs", "submissions"];
+
+        for (const colName of collectionsToReset) {
+            const q = query(collection(db, colName)); // Get all docs
+        const snapshot = await getDocs(q);
+
+        // Delete in batches of 500
+        const batches = [];
+        let batch = writeBatch(db);
+        let count = 0;
+
+        for (const docSnapshot of snapshot.docs) {
+          batch.delete(docSnapshot.ref);
+        count++;
+                if (count >= 400) { // Safety margin below 500
+          batches.push(batch.commit());
+        batch = writeBatch(db);
+        count = 0;
+                }
+            }
+            if (count > 0) {
+          batches.push(batch.commit());
+            }
+
+        await Promise.all(batches);
+        console.log(`Deleted all documents in ${colName}`);
+        }
+
+        toast.success("Database reset successfully", {
+          description: "All campaigns, matches, and proposals have been deleted."
+        });
+
+        // Refresh Data
+        setStats(prev => prev.map(s => ({...s, value: s.title.includes("Revenue") ? s.value : 0 })));
+        setRecentBrands([]);
+        
+    } catch (error) {
+          console.error("Error resetting database:", error);
+        toast.error("Failed to reset database");
+    } finally {
+          setIsResetting(false);
+        setIsResetDialogOpen(false);
+    }
+  };
+
+        if (loading) {
+          // ...
+        }
+
+        return (
+        <div className="flex min-h-screen bg-background">
+          <AdminSidebar />
+
+          <main className="flex-1 ml-64 p-8">
+            <div className="flex justify-between items-start mb-8">
+              <DashboardHeader
+                title="Admin Dashboard"
+                subtitle="Platform overview and management"
+              />
+
+              <Button
+                variant="destructive"
+                onClick={() => setIsResetDialogOpen(true)}
+                className="gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Reset Database
+              </Button>
             </div>
-          </Link>
 
-          <Link to="/admin/creators" className="glass-card p-6 hover-lift cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Manage Creators</h3>
-                <p className="text-sm text-muted-foreground">View and manage creator accounts</p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-                <Users className="w-6 h-6 text-accent" />
-              </div>
+            {/* ... Rest of Dashboard Content ... */}
+
+            {/* Reset Confirmation Dialog */}
+            <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete all:
+                    <ul className="list-disc list-inside mt-2 font-medium">
+                      <li>Active Campaigns</li>
+                      <li>Matches & Proposals</li>
+                      <li>Jobs & Submissions</li>
+                    </ul>
+                    User accounts (Brands/Creators) will NOT be deleted.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleResetDatabase}
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                    disabled={isResetting}
+                  >
+                    {isResetting ? "Resetting..." : "Yes, Wipe Data"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {stats.map((stat, index) => (
+                <motion.div
+                  key={stat.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <StatCard {...stat} />
+                </motion.div>
+              ))}
             </div>
-          </Link>
 
-          <Link to="/admin/subscriptions" className="glass-card p-6 hover-lift cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Subscriptions</h3>
-                <p className="text-sm text-muted-foreground">Manage plans and billing</p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-success" />
-              </div>
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <Link to="/admin/brands" className="glass-card p-6 hover-lift cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-1">Manage Brands</h3>
+                    <p className="text-sm text-muted-foreground">Add, edit, or remove brands</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Building2 className="w-6 h-6 text-primary" />
+                  </div>
+                </div>
+              </Link>
+
+              <Link to="/admin/creators" className="glass-card p-6 hover-lift cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-1">Manage Creators</h3>
+                    <p className="text-sm text-muted-foreground">View and manage creator accounts</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+                    <Users className="w-6 h-6 text-accent" />
+                  </div>
+                </div>
+              </Link>
+
+              <Link to="/admin/subscriptions" className="glass-card p-6 hover-lift cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-1">Subscriptions</h3>
+                    <p className="text-sm text-muted-foreground">Manage plans and billing</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-success" />
+                  </div>
+                </div>
+              </Link>
             </div>
-          </Link>
-        </div>
 
-        {/* Recent Brands */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Recent Brands</h2>
-          <Link to="/admin/brands">
-            <Button variant="ghost">
-              View All
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-        </div>
+            {/* Recent Brands */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Recent Brands</h2>
+              <Link to="/admin/brands">
+                <Button variant="ghost">
+                  View All
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
 
-        <div className="glass-card overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="text-left p-4 font-medium text-muted-foreground">Brand</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Plan</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Joined</th>
-                <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentBrands.length > 0 ? recentBrands.map((brand) => (
-                <tr key={brand.id} className="border-t border-border">
-                  <td className="p-4 font-medium">{brand.name}</td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-lg text-xs font-medium ${planColors[brand.plan as keyof typeof planColors] || planColors.Free}`}>
-                      {brand.plan}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-lg text-xs font-medium capitalize ${statusColors[brand.status as keyof typeof statusColors]}`}>
-                      {brand.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-muted-foreground">{brand.joined}</td>
-                  <td className="p-4 text-right">
-                    <Link to="/admin/brands">
-                      <Button variant="ghost" size="sm">
-                        Edit
-                      </Button>
-                    </Link>
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-muted-foreground">No brands found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            <div className="glass-card overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-4 font-medium text-muted-foreground">Brand</th>
+                    <th className="text-left p-4 font-medium text-muted-foreground">Plan</th>
+                    <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
+                    <th className="text-left p-4 font-medium text-muted-foreground">Joined</th>
+                    <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentBrands.length > 0 ? recentBrands.map((brand) => (
+                    <tr key={brand.id} className="border-t border-border">
+                      <td className="p-4 font-medium">{brand.name}</td>
+                      <td className="p-4">
+                        <span className={`px-3 py-1 rounded-lg text-xs font-medium ${planColors[brand.plan as keyof typeof planColors] || planColors.Free}`}>
+                          {brand.plan}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-3 py-1 rounded-lg text-xs font-medium capitalize ${statusColors[brand.status as keyof typeof statusColors]}`}>
+                          {brand.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-muted-foreground">{brand.joined}</td>
+                      <td className="p-4 text-right">
+                        <Link to="/admin/brands">
+                          <Button variant="ghost" size="sm">
+                            Edit
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-muted-foreground">No brands found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </main>
         </div>
-      </main>
-    </div>
-  );
+        );
 }
