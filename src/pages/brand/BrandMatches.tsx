@@ -6,7 +6,7 @@ import { MatchDetailsDialog } from "@/components/brand/MatchDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Sparkles, Filter, SlidersHorizontal, Loader2, Plus } from "lucide-react";
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchParams, Link } from "react-router-dom";
@@ -166,8 +166,35 @@ export default function BrandMatches() {
     fetchData();
   }, [user]);
 
-  const handleApprove = (id: string) => {
-    setApprovedIds((prev) => [...prev, id]);
+  const handleSendProposal = async (id: string, creatorName: string) => {
+    if (!activeCampaign || !user) return;
+
+    try {
+      // 1. Create Invitation Document
+      await addDoc(collection(db, "invitations"), {
+        campaignId: activeCampaign.id,
+        brandId: user.uid,
+        creatorId: id,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        campaignData: {
+          title: activeCampaign.title,
+          brandName: activeCampaign.brandName || "Brand",
+          image: activeCampaign.images?.[0] || "",
+          budget: activeCampaign.budget || "Negotiable"
+        }
+      });
+
+      // 2. Update Local State
+      setApprovedIds((prev) => [...prev, id]);
+
+      toast.success(`Proposal sent to ${creatorName}!`, {
+        description: "They will see this in their opportunities.",
+      });
+    } catch (error) {
+      console.error("Error sending proposal:", error);
+      toast.error("Failed to send proposal.");
+    }
   };
 
   const handleReject = (id: string) => {
@@ -254,11 +281,10 @@ export default function BrandMatches() {
               <CreatorCard
                 creator={creator}
                 onApprove={(id) => {
-                  // Stop propagation so we don't open details when clicking approve
-                  // Actually CreatorCard handles it internally but we should check
-                  handleApprove(id);
+                  handleSendProposal(id, creator.name);
                 }}
                 onReject={handleReject}
+                isInvite={true}
               />
             </motion.div>
           ))}

@@ -19,6 +19,32 @@ export default function Opportunities() {
     const fetchOpportunities = async () => {
       if (!user) return;
       try {
+        // 1. Fetch Invitations for this user
+        const invitationsQuery = query(
+          collection(db, "invitations"),
+          where("creatorId", "==", user.uid),
+          where("status", "==", "pending") // Only show pending invitations
+        );
+        const invSnapshot = await getDocs(invitationsQuery);
+        const invitedCampaignIds = new Set<string>();
+
+        const invitations = invSnapshot.docs.map(doc => {
+          const data = doc.data();
+          invitedCampaignIds.add(data.campaignId);
+          return {
+            id: data.campaignId, // Use campaignId as main ID for the card
+            invitationId: doc.id,
+            ...data.campaignData, // Spread cached campaign data
+            isInvited: true,
+            matchScore: 98, // High score for invites
+            createdAt: data.createdAt,
+            // Fallback for missing fields if campaignData is incomplete
+            status: "active",
+            platform: "Instagram"
+          };
+        });
+
+        // 2. Fetch Regular Active Campaigns
         const q = query(
           collection(db, "campaigns"),
           where("status", "==", "active"),
@@ -26,14 +52,17 @@ export default function Opportunities() {
         );
 
         const querySnapshot = await getDocs(q);
-        const fetchedOpportunities = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          // Use a default/mock match score if not present, slightly randomized for realism
-          matchScore: doc.data().matchScore || (80 + Math.floor(Math.random() * 15))
-        }));
+        const generalOpportunities = querySnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            matchScore: doc.data().matchScore || (80 + Math.floor(Math.random() * 15)),
+            isInvited: false
+          }))
+          .filter(op => !invitedCampaignIds.has(op.id)); // Dedup: don't show if already invited
 
-        setOpportunities(fetchedOpportunities);
+        // 3. Merge: Invitations first
+        setOpportunities([...invitations, ...generalOpportunities]);
       } catch (error) {
         console.error("Error fetching opportunities:", error);
       } finally {

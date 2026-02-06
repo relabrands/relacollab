@@ -17,15 +17,14 @@ interface CreatorCardProps {
   };
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
+  isInvite?: boolean;
 }
 
-export function CreatorCard({ creator, onApprove, onReject }: CreatorCardProps) {
+export function CreatorCard({ creator, onApprove, onReject, isInvite = false }: CreatorCardProps) {
   const handleApprove = (e: React.MouseEvent) => {
     e.stopPropagation();
     onApprove?.(creator.id);
-    toast.success(`${creator.name} approved!`, {
-      description: "They will be notified about the campaign.",
-    });
+    // Toast handled by parent now for better context
   };
 
   const handleReject = (e: React.MouseEvent) => {
@@ -36,6 +35,7 @@ export function CreatorCard({ creator, onApprove, onReject }: CreatorCardProps) 
 
   return (
     <div className="glass-card p-6 hover-lift">
+      {/* ... existing header ... */}
       <div className="flex items-start gap-4 mb-4">
         <img
           src={creator.avatar}
@@ -108,12 +108,16 @@ export function CreatorCard({ creator, onApprove, onReject }: CreatorCardProps) 
           Skip
         </Button>
         <Button
-          variant="success"
+          variant={isInvite ? "default" : "success"}
           className="flex-1"
           onClick={handleApprove}
         >
-          <Check className="w-4 h-4 mr-2" />
-          Approve
+          {isInvite ? (
+            <TrendingUp className="w-4 h-4 mr-2" />
+          ) : (
+            <Check className="w-4 h-4 mr-2" />
+          )}
+          {isInvite ? "Send Proposal" : "Approve"}
         </Button>
       </div>
     </div>
