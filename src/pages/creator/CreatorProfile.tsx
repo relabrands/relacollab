@@ -11,6 +11,9 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "@/lib/firebase";
+import { useRef } from "react";
 import {
   Instagram,
   Smartphone,
@@ -38,6 +41,7 @@ import {
 
 export default function CreatorProfile() {
   const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -207,8 +211,41 @@ export default function CreatorProfile() {
     }
   };
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    const toastId = toast.loading("Uploading photo...");
+
+    try {
+      const storageRef = ref(storage, `profile_photos/${user.uid}/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      await updateDoc(doc(db, "users", user.uid), {
+        photoURL: downloadURL,
+        avatar: downloadURL
+      });
+
+      toast.success("Profile photo updated!", { id: toastId });
+      window.location.reload();
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      toast.error("Failed to upload photo", { id: toastId });
+    }
+  };
+
   const handleChangePhoto = () => {
-    toast.info("Photo upload coming soon!");
+    fileInputRef.current?.click();
   };
 
   if (isLoading) {
@@ -250,6 +287,13 @@ export default function CreatorProfile() {
                   <Button variant="outline" size="sm" onClick={handleChangePhoto}>
                     Change Photo
                   </Button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
                 </div>
               </div>
 
@@ -405,7 +449,7 @@ export default function CreatorProfile() {
                       </div>
                       <span className="font-medium">TikTok</span>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => setIsSocialDialogOpen(true)}>
+                    <Button variant="ghost" size="icon" onClick={() => openConnectDialog('tiktok')}>
                       <Edit2 className="w-4 h-4 text-muted-foreground" />
                     </Button>
                   </div>

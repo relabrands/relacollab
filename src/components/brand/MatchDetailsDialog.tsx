@@ -204,7 +204,22 @@ export function MatchDetailsDialog({ isOpen, onClose, creator }: MatchDetailsDia
                             <div className="text-center py-12 bg-muted/30 rounded-xl border border-dashed">
                                 <Instagram className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                                 <p className="text-muted-foreground">{error || "Unable to load recent posts."}</p>
-                                {error && <p className="text-xs text-muted-foreground mt-1">Try connecting with the creator directly.</p>}
+                                {error && (
+                                    <div className="mt-4">
+                                        <p className="text-xs text-muted-foreground mb-2">Try connecting with the creator directly.</p>
+                                        <Button variant="outline" size="sm" asChild>
+                                            <a
+                                                href={`https://instagram.com/${creator.instagramUsername}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2"
+                                            >
+                                                <ExternalLink className="w-3 h-3" />
+                                                View on Instagram
+                                            </a>
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
