@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { Bell, Search, X } from "lucide-react";
- import { Button } from "@/components/ui/button";
- import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
- 
- interface DashboardHeaderProps {
-   title: string;
-   subtitle?: string;
- }
- 
- export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
+
+interface DashboardHeaderProps {
+  title: string;
+  subtitle?: string;
+}
+
+export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   const notifications = [
@@ -26,33 +26,34 @@ import { toast } from "sonner";
     toast.success("Notification dismissed");
   };
 
-   return (
-     <header className="flex items-center justify-between mb-8">
-       <div>
-         <h1 className="text-2xl font-bold">{title}</h1>
-         {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
-       </div>
- 
-       <div className="flex items-center gap-4">
-         <div className="relative">
-           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-           <Input
-             placeholder="Search..."
-             className="pl-10 w-64 bg-card border-border/50"
+  return (
+    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div>
+        <h1 className="text-2xl font-bold">{title}</h1>
+        {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
+      </div>
+
+      <div className="flex items-center gap-4 w-full md:w-auto">
+        <div className="relative flex-1 md:flex-none">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            className="pl-10 w-full md:w-64 bg-card border-border/50"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 toast.info("Search functionality coming soon!");
               }
             }}
-           />
-         </div>
- 
+          />
+        </div>
+
         <div className="relative">
           <Button
             variant="ghost"
             size="icon"
             className="relative"
             onClick={handleNotificationClick}
+            title="Notifications"
           >
             <Bell className="w-5 h-5" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
@@ -85,11 +86,11 @@ import { toast } from "sonner";
             </div>
           )}
         </div>
- 
-         <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold">
-           JD
-         </div>
-       </div>
-     </header>
-   );
- }
+
+        <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0">
+          JD
+        </div>
+      </div>
+    </header>
+  );
+}
