@@ -25,6 +25,7 @@ import BrandAnalytics from "./pages/brand/BrandAnalytics";
 import BrandPayments from "./pages/brand/BrandPayments";
 import BrandSettings from "./pages/brand/BrandSettings";
 import CampaignDetails from "./pages/brand/CampaignDetails";
+import BrandCampaigns from "./pages/brand/BrandCampaigns";
 
 // Creator pages
 import CreatorDashboard from "./pages/creator/CreatorDashboard";
@@ -71,9 +72,6 @@ const App = () => (
                 <BrandDashboard />
               </ProtectedRoute>
             } />
-            import BrandCampaigns from "./pages/brand/BrandCampaigns";
-
-            // ...
 
             <Route path="/brand/campaigns" element={
               <ProtectedRoute allowedRoles={['brand']}>
