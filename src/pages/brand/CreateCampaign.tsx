@@ -48,6 +48,9 @@ export default function CreateCampaign() {
     ageRange: "18-35",
     reward: "",
     budget: "",
+    startDate: "",
+    endDate: "",
+    creatorCount: "1",
   });
 
   const handleVibeToggle = (vibeId: string) => {
@@ -73,6 +76,7 @@ export default function CreateCampaign() {
         status: "active",
         createdAt: new Date().toISOString(),
         budget: parseFloat(formData.budget) || 0,
+        creatorCount: parseInt(formData.creatorCount) || 1,
       };
 
       await addDoc(collection(db, "campaigns"), campaignData);
@@ -179,6 +183,33 @@ export default function CreateCampaign() {
                       }
                       className="mt-2 min-h-[120px]"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="startDate">Start Date</Label>
+                      <Input
+                        id="startDate"
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, startDate: e.target.value }))
+                        }
+                        className="mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="endDate">End Date</Label>
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={formData.endDate}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, endDate: e.target.value }))
+                        }
+                        className="mt-2"
+                      />
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -344,6 +375,24 @@ export default function CreateCampaign() {
                         className="pl-8"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="creatorCount">How many creators needed?</Label>
+                    <Input
+                      id="creatorCount"
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 5"
+                      value={formData.creatorCount}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          creatorCount: e.target.value,
+                        }))
+                      }
+                      className="mt-2"
+                    />
                   </div>
                 </div>
               </motion.div>

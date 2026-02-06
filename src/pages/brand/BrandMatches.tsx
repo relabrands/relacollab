@@ -6,16 +6,22 @@ import { MatchDetailsDialog } from "@/components/brand/MatchDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Sparkles, Filter, SlidersHorizontal, Loader2, Plus } from "lucide-react";
-import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, limit, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
+
+// ...
 
 export default function BrandMatches() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const campaignId = searchParams.get("campaignId");
+
   const [loading, setLoading] = useState(true);
   const [creators, setCreators] = useState<any[]>([]);
   const [activeCampaign, setActiveCampaign] = useState<any>(null);
+
   const [approvedIds, setApprovedIds] = useState<string[]>([]);
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
 
@@ -23,25 +29,39 @@ export default function BrandMatches() {
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  // ...
+
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
 
       try {
         // 1. Fetch Active Campaign
-        const campaignQuery = query(
-          collection(db, "campaigns"),
-          where("brandId", "==", user.uid),
-          where("status", "==", "active"),
-          orderBy("createdAt", "desc"),
-          limit(1)
-        );
-        const campaignSnapshot = await getDocs(campaignQuery);
         let campaign: any = null;
 
-        if (!campaignSnapshot.empty) {
-          campaign = { id: campaignSnapshot.docs[0].id, ...campaignSnapshot.docs[0].data() };
-          setActiveCampaign(campaign);
+        if (campaignId) {
+          // Fetch specific campaign if ID provided
+          const docRef = doc(db, "campaigns", campaignId);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            campaign = { id: docSnap.id, ...docSnap.data() };
+            setActiveCampaign(campaign);
+          }
+        } else {
+          // Default: Fetch latest active
+          const campaignQuery = query(
+            collection(db, "campaigns"),
+            where("brandId", "==", user.uid),
+            where("status", "==", "active"),
+            orderBy("createdAt", "desc"),
+            limit(1)
+          );
+          const campaignSnapshot = await getDocs(campaignQuery);
+
+          if (!campaignSnapshot.empty) {
+            campaign = { id: campaignSnapshot.docs[0].id, ...campaignSnapshot.docs[0].data() };
+            setActiveCampaign(campaign);
+          }
         }
 
         // 2. Fetch All Creators

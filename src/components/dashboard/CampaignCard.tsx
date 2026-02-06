@@ -31,7 +31,7 @@ export function CampaignCard({ campaign, onClick }: CampaignCardProps) {
     if (onClick) {
       onClick();
     } else {
-      navigate("/brand/matches");
+      navigate(`/brand/campaigns/${campaign.id}`);
     }
   };
 
