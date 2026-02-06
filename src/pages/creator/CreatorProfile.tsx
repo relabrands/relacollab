@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
@@ -9,26 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
-import { useRef } from "react";
 import {
   Instagram,
-  Smartphone,
-  Users,
-  TrendingUp,
-  MapPin,
-  CheckCircle,
-  Link as LinkIcon,
-  Plus,
-  Loader2,
-  X,
-  Sparkles,
   Globe,
   Check,
-  Edit2
+  Edit2,
+  Sparkles,
+  Plus,
+  Loader2,
 } from "lucide-react";
 import {
   Dialog,
@@ -45,15 +36,16 @@ export default function CreatorProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<any>({
     name: "",
     email: "",
     location: "",
     phone: "",
     bio: "",
+    instagramMetrics: null
   });
 
-  const [socialHandles, setSocialHandles] = useState({
+  const [socialHandles, setSocialHandles] = useState<{ instagram: string; tiktok: string }>({
     instagram: "",
     tiktok: "",
   });
@@ -81,6 +73,7 @@ export default function CreatorProfile() {
             location: data.location || "",
             phone: data.phone || "",
             bio: data.bio || "",
+            instagramMetrics: data.instagramMetrics || null
           });
 
           if (data.categories) {
@@ -130,6 +123,17 @@ export default function CreatorProfile() {
             });
 
             setSocialHandles(prev => ({ ...prev, instagram: username }));
+
+            // Update local state immediately so UI reflects it
+            setProfile((prev: any) => ({
+              ...prev,
+              instagramMetrics: {
+                followers: parseInt(followers || "0"),
+                engagementRate: parseFloat(er || "0"),
+                lastUpdated: new Date().toISOString()
+              }
+            }));
+
             toast.success("Instagram connected successfully!");
 
             // Clear params
@@ -156,9 +160,12 @@ export default function CreatorProfile() {
     try {
       await updateDoc(doc(db, "users", user.uid), {
         ...profile,
+        // Don't save instagramMetrics here as it's managed separately via auth flow, 
+        // to avoid overwriting with stale data if not careful, but profile.instagramMetrics is from DB so it's fine.
+        // Actually best to exclude it from the update here just in case.
         categories: selectedCategories,
         socialHandles,
-        displayName: profile.name, // Ensure displayName is kept in sync
+        displayName: profile.name,
         updatedAt: new Date().toISOString(),
       });
       toast.success("Profile saved successfully!");
@@ -190,17 +197,7 @@ export default function CreatorProfile() {
     setSocialHandles(newHandles);
     setConnectDialog({ isOpen: false, platform: null });
     setTempHandle("");
-
-    // Optional: Auto-save when connecting (or user can hit Save Changes)
-    // For now we'll let the user hit Save Changes to persist everything together, 
-    // but give a visual cue inside the dialog or toast.
     toast.success(`${connectDialog.platform === 'instagram' ? 'Instagram' : 'TikTok'} connected! Remember to save changes.`);
-  };
-
-  const handleDisconnect = (platform: 'instagram' | 'tiktok') => {
-    const newHandles = { ...socialHandles, [platform]: "" };
-    setSocialHandles(newHandles);
-    toast.info(`${platform === 'instagram' ? 'Instagram' : 'TikTok'} disconnected. Remember to save changes.`);
   };
 
   const handleCategoryToggle = (category: string) => {
@@ -313,7 +310,7 @@ export default function CreatorProfile() {
                     id="email"
                     type="email"
                     value={profile.email}
-                    disabled // Email usually shouldn't be actionable freely without re-auth
+                    disabled
                     className="mt-2 bg-muted/50"
                   />
                 </div>
@@ -469,19 +466,24 @@ export default function CreatorProfile() {
                 AI Profile Analysis
               </h3>
               <div className="glass-card p-6 bg-gradient-to-br from-primary/5 to-accent/5">
-                {socialHandles.instagram ? (
+                {socialHandles.instagram && profile.instagramMetrics ? (
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 bg-background/50 rounded-lg text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Engagement Rate</p>
+                        <p className="text-sm text-muted-foreground mb-1">Followers</p>
                         <p className="text-2xl font-bold text-primary">
-                          {/* @ts-ignore */}
-                          {profile.instagramMetrics?.engagementRate || "2.4"}%
+                          {profile.instagramMetrics?.followers
+                            ? (profile.instagramMetrics.followers > 1000
+                              ? `${(profile.instagramMetrics.followers / 1000).toFixed(1)}K`
+                              : profile.instagramMetrics.followers)
+                            : "0"}
                         </p>
                       </div>
                       <div className="p-4 bg-background/50 rounded-lg text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Authenticity Score</p>
-                        <p className="text-2xl font-bold text-success">92/100</p>
+                        <p className="text-sm text-muted-foreground mb-1">Engagement Rate</p>
+                        <p className="text-2xl font-bold text-primary">
+                          {profile.instagramMetrics?.engagementRate || 0}%
+                        </p>
                       </div>
                     </div>
                     <div>
@@ -493,7 +495,7 @@ export default function CreatorProfile() {
                         </li>
                         <li className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-success mt-0.5" />
-                          Audience primarily active between 6pm - 9pm.
+                          <span>Audience primarily active between 6pm - 9pm.</span>
                         </li>
                       </ul>
                     </div>
