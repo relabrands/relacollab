@@ -11,6 +11,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchParams, Link } from "react-router-dom";
 import { MobileNav } from "@/components/dashboard/MobileNav";
+import { toast } from "sonner";
 
 // ...
 
@@ -181,7 +182,7 @@ export default function BrandMatches() {
         status: "pending",
         createdAt: new Date().toISOString(),
         campaignData: {
-          title: activeCampaign.title || "Untitled Campaign",
+          title: activeCampaign.name || "Untitled Campaign",
           brandName: activeCampaign.brandName || "Brand",
           image: activeCampaign.images?.[0] || "",
           budget: activeCampaign.budget || "Negotiable"
@@ -261,7 +262,7 @@ export default function BrandMatches() {
               All Matches ({visibleCreators.length})
             </Button>
             <Button variant="ghost" size="sm">
-              Approved ({approvedIds.length})
+              Invited ({approvedIds.length})
             </Button>
           </div>
           <Button variant="outline" size="sm">

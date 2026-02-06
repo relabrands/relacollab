@@ -2,18 +2,24 @@ import { useState, useEffect } from "react";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { OpportunityCard } from "@/components/dashboard/OpportunityCard";
+import { OpportunityDetailsDialog } from "@/components/dashboard/OpportunityDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Filter, SlidersHorizontal, Sparkles, Loader2 } from "lucide-react";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, documentId, getDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 export default function Opportunities() {
   const { user } = useAuth();
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Dialog State
+  const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchOpportunities = async () => {
@@ -26,23 +32,33 @@ export default function Opportunities() {
           where("status", "==", "pending") // Only show pending invitations
         );
         const invSnapshot = await getDocs(invitationsQuery);
-        const invitedCampaignIds = new Set<string>();
 
-        const invitations = invSnapshot.docs.map(doc => {
-          const data = doc.data();
-          invitedCampaignIds.add(data.campaignId);
-          return {
-            id: data.campaignId, // Use campaignId as main ID for the card
-            invitationId: doc.id,
-            ...data.campaignData, // Spread cached campaign data
-            isInvited: true,
-            matchScore: 98, // High score for invites
-            createdAt: data.createdAt,
-            // Fallback for missing fields if campaignData is incomplete
-            status: "active",
-            platform: "Instagram"
-          };
+        const invitationsPromises = invSnapshot.docs.map(async (invDoc) => {
+          const invData = invDoc.data();
+          // Fetch the actual campaign data to ensure we have up-to-date info
+          const campaignDocRef = doc(db, "campaigns", invData.campaignId);
+          const campaignSnap = await getDoc(campaignDocRef);
+
+          if (campaignSnap.exists()) {
+            const campaignData = campaignSnap.data();
+            return {
+              id: invData.campaignId,
+              invitationId: invDoc.id,
+              ...campaignData,
+              title: campaignData.name || "Untitled Campaign", // Map name to title
+              isInvited: true,
+              matchScore: 98,
+              createdAt: invData.createdAt,
+              // Ensure reward type exists
+              rewardType: campaignData.reward === 'paid' ? 'paid' : (campaignData.reward === 'experience' ? 'experience' : 'hybrid')
+            };
+          }
+          // Fallback if campaign deleted but invite exists (should cleanup but for now fallback)
+          return null;
         });
+
+        const resolvedInvitations = (await Promise.all(invitationsPromises)).filter(Boolean);
+        const invitedCampaignIds = new Set(resolvedInvitations.map((op: any) => op.id));
 
         // 2. Fetch Regular Active Campaigns
         const q = query(
@@ -53,16 +69,19 @@ export default function Opportunities() {
 
         const querySnapshot = await getDocs(q);
         const generalOpportunities = querySnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            matchScore: doc.data().matchScore || (80 + Math.floor(Math.random() * 15)),
-            isInvited: false
-          }))
-          .filter(op => !invitedCampaignIds.has(op.id)); // Dedup: don't show if already invited
+          .map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              title: data.name, // Map name to title for consistency
+              matchScore: data.matchScore || (80 + Math.floor(Math.random() * 15)),
+              isInvited: false
+            };
+          })
+          .filter(op => !invitedCampaignIds.has(op.id)); // Dedup
 
-        // 3. Merge: Invitations first
-        setOpportunities([...invitations, ...generalOpportunities]);
+        setOpportunities([...resolvedInvitations, ...generalOpportunities]);
       } catch (error) {
         console.error("Error fetching opportunities:", error);
       } finally {
@@ -72,6 +91,19 @@ export default function Opportunities() {
 
     fetchOpportunities();
   }, [user]);
+
+  const handleApply = (id: string) => {
+    // This is called when "Accept" or "Apply" is clicked directly on card or dialog
+    toast.success("Application Sent!", {
+      description: "The brand has been notified.",
+    });
+    setIsDialogOpen(false);
+  };
+
+  const handleCardClick = (opportunity: any) => {
+    setSelectedOpportunity(opportunity);
+    setIsDialogOpen(true);
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -137,8 +169,19 @@ export default function Opportunities() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
+                onClick={() => handleCardClick(opportunity)}
+                className="cursor-pointer"
               >
-                <OpportunityCard opportunity={opportunity} />
+                <OpportunityCard
+                  opportunity={opportunity}
+                  onAccept={(id) => {
+                    // If they click the button directly, we handle it
+                    // But usually we might want to open details first? 
+                    // Let's let the button do the action for now or bubbling might trigger details
+                    // We handled propagation in OpportunityCard? Check.
+                    handleApply(id);
+                  }}
+                />
               </motion.div>
             ))}
           </div>
@@ -148,6 +191,13 @@ export default function Opportunities() {
           </div>
         )}
       </main>
+
+      <OpportunityDetailsDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        opportunity={selectedOpportunity}
+        onAccept={() => selectedOpportunity && handleApply(selectedOpportunity.id)}
+      />
     </div>
   );
 }

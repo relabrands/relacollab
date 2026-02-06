@@ -35,7 +35,8 @@ const rewardTypeLabels = {
 };
 
 export function OpportunityCard({ opportunity, onAccept }: OpportunityCardProps) {
-  const handleApply = () => {
+  const handleApply = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Stop opening the dialog
     if (onAccept) {
       onAccept(opportunity.id);
     }
