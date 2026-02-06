@@ -75,7 +75,9 @@ export function ContentSubmission() {
   // Media Picker State
   const [instagramMedia, setInstagramMedia] = useState<InstagramMedia[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(false);
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
+  // Fetch Instagram Media when "Select Post" is chosen
   useEffect(() => {
     const fetchUserDataAndCampaigns = async () => {
       if (!user) return;
@@ -144,20 +146,26 @@ export function ContentSubmission() {
 
   // Fetch Instagram Media when "Select Post" is chosen
   useEffect(() => {
-    if (submissionType === "select" && isDialogOpen && user && instagramMedia.length === 0) {
+    if (submissionType === "select" && isDialogOpen && user) {
+      if (instagramMedia.length > 0) return;
+
       const fetchMedia = async () => {
         setLoadingMedia(true);
+        setMediaError(null);
         try {
-          // Use direct URL for getInstagramMedia function
           const response = await axios.post("https://us-central1-rella-collab.cloudfunctions.net/getInstagramMedia", {
             userId: user.uid
           });
+
           if (response.data.success) {
             setInstagramMedia(response.data.data);
+          } else {
+            console.error("API Error:", response.data.error);
+            setMediaError(response.data.error || "Failed to load posts from Instagram.");
           }
         } catch (error) {
           console.error("Error fetching media:", error);
-          toast.error("Failed to load Instagram posts. Please ensure your account is connected.");
+          setMediaError("Network error. Please try again.");
         } finally {
           setLoadingMedia(false);
         }
@@ -423,9 +431,14 @@ export function ContentSubmission() {
                         <p className="text-sm text-muted-foreground">Fetching posts from Instagram...</p>
                       </div>
                     ) : instagramMedia.length === 0 ? (
-                      <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                      <div className="text-center py-8 border-2 border-dashed rounded-lg bg-muted/20">
                         <Instagram className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">No posts found or account not connected.</p>
+                        <p className="text-sm text-muted-foreground mb-1">{mediaError || "No posts found."}</p>
+                        {mediaError ? (
+                          <p className="text-xs text-warning">Please reconnect your Instagram account in Profile.</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Ensure your account is connected and has posts.</p>
+                        )}
                       </div>
                     ) : (
                       <div className="grid grid-cols-3 gap-3">
