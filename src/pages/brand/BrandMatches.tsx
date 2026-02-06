@@ -2,43 +2,138 @@ import { useEffect, useState } from "react";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { CreatorCard } from "@/components/dashboard/CreatorCard";
+import { MatchDetailsDialog } from "@/components/brand/MatchDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Sparkles, Filter, SlidersHorizontal, Loader2 } from "lucide-react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { Sparkles, Filter, SlidersHorizontal, Loader2, Plus } from "lucide-react";
+import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
+import { Link } from "react-router-dom";
 
 export default function BrandMatches() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [creators, setCreators] = useState<any[]>([]);
+  const [activeCampaign, setActiveCampaign] = useState<any>(null);
   const [approvedIds, setApprovedIds] = useState<string[]>([]);
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
 
+  // Dialog State
+  const [selectedCreator, setSelectedCreator] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   useEffect(() => {
-    const fetchCreators = async () => {
+    const fetchData = async () => {
+      if (!user) return;
+
       try {
-        const q = query(collection(db, "users"), where("role", "==", "creator"));
-        const snapshot = await getDocs(q);
-        const fetchedCreators = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          name: doc.data().displayName || "Unnamed Creator",
-          location: "Unknown Location", // Placeholder until we added location to Creator profile
-          followers: "10K", // Placeholder
-          engagement: "5.0%", // Placeholder
-          matchScore: 85 + Math.floor(Math.random() * 10), // Mock score
-          tags: doc.data().niche ? [doc.data().niche] : ["General"],
-          matchReason: "Matches your campaign criteria based on niche and location."
-        }));
-        setCreators(fetchedCreators);
+        // 1. Fetch Active Campaign
+        const campaignQuery = query(
+          collection(db, "campaigns"),
+          where("brandId", "==", user.uid),
+          where("status", "==", "active"),
+          orderBy("createdAt", "desc"),
+          limit(1)
+        );
+        const campaignSnapshot = await getDocs(campaignQuery);
+        let campaign: any = null;
+
+        if (!campaignSnapshot.empty) {
+          campaign = { id: campaignSnapshot.docs[0].id, ...campaignSnapshot.docs[0].data() };
+          setActiveCampaign(campaign);
+        }
+
+        // 2. Fetch All Creators
+        // In a real app with many users, this should be a backend function or more specific query
+        const creatorsQuery = query(collection(db, "users"), where("role", "==", "creator"));
+        const creatorsSnapshot = await getDocs(creatorsQuery);
+
+        const validCreators = creatorsSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter((c: any) => {
+            // MUST have Instagram connected and complete profile
+            return c.instagramConnected && c.displayName;
+          });
+
+        // 3. Match Logic
+        const matchedCreators = validCreators.map((creator: any) => {
+          let score = 60; // Base score
+          const reasons: string[] = [];
+
+          if (campaign) {
+            // Location Match
+            if (creator.location && campaign.location &&
+              creator.location.toLowerCase().includes(campaign.location.toLowerCase())) {
+              score += 20;
+              reasons.push("Location");
+            }
+
+            // Niche/Vibe Match
+            // Campaign has 'vibes', Creator has 'categories'
+            const campaignVibes = campaign.vibes || [];
+            const creatorCategories = creator.categories || [];
+
+            // Simple intersection check (loose matching)
+            const hasNicheMatch = campaignVibes.some((v: string) =>
+              creatorCategories.some((c: string) =>
+                c.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(c.toLowerCase())
+              )
+            );
+
+            if (hasNicheMatch) {
+              score += 20;
+              reasons.push("Niche/Vibe");
+            } else if (creatorCategories.length > 0) {
+              // Fallback: if no direct match but creator has categories, give partial points
+              score += 5;
+            }
+          }
+
+          // Engagement Boost
+          const engagementRate = creator.instagramMetrics?.engagementRate || 0;
+          if (engagementRate > 3) score += 10;
+          if (engagementRate > 5) score += 5;
+
+          // Cap score
+          if (score > 99) score = 99;
+
+          const matchReason = reasons.length > 0
+            ? `Matches your campaign ${reasons.join(" and ")}.`
+            : "Based on general profile fit.";
+
+          return {
+            ...creator,
+            name: creator.displayName || "Unknown Creator",
+            avatar: creator.photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop",
+            location: creator.location || "Unknown",
+            followers: creator.instagramMetrics?.followers
+              ? (creator.instagramMetrics.followers > 1000
+                ? `${(creator.instagramMetrics.followers / 1000).toFixed(1)}K`
+                : creator.instagramMetrics.followers)
+              : "0",
+            engagement: `${engagementRate}%`,
+            matchScore: score,
+            tags: creator.categories || ["General"],
+            matchReason,
+            rawEngagement: engagementRate, // for sorting
+            instagramUsername: creator.instagramUsername,
+            bio: creator.bio
+          };
+        })
+          .filter(c => c.matchScore >= 60) // Only showing decent matches
+          .sort((a, b) => b.matchScore - a.matchScore);
+
+        setCreators(matchedCreators);
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching matches:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchCreators();
-  }, []);
+
+    fetchData();
+  }, [user]);
 
   const handleApprove = (id: string) => {
     setApprovedIds((prev) => [...prev, id]);
@@ -46,6 +141,11 @@ export default function BrandMatches() {
 
   const handleReject = (id: string) => {
     setRejectedIds((prev) => [...prev, id]);
+  };
+
+  const handleCardClick = (creator: any) => {
+    setSelectedCreator(creator);
+    setIsDialogOpen(true);
   };
 
   const visibleCreators = creators.filter(
@@ -61,7 +161,7 @@ export default function BrandMatches() {
       <main className="flex-1 ml-64 p-8">
         <DashboardHeader
           title="AI-Matched Creators"
-          subtitle="Recommended creators for your campaigns"
+          subtitle={activeCampaign ? `Recommended for: ${activeCampaign.name}` : "Recommended creators"}
         />
 
         {/* AI Summary */}
@@ -76,9 +176,15 @@ export default function BrandMatches() {
             </div>
             <div>
               <h3 className="font-semibold text-lg mb-2">AI Match Summary</h3>
-              <p className="text-muted-foreground">
-                We found <span className="font-semibold text-primary">{creators.length} potential matches</span> based on your platform activity.
-              </p>
+              {activeCampaign ? (
+                <p className="text-muted-foreground">
+                  We found <span className="font-semibold text-primary">{creators.length} potential matches</span> based on your campaign criteria.
+                </p>
+              ) : (
+                <p className="text-muted-foreground">
+                  No active campaign found. <Link to="/brand/campaigns/new" className="text-primary hover:underline">Create a campaign</Link> to get better matches.
+                </p>
+              )}
             </div>
           </div>
         </motion.div>
@@ -108,28 +214,54 @@ export default function BrandMatches() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
+              onClick={() => handleCardClick(creator)} // Add click handler
+              className="cursor-pointer"
             >
               <CreatorCard
                 creator={creator}
-                onApprove={handleApprove}
+                onApprove={(id) => {
+                  // Stop propagation so we don't open details when clicking approve
+                  // Actually CreatorCard handles it internally but we should check
+                  handleApprove(id);
+                }}
                 onReject={handleReject}
               />
             </motion.div>
           ))}
         </div>
 
-        {visibleCreators.length === 0 && (
+        {activeCampaign && visibleCreators.length === 0 && (
           <div className="text-center py-20">
             <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-8 h-8 text-success" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">No creators found!</h3>
+            <h3 className="text-xl font-semibold mb-2">No new matches found!</h3>
             <p className="text-muted-foreground">
-              {creators.length > 0 ? "You've reviewed all current matches." : "Wait for more creators to join the platform."}
+              {creators.length > 0 ? "You've reviewed all current matches." : "Try adjusting your campaign criteria or wait for more creators."}
             </p>
           </div>
         )}
+
+        {!activeCampaign && (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+              <Plus className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Start your first Campaign</h3>
+            <Link to="/brand/campaigns/new">
+              <Button variant="hero" className="mt-4">Create Campaign</Button>
+            </Link>
+          </div>
+        )}
       </main>
+
+      {selectedCreator && (
+        <MatchDetailsDialog
+          isOpen={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          creator={selectedCreator}
+        />
+      )}
     </div>
   );
 }
