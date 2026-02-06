@@ -5,7 +5,6 @@ import { MatchScore } from "@/components/dashboard/MatchScore";
 import { Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "sonner";
 
 interface CreatorDetails {
     id: string;
@@ -29,6 +28,7 @@ interface MatchDetailsDialogProps {
     isOpen: boolean;
     onClose: () => void;
     creator: CreatorDetails;
+    campaign?: any;
 }
 
 interface InstagramMedia {
@@ -40,31 +40,64 @@ interface InstagramMedia {
     timestamp: string;
 }
 
-export function MatchDetailsDialog({ isOpen, onClose, creator }: MatchDetailsDialogProps) {
+export function MatchDetailsDialog({ isOpen, onClose, creator, campaign }: MatchDetailsDialogProps) {
     const [loadingPosts, setLoadingPosts] = useState(false);
     const [posts, setPosts] = useState<InstagramMedia[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [aiAnalysis, setAiAnalysis] = useState("");
 
     useEffect(() => {
         if (isOpen && creator.id) {
             fetchCreatorPosts();
+            generateAnalysis();
         }
-    }, [isOpen, creator.id]);
+    }, [isOpen, creator.id, campaign]);
+
+    const generateAnalysis = () => {
+        const vibes = campaign?.vibes?.join(", ") || "brand";
+        const categories = creator.tags.join(", ");
+        const er = creator.instagramMetrics?.engagementRate || 0;
+
+        // 1. Fit Analysis
+        let intro = `Based on a deep analysis of ${creator.name}'s profile, they are an excellent match for "${campaign?.name || "your campaign"}".`;
+
+        if (campaign?.location && creator.location?.toLowerCase().includes(campaign.location.toLowerCase())) {
+            intro += ` Their physical presence in ${creator.location} provides the geographic relevance needed for this activation.`;
+        }
+
+        // 2. Metrics Context
+        let metricsAnalysis = "";
+        const followers = creator.instagramMetrics?.followers || 0;
+
+        if (er > 4) {
+            metricsAnalysis = `With an engagement rate of ${er}%, their audience is highly responsive—significantly above the platform average.`;
+        } else if (er > 2) {
+            metricsAnalysis = `They maintain a healthy engagement rate of ${er}%, indicating a loyal community.`;
+        } else {
+            metricsAnalysis = `They have a scale of ${(followers / 1000).toFixed(1)}K followers, offering broad reach potential.`;
+        }
+
+        // 3. Vibe/Content Match
+        let vibeCheck = "";
+        if (campaign?.vibes && campaign.vibes.length > 0) {
+            vibeCheck = `Their content style in ${categories} aligns seamlessly with your requested "${vibes}" aesthetic, ensuring the partnership feels authentic to their audience.`;
+        } else {
+            vibeCheck = `Their focus on ${categories} creates a natural context for your brand's messaging.`;
+        }
+
+        setAiAnalysis(`${intro} ${metricsAnalysis} ${vibeCheck}`);
+    };
 
     const fetchCreatorPosts = async () => {
         setLoadingPosts(true);
         setError(null);
         try {
-            // Trying to fetch creator's posts via Cloud Function
-            // Note: This relies on the function allowing brand to fetch creator media, 
-            // or we might need a specific 'getCreatorPublicMedia' endpoint.
-            // For now we try the existing one.
             const response = await axios.post("https://us-central1-rella-collab.cloudfunctions.net/getInstagramMedia", {
                 userId: creator.id
             });
 
             if (response.data.success) {
-                setPosts(response.data.data.slice(0, 6)); // Show top 6
+                setPosts(response.data.data.slice(0, 6));
             } else {
                 console.error("Failed to load posts:", response.data.error);
                 setError(response.data.error || "Failed to load posts");
@@ -128,8 +161,9 @@ export function MatchDetailsDialog({ isOpen, onClose, creator }: MatchDetailsDia
                                 AI Match Analysis
                             </h3>
                             <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10">
-                                <p className="text-sm text-muted-foreground mb-3">
-                                    {creator.matchReason}
+                                <h4 className="text-sm font-medium text-primary mb-2">Why this match works</h4>
+                                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                                    {aiAnalysis || creator.matchReason}
                                 </p>
                                 <div className="flex flex-wrap gap-2">
                                     {creator.tags.map(tag => (

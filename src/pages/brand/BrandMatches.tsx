@@ -270,6 +270,7 @@ export default function BrandMatches() {
           isOpen={isDialogOpen}
           onClose={() => setIsDialogOpen(false)}
           creator={selectedCreator}
+          campaign={activeCampaign} // Pass campaign context
         />
       )}
     </div>
