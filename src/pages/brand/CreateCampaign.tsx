@@ -422,6 +422,9 @@ export default function CreateCampaign() {
                       }
                       className="mt-2"
                     />
+                    <p className={`text-xs mt-1 ${creditsAvailable < (parseInt(formData.creatorCount) || 1) ? "text-destructive" : "text-muted-foreground"}`}>
+                      Available Credits: {creditsAvailable}
+                    </p>
                   </div>
                 </div>
               </motion.div>
