@@ -31,15 +31,34 @@ exports.auth = functions.https.onRequest((req, res) => {
 
                 const { access_token, user_id } = tokenResponse.data;
 
-                // Fetch User Info
+                // 2. Exchange for Long-Lived Token
+                console.log("Exchanging for long-lived token...");
+                const longLivedTokenResponse = await axios.get(
+                    "https://graph.instagram.com/access_token",
+                    {
+                        params: {
+                            grant_type: "ig_exchange_token",
+                            client_secret: "33bfa485ae62aecb167c499c89f53311",
+                            access_token: access_token
+                        }
+                    }
+                );
+
+                const longLivedAccessToken = longLivedTokenResponse.data.access_token;
+                const expiresInSeconds = longLivedTokenResponse.data.expires_in; // usually 60 days (5184000)
+                const expiresAt = Date.now() + (expiresInSeconds * 1000);
+
+                console.log(`Long-lived token obtained. Expires in ${expiresInSeconds} seconds.`);
+
+                // Fetch User Info using Long-Lived Token
                 const userResponse = await axios.get(
-                    `https://graph.instagram.com/me?fields=id,username,followers_count,media_count&access_token=${access_token}`
+                    `https://graph.instagram.com/me?fields=id,username,followers_count,media_count&access_token=${longLivedAccessToken}`
                 );
                 const userData = userResponse.data;
 
                 // Fetch Insights (Simple Engagement)
                 const mediaResponse = await axios.get(
-                    `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,timestamp&limit=10&access_token=${access_token}`
+                    `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,timestamp&limit=10&access_token=${longLivedAccessToken}`
                 );
                 const mediaItems = mediaResponse.data.data || [];
                 let totalEngagement = 0;
@@ -57,7 +76,8 @@ exports.auth = functions.https.onRequest((req, res) => {
                         instagramConnected: true,
                         instagramId: userData.id,
                         instagramUsername: userData.username,
-                        instagramAccessToken: access_token,
+                        instagramAccessToken: longLivedAccessToken,
+                        instagramTokenExpiresAt: expiresAt,
                         instagramMetrics: {
                             followers: parseInt(userData.followers_count || "0"),
                             engagementRate: parseFloat(engagementRate || "0"),

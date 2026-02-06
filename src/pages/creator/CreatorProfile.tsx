@@ -45,7 +45,9 @@ export default function CreatorProfile() {
     phone: "",
     bio: "",
     photoURL: "", // Add photoURL to state
-    instagramMetrics: null
+    instagramMetrics: null,
+    instagramConnected: false,
+    instagramTokenExpiresAt: 0
   });
 
   const [socialHandles, setSocialHandles] = useState<{ instagram: string; tiktok: string }>({
@@ -77,7 +79,9 @@ export default function CreatorProfile() {
             phone: data.phone || "",
             bio: data.bio || "",
             photoURL: data.photoURL || user.photoURL || "", // Fetch photoURL
-            instagramMetrics: data.instagramMetrics || null
+            instagramMetrics: data.instagramMetrics || null,
+            instagramConnected: data.instagramConnected || false,
+            instagramTokenExpiresAt: data.instagramTokenExpiresAt || 0
           });
 
           if (data.categories) {
@@ -428,7 +432,7 @@ export default function CreatorProfile() {
                       <Instagram className="w-5 h-5 text-[#E1306C]" />
                       <span className="font-medium">Instagram</span>
                     </div>
-                    {socialHandles.instagram ? (
+                    {profile.instagramConnected && !(Date.now() > (profile.instagramTokenExpiresAt || 0)) ? (
                       <span className="text-xs bg-success/20 text-success px-2 py-1 rounded-full flex items-center gap-1">
                         <Check className="w-3 h-3" /> Connected
                       </span>
@@ -437,18 +441,37 @@ export default function CreatorProfile() {
                     )}
                   </div>
 
-                  {socialHandles.instagram ? (
-                    <div className="text-sm">
-                      <p className="text-muted-foreground">Username: @{socialHandles.instagram}</p>
-                      <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setSocialHandles(prev => ({ ...prev, instagram: "" }))}>
-                        Disconnect
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button variant="outline" size="sm" className="w-full" onClick={handleInstagramConnect}>
-                      Connect Instagram
-                    </Button>
-                  )}
+                  {/* Instagram Connection Logic */}
+                  {(() => {
+                    const isConnected = profile.instagramConnected;
+                    const isExpired = isConnected && (Date.now() > (profile.instagramTokenExpiresAt || 0));
+
+                    if (isConnected && !isExpired) {
+                      return (
+                        <div className="text-sm">
+                          <p className="text-muted-foreground">Username: @{socialHandles.instagram}</p>
+                          <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setSocialHandles(prev => ({ ...prev, instagram: "" }))}>
+                            Disconnect
+                          </Button>
+                        </div>
+                      );
+                    } else if (isExpired) {
+                      return (
+                        <div className="text-sm">
+                          <p className="text-warning font-medium mb-2">Session Expired</p>
+                          <Button variant="outline" size="sm" className="w-full border-warning text-warning hover:bg-warning/10" onClick={handleInstagramConnect}>
+                            Reconnect Instagram
+                          </Button>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <Button variant="outline" size="sm" className="w-full" onClick={handleInstagramConnect}>
+                          Connect Instagram
+                        </Button>
+                      );
+                    }
+                  })()}
                 </div>
 
                 <div className="p-4 rounded-xl border bg-muted/30 space-y-3">
