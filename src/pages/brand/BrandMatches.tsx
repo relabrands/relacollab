@@ -253,6 +253,15 @@ export default function BrandMatches() {
 
   // ...
 
+  const handleReject = (id: string) => {
+    setRejectedIds((prev) => [...prev, id]);
+  };
+
+  const handleCardClick = (creator: any) => {
+    setSelectedCreator(creator);
+    setIsDialogOpen(true);
+  };
+
   const visibleCreators = creators.filter((c) => {
     if (viewMode === 'matches') {
       return !approvedIds.includes(c.id) && !rejectedIds.includes(c.id);
