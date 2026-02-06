@@ -9,10 +9,6 @@ const db = admin.firestore();
 exports.auth = functions.https.onRequest((req, res) => {
     return cors(req, res, async () => {
         // API Endpoint: /api/auth/instagram/exchange
-        // Note: The rewrite in firebase.json strips the prefix usually or we check req.path
-        // req.path will be /api/auth/instagram/exchange if mapped directly
-
-        // We can just check if it contains the keywords
         if (req.method === 'POST') {
             const { code, userId } = req.body;
 
@@ -28,7 +24,7 @@ exports.auth = functions.https.onRequest((req, res) => {
                         client_id: "1284439146828000",
                         client_secret: "33bfa485ae62aecb167c499c89f53311",
                         grant_type: "authorization_code",
-                        redirect_uri: "https://relacollab.com/auth/facebook/callback", // Must match exactly what was in the button
+                        redirect_uri: "https://relacollab.com/auth/facebook/callback",
                         code: code.toString(),
                     })
                 );
@@ -57,7 +53,7 @@ exports.auth = functions.https.onRequest((req, res) => {
                 // Save to Firestore if userId provided
                 if (userId) {
                     await db.collection("users").doc(userId).set({
-                        socialHandles: { instagram: userData.username }, // update this
+                        socialHandles: { instagram: userData.username },
                         instagramConnected: true,
                         instagramId: userData.id,
                         instagramUsername: userData.username,
@@ -76,7 +72,7 @@ exports.auth = functions.https.onRequest((req, res) => {
                         id: userData.id,
                         username: userData.username,
                         engagementRate: engagementRate,
-                        access_token // Return token just in case frontend needs it immediately
+                        access_token
                     }
                 });
 
@@ -91,5 +87,56 @@ exports.auth = functions.https.onRequest((req, res) => {
 
         // Fallback or other routes
         res.status(404).json({ error: "Not Found" });
+    });
+});
+
+exports.getInstagramMedia = functions.https.onRequest((req, res) => {
+    return cors(req, res, async () => {
+        if (req.method !== 'POST') {
+            return res.status(405).json({ error: "Method Not Allowed" });
+        }
+
+        const { userId } = req.body;
+        if (!userId) {
+            return res.status(400).json({ error: "Missing userId" });
+        }
+
+        try {
+            const userDoc = await db.collection("users").doc(userId).get();
+            if (!userDoc.exists) {
+                return res.status(404).json({ error: "User not found" });
+            }
+
+            const userData = userDoc.data();
+            const accessToken = userData.instagramAccessToken;
+
+            if (!accessToken) {
+                return res.status(400).json({ error: "Instagram not connected" });
+            }
+
+            // Fetch Media from Instagram Graph API
+            const response = await axios.get(
+                `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp&limit=18&access_token=${accessToken}`
+            );
+
+            const mediaItems = response.data.data.map(item => ({
+                id: item.id,
+                caption: item.caption || "",
+                media_type: item.media_type,
+                // For VIDEO, use thumbnail_url. For IMAGE/CAROUSEL, use media_url
+                thumbnail: item.media_type === 'VIDEO' ? item.thumbnail_url : item.media_url,
+                permalink: item.permalink,
+                timestamp: item.timestamp
+            }));
+
+            return res.json({ success: true, data: mediaItems });
+
+        } catch (error) {
+            console.error("Error fetching media:", error.response?.data || error.message);
+            return res.status(500).json({
+                error: "Failed to fetch media",
+                details: error.response?.data?.error?.message || error.message
+            });
+        }
     });
 });

@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import axios from "axios";
 
 interface Campaign {
   id: string;
@@ -50,33 +51,14 @@ interface SubmittedContent {
   submittedAt: string;
 }
 
-// Mock recent posts can stay mocked for now as fetching real social posts requires an API integration
-const recentPosts = [
-  {
-    id: "post1",
-    platform: "instagram" as const,
-    thumbnail: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&h=200&fit=crop",
-    caption: "Morning wellness routine ✨",
-    date: "2 hours ago",
-    url: "https://instagram.com/p/recent1"
-  },
-  {
-    id: "post2",
-    platform: "instagram" as const,
-    thumbnail: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=crop",
-    caption: "Healthy breakfast ideas 🥗",
-    date: "1 day ago",
-    url: "https://instagram.com/p/recent2"
-  },
-  {
-    id: "post3",
-    platform: "tiktok" as const,
-    thumbnail: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=200&h=200&fit=crop",
-    caption: "Quick workout at home 💪",
-    date: "3 days ago",
-    url: "https://tiktok.com/@example/video/456"
-  }
-];
+interface InstagramMedia {
+  id: string;
+  caption: string;
+  media_type: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
+  thumbnail: string;
+  permalink: string;
+  timestamp: string;
+}
 
 export function ContentSubmission() {
   const { user } = useAuth();
@@ -90,11 +72,14 @@ export function ContentSubmission() {
   const [loading, setLoading] = useState(true);
   const [socialHandles, setSocialHandles] = useState({ instagram: "", tiktok: "" });
 
+  // Media Picker State
+  const [instagramMedia, setInstagramMedia] = useState<InstagramMedia[]>([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
+
   useEffect(() => {
     const fetchUserDataAndCampaigns = async () => {
       if (!user) return;
       try {
-        // 1. Fetch User Social Handles
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
@@ -103,8 +88,6 @@ export function ContentSubmission() {
           }
         }
 
-        // 2. Fetch Active/Approved Campaigns for Dropdown
-        // Query applications where userId == me AND status == approved
         const appsQ = query(
           collection(db, "applications"),
           where("userId", "==", user.uid),
@@ -120,26 +103,21 @@ export function ContentSubmission() {
             campaignsData.push({
               id: campId,
               name: campDoc.data().title,
-              brand: campDoc.data().brandName || "Brand" // Assuming brandName is stored in campaign
+              brand: campDoc.data().brandName || "Brand"
             });
           }
         }
         setActiveCampaigns(campaignsData);
 
-        // 3. Fetch Previous Submissions
-        // This assumes a 'submissions' collection
         const subsQ = query(
           collection(db, "submissions"),
           where("userId", "==", user.uid),
           orderBy("submittedAt", "desc")
         );
-        // Because creating composite indexes might take time, we might catch error or just do client filtering if small app.
-        // For now, let's try getting all and filtering client side if needed or rely on index creation prompt
         try {
           const subSnapshot = await getDocs(subsQ);
           const subs = subSnapshot.docs.map(doc => {
             const data = doc.data();
-            // Need to look up campaign name maybe? Or store it denormalized
             return {
               id: doc.id,
               campaignName: data.campaignName || "Unknown Campaign",
@@ -163,6 +141,30 @@ export function ContentSubmission() {
     };
     fetchUserDataAndCampaigns();
   }, [user]);
+
+  // Fetch Instagram Media when "Select Post" is chosen
+  useEffect(() => {
+    if (submissionType === "select" && isDialogOpen && user && instagramMedia.length === 0) {
+      const fetchMedia = async () => {
+        setLoadingMedia(true);
+        try {
+          // Use direct URL for getInstagramMedia function
+          const response = await axios.post("https://us-central1-rella-collab.cloudfunctions.net/getInstagramMedia", {
+            userId: user.uid
+          });
+          if (response.data.success) {
+            setInstagramMedia(response.data.data);
+          }
+        } catch (error) {
+          console.error("Error fetching media:", error);
+          toast.error("Failed to load Instagram posts. Please ensure your account is connected.");
+        } finally {
+          setLoadingMedia(false);
+        }
+      };
+      fetchMedia();
+    }
+  }, [submissionType, isDialogOpen, user]);
 
   const handleSubmitLink = async () => {
     if (!selectedCampaign || !postUrl) {
@@ -215,7 +217,7 @@ export function ContentSubmission() {
     if (!user) return;
 
     const campaign = activeCampaigns.find(c => c.id === selectedCampaign);
-    const post = recentPosts.find(p => p.id === selectedPost);
+    const post = instagramMedia.find(p => p.id === selectedPost);
 
     if (!post) return;
 
@@ -224,8 +226,8 @@ export function ContentSubmission() {
         userId: user.uid,
         campaignId: selectedCampaign,
         campaignName: campaign?.name,
-        platform: post.platform,
-        postUrl: post.url,
+        platform: "instagram",
+        postUrl: post.permalink,
         status: "pending",
         submittedAt: new Date().toISOString()
       };
@@ -235,8 +237,8 @@ export function ContentSubmission() {
       const displayedSubmission: SubmittedContent = {
         id: docRef.id,
         campaignName: campaign?.name || "",
-        platform: post.platform,
-        postUrl: post.url,
+        platform: "instagram",
+        postUrl: post.permalink,
         status: "pending",
         submittedAt: new Date().toLocaleDateString()
       };
@@ -289,8 +291,8 @@ export function ContentSubmission() {
         <CardContent>
           <div className="flex flex-wrap gap-3">
             <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${socialHandles.instagram
-                ? "bg-success/10 border-success/30"
-                : "bg-muted border-border"
+              ? "bg-success/10 border-success/30"
+              : "bg-muted border-border"
               }`}>
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
                 <Instagram className="w-4 h-4 text-white" />
@@ -309,8 +311,8 @@ export function ContentSubmission() {
             </div>
 
             <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${socialHandles.tiktok
-                ? "bg-success/10 border-success/30"
-                : "bg-muted border-border"
+              ? "bg-success/10 border-success/30"
+              : "bg-muted border-border"
               }`}>
               <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center">
                 <Play className="w-4 h-4 text-white" />
@@ -347,7 +349,7 @@ export function ContentSubmission() {
                 Submit Content
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg overflow-y-auto max-h-[80vh]">
               <DialogHeader>
                 <DialogTitle>Submit Campaign Content</DialogTitle>
                 <DialogDescription>
@@ -415,45 +417,45 @@ export function ContentSubmission() {
                 ) : (
                   <div className="space-y-3">
                     <Label>Select from Recent Posts</Label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {recentPosts.map((post) => (
-                        <button
-                          key={post.id}
-                          type="button"
-                          onClick={() => setSelectedPost(post.id)}
-                          className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selectedPost === post.id
+                    {loadingMedia ? (
+                      <div className="flex flex-col items-center justify-center py-8">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+                        <p className="text-sm text-muted-foreground">Fetching posts from Instagram...</p>
+                      </div>
+                    ) : instagramMedia.length === 0 ? (
+                      <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                        <Instagram className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">No posts found or account not connected.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-3">
+                        {instagramMedia.map((post) => (
+                          <button
+                            key={post.id}
+                            type="button"
+                            onClick={() => setSelectedPost(post.id)}
+                            className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selectedPost === post.id
                               ? "border-primary ring-2 ring-primary/30"
                               : "border-border hover:border-primary/50"
-                            }`}
-                        >
-                          <img
-                            src={post.thumbnail}
-                            alt={post.caption}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute top-1 right-1">
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center ${post.platform === "instagram"
-                                ? "bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500"
-                                : "bg-black"
-                              }`}>
-                              {post.platform === "instagram" ? (
-                                <Instagram className="w-3 h-3 text-white" />
-                              ) : (
-                                <Play className="w-3 h-3 text-white" />
-                              )}
-                            </div>
-                          </div>
-                          {selectedPost === post.id && (
-                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                              <CheckCircle className="w-8 h-8 text-primary" />
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
+                              }`}
+                          >
+                            <img
+                              src={post.thumbnail}
+                              alt={post.caption}
+                              className="w-full h-full object-cover"
+                            />
+                            {selectedPost === post.id && (
+                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                <CheckCircle className="w-8 h-8 text-primary" />
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     {selectedPost && (
-                      <p className="text-xs text-muted-foreground">
-                        {recentPosts.find(p => p.id === selectedPost)?.caption}
+                      <p className="text-xs text-muted-foreground line-clamp-1">
+                        {instagramMedia.find(p => p.id === selectedPost)?.caption}
                       </p>
                     )}
                   </div>
@@ -490,8 +492,8 @@ export function ContentSubmission() {
                   className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 border border-border/50"
                 >
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${content.platform === "instagram"
-                      ? "bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500"
-                      : "bg-black"
+                    ? "bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500"
+                    : "bg-black"
                     }`}>
                     {content.platform === "instagram" ? (
                       <Instagram className="w-5 h-5 text-white" />
