@@ -9,6 +9,7 @@ import { useState } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 
 export default function BrandSettings() {
     const { user } = useAuth();
@@ -33,7 +34,9 @@ export default function BrandSettings() {
     return (
         <div className="flex min-h-screen bg-background">
             <DashboardSidebar type="brand" />
-            <main className="flex-1 ml-64 p-8">
+            <MobileNav type="brand" />
+
+            <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader title="Settings" subtitle="Manage your account preferences" />
 
                 <Card className="max-w-2xl">

@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { db, storage, auth } from "@/lib/firebase";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateProfile } from "firebase/auth";
@@ -267,8 +268,9 @@ export default function CreatorProfile() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar type="creator" />
+      <MobileNav type="creator" />
 
-      <main className="flex-1 ml-64 p-8">
+      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <DashboardHeader
           title="My Profile"
           subtitle="Manage your creator profile and connected accounts"

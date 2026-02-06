@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Filter, SlidersHorizontal, Sparkles, Loader2 } from "lucide-react";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Opportunities() {
@@ -46,8 +47,9 @@ export default function Opportunities() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar type="creator" />
+      <MobileNav type="creator" />
 
-      <main className="flex-1 ml-64 p-8">
+      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <DashboardHeader
           title="Opportunities"
           subtitle="Campaigns matched to your profile and style"

@@ -9,6 +9,7 @@ import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 
 export default function CreatorEarnings() {
     const { user } = useAuth();
@@ -46,8 +47,9 @@ export default function CreatorEarnings() {
     return (
         <div className="flex min-h-screen bg-background">
             <DashboardSidebar type="creator" />
+            <MobileNav type="creator" />
 
-            <main className="flex-1 ml-64 p-8">
+            <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader
                     title="Earnings"
                     subtitle="Track your income and payment history"

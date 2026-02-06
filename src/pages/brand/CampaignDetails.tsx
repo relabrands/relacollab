@@ -9,6 +9,7 @@ import { Calendar, Users, DollarSign, ArrowLeft, Target, Sparkles, Loader2, MapP
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 
 export default function CampaignDetails() {
     const { id } = useParams();
@@ -62,8 +63,9 @@ export default function CampaignDetails() {
     return (
         <div className="flex min-h-screen bg-background">
             <DashboardSidebar type="brand" />
+            <MobileNav type="brand" />
 
-            <main className="flex-1 ml-64 p-8">
+            <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <div className="mb-6">
                     <Link to="/brand" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
                         <ArrowLeft className="w-4 h-4" />

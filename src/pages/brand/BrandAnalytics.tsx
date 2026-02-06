@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 
 export default function BrandAnalytics() {
@@ -40,8 +41,10 @@ export default function BrandAnalytics() {
     return (
         <div className="flex min-h-screen bg-background">
             <DashboardSidebar type="brand" />
-            <main className="flex-1 ml-64 p-8">
-                <DashboardHeader title="Analytics" subtitle="Performance of your campaigns" />
+            <MobileNav type="brand" />
+
+            <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
+                <DashboardHeader title="Analytics Overview" subtitle="Performance of your campaigns" />
 
                 {data.length > 0 ? (
                     <Card className="col-span-4">

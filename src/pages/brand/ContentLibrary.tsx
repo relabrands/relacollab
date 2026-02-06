@@ -25,6 +25,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 
 interface ContentItem {
   id: string;
@@ -85,8 +86,8 @@ function ContentCard({ content }: { content: ContentItem }) {
         {/* Platform Badge */}
         <div className="absolute top-3 right-3">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${content.platform === "instagram"
-              ? "bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500"
-              : "bg-black"
+            ? "bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500"
+            : "bg-black"
             }`}>
             {content.platform === "instagram" ? (
               <Instagram className="w-4 h-4 text-white" />
@@ -228,8 +229,9 @@ export default function ContentLibrary() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar type="brand" />
+      <MobileNav type="brand" />
 
-      <main className="flex-1 ml-64 p-8">
+      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <DashboardHeader
           title="Content Library"
           subtitle="All creator content from your campaigns"

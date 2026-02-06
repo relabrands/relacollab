@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CreditCard, History } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useAuth } from "@/context/AuthContext";
 
 export default function BrandPayments() {
@@ -12,7 +14,9 @@ export default function BrandPayments() {
     return (
         <div className="flex min-h-screen bg-background">
             <DashboardSidebar type="brand" />
-            <main className="flex-1 ml-64 p-8">
+            <MobileNav type="brand" />
+
+            <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader title="Payments" subtitle="Manage your billing and invoices" />
 
                 <div className="grid gap-6 md:grid-cols-2">

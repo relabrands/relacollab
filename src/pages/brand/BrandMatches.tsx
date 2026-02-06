@@ -10,6 +10,7 @@ import { collection, getDocs, query, where, orderBy, limit, doc, getDoc } from "
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchParams, Link } from "react-router-dom";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 
 // ...
 
@@ -187,12 +188,15 @@ export default function BrandMatches() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar type="brand" />
+      <MobileNav type="brand" />
 
-      <main className="flex-1 ml-64 p-8">
-        <DashboardHeader
-          title="AI-Matched Creators"
-          subtitle={activeCampaign ? `Recommended for: ${activeCampaign.name}` : "Recommended creators"}
-        />
+      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
+        <div className="max-w-7xl mx-auto">
+          <DashboardHeader
+            title="Your Matches"
+            subtitle="Creators that perfectly fit your campaigns"
+          />
+        </div>
 
         {/* AI Summary */}
         <motion.div

@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 
 export default function BrandDashboard() {
   const { user } = useAuth();
@@ -93,8 +94,9 @@ export default function BrandDashboard() {
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar type="brand" />
+      <MobileNav type="brand" />
 
-      <main className="flex-1 ml-64 p-8">
+      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <DashboardHeader
           title={`Welcome back, ${user?.displayName || 'Brand'}`}
           subtitle="Here's what's happening with your campaigns"
