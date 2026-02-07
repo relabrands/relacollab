@@ -22,7 +22,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                     <div className="flex items-start gap-4">
                         <img
                             src={opportunity.brandLogo || opportunity.image || "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100&h=100&fit=crop"}
-                            alt={opportunity.brandName}
+                            alt={opportunity.brandName || opportunity.brandProfile?.displayName}
                             className="w-16 h-16 rounded-xl object-cover border"
                         />
                         <div>
@@ -35,7 +35,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                             <DialogTitle className="text-2xl">{opportunity.title}</DialogTitle>
                             <div className="flex items-center gap-2 text-muted-foreground mt-1">
                                 <Building2 className="w-4 h-4" />
-                                <span>{opportunity.brandName}</span>
+                                <span>{opportunity.brandName || opportunity.brandProfile?.displayName || "Unknown Brand"}</span>
                                 {opportunity.brandProfile?.instagram && (
                                     <a
                                         href={`https://instagram.com/${opportunity.brandProfile.instagram.replace('@', '')}`}

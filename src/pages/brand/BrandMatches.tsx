@@ -14,6 +14,13 @@ import { MobileNav } from "@/components/dashboard/MobileNav";
 import { toast } from "sonner";
 import { calculateMatchScore } from "@/lib/matchScoring";
 
+const formatNumber = (num: number) => {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+  return num.toString();
+};
+
+
 export default function BrandMatches() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -102,7 +109,11 @@ export default function BrandMatches() {
                 name: creatorData.displayName || "Unknown Creator",
                 avatar: creatorData.photoURL || creatorData.avatar,
                 tags: creatorData.categories || creatorData.tags || ["General"],
-                status: appData.status // 'pending', 'approved', 'rejected'
+                status: appData.status, // 'pending', 'approved', 'rejected'
+                followers: formatNumber(creatorData.instagramMetrics?.followers || 0),
+                engagement: (creatorData.instagramMetrics?.engagementRate || 0) + "%",
+                instagramMetrics: creatorData.instagramMetrics,
+                location: creatorData.location || "Unknown"
               };
             }
             return null;
@@ -140,6 +151,10 @@ export default function BrandMatches() {
               matchReason: matchReason,
               matchBreakdown: breakdown,
               tags: creator.categories || creator.tags || ["General"],
+              followers: formatNumber(creator.instagramMetrics?.followers || 0),
+              engagement: (creator.instagramMetrics?.engagementRate || 0) + "%",
+              instagramMetrics: creator.instagramMetrics,
+              location: creator.location || "Unknown"
             };
           })
             .filter(c => c.matchScore >= 40)

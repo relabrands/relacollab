@@ -11,6 +11,8 @@ import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { calculateMatchScore } from "@/lib/matchScoring";
+
 
 export default function Opportunities() {
   const { user } = useAuth();
@@ -36,6 +38,15 @@ export default function Opportunities() {
         const appliedIds = new Set(appsSnapshot.docs.map(doc => doc.data().campaignId));
         setAppliedCampaignIds(appliedIds);
 
+        // 0.5 Fetch Current Creator Profile for Matching
+        let creatorProfile = {};
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          creatorProfile = userDocSnap.data();
+        }
+
+
         // 1. Fetch Invitations for this user
         const invitationsQuery = query(
           collection(db, "invitations"),
@@ -53,7 +64,7 @@ export default function Opportunities() {
             const campaignData = campaignSnap.data();
 
             // Fetch Brand Details
-            let brandData = {};
+            let brandData: any = {};
             try {
               const brandDoc = await getDoc(doc(db, "users", campaignData.brandId));
               if (brandDoc.exists()) {
@@ -63,13 +74,16 @@ export default function Opportunities() {
               console.error("Error fetching brand details for invite", e);
             }
 
+            const { score } = calculateMatchScore(campaignData, creatorProfile);
+
             return {
               id: invData.campaignId,
               invitationId: invDoc.id,
               ...campaignData,
+              brandName: campaignData.brandName || brandData.displayName || "Unknown Brand",
               title: campaignData.name || "Untitled Campaign",
               isInvited: true,
-              matchScore: 98,
+              matchScore: score,
               rewardType: campaignData.reward === 'paid' ? 'paid' : (campaignData.reward === 'experience' ? 'experience' : 'hybrid'),
               brandProfile: brandData
             };
@@ -92,7 +106,7 @@ export default function Opportunities() {
           const data = docSnap.data();
 
           // Fetch Brand Details
-          let brandData = {};
+          let brandData: any = {};
           try {
             const brandDoc = await getDoc(doc(db, "users", data.brandId));
             if (brandDoc.exists()) {
@@ -102,11 +116,14 @@ export default function Opportunities() {
             console.error("Error fetching brand details for opportunity", e);
           }
 
+          const { score } = calculateMatchScore(data, creatorProfile);
+
           return {
             id: docSnap.id,
             ...data,
+            brandName: data.brandName || brandData.displayName || "Unknown Brand",
             title: data.name,
-            matchScore: data.matchScore || (80 + Math.floor(Math.random() * 15)),
+            matchScore: score,
             isInvited: false,
             rewardType: data.reward === 'paid' ? 'paid' : (data.reward === 'experience' ? 'experience' : 'hybrid'),
             brandProfile: brandData
