@@ -98,10 +98,27 @@ export default function CreatorAnalytics() {
                             <Sparkles className="w-5 h-5 text-primary" />
                             Performance Overview
                         </h3>
+                        {/* Profile Header */}
+                        {profile?.instagramConnected && (
+                            <div className="flex items-center gap-4 mb-6 p-4 rounded-xl bg-background/50 border border-border/50">
+                                <img
+                                    src={profile.photoURL || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop"}
+                                    alt={profile.name}
+                                    className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
+                                />
+                                <div>
+                                    <h2 className="text-xl font-bold">{profile.name}</h2>
+                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                        <Instagram className="w-4 h-4" />
+                                        <span>@{profile.instagramMetrics?.handle || profile.socialHandles?.instagram || "username"}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <div className="glass-card p-6 bg-gradient-to-br from-primary/5 to-accent/5">
                             {profile?.instagramConnected && profile.instagramMetrics ? (
                                 <div className="space-y-6">
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                                         <div className="p-4 bg-background/50 rounded-lg text-center">
                                             <p className="text-sm text-muted-foreground mb-1">Followers</p>
                                             <p className="text-xl font-bold text-primary">
@@ -123,6 +140,12 @@ export default function CreatorAnalytics() {
                                             </p>
                                         </div>
                                         <div className="p-4 bg-background/50 rounded-lg text-center">
+                                            <p className="text-sm text-muted-foreground mb-1">Avg. Comments</p>
+                                            <p className="text-xl font-bold text-primary">
+                                                {profile.instagramMetrics.avgComments?.toLocaleString() || "0"}
+                                            </p>
+                                        </div>
+                                        <div className="p-4 bg-background/50 rounded-lg text-center col-span-2 lg:col-span-1">
                                             <p className="text-sm text-muted-foreground mb-1">Avg. Reel Views</p>
                                             <p className="text-xl font-bold text-primary">
                                                 {profile.instagramMetrics.avgViews?.toLocaleString() || "N/A"}
