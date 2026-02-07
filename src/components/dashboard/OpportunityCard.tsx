@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchScore } from "./MatchScore";
-import { MapPin, DollarSign, Gift, Clock, ArrowRight, Upload } from "lucide-react";
+import { MapPin, DollarSign, Gift, Clock, ArrowRight, Upload, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
