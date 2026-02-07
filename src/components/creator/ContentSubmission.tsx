@@ -92,7 +92,7 @@ export function ContentSubmission() {
 
         const appsQ = query(
           collection(db, "applications"),
-          where("userId", "==", user.uid),
+          where("creatorId", "==", user.uid),
           where("status", "==", "approved")
         );
         const appSnapshot = await getDocs(appsQ);

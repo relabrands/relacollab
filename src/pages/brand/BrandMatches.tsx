@@ -253,7 +253,7 @@ export default function BrandMatches() {
         if (viewMode === 'matches') {
           return !approvedIds.includes(c.id) && !rejectedIds.includes(c.id) && !applicants.find(a => a.id === c.id) && !collaborators.find(col => col.id === c.id);
         } else {
-          return approvedIds.includes(c.id);
+          return approvedIds.includes(c.id) && !collaborators.find(col => col.id === c.id);
         }
       });
 
@@ -400,6 +400,9 @@ export default function BrandMatches() {
                 hideActions={viewMode === 'invited' || viewMode === 'collaborating'}
                 isInvite={viewMode === 'matches'}
                 isApplicant={viewMode === 'applicants'} // Pass this prop to modify card button text
+                isCollaborating={viewMode === 'collaborating'}
+                campaignId={activeCampaign?.id}
+                creatorId={creator.id}
               />
             </motion.div>
           ))}

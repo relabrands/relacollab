@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { MatchScore } from "./MatchScore";
-import { MapPin, TrendingUp, Check, X } from "lucide-react";
+import { MapPin, TrendingUp, Check, X, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 interface CreatorCardProps {
   creator: {
@@ -22,10 +23,14 @@ interface CreatorCardProps {
   onReject?: (id: string) => void;
   isInvite?: boolean;
   isApplicant?: boolean;
+
   hideActions?: boolean;
+  isCollaborating?: boolean;
+  campaignId?: string;
+  creatorId?: string;
 }
 
-export function CreatorCard({ creator, onApprove, onReject, isInvite = false, isApplicant = false, hideActions = false }: CreatorCardProps) {
+export function CreatorCard({ creator, onApprove, onReject, isInvite = false, isApplicant = false, hideActions = false, isCollaborating = false, campaignId, creatorId }: CreatorCardProps) {
 
   const handleApprove = () => {
     if (onApprove) {
@@ -122,6 +127,15 @@ export function CreatorCard({ creator, onApprove, onReject, isInvite = false, is
               )}
               {isApplicant ? "Approve App" : (isInvite ? "Invite" : "Approve")}
             </Button>
+          </div>
+        ) : isCollaborating ? (
+          <div className="w-full pt-4 border-t border-border">
+            <Link to={`/brand/content-library?campaignId=${campaignId}&creatorId=${creatorId}`}>
+              <Button variant="outline" className="w-full">
+                <Eye className="w-4 h-4 mr-2" />
+                View Content
+              </Button>
+            </Link>
           </div>
         ) : (
           <div className="w-full pt-4 border-t border-border">

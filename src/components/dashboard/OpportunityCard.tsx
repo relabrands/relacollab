@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchScore } from "./MatchScore";
-import { MapPin, DollarSign, Gift, Clock, ArrowRight } from "lucide-react";
+import { MapPin, DollarSign, Gift, Clock, ArrowRight, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 interface OpportunityCardProps {
   opportunity: {
@@ -22,6 +23,7 @@ interface OpportunityCardProps {
     brandDescription?: string;
   };
   onAccept?: (id: string) => void;
+  isActive?: boolean;
 }
 
 const rewardTypeColors = {
@@ -36,7 +38,7 @@ const rewardTypeLabels = {
   hybrid: "Experience + Cash",
 };
 
-export function OpportunityCard({ opportunity, onAccept }: OpportunityCardProps) {
+export function OpportunityCard({ opportunity, onAccept, isActive = false }: OpportunityCardProps) {
   const handleApply = (e: React.MouseEvent) => {
     e.stopPropagation(); // Stop opening the dialog
     if (onAccept) {
@@ -116,14 +118,23 @@ export function OpportunityCard({ opportunity, onAccept }: OpportunityCardProps)
       </div>
 
       {/* Action */}
-      <Button
-        variant={opportunity.isInvited ? "hero" : "outline"}
-        className="w-full"
-        onClick={handleApply}
-      >
-        {opportunity.isInvited ? "Accept Invitation" : "Apply Now"}
-        <ArrowRight className="w-4 h-4 ml-2" />
-      </Button>
+      {isActive ? (
+        <Link to="/creator/my-content">
+          <Button variant="hero" className="w-full">
+            <Upload className="w-4 h-4 mr-2" />
+            Submit Content
+          </Button>
+        </Link>
+      ) : (
+        <Button
+          variant={opportunity.isInvited ? "hero" : "outline"}
+          className="w-full"
+          onClick={handleApply}
+        >
+          {opportunity.isInvited ? "Accept Invitation" : "Apply Now"}
+          <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+      )}
     </div>
   );
 }

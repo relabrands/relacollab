@@ -40,7 +40,8 @@ export default function ActiveCampaigns() {
                             id: campaignDoc.id,
                             ...campaignDoc.data(),
                             applicationId: appDoc.id, // Keep track of the application ID if needed
-                            matchScore: 100 // It's a match!
+                            matchScore: 100, // It's a match!
+                            title: campaignDoc.data().title || campaignDoc.data().name || "Untitled Campaign"
                         });
                     }
                 }
@@ -81,7 +82,7 @@ export default function ActiveCampaigns() {
                                 transition={{ delay: index * 0.1 }}
                             >
                                 <div className="relative">
-                                    <OpportunityCard opportunity={campaign} />
+                                    <OpportunityCard opportunity={campaign} isActive={true} />
                                     <div className="absolute top-2 right-2 bg-success text-white text-xs px-2 py-1 rounded-full font-medium">
                                         Active
                                     </div>
