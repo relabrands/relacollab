@@ -13,6 +13,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { toast } from "sonner";
 import { calculateMatchScore } from "@/lib/matchScoring";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const formatNumber = (num: number) => {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
@@ -23,12 +24,13 @@ const formatNumber = (num: number) => {
 
 export default function BrandMatches() {
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const campaignId = searchParams.get("campaignId");
 
   const [loading, setLoading] = useState(true);
   const [creators, setCreators] = useState<any[]>([]);
   const [activeCampaign, setActiveCampaign] = useState<any>(null);
+  const [campaigns, setCampaigns] = useState<any[]>([]); // All active campaigns
 
   const [approvedIds, setApprovedIds] = useState<string[]>([]);
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
@@ -43,88 +45,100 @@ export default function BrandMatches() {
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  // 1. Fetch Campaigns
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCampaigns = async () => {
       if (!user) return;
-
       try {
-        // 1. Fetch Active Campaign
-        let campaign: any = null;
+        const campaignQuery = query(
+          collection(db, "campaigns"),
+          where("brandId", "==", user.uid),
+          where("status", "==", "active"),
+          orderBy("createdAt", "desc")
+        );
+        const campaignSnapshot = await getDocs(campaignQuery);
+        const fetchedCampaigns = campaignSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCampaigns(fetchedCampaigns);
 
-        if (campaignId) {
-          const docRef = doc(db, "campaigns", campaignId);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            campaign = { id: docSnap.id, ...docSnap.data() };
-            setActiveCampaign(campaign);
+        // Set initial active campaign
+        if (fetchedCampaigns.length > 0) {
+          if (campaignId) {
+            const found = fetchedCampaigns.find(c => c.id === campaignId);
+            setActiveCampaign(found || fetchedCampaigns[0]);
+          } else {
+            setActiveCampaign(fetchedCampaigns[0]);
           }
         } else {
-          const campaignQuery = query(
-            collection(db, "campaigns"),
-            where("brandId", "==", user.uid),
-            where("status", "==", "active"),
-            orderBy("createdAt", "desc"),
-            limit(1)
-          );
-          const campaignSnapshot = await getDocs(campaignQuery);
+          setLoading(false); // No campaigns, stop loading
+        }
+      } catch (error) {
+        console.error("Error fetching campaigns:", error);
+        setLoading(false);
+      }
+    };
 
-          if (!campaignSnapshot.empty) {
-            campaign = { id: campaignSnapshot.docs[0].id, ...campaignSnapshot.docs[0].data() };
-            setActiveCampaign(campaign);
+    fetchCampaigns();
+  }, [user]);
+
+  // 2. Fetch Matches & Apps when Active Campaign Changes
+  useEffect(() => {
+    const fetchMatchesAndApps = async () => {
+      if (!user || !activeCampaign) return;
+      setLoading(true);
+
+      try {
+        // Update URL
+        setSearchParams({ campaignId: activeCampaign.id });
+
+        // Invitations (Outbound)
+        const invitationsQuery = query(
+          collection(db, "invitations"),
+          where("campaignId", "==", activeCampaign.id)
+        );
+        const invitationsSnapshot = await getDocs(invitationsQuery);
+        const invitedCreatorIds = invitationsSnapshot.docs.map(doc => doc.data().creatorId);
+        setApprovedIds(invitedCreatorIds);
+
+        // Applications (Inbound & Collaborating)
+        const applicationsQuery = query(
+          collection(db, "applications"),
+          where("campaignId", "==", activeCampaign.id)
+        );
+        const appsSnapshot = await getDocs(applicationsQuery);
+
+        // Enrich Application Data with Creator Profile
+        const applicationPromises = appsSnapshot.docs.map(async (appDoc) => {
+          const appData = appDoc.data();
+          const creatorDoc = await getDoc(doc(db, "users", appData.creatorId));
+          if (creatorDoc.exists()) {
+            const creatorData = creatorDoc.data();
+            const { score, reasons, breakdown } = calculateMatchScore(activeCampaign, creatorData);
+            return {
+              ...creatorData,
+              id: creatorDoc.id, // Creator ID
+              applicationId: appDoc.id, // Application Ref
+              matchScore: score,
+              matchReason: "Applied to your campaign",
+              matchBreakdown: breakdown,
+              name: creatorData.displayName || "Unknown Creator",
+              avatar: creatorData.photoURL || creatorData.avatar,
+              tags: creatorData.categories || creatorData.tags || ["General"],
+              status: appData.status, // 'pending', 'approved', 'rejected'
+              followers: formatNumber(creatorData.instagramMetrics?.followers || 0),
+              engagement: (creatorData.instagramMetrics?.engagementRate || 0) + "%",
+              instagramMetrics: creatorData.instagramMetrics,
+              location: creatorData.location || "Unknown"
+            };
           }
-        }
+          return null;
+        });
 
-        // 1.5 Fetch Invitations & Applications
-        if (campaign) {
-          // Invitations (Outbound)
-          const invitationsQuery = query(
-            collection(db, "invitations"),
-            where("campaignId", "==", campaign.id)
-          );
-          const invitationsSnapshot = await getDocs(invitationsQuery);
-          const invitedCreatorIds = invitationsSnapshot.docs.map(doc => doc.data().creatorId);
-          setApprovedIds(invitedCreatorIds);
+        const allApplications = (await Promise.all(applicationPromises)).filter(Boolean);
 
-          // Applications (Inbound & Collaborating)
-          const applicationsQuery = query(
-            collection(db, "applications"),
-            where("campaignId", "==", campaign.id)
-          );
-          const appsSnapshot = await getDocs(applicationsQuery);
+        // Filter into buckets
+        setApplicants(allApplications.filter((a: any) => a.status === 'pending'));
+        setCollaborators(allApplications.filter((a: any) => a.status === 'approved'));
 
-          // Enrich Application Data with Creator Profile
-          const applicationPromises = appsSnapshot.docs.map(async (appDoc) => {
-            const appData = appDoc.data();
-            const creatorDoc = await getDoc(doc(db, "users", appData.creatorId));
-            if (creatorDoc.exists()) {
-              const creatorData = creatorDoc.data();
-              const { score, reasons, breakdown } = calculateMatchScore(campaign, creatorData);
-              return {
-                ...creatorData,
-                id: creatorDoc.id, // Creator ID
-                applicationId: appDoc.id, // Application Ref
-                matchScore: score,
-                matchReason: "Applied to your campaign",
-                matchBreakdown: breakdown,
-                name: creatorData.displayName || "Unknown Creator",
-                avatar: creatorData.photoURL || creatorData.avatar,
-                tags: creatorData.categories || creatorData.tags || ["General"],
-                status: appData.status, // 'pending', 'approved', 'rejected'
-                followers: formatNumber(creatorData.instagramMetrics?.followers || 0),
-                engagement: (creatorData.instagramMetrics?.engagementRate || 0) + "%",
-                instagramMetrics: creatorData.instagramMetrics,
-                location: creatorData.location || "Unknown"
-              };
-            }
-            return null;
-          });
-
-          const allApplications = (await Promise.all(applicationPromises)).filter(Boolean);
-
-          // Filter into buckets
-          setApplicants(allApplications.filter((a: any) => a.status === 'pending'));
-          setCollaborators(allApplications.filter((a: any) => a.status === 'approved'));
-        }
 
         // 2. Fetch All Creators (for Matches view)
         const creatorsQuery = query(collection(db, "users"), where("role", "==", "creator"));
@@ -135,42 +149,38 @@ export default function BrandMatches() {
           .filter((c: any) => c.instagramConnected && c.displayName);
 
         // 3. Match Logic
-        let matchedCreators = [];
+        let matchedCreators = validCreators.map((creator: any) => {
+          const { score, reasons, breakdown } = calculateMatchScore(activeCampaign, creator);
+          let matchReason = reasons.join(" • ");
+          if (!matchReason) matchReason = "Matched based on availability";
 
-        if (campaign) {
-          matchedCreators = validCreators.map((creator: any) => {
-            const { score, reasons, breakdown } = calculateMatchScore(campaign, creator);
-            let matchReason = reasons.join(" • ");
-            if (!matchReason) matchReason = "Matched based on availability";
-
-            return {
-              ...creator,
-              name: creator.displayName || "Unnamed Creator",
-              avatar: creator.photoURL || creator.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop",
-              matchScore: score,
-              matchReason: matchReason,
-              matchBreakdown: breakdown,
-              tags: creator.categories || creator.tags || ["General"],
-              followers: formatNumber(creator.instagramMetrics?.followers || 0),
-              engagement: (creator.instagramMetrics?.engagementRate || 0) + "%",
-              instagramMetrics: creator.instagramMetrics,
-              location: creator.location || "Unknown"
-            };
-          })
-            .filter(c => c.matchScore >= 40)
-            .sort((a, b) => b.matchScore - a.matchScore);
-        }
+          return {
+            ...creator,
+            name: creator.displayName || "Unnamed Creator",
+            avatar: creator.photoURL || creator.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop",
+            matchScore: score,
+            matchReason: matchReason,
+            matchBreakdown: breakdown,
+            tags: creator.categories || creator.tags || ["General"],
+            followers: formatNumber(creator.instagramMetrics?.followers || 0),
+            engagement: (creator.instagramMetrics?.engagementRate || 0) + "%",
+            instagramMetrics: creator.instagramMetrics,
+            location: creator.location || "Unknown"
+          };
+        })
+          .filter(c => c.matchScore >= 40)
+          .sort((a, b) => b.matchScore - a.matchScore);
 
         setCreators(matchedCreators);
       } catch (error) {
-        console.error("Error fetching matches:", error);
+        console.error("Error fetching match details:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [user, campaignId]);
+    fetchMatchesAndApps();
+  }, [activeCampaign]);
 
   const handleSendProposal = async (id: string, creatorName: string) => {
     if (!activeCampaign || !user) return;
@@ -262,7 +272,7 @@ export default function BrandMatches() {
     setIsDialogOpen(true);
   };
 
-  if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
+  if (loading && campaigns.length === 0) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -282,9 +292,28 @@ export default function BrandMatches() {
                   viewMode === 'applicants' ? "Creators who want to work with you" : "Creators you have sent proposals to"
               }
             />
-            {activeCampaign && (
-              <div className="text-sm text-muted-foreground bg-muted/50 px-4 py-2 rounded-lg border">
-                Campaign: <span className="font-medium text-foreground">{activeCampaign.name}</span>
+
+            {/* Campaign Selector */}
+            {campaigns.length > 0 && (
+              <div className="w-full md:w-64">
+                <Select
+                  value={activeCampaign?.id}
+                  onValueChange={(val) => {
+                    const found = campaigns.find(c => c.id === val);
+                    if (found) setActiveCampaign(found);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Campaign" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {campaigns.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>
@@ -312,8 +341,8 @@ export default function BrandMatches() {
               {activeCampaign ? (
                 <p className="text-muted-foreground">
                   {viewMode === 'applicants'
-                    ? `You have ${applicants.length} pending applications to review.`
-                    : `We found ${creators.length} potential matches based on your campaign criteria.`
+                    ? `You have ${applicants.length} pending applications to review for ${activeCampaign.name}.`
+                    : `We found ${creators.length} potential matches for ${activeCampaign.name}.`
                   }
                 </p>
               ) : (
@@ -371,7 +400,7 @@ export default function BrandMatches() {
 
         {/* Creators Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleCreators.map((creator, index) => (
+          {activeCampaign ? visibleCreators.map((creator, index) => (
             <motion.div
               key={creator.id}
               initial={{ opacity: 0, y: 20 }}
@@ -405,7 +434,11 @@ export default function BrandMatches() {
                 creatorId={creator.id}
               />
             </motion.div>
-          ))}
+          )) : (
+            <div className="col-span-3 text-center py-20">
+              <p className="text-muted-foreground">Select a campaign to see matches.</p>
+            </div>
+          )}
         </div>
 
         {/* Empty States */}
@@ -425,7 +458,7 @@ export default function BrandMatches() {
           </div>
         )}
 
-        {!activeCampaign && (
+        {!activeCampaign && campaigns.length === 0 && (
           <div className="text-center py-20">
             <Link to="/brand/campaigns/new">
               <Button variant="hero">Create Campaign</Button>

@@ -8,9 +8,10 @@ interface OpportunityDetailsDialogProps {
     onClose: () => void;
     opportunity: any;
     onAccept: () => void;
+    isActive?: boolean;
 }
 
-export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccept }: OpportunityDetailsDialogProps) {
+export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccept, isActive }: OpportunityDetailsDialogProps) {
     if (!opportunity) return null;
 
     const isInvited = opportunity.isInvited;
@@ -141,17 +142,19 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                     <Button variant="outline" onClick={onClose}>
                         Close
                     </Button>
-                    <Button
-                        variant="hero"
-                        onClick={onAccept}
-                        className="w-full sm:w-auto"
-                        disabled={!isInvited && (opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999)}
-                    >
-                        {isInvited
-                            ? "Accept Invitation"
-                            : ((opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999) ? "Campaign Full" : "Apply to Campaign")
-                        }
-                    </Button>
+                    {!isActive && (
+                        <Button
+                            variant="hero"
+                            onClick={onAccept}
+                            className="w-full sm:w-auto"
+                            disabled={!isInvited && (opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999)}
+                        >
+                            {isInvited
+                                ? "Accept Invitation"
+                                : ((opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999) ? "Campaign Full" : "Apply to Campaign")
+                            }
+                        </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>
