@@ -27,8 +27,10 @@ export default function BrandMatches() {
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
 
   // Applicants State
+
   const [applicants, setApplicants] = useState<any[]>([]);
-  const [viewMode, setViewMode] = useState<'matches' | 'invited' | 'applicants'>('matches');
+  const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<'matches' | 'invited' | 'applicants' | 'collaborating'>('matches');
 
   // Dialog State
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
@@ -76,11 +78,10 @@ export default function BrandMatches() {
           const invitedCreatorIds = invitationsSnapshot.docs.map(doc => doc.data().creatorId);
           setApprovedIds(invitedCreatorIds);
 
-          // Applications (Inbound)
+          // Applications (Inbound & Collaborating)
           const applicationsQuery = query(
             collection(db, "applications"),
-            where("campaignId", "==", campaign.id),
-            where("status", "==", "pending") // Only show pending
+            where("campaignId", "==", campaign.id)
           );
           const appsSnapshot = await getDocs(applicationsQuery);
 
@@ -101,14 +102,17 @@ export default function BrandMatches() {
                 name: creatorData.displayName || "Unknown Creator",
                 avatar: creatorData.photoURL || creatorData.avatar,
                 tags: creatorData.categories || creatorData.tags || ["General"],
-                status: "applicant"
+                status: appData.status // 'pending', 'approved', 'rejected'
               };
             }
             return null;
           });
 
-          const resolvedApplicants = (await Promise.all(applicationPromises)).filter(Boolean);
-          setApplicants(resolvedApplicants);
+          const allApplications = (await Promise.all(applicationPromises)).filter(Boolean);
+
+          // Filter into buckets
+          setApplicants(allApplications.filter((a: any) => a.status === 'pending'));
+          setCollaborators(allApplications.filter((a: any) => a.status === 'approved'));
         }
 
         // 2. Fetch All Creators (for Matches view)
@@ -218,15 +222,17 @@ export default function BrandMatches() {
     }
   };
 
-  const visibleCreators = viewMode === 'applicants'
-    ? applicants
-    : creators.filter((c) => {
-      if (viewMode === 'matches') {
-        return !approvedIds.includes(c.id) && !rejectedIds.includes(c.id) && !applicants.find(a => a.id === c.id);
-      } else {
-        return approvedIds.includes(c.id);
-      }
-    });
+  const visibleCreators = viewMode === 'collaborating'
+    ? collaborators
+    : viewMode === 'applicants'
+      ? applicants
+      : creators.filter((c) => {
+        if (viewMode === 'matches') {
+          return !approvedIds.includes(c.id) && !rejectedIds.includes(c.id) && !applicants.find(a => a.id === c.id) && !collaborators.find(col => col.id === c.id);
+        } else {
+          return approvedIds.includes(c.id);
+        }
+      });
 
   const handleCardClick = (creator: any) => {
     setSelectedCreator(creator);
@@ -322,6 +328,14 @@ export default function BrandMatches() {
               )}
             </Button>
             <Button
+              variant={viewMode === 'collaborating' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode('collaborating')}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Collaborating ({collaborators.length})
+            </Button>
+            <Button
               variant={viewMode === 'invited' ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode('invited')}
@@ -360,7 +374,7 @@ export default function BrandMatches() {
                     handleReject(id);
                   }
                 }}
-                hideActions={viewMode === 'invited'}
+                hideActions={viewMode === 'invited' || viewMode === 'collaborating'}
                 isInvite={viewMode === 'matches'}
                 isApplicant={viewMode === 'applicants'} // Pass this prop to modify card button text
               />

@@ -17,7 +17,9 @@ interface OpportunityCardProps {
     matchScore: number;
     deadline: string;
     tags: string[];
-    isInvited?: boolean; // Added isInvited flag
+    isInvited?: boolean;
+    endDate?: string;
+    brandDescription?: string;
   };
   onAccept?: (id: string) => void;
 }
@@ -80,7 +82,7 @@ export function OpportunityCard({ opportunity, onAccept }: OpportunityCardProps)
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="w-4 h-4" />
-          {opportunity.deadline || "ASAP"}
+          {opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString() : (opportunity.endDate ? new Date(opportunity.endDate).toLocaleDateString() : "Open Duration")}
         </div>
       </div>
 

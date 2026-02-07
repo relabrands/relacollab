@@ -56,7 +56,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                 <Calendar className="w-4 h-4" />
                                 <span className="text-sm font-medium">Deadline</span>
                             </div>
-                            <p>{opportunity.deadline || opportunity.endDate || "ASAP"}</p>
+                            <p>{opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString() : (opportunity.endDate ? new Date(opportunity.endDate).toLocaleDateString() : "Open Duration")}</p>
                         </div>
                     </div>
 
@@ -82,12 +82,21 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                         </div>
                     </div>
 
-                    {/* Description */}
-                    <div>
-                        <h4 className="font-semibold mb-2">About the Campaign</h4>
-                        <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                            {opportunity.description || "No description provided."}
-                        </p>
+                    {/* Brand & Campaign Description */}
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="font-semibold mb-2">About the Brand</h4>
+                            <p className="text-muted-foreground leading-relaxed">
+                                {opportunity.brandDescription || "A leading brand in the active lifestyle space."}
+                            </p>
+                        </div>
+
+                        <div>
+                            <h4 className="font-semibold mb-2">About the Campaign</h4>
+                            <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                {opportunity.description || "No description provided."}
+                            </p>
+                        </div>
                     </div>
 
                     {/* Requirements/Vibes */}

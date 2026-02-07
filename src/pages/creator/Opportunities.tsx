@@ -6,7 +6,7 @@ import { OpportunityDetailsDialog } from "@/components/dashboard/OpportunityDeta
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Filter, SlidersHorizontal, Sparkles, Loader2 } from "lucide-react";
-import { collection, query, where, getDocs, orderBy, doc, getDoc, addDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, doc, getDoc, addDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useAuth } from "@/context/AuthContext";
@@ -111,12 +111,14 @@ export default function Opportunities() {
     setProcessingId(campaignId);
 
     try {
-      // Create application
+      const isInvitation = campaign.isInvited;
+      const invitationId = campaign.invitationId;
+
       await addDoc(collection(db, "applications"), {
         campaignId: campaignId,
         creatorId: user.uid,
         brandId: campaign.brandId,
-        status: "pending",
+        status: isInvitation ? "approved" : "pending",
         createdAt: new Date().toISOString(),
         campaignData: {
           title: campaign.title,
@@ -124,15 +126,21 @@ export default function Opportunities() {
           image: campaign.images?.[0] || ""
         },
         creatorData: {
-          // In a real app we'd fetch this from user profile or context
-          // For now we rely on backend or simple ID
           id: user.uid,
-          email: user.email
+          email: user.email,
+          name: user.displayName,
+          avatar: user.photoURL
         }
       });
 
-      toast.success("Application Sent!", {
-        description: "The brand has been notified of your interest.",
+      if (isInvitation && invitationId) {
+        await updateDoc(doc(db, "invitations", invitationId), {
+          status: "accepted"
+        });
+      }
+
+      toast.success(campaign.isInvited ? "Invitation Accepted!" : "Application Sent!", {
+        description: campaign.isInvited ? "You are now collaborating on this campaign." : "The brand has been notified of your interest.",
       });
 
       // Update local state to remove from list
