@@ -130,12 +130,17 @@ export function CreatorCard({ creator, onApprove, onReject, isInvite = false, is
           </div>
         ) : isCollaborating ? (
           <div className="w-full pt-4 border-t border-border">
-            <Link to={`/brand/content-library?campaignId=${campaignId}&creatorId=${creatorId}`}>
-              <Button variant="outline" className="w-full">
-                <Eye className="w-4 h-4 mr-2" />
-                View Content
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onApprove) onApprove(creator.id);
+              }}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              View Content
+            </Button>
           </div>
         ) : (
           <div className="w-full pt-4 border-t border-border">
