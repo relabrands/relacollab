@@ -177,3 +177,86 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
         }
     });
 });
+
+const stripe = require('stripe')(functions.config().stripe ? functions.config().stripe.secret : 'sk_test_placeholder');
+
+exports.createCheckoutSession = functions.https.onRequest((req, res) => {
+    return cors(req, res, async () => {
+        if (req.method !== 'POST') {
+            return res.status(405).json({ error: "Method Not Allowed" });
+        }
+
+        const { priceId, successUrl, cancelUrl, userId, mode } = req.body;
+
+        if (!priceId || !successUrl || !cancelUrl || !userId) {
+            return res.status(400).json({ error: "Missing required parameters" });
+        }
+
+        try {
+            const session = await stripe.checkout.sessions.create({
+                mode: mode || 'subscription',
+                payment_method_types: ['card'],
+                line_items: [
+                    {
+                        price: priceId,
+                        quantity: 1,
+                    },
+                ],
+                success_url: successUrl,
+                cancel_url: cancelUrl,
+                client_reference_id: userId,
+                metadata: {
+                    userId: userId
+                }
+            });
+
+            res.json({ sessionId: session.id, url: session.url });
+        } catch (error) {
+            console.error("Stripe Checkout Error:", error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+});
+
+exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const endpointSecret = functions.config().stripe ? functions.config().stripe.webhook_secret : 'whsec_placeholder';
+
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+    } catch (err) {
+        console.error(`Webhook Error: ${err.message}`);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const userId = session.client_reference_id || session.metadata?.userId;
+
+        if (userId) {
+            console.log(`Payment successful for user ${userId}`);
+            
+            const updateData = {
+                subscriptionStatus: 'active',
+                stripeCustomerId: session.customer,
+                stripeSubscriptionId: session.subscription,
+                updatedAt: new Date().toISOString()
+            };
+            
+            await db.collection("users").doc(userId).set(updateData, { merge: true });
+
+            await db.collection("users").doc(userId).collection("payments").add({
+                amount: session.amount_total / 100,
+                currency: session.currency,
+                status: session.payment_status,
+                created: new Date().toISOString(),
+                stripeSessionId: session.id,
+                invoiceId: session.invoice || null
+            });
+        }
+    }
+
+    res.json({received: true});
+});

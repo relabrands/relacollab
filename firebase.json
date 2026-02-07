@@ -31,6 +31,14 @@
                 "function": "auth"
             },
             {
+                "source": "/api/checkout",
+                "function": "createCheckoutSession"
+            },
+            {
+                "source": "/api/webhook",
+                "function": "stripeWebhook"
+            },
+            {
                 "source": "**",
                 "destination": "/index.html"
             }
