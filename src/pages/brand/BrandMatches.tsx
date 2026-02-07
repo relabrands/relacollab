@@ -163,9 +163,15 @@ export default function BrandMatches() {
           .map(doc => ({ id: doc.id, ...doc.data() }))
           .filter((c: any) => c.instagramConnected && c.displayName);
 
+        console.log("Valid Creators (Instagram Connected):", validCreators.length, validCreators);
+
         // 3. Match Logic
         let matchedCreators = validCreators.map((creator: any) => {
           const { score, reasons, breakdown } = calculateMatchScore(activeCampaign, creator);
+
+          // DEBUG LOGS
+          console.log(`Matching ${creator.displayName}:`, { score, breakdown, reasons });
+
           let matchReason = reasons.join(" • ");
           if (!matchReason) matchReason = "Matched based on availability";
 
@@ -185,6 +191,8 @@ export default function BrandMatches() {
         })
           .filter(c => c.matchScore >= 40)
           .sort((a, b) => b.matchScore - a.matchScore);
+
+        console.log("Final Matched Creators:", matchedCreators.length);
 
         setCreators(matchedCreators);
       } catch (error) {
