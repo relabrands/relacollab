@@ -85,7 +85,7 @@ export function CreatorCard({ creator, onApprove, onReject, isInvite = false, is
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        {creator.tags.slice(0, 3).map(tag => (
+        {(creator.tags || []).slice(0, 3).map(tag => (
           <span key={tag} className="text-[10px] px-2 py-1 rounded-full bg-secondary text-secondary-foreground font-medium">
             {tag}
           </span>

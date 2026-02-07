@@ -100,6 +100,7 @@ export default function BrandMatches() {
                 matchBreakdown: breakdown,
                 name: creatorData.displayName || "Unknown Creator",
                 avatar: creatorData.photoURL || creatorData.avatar,
+                tags: creatorData.categories || creatorData.tags || ["General"],
                 status: "applicant"
               };
             }
