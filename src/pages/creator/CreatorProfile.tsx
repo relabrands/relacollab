@@ -504,10 +504,10 @@ export default function CreatorProfile() {
               <div className="glass-card p-6 bg-gradient-to-br from-primary/5 to-accent/5">
                 {socialHandles.instagram && profile.instagramMetrics ? (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="p-4 bg-background/50 rounded-lg text-center">
                         <p className="text-sm text-muted-foreground mb-1">Followers</p>
-                        <p className="text-2xl font-bold text-primary">
+                        <p className="text-xl font-bold text-primary">
                           {profile.instagramMetrics?.followers
                             ? (profile.instagramMetrics.followers > 1000
                               ? `${(profile.instagramMetrics.followers / 1000).toFixed(1)}K`
@@ -516,9 +516,21 @@ export default function CreatorProfile() {
                         </p>
                       </div>
                       <div className="p-4 bg-background/50 rounded-lg text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Engagement Rate</p>
-                        <p className="text-2xl font-bold text-primary">
+                        <p className="text-sm text-muted-foreground mb-1">Eng. Rate</p>
+                        <p className="text-xl font-bold text-success">
                           {profile.instagramMetrics?.engagementRate || 0}%
+                        </p>
+                      </div>
+                      <div className="p-4 bg-background/50 rounded-lg text-center">
+                        <p className="text-sm text-muted-foreground mb-1">Avg. Likes</p>
+                        <p className="text-xl font-bold text-primary">
+                          {profile.instagramMetrics?.avgLikes?.toLocaleString() || "0"}
+                        </p>
+                      </div>
+                      <div className="p-4 bg-background/50 rounded-lg text-center">
+                        <p className="text-sm text-muted-foreground mb-1">Avg. Reel Views</p>
+                        <p className="text-xl font-bold text-primary">
+                          {profile.instagramMetrics?.avgViews?.toLocaleString() || "N/A"}
                         </p>
                       </div>
                     </div>

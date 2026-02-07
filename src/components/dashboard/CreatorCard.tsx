@@ -16,6 +16,7 @@ interface CreatorCardProps {
     matchReason?: string;
     bio?: string;
     instagramUsername?: string;
+    campaignName?: string;
   };
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
@@ -68,13 +69,19 @@ export function CreatorCard({ creator, onApprove, onReject, isInvite = false, hi
         </div>
       </div>
 
-      {creator.matchReason && (
-        <div className="mb-4">
+      <div className="mb-4 space-y-2">
+        {creator.campaignName && (
+          <div className="inline-flex items-center px-2 py-1 rounded-md bg-primary/5 border border-primary/10 text-[10px] font-medium text-primary">
+            Matched for: {creator.campaignName}
+          </div>
+        )}
+
+        {creator.matchReason && (
           <p className="text-xs text-muted-foreground italic border-l-2 border-primary/30 pl-2 leading-relaxed">
             "{creator.matchReason}"
           </p>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
         {creator.tags.slice(0, 3).map(tag => (

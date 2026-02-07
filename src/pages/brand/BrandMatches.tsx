@@ -194,7 +194,8 @@ export default function BrandMatches() {
               rawEngagement: engagementRate,
               instagramUsername: creator.instagramUsername,
               bio: creator.bio,
-              matchReason: matchReason // Pass this to the card
+              matchReason: matchReason, // Pass this to the card
+              campaignName: campaign.name || "Unknown Campaign"
             };
           })
             .filter(c => c.matchScore >= 45) // Strict filter

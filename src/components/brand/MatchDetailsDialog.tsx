@@ -21,6 +21,9 @@ interface CreatorDetails {
     instagramMetrics?: {
         followers: number;
         engagementRate: number;
+        avgLikes?: number;
+        avgComments?: number;
+        avgViews?: number;
     };
 }
 
@@ -175,7 +178,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign }: Match
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="p-4 rounded-xl bg-muted/50">
                                 <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
                                     <Users className="w-4 h-4" />
@@ -191,6 +194,26 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign }: Match
                                 </div>
                                 <div className="text-2xl font-bold text-success">{creator.engagement}</div>
                                 <div className="text-xs text-muted-foreground mt-1">Above Average</div>
+                            </div>
+                            <div className="p-4 rounded-xl bg-muted/50">
+                                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+                                    <TrendingUp className="w-4 h-4" />
+                                    Avg. Likes
+                                </div>
+                                <div className="text-2xl font-bold text-primary">
+                                    {creator.instagramMetrics?.avgLikes?.toLocaleString() || "N/A"}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">Per Post</div>
+                            </div>
+                            <div className="p-4 rounded-xl bg-muted/50">
+                                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+                                    <TrendingUp className="w-4 h-4" />
+                                    Avg. Plays
+                                </div>
+                                <div className="text-2xl font-bold text-primary">
+                                    {creator.instagramMetrics?.avgViews?.toLocaleString() || "N/A"}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">Reel Views</div>
                             </div>
                         </div>
                     </div>

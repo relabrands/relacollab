@@ -4,6 +4,8 @@ import { Loader2 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function InstagramCallback() {
     const [searchParams] = useSearchParams();
@@ -64,8 +66,62 @@ export default function InstagramCallback() {
                 );
 
                 if (response.data.success) {
+                    setStatus("Calculating advanced analytics...");
+                    const { access_token: accessToken } = response.data.data;
+
+                    // --- CLIENT-SIDE METRIC CALCULATION ---
+                    try {
+                        // 1. Fetch Media
+                        const mediaRes = await axios.get(
+                            `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,media_type,media_product_type,timestamp&limit=50&access_token=${accessToken}`
+                        );
+                        const mediaItems = mediaRes.data.data || [];
+
+                        let totalLikes = 0;
+                        let totalComments = 0;
+                        mediaItems.forEach((item: any) => {
+                            totalLikes += (item.like_count || 0);
+                            totalComments += (item.comments_count || 0);
+                        });
+
+                        const avgLikes = mediaItems.length > 0 ? Math.round(totalLikes / mediaItems.length) : 0;
+                        const avgComments = mediaItems.length > 0 ? Math.round(totalComments / mediaItems.length) : 0;
+
+                        // 2. Fetch Video/Reel Views (Plays)
+                        // Filter for videos/reels
+                        const videoItems = mediaItems.filter((i: any) => i.media_type === 'VIDEO' || i.media_product_type === 'REELS').slice(0, 10);
+
+                        let avgViews = 0;
+                        if (videoItems.length > 0) {
+                            const insightPromises = videoItems.map((item: any) =>
+                                axios.get(`https://graph.instagram.com/${item.id}/insights?metric=plays&access_token=${accessToken}`)
+                                    .then(res => res.data.data[0].values[0].value)
+                                    .catch(err => 0)
+                            );
+                            const plays = await Promise.all(insightPromises);
+                            const validPlays = plays.filter(p => p > 0);
+                            if (validPlays.length > 0) {
+                                const totalPlays = validPlays.reduce((a, b) => a + b, 0);
+                                avgViews = Math.round(totalPlays / validPlays.length);
+                            }
+                        }
+
+                        // 3. Update Firestore
+                        await updateDoc(doc(db, "users", user.uid), {
+                            "instagramMetrics.avgLikes": avgLikes,
+                            "instagramMetrics.avgComments": avgComments,
+                            "instagramMetrics.avgViews": avgViews,
+                            "instagramMetrics.lastUpdated": new Date().toISOString()
+                        });
+                        console.log("Calculated metrics:", { avgLikes, avgComments, avgViews });
+
+                    } catch (metricError) {
+                        console.error("Error calculating metrics:", metricError);
+                        // Continue even if metrics fail
+                    }
+
                     setStatus("Success! Redirecting...");
-                    toast.success("Instagram connected successfully!");
+                    toast.success("Instagram connected & analyzed!");
                     // Force refresh to ensure AuthContext updates with new Firestore data
                     window.location.href = "/creator/profile";
                 } else {
