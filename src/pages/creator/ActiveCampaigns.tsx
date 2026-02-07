@@ -41,7 +41,9 @@ export default function ActiveCampaigns() {
                             ...campaignDoc.data(),
                             applicationId: appDoc.id, // Keep track of the application ID if needed
                             matchScore: 100, // It's a match!
-                            title: campaignDoc.data().title || campaignDoc.data().name || "Untitled Campaign"
+                            title: campaignDoc.data().title || campaignDoc.data().name || "Untitled Campaign",
+                            brandDescription: campaignDoc.data().brandDescription || campaignDoc.data().description || "",
+                            goal: campaignDoc.data().goal || ""
                         });
                     }
                 }

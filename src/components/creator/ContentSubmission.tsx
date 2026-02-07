@@ -104,7 +104,7 @@ export function ContentSubmission() {
           if (campDoc.exists()) {
             campaignsData.push({
               id: campId,
-              name: campDoc.data().title,
+              name: campDoc.data().title || campDoc.data().name || "Untitled Campaign",
               brand: campDoc.data().brandName || "Brand"
             });
           }

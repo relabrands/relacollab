@@ -21,6 +21,7 @@ interface OpportunityCardProps {
     isInvited?: boolean;
     endDate?: string;
     brandDescription?: string;
+    goal?: string;
   };
   onAccept?: (id: string) => void;
   isActive?: boolean;
@@ -117,9 +118,32 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false }: Opp
         ))}
       </div>
 
+      {/* Active Campaign Details */}
+      {isActive && (
+        <div className="mb-4 space-y-3 p-3 bg-muted/30 rounded-lg text-sm">
+          {opportunity.brandDescription && (
+            <div>
+              <span className="font-semibold block mb-1">About the Brand:</span>
+              <p className="text-muted-foreground line-clamp-2">{opportunity.brandDescription}</p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
+            <div>
+              <span className="font-semibold block text-xs uppercase text-muted-foreground">Compensation</span>
+              <p>{opportunity.reward || "Negotiable"}</p>
+            </div>
+            <div>
+              <span className="font-semibold block text-xs uppercase text-muted-foreground">Deadline</span>
+              <p>{opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString() : "Open"}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Action */}
       {isActive ? (
-        <Link to="/creator/my-content">
+        <Link to="/creator/content">
           <Button variant="hero" className="w-full">
             <Upload className="w-4 h-4 mr-2" />
             Submit Content
@@ -132,7 +156,7 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false }: Opp
           onClick={handleApply}
         >
           {opportunity.isInvited ? "Accept Invitation" : "Apply Now"}
-          <ArrowRight className="w-4 h-4 ml-2" />
+          <ArrowRight className="w-4 h-4 mr-2" />
         </Button>
       )}
     </div>

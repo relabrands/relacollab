@@ -364,7 +364,7 @@ export default function BrandMatches() {
               onClick={() => setViewMode('invited')}
             >
               <UserCheck className="w-4 h-4 mr-2" />
-              Invited ({approvedIds.length})
+              Invited ({approvedIds.filter(id => !collaborators.some(c => c.id === id)).length})
             </Button>
           </div>
         </div>
