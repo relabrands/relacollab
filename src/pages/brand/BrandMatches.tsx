@@ -14,6 +14,7 @@ import { MobileNav } from "@/components/dashboard/MobileNav";
 import { toast } from "sonner";
 import { calculateMatchScore } from "@/lib/matchScoring";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const formatNumber = (num: number) => {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
@@ -99,6 +100,14 @@ export default function BrandMatches() {
         const invitedCreatorIds = invitationsSnapshot.docs.map(doc => doc.data().creatorId);
         setApprovedIds(invitedCreatorIds);
 
+        // Submissions (Content)
+        const submissionsQuery = query(
+          collection(db, "submissions"),
+          where("campaignId", "==", activeCampaign.id)
+        );
+        const submissionsSnapshot = await getDocs(submissionsQuery);
+        const submissions = submissionsSnapshot.docs.map(d => d.data());
+
         // Applications (Inbound & Collaborating)
         const applicationsQuery = query(
           collection(db, "applications"),
@@ -113,6 +122,10 @@ export default function BrandMatches() {
           if (creatorDoc.exists()) {
             const creatorData = creatorDoc.data();
             const { score, reasons, breakdown } = calculateMatchScore(activeCampaign, creatorData);
+
+            // Find submission for this creator
+            const submission = submissions.find((s: any) => s.userId === creatorData.id || s.userId === appData.creatorId);
+
             return {
               ...creatorData,
               id: creatorDoc.id, // Creator ID
@@ -127,7 +140,8 @@ export default function BrandMatches() {
               followers: formatNumber(creatorData.instagramMetrics?.followers || 0),
               engagement: (creatorData.instagramMetrics?.engagementRate || 0) + "%",
               instagramMetrics: creatorData.instagramMetrics,
-              location: creatorData.location || "Unknown"
+              location: creatorData.location || "Unknown",
+              submissionUrl: submission?.postUrl || null
             };
           }
           return null;
@@ -272,6 +286,16 @@ export default function BrandMatches() {
     setIsDialogOpen(true);
   };
 
+  const handleViewContent = (creator: any) => {
+    if (creator.submissionUrl) {
+      window.open(creator.submissionUrl, "_blank");
+    } else {
+      toast.info("Content not yet submitted", {
+        description: "This creator hasn't submitted their content link yet."
+      });
+    }
+  };
+
   if (loading && campaigns.length === 0) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
@@ -295,7 +319,10 @@ export default function BrandMatches() {
 
             {/* Campaign Selector */}
             {campaigns.length > 0 && (
-              <div className="w-full md:w-64">
+              <div className="w-full md:w-64 space-y-2">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Searching Matches For:
+                </Label>
                 <Select
                   value={activeCampaign?.id}
                   onValueChange={(val) => {
@@ -303,8 +330,8 @@ export default function BrandMatches() {
                     if (found) setActiveCampaign(found);
                   }}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Campaign" />
+                  <SelectTrigger className="w-full bg-background border-input">
+                    <SelectValue placeholder="Select a Campaign" />
                   </SelectTrigger>
                   <SelectContent>
                     {campaigns.map((c) => (
@@ -417,6 +444,8 @@ export default function BrandMatches() {
                     await handleApproveApplicant(creator);
                   } else if (viewMode === 'matches') {
                     await handleSendProposal(id, creator.name);
+                  } else if (viewMode === 'collaborating') {
+                    handleViewContent(creator);
                   }
                 }}
                 onReject={(id) => {
@@ -426,7 +455,7 @@ export default function BrandMatches() {
                     handleReject(id);
                   }
                 }}
-                hideActions={viewMode === 'invited' || viewMode === 'collaborating'}
+                hideActions={viewMode === 'invited'} // Allow view content for collaborating
                 isInvite={viewMode === 'matches'}
                 isApplicant={viewMode === 'applicants'} // Pass this prop to modify card button text
                 isCollaborating={viewMode === 'collaborating'}
@@ -476,8 +505,13 @@ export default function BrandMatches() {
           isApplicant={viewMode === 'applicants'} // Pass context to dialog
           isCollaborating={viewMode === 'collaborating'}
           onApprove={() => {
-            if (viewMode === 'applicants') handleApproveApplicant(selectedCreator);
-            else handleSendProposal(selectedCreator.id, selectedCreator.name);
+            if (viewMode === 'applicants') {
+              handleApproveApplicant(selectedCreator);
+            } else if (viewMode === 'collaborating') {
+              handleViewContent(selectedCreator);
+            } else {
+              handleSendProposal(selectedCreator.id, selectedCreator.name);
+            }
             setIsDialogOpen(false);
           }}
         />
