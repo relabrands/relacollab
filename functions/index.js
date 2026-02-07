@@ -1,3 +1,4 @@
+require('dotenv').config();
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
@@ -178,7 +179,8 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
     });
 });
 
-const stripe = require('stripe')(functions.config().stripe ? functions.config().stripe.secret : 'sk_test_placeholder');
+// Initialized lazily inside functions or using process.env
+const stripe = require('stripe');
 
 exports.createCheckoutSession = functions.https.onRequest((req, res) => {
     return cors(req, res, async () => {
@@ -193,7 +195,8 @@ exports.createCheckoutSession = functions.https.onRequest((req, res) => {
         }
 
         try {
-            const session = await stripe.checkout.sessions.create({
+            const stripeClient = stripe(process.env.STRIPE_SECRET || 'sk_test_placeholder');
+            const session = await stripeClient.checkout.sessions.create({
                 mode: mode || 'subscription',
                 payment_method_types: ['card'],
                 line_items: [
@@ -220,12 +223,13 @@ exports.createCheckoutSession = functions.https.onRequest((req, res) => {
 
 exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
     const sig = req.headers['stripe-signature'];
-    const endpointSecret = functions.config().stripe ? functions.config().stripe.webhook_secret : 'whsec_placeholder';
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder';
 
     let event;
 
     try {
-        event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+        const stripeClient = stripe(process.env.STRIPE_SECRET || 'sk_test_placeholder');
+        event = stripeClient.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
     } catch (err) {
         console.error(`Webhook Error: ${err.message}`);
         return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -237,14 +241,14 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 
         if (userId) {
             console.log(`Payment successful for user ${userId}`);
-            
+
             const updateData = {
                 subscriptionStatus: 'active',
                 stripeCustomerId: session.customer,
                 stripeSubscriptionId: session.subscription,
                 updatedAt: new Date().toISOString()
             };
-            
+
             await db.collection("users").doc(userId).set(updateData, { merge: true });
 
             await db.collection("users").doc(userId).collection("payments").add({
@@ -258,5 +262,5 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
         }
     }
 
-    res.json({received: true});
+    res.json({ received: true });
 });
