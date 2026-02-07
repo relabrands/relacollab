@@ -103,7 +103,8 @@ export default function BrandMatches() {
         // Submissions (Content)
         const submissionsQuery = query(
           collection(db, "submissions"),
-          where("campaignId", "==", activeCampaign.id)
+          where("campaignId", "==", activeCampaign.id),
+          orderBy("submittedAt", "desc")
         );
         const submissionsSnapshot = await getDocs(submissionsQuery);
         const submissions = submissionsSnapshot.docs.map(d => d.data());

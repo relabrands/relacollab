@@ -10,13 +10,17 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Link } from "react-router-dom";
+import { OpportunityDetailsDialog } from "@/components/dashboard/OpportunityDetailsDialog";
 
 export default function ActiveCampaigns() {
     const { user } = useAuth();
     const [activeCampaigns, setActiveCampaigns] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     useEffect(() => {
+        // ... (existing useEffect)
         const fetchActiveCampaigns = async () => {
             if (!user) return;
             try {
@@ -75,6 +79,11 @@ export default function ActiveCampaigns() {
         fetchActiveCampaigns();
     }, [user]);
 
+    const handleViewDetails = (campaign: any) => {
+        setSelectedCampaign(campaign);
+        setIsDialogOpen(true);
+    };
+
     return (
         <div className="flex min-h-screen bg-background">
             <DashboardSidebar type="creator" />
@@ -100,7 +109,11 @@ export default function ActiveCampaigns() {
                                 transition={{ delay: index * 0.1 }}
                             >
                                 <div className="relative">
-                                    <OpportunityCard opportunity={campaign} isActive={true} />
+                                    <OpportunityCard
+                                        opportunity={campaign}
+                                        isActive={true}
+                                        onViewDetails={() => handleViewDetails(campaign)}
+                                    />
                                     <div className="absolute top-2 right-2 bg-success text-white text-xs px-2 py-1 rounded-full font-medium">
                                         Active
                                     </div>
@@ -125,6 +138,14 @@ export default function ActiveCampaigns() {
                     </div>
                 )}
             </main>
+
+            <OpportunityDetailsDialog
+                isOpen={isDialogOpen}
+                onClose={() => setIsDialogOpen(false)}
+                opportunity={selectedCampaign}
+                onAccept={() => { }} // No accept action needed for active campaigns
+                isActive={true}
+            />
         </div>
     );
 }

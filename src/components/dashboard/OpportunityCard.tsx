@@ -25,6 +25,7 @@ interface OpportunityCardProps {
   };
   onAccept?: (id: string) => void;
   isActive?: boolean;
+  onViewDetails?: () => void;
 }
 
 const rewardTypeColors = {
@@ -39,7 +40,7 @@ const rewardTypeLabels = {
   hybrid: "Experience + Cash",
 };
 
-export function OpportunityCard({ opportunity, onAccept, isActive = false }: OpportunityCardProps) {
+export function OpportunityCard({ opportunity, onAccept, isActive = false, onViewDetails }: OpportunityCardProps) {
   const handleApply = (e: React.MouseEvent) => {
     e.stopPropagation(); // Stop opening the dialog
     if (onAccept) {
