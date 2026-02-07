@@ -121,6 +121,16 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                 {opportunity.description || "No description provided."}
                             </p>
                         </div>
+
+                        {/* Campaign Goals/Objectives */}
+                        {opportunity.goal && (
+                            <div>
+                                <h4 className="font-semibold mb-2">Campaign Objectives</h4>
+                                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                    {opportunity.goal}
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Requirements/Vibes */}

@@ -5,7 +5,7 @@ import { OpportunityCard } from "@/components/dashboard/OpportunityCard";
 import { OpportunityDetailsDialog } from "@/components/dashboard/OpportunityDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Filter, SlidersHorizontal, Sparkles, Loader2 } from "lucide-react";
+import { Filter, SlidersHorizontal, Sparkles, Loader2, Clock } from "lucide-react";
 import { collection, query, where, getDocs, orderBy, doc, getDoc, addDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
@@ -18,7 +18,7 @@ export default function Opportunities() {
   const { user } = useAuth();
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'paid' | 'experience'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'paid' | 'experience' | 'pending'>('all');
 
   // Dialog State
   const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null);
@@ -27,6 +27,9 @@ export default function Opportunities() {
 
   // Track applied campaign IDs to hide them or show as applied
   const [appliedCampaignIds, setAppliedCampaignIds] = useState<Set<string>>(new Set());
+
+  // Pending applications
+  const [pendingApplications, setPendingApplications] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchOpportunities = async () => {
@@ -138,6 +141,52 @@ export default function Opportunities() {
           .filter(op => !appliedIds.has(op.id)); // Hide already applied campaigns
 
         setOpportunities([...filteredInvitations, ...filteredGeneral]);
+
+        // Fetch pending applications for "Pending" tab
+        const pendingAppsQuery = query(
+          collection(db, "applications"),
+          where("creatorId", "==", user.uid),
+          where("status", "==", "pending")
+        );
+        const pendingSnapshot = await getDocs(pendingAppsQuery);
+
+        const pendingAppsPromises = pendingSnapshot.docs.map(async (appDoc) => {
+          const appData = appDoc.data();
+          const campaignRef = doc(db, "campaigns", appData.campaignId);
+          const campaignSnap = await getDoc(campaignRef);
+
+          if (campaignSnap.exists()) {
+            const campaignData = campaignSnap.data();
+
+            // Fetch Brand Details
+            let brandData: any = {};
+            try {
+              const brandDoc = await getDoc(doc(db, "users", campaignData.brandId));
+              if (brandDoc.exists()) {
+                brandData = brandDoc.data();
+              }
+            } catch (e) {
+              console.error("Error fetching brand details for pending app", e);
+            }
+
+            return {
+              id: campaignSnap.id,
+              applicationId: appDoc.id,
+              ...campaignData,
+              brandName: campaignData.brandName || brandData.displayName || "Unknown Brand",
+              title: campaignData.name || "Untitled Campaign",
+              appliedAt: appData.createdAt,
+              rewardType: campaignData.reward === 'paid' ? 'paid' : (campaignData.reward === 'experience' ? 'experience' : 'hybrid'),
+              brandProfile: brandData,
+              isPending: true
+            };
+          }
+          return null;
+        });
+
+        const resolvedPendingApps = (await Promise.all(pendingAppsPromises)).filter(Boolean);
+        setPendingApplications(resolvedPendingApps);
+
       } catch (error) {
         console.error("Error fetching opportunities:", error);
       } finally {
@@ -230,6 +279,8 @@ export default function Opportunities() {
     return true;
   });
 
+  const displayItems = activeTab === 'pending' ? pendingApplications : filteredOpportunities;
+
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar type="creator" />
@@ -288,6 +339,19 @@ export default function Opportunities() {
             >
               Experience
             </Button>
+            <Button
+              variant={activeTab === 'pending' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab('pending')}
+              className="whitespace-nowrap relative"
+            >
+              Pending
+              {pendingApplications.length > 0 && (
+                <span className="ml-1 bg-warning text-warning-foreground text-xs px-1.5 rounded-full">
+                  {pendingApplications.length}
+                </span>
+              )}
+            </Button>
           </div>
           <Button variant="outline" size="sm" className="w-full md:w-auto">
             <SlidersHorizontal className="w-4 h-4 mr-2" />
@@ -300,35 +364,54 @@ export default function Opportunities() {
           <div className="flex justify-center py-12">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
           </div>
-        ) : filteredOpportunities.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredOpportunities.map((opportunity, index) => (
-              <motion.div
-                key={opportunity.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                onClick={() => handleCardClick(opportunity)}
-                className="cursor-pointer"
-              >
-                <div className="relative">
-                  <OpportunityCard
-                    opportunity={opportunity}
-                    onAccept={(id) => handleApply(id)}
-                  />
-                  {/* Block interaction if applying */}
-                  {processingId === opportunity.id && (
-                    <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-xl z-10">
-                      <Loader2 className="animate-spin" />
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+        ) : displayItems.length > 0 ? (
+          <div>
+            {activeTab === 'pending' && (
+              <div className="mb-4 p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                <p className="text-sm text-warning-foreground">
+                  <strong>⏳ Awaiting Brand Approval:</strong> These are campaigns you've applied to. The brand will review your profile and notify you of their decision.
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {displayItems.map((opportunity, index) => (
+                <motion.div
+                  key={opportunity.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => handleCardClick(opportunity)}
+                  className="cursor-pointer"
+                >
+                  <div className="relative">
+                    <OpportunityCard
+                      opportunity={opportunity}
+                      onAccept={(id) => handleApply(id)}
+                    />
+                    {/* Block interaction if applying */}
+                    {processingId === opportunity.id && (
+                      <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-xl z-10">
+                        <Loader2 className="animate-spin" />
+                      </div>
+                    )}
+                    {opportunity.isPending && (
+                      <div className="absolute top-2 right-2 bg-warning text-warning-foreground text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Pending Approval
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="text-center py-12 border rounded-xl bg-white/5">
-            <p className="text-muted-foreground">No active opportunities found at the moment.</p>
+            <p className="text-muted-foreground">
+              {activeTab === 'pending'
+                ? "No pending applications. Apply to campaigns to see them here!"
+                : "No active opportunities found at the moment."}
+            </p>
           </div>
         )}
       </main>
