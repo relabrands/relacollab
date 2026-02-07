@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useSearchParams, Link } from "react-router-dom";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { toast } from "sonner";
+import { calculateMatchScore } from "@/lib/matchScoring";
 
 // ...
 
@@ -102,81 +103,11 @@ export default function BrandMatches() {
 
         if (campaign) {
           matchedCreators = validCreators.map((creator: any) => {
-            let score = 0;
-            const reasons: string[] = [];
-            const analysisPoints: string[] = [];
-            const creatorCategories = creator.categories || [];
-            const campaignVibes = campaign.vibes || [];
+            const { score, reasons, breakdown } = calculateMatchScore(campaign, creator);
 
-            // A. Campaign Location (Crucial)
-            if (campaign.location) {
-              const campaignLoc = campaign.location.toLowerCase();
-              const creatorLoc = (creator.location || "").toLowerCase();
-
-              if (creatorLoc.includes(campaignLoc) || campaignLoc === "global" || campaignLoc === "any") {
-                score += 30;
-                reasons.push("Location");
-                analysisPoints.push(`Located in ${creator.location || "target area"} matching campaign requirement.`);
-              }
-            } else {
-              // If no location specified, treat as global/neutral
-              score += 15;
-            }
-
-            // B. Campaign Niche/Vibe (Crucial)
-            const matchedVibes = campaignVibes.filter((v: string) =>
-              creatorCategories.some((c: string) =>
-                c.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(c.toLowerCase())
-              )
-            );
-
-            if (matchedVibes.length > 0) {
-              score += 40;
-              reasons.push("Niche");
-              analysisPoints.push(`Creates content in ${matchedVibes.join(", ")} which fits the campaign vibe.`);
-            } else if (creatorCategories.length > 0) {
-              // Soft match
-              const allTags = creatorCategories.join(" ").toLowerCase();
-              const campaignName = (campaign.name + " " + (campaign.description || "")).toLowerCase();
-              if (creatorCategories.some((c: string) => campaignName.includes(c.toLowerCase()))) {
-                score += 20;
-                analysisPoints.push(`Content style (${creatorCategories[0]}) is relevant to campaign description.`);
-              }
-            }
-
-            // C. Brand Fit (Bonus)
-            if (brandProfile?.industry) {
-              const brandInd = brandProfile.industry.toLowerCase();
-              if (creatorCategories.some((c: string) => c.toLowerCase().includes(brandInd))) {
-                score += 15;
-                if (!reasons.includes("Niche")) {
-                  analysisPoints.push(`Matches your brand industry (${brandProfile.industry}).`);
-                }
-              }
-            }
-
-            // D. Engagement Quality (Bonus)
-            const engagementRate = creator.instagramMetrics?.engagementRate || 0;
-            if (engagementRate >= 2) {
-              score += 15;
-              analysisPoints.push(`High engagement rate (${engagementRate}%).`);
-            }
-
-            // E. Past Performance / Reliability (Future)
-            // if (creator.completedJobs > 5) score += 10;
-
-            // Cap Score
-            if (score > 98) score = 98;
-            // Minimum score to show: 50
-            // If Location matches (+30) and Engagement (+15) = 45 -> Needs a little more niche fit.
-
-            // Build Reason
-            let matchReason = "";
-            if (analysisPoints.length > 0) {
-              matchReason = analysisPoints.join(" ");
-            } else {
-              matchReason = "Matched based on general availability.";
-            }
+            // Build Reason string for UI
+            let matchReason = reasons.join(" • ");
+            if (!matchReason) matchReason = "Matched based on availability";
 
             return {
               ...creator,
@@ -188,20 +119,20 @@ export default function BrandMatches() {
                   ? `${(creator.instagramMetrics.followers / 1000).toFixed(1)}K`
                   : creator.instagramMetrics.followers)
                 : "0",
-              engagement: `${engagementRate}%`,
+              engagement: `${creator.instagramMetrics?.engagementRate || 0}%`,
               matchScore: score,
               tags: creator.categories || ["General"],
-              rawEngagement: engagementRate,
+              rawEngagement: creator.instagramMetrics?.engagementRate || 0,
               instagramUsername: creator.instagramUsername,
               bio: creator.bio,
-              matchReason: matchReason, // Pass this to the card
+              matchReason: matchReason,
+              matchBreakdown: breakdown, // Pass for details view
               campaignName: campaign.name || "Unknown Campaign"
             };
           })
-            .filter(c => c.matchScore >= 45) // Strict filter
+            .filter(c => c.matchScore >= 40) // Slightly lower threshold to show more options, sort by score
             .sort((a, b) => b.matchScore - a.matchScore);
         } else {
-          // No campaign = No matches
           matchedCreators = [];
         }
 
@@ -345,7 +276,7 @@ export default function BrandMatches() {
         </div>
 
         {/* Creators Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {visibleCreators.map((creator, index) => (
             <motion.div
               key={creator.id}

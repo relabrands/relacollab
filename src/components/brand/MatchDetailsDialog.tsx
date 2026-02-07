@@ -155,55 +155,76 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign }: Match
                     </div>
                 </DialogHeader>
 
-                <div className="space-y-8 py-4">
+                <div className="space-y-6 md:space-y-8 py-4">
                     {/* AI Insights & Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <h3 className="font-semibold flex items-center gap-2">
                                 <Sparkles className="w-4 h-4 text-primary" />
-                                AI Match Analysis
+                                Match Breakdown
                             </h3>
-                            <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10">
-                                <h4 className="text-sm font-medium text-primary mb-2">Why this match works</h4>
-                                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                                    {aiAnalysis || creator.matchReason}
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                    {creator.tags.map(tag => (
-                                        <Badge key={tag} variant="secondary" className="bg-background/50">
-                                            {tag}
-                                        </Badge>
-                                    ))}
+                            <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10 space-y-3">
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Location Fit</span>
+                                        <span className="font-medium">{(creator as any).matchBreakdown?.location || 0}/30</span>
+                                    </div>
+                                    <div className="w-full bg-primary/10 rounded-full h-2">
+                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${((creator as any).matchBreakdown?.location || 0) / 30 * 100}%` }}></div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Vibe & Niche</span>
+                                        <span className="font-medium">{(creator as any).matchBreakdown?.vibe || 0}/40</span>
+                                    </div>
+                                    <div className="w-full bg-primary/10 rounded-full h-2">
+                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${((creator as any).matchBreakdown?.vibe || 0) / 40 * 100}%` }}></div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Engagement</span>
+                                        <span className="font-medium">{(creator as any).matchBreakdown?.engagement || 0}/20</span>
+                                    </div>
+                                    <div className="w-full bg-primary/10 rounded-full h-2">
+                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${((creator as any).matchBreakdown?.engagement || 0) / 20 * 100}%` }}></div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2">
+                                    <p className="text-xs text-muted-foreground italic">
+                                        "{creator.matchReason}"
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="p-4 rounded-xl bg-muted/50">
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                            <div className="p-3 sm:p-4 rounded-xl bg-muted/50">
                                 <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
                                     <Users className="w-4 h-4" />
                                     Audience
                                 </div>
-                                <div className="text-2xl font-bold">{creator.followers}</div>
-                                <div className="text-xs text-muted-foreground mt-1">Authentic Followers</div>
+                                <div className="text-xl sm:text-2xl font-bold">{creator.followers}</div>
+                                <div className="text-xs text-muted-foreground mt-1">Authentic</div>
                             </div>
-                            <div className="p-4 rounded-xl bg-muted/50">
+                            <div className="p-3 sm:p-4 rounded-xl bg-muted/50">
                                 <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
                                     <TrendingUp className="w-4 h-4" />
                                     Engagement
                                 </div>
-                                <div className="text-2xl font-bold text-success">{creator.engagement}</div>
-                                <div className="text-xs text-muted-foreground mt-1">Above Average</div>
+                                <div className="text-xl sm:text-2xl font-bold text-success">{creator.engagement}</div>
+                                <div className="text-xs text-muted-foreground mt-1">Above Avg</div>
                             </div>
-                            <div className="p-4 rounded-xl bg-muted/50">
+                            <div className="p-3 sm:p-4 rounded-xl bg-muted/50 col-span-2">
                                 <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
                                     <TrendingUp className="w-4 h-4" />
-                                    Avg. Likes
+                                    Avg. Likes per Post
                                 </div>
-                                <div className="text-2xl font-bold text-primary">
+                                <div className="text-xl sm:text-2xl font-bold text-primary">
                                     {creator.instagramMetrics?.avgLikes?.toLocaleString() || "N/A"}
                                 </div>
-                                <div className="text-xs text-muted-foreground mt-1">Per Post</div>
                             </div>
                         </div>
                     </div>
