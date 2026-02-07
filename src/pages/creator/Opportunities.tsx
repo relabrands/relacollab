@@ -183,9 +183,21 @@ export default function Opportunities() {
         }
       });
 
+      // Increment applicationCount on campaign (for non-invited applications)
+      if (!isInvitation) {
+        await updateDoc(doc(db, "campaigns", campaignId), {
+          applicationCount: increment(1)
+        });
+      }
+
       if (isInvitation && invitationId) {
         await updateDoc(doc(db, "invitations", invitationId), {
           status: "accepted"
+        });
+
+        // Also increment approvedCount for accepted invitations
+        await updateDoc(doc(db, "campaigns", campaignId), {
+          approvedCount: increment(1)
         });
       }
 

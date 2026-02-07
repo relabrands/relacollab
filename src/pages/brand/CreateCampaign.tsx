@@ -67,8 +67,8 @@ export default function CreateCampaign() {
           setFormData(prev => ({
             ...prev,
             location: userData.location || "",
-            // Only pre-fill description if the user hasn't typed anything yet (though on mount it's empty)
-            description: userData.description || ""
+            description: userData.description || "",
+            brandName: userData.displayName || userData.name || ""
           }));
           setCredits(userData.credits || 0);
         }
@@ -97,9 +97,21 @@ export default function CreateCampaign() {
 
     setIsSubmitting(true);
     try {
+      // Fetch brand name for consistency
+      let brandName = formData.name || "";
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          brandName = userDoc.data().displayName || userDoc.data().name || brandName;
+        }
+      } catch (e) {
+        console.warn("Could not fetch brand name:", e);
+      }
+
       const campaignData = {
         ...formData,
         brandId: user.uid,
+        brandName: brandName, // Add brand name for creator opportunity display
         status: "active",
         createdAt: new Date().toISOString(),
         budget: parseFloat(formData.budget) || 0,
