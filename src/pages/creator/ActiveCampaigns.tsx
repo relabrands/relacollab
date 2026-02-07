@@ -23,7 +23,7 @@ export default function ActiveCampaigns() {
                 // Fetch approved applications for this user
                 const q = query(
                     collection(db, "applications"),
-                    where("userId", "==", user.uid),
+                    where("creatorId", "==", user.uid),
                     where("status", "==", "approved")
                 );
 

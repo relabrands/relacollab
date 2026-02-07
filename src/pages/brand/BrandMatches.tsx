@@ -5,16 +5,14 @@ import { CreatorCard } from "@/components/dashboard/CreatorCard";
 import { MatchDetailsDialog } from "@/components/brand/MatchDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Sparkles, Filter, SlidersHorizontal, Loader2, Plus } from "lucide-react";
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, addDoc } from "firebase/firestore";
+import { Sparkles, Filter, SlidersHorizontal, Loader2, Plus, Users, UserCheck } from "lucide-react";
+import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, addDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchParams, Link } from "react-router-dom";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { toast } from "sonner";
 import { calculateMatchScore } from "@/lib/matchScoring";
-
-// ...
 
 export default function BrandMatches() {
   const { user } = useAuth();
@@ -28,29 +26,23 @@ export default function BrandMatches() {
   const [approvedIds, setApprovedIds] = useState<string[]>([]);
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
 
+  // Applicants State
+  const [applicants, setApplicants] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<'matches' | 'invited' | 'applicants'>('matches');
+
   // Dialog State
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  // ...
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
 
       try {
-        // 0. Fetch Brand Profile (New)
-        let brandProfile: any = null;
-        const userDocSnap = await getDoc(doc(db, "users", user.uid));
-        if (userDocSnap.exists()) {
-          brandProfile = userDocSnap.data();
-        }
-
         // 1. Fetch Active Campaign
         let campaign: any = null;
 
         if (campaignId) {
-          // Fetch specific campaign if ID provided
           const docRef = doc(db, "campaigns", campaignId);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
@@ -58,7 +50,6 @@ export default function BrandMatches() {
             setActiveCampaign(campaign);
           }
         } else {
-          // Default: Fetch latest active
           const campaignQuery = query(
             collection(db, "campaigns"),
             where("brandId", "==", user.uid),
@@ -74,8 +65,9 @@ export default function BrandMatches() {
           }
         }
 
-        // 1.5 Fetch Existing Invitations for this Campaign
+        // 1.5 Fetch Invitations & Applications
         if (campaign) {
+          // Invitations (Outbound)
           const invitationsQuery = query(
             collection(db, "invitations"),
             where("campaignId", "==", campaign.id)
@@ -83,29 +75,55 @@ export default function BrandMatches() {
           const invitationsSnapshot = await getDocs(invitationsQuery);
           const invitedCreatorIds = invitationsSnapshot.docs.map(doc => doc.data().creatorId);
           setApprovedIds(invitedCreatorIds);
+
+          // Applications (Inbound)
+          const applicationsQuery = query(
+            collection(db, "applications"),
+            where("campaignId", "==", campaign.id),
+            where("status", "==", "pending") // Only show pending
+          );
+          const appsSnapshot = await getDocs(applicationsQuery);
+
+          // Enrich Application Data with Creator Profile
+          const applicationPromises = appsSnapshot.docs.map(async (appDoc) => {
+            const appData = appDoc.data();
+            const creatorDoc = await getDoc(doc(db, "users", appData.creatorId));
+            if (creatorDoc.exists()) {
+              const creatorData = creatorDoc.data();
+              const { score, reasons, breakdown } = calculateMatchScore(campaign, creatorData);
+              return {
+                ...creatorData,
+                id: creatorDoc.id, // Creator ID
+                applicationId: appDoc.id, // Application Ref
+                matchScore: score,
+                matchReason: "Applied to your campaign",
+                matchBreakdown: breakdown,
+                name: creatorData.displayName || "Unknown Creator",
+                avatar: creatorData.photoURL || creatorData.avatar,
+                status: "applicant"
+              };
+            }
+            return null;
+          });
+
+          const resolvedApplicants = (await Promise.all(applicationPromises)).filter(Boolean);
+          setApplicants(resolvedApplicants);
         }
 
-        // 2. Fetch All Creators
-        // In a real app with many users, this should be a backend function or more specific query
+        // 2. Fetch All Creators (for Matches view)
         const creatorsQuery = query(collection(db, "users"), where("role", "==", "creator"));
         const creatorsSnapshot = await getDocs(creatorsQuery);
 
         const validCreators = creatorsSnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter((c: any) => {
-            // MUST have Instagram connected and complete profile
-            return c.instagramConnected && c.displayName;
-          });
+          .filter((c: any) => c.instagramConnected && c.displayName);
 
-        // 3. Match Logic
         // 3. Match Logic
         let matchedCreators = [];
 
         if (campaign) {
           matchedCreators = validCreators.map((creator: any) => {
             const { score, reasons, breakdown } = calculateMatchScore(campaign, creator);
-
-            // Build Reason string for UI
             let matchReason = reasons.join(" • ");
             if (!matchReason) matchReason = "Matched based on availability";
 
@@ -113,27 +131,13 @@ export default function BrandMatches() {
               ...creator,
               name: creator.displayName || "Unnamed Creator",
               avatar: creator.photoURL || creator.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop",
-              location: creator.location || "Unknown",
-              followers: creator.instagramMetrics?.followers
-                ? (creator.instagramMetrics.followers > 1000
-                  ? `${(creator.instagramMetrics.followers / 1000).toFixed(1)}K`
-                  : creator.instagramMetrics.followers)
-                : "0",
-              engagement: `${creator.instagramMetrics?.engagementRate || 0}%`,
               matchScore: score,
-              tags: creator.categories || ["General"],
-              rawEngagement: creator.instagramMetrics?.engagementRate || 0,
-              instagramUsername: creator.instagramUsername,
-              bio: creator.bio,
               matchReason: matchReason,
-              matchBreakdown: breakdown, // Pass for details view
-              campaignName: campaign.name || "Unknown Campaign"
+              matchBreakdown: breakdown,
             };
           })
-            .filter(c => c.matchScore >= 40) // Slightly lower threshold to show more options, sort by score
+            .filter(c => c.matchScore >= 40)
             .sort((a, b) => b.matchScore - a.matchScore);
-        } else {
-          matchedCreators = [];
         }
 
         setCreators(matchedCreators);
@@ -145,25 +149,16 @@ export default function BrandMatches() {
     };
 
     fetchData();
-  }, [user]);
-
-  const [viewMode, setViewMode] = useState<'matches' | 'invited'>('matches');
-
-  // ... (existing code)
+  }, [user, campaignId]);
 
   const handleSendProposal = async (id: string, creatorName: string) => {
-    if (!activeCampaign || !user) {
-      if (!activeCampaign) console.error("No active campaign found");
-      return;
-    }
-
+    if (!activeCampaign || !user) return;
     if (approvedIds.includes(id)) {
       toast.info(`Already sent a proposal to ${creatorName}`);
       return;
     }
 
     try {
-      // 1. Create Invitation Document
       await addDoc(collection(db, "invitations"), {
         campaignId: activeCampaign.id,
         brandId: user.uid,
@@ -177,38 +172,65 @@ export default function BrandMatches() {
           budget: activeCampaign.budget || "Negotiable"
         }
       });
-
-      // 2. Update Local State
       setApprovedIds((prev) => [...prev, id]);
-
-      toast.success(`Proposal sent to ${creatorName}!`, {
-        description: "They will see this in their opportunities.",
-      });
+      toast.success(`Proposal sent to ${creatorName}!`);
     } catch (error) {
       console.error("Error sending proposal:", error);
-      toast.error("Failed to send proposal. Check console for details.");
+      toast.error("Failed to send proposal.");
     }
   };
 
-  // ...
+  const handleApproveApplicant = async (creator: any) => {
+    try {
+      // Update application status
+      await updateDoc(doc(db, "applications", creator.applicationId), {
+        status: "approved",
+        approvedAt: new Date().toISOString()
+      });
+
+      toast.success(`Approved ${creator.name}!`, {
+        description: "The campaign is now active for them."
+      });
+
+      // Remove from list locally
+      setApplicants(prev => prev.filter(a => a.id !== creator.id));
+    } catch (error) {
+      console.error("Error approving applicant:", error);
+      toast.error("Failed to approve applicant");
+    }
+  };
 
   const handleReject = (id: string) => {
     setRejectedIds((prev) => [...prev, id]);
+    // In a real app we might update DB too, currently just hiding from view
   };
+
+  const handleRejectApplicant = async (creator: any) => {
+    try {
+      await updateDoc(doc(db, "applications", creator.applicationId), {
+        status: "rejected"
+      });
+      setApplicants(prev => prev.filter(a => a.id !== creator.id));
+      toast.info("Application rejected");
+    } catch (error) {
+      console.error("Error rejecting:", error);
+    }
+  };
+
+  const visibleCreators = viewMode === 'applicants'
+    ? applicants
+    : creators.filter((c) => {
+      if (viewMode === 'matches') {
+        return !approvedIds.includes(c.id) && !rejectedIds.includes(c.id) && !applicants.find(a => a.id === c.id);
+      } else {
+        return approvedIds.includes(c.id);
+      }
+    });
 
   const handleCardClick = (creator: any) => {
     setSelectedCreator(creator);
     setIsDialogOpen(true);
   };
-
-  const visibleCreators = creators.filter((c) => {
-    if (viewMode === 'matches') {
-      return !approvedIds.includes(c.id) && !rejectedIds.includes(c.id);
-    } else {
-      // 'invited' mode
-      return approvedIds.includes(c.id);
-    }
-  });
 
   if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
@@ -219,27 +241,50 @@ export default function BrandMatches() {
 
       <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <div className="max-w-7xl mx-auto">
-          <DashboardHeader
-            title={viewMode === 'matches' ? "Your Matches" : "Invited Creators"}
-            subtitle={viewMode === 'matches' ? "Creators that perfectly fit your campaigns" : "Creators you have sent proposals to"}
-          />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <DashboardHeader
+              title={
+                viewMode === 'matches' ? "Your Matches" :
+                  viewMode === 'applicants' ? "Applicants" : "Invited Creators"
+              }
+              subtitle={
+                viewMode === 'matches' ? "Creators that perfectly fit your campaigns" :
+                  viewMode === 'applicants' ? "Creators who want to work with you" : "Creators you have sent proposals to"
+              }
+            />
+            {activeCampaign && (
+              <div className="text-sm text-muted-foreground bg-muted/50 px-4 py-2 rounded-lg border">
+                Campaign: <span className="font-medium text-foreground">{activeCampaign.name}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* AI Summary */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          key={viewMode}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="glass-card p-6 mb-8 bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10"
         >
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-6 h-6 text-primary-foreground" />
+              {viewMode === 'applicants' ? (
+                <Users className="w-6 h-6 text-primary-foreground" />
+              ) : (
+                <Sparkles className="w-6 h-6 text-primary-foreground" />
+              )}
             </div>
             <div>
-              <h3 className="font-semibold text-lg mb-2">AI Match Summary</h3>
+              <h3 className="font-semibold text-lg mb-2">
+                {viewMode === 'applicants' ? "Application Status" : "AI Match Summary"}
+              </h3>
               {activeCampaign ? (
                 <p className="text-muted-foreground">
-                  We found <span className="font-semibold text-primary">{creators.length} potential matches</span> based on your campaign criteria.
+                  {viewMode === 'applicants'
+                    ? `You have ${applicants.length} pending applications to review.`
+                    : `We found ${creators.length} potential matches based on your campaign criteria.`
+                  }
                 </p>
               ) : (
                 <p className="text-muted-foreground">
@@ -250,75 +295,99 @@ export default function BrandMatches() {
           </div>
         </motion.div>
 
-        {/* Filters */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Tabs / Filters */}
+        <div className="flex items-center justify-between mb-6 overflow-x-auto pb-2">
           <div className="flex items-center gap-3">
             <Button
               variant={viewMode === 'matches' ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode('matches')}
             >
-              <Filter className="w-4 h-4 mr-2" />
-              New Matches
+              <Sparkles className="w-4 h-4 mr-2" />
+              Matches
+            </Button>
+            <Button
+              variant={viewMode === 'applicants' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode('applicants')}
+              className="relative"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Applicants
+              {applicants.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
+                  {applicants.length}
+                </span>
+              )}
             </Button>
             <Button
               variant={viewMode === 'invited' ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode('invited')}
             >
+              <UserCheck className="w-4 h-4 mr-2" />
               Invited ({approvedIds.length})
             </Button>
           </div>
-          <Button variant="outline" size="sm">
-            <SlidersHorizontal className="w-4 h-4 mr-2" />
-            Filters
-          </Button>
         </div>
 
         {/* Creators Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {visibleCreators.map((creator, index) => (
             <motion.div
               key={creator.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              onClick={() => handleCardClick(creator)} // Add click handler
+              onClick={() => handleCardClick(creator)}
               className="cursor-pointer"
             >
               <CreatorCard
                 creator={creator}
-                onApprove={(id) => {
-                  handleSendProposal(id, creator.name);
+                // Determine actions based on view mode
+                onApprove={async (id) => {
+                  if (viewMode === 'applicants') {
+                    await handleApproveApplicant(creator);
+                  } else if (viewMode === 'matches') {
+                    await handleSendProposal(id, creator.name);
+                  }
                 }}
-                onReject={handleReject}
-                isInvite={viewMode === 'matches'} // Only show send button in matches view
-                hideActions={viewMode === 'invited'} // Hide actions in invited view
+                onReject={(id) => {
+                  if (viewMode === 'applicants') {
+                    handleRejectApplicant(creator);
+                  } else {
+                    handleReject(id);
+                  }
+                }}
+                hideActions={viewMode === 'invited'}
+                isInvite={viewMode === 'matches'}
+                isApplicant={viewMode === 'applicants'} // Pass this prop to modify card button text
               />
             </motion.div>
           ))}
         </div>
 
+        {/* Empty States */}
         {activeCampaign && visibleCreators.length === 0 && (
           <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-success" />
+            <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+              <Filter className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">No new matches found!</h3>
+            <h3 className="text-xl font-semibold mb-2">
+              {viewMode === 'applicants' ? "No pending applications" : "No matches found"}
+            </h3>
             <p className="text-muted-foreground">
-              {creators.length > 0 ? "You've reviewed all current matches." : "Try adjusting your campaign criteria or wait for more creators."}
+              {viewMode === 'applicants'
+                ? "Creators will appear here when they apply to your campaign."
+                : "Try adjusting your filters or campaign criteria."}
             </p>
           </div>
         )}
 
         {!activeCampaign && (
           <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Start your first Campaign</h3>
             <Link to="/brand/campaigns/new">
-              <Button variant="hero" className="mt-4">Create Campaign</Button>
+              <Button variant="hero">Create Campaign</Button>
             </Link>
           </div>
         )}
@@ -329,7 +398,13 @@ export default function BrandMatches() {
           isOpen={isDialogOpen}
           onClose={() => setIsDialogOpen(false)}
           creator={selectedCreator}
-          campaign={activeCampaign} // Pass campaign context
+          campaign={activeCampaign}
+          isApplicant={viewMode === 'applicants'} // Pass context to dialog
+          onApprove={() => {
+            if (viewMode === 'applicants') handleApproveApplicant(selectedCreator);
+            else handleSendProposal(selectedCreator.id, selectedCreator.name);
+            setIsDialogOpen(false);
+          }}
         />
       )}
     </div>

@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchScore } from "@/components/dashboard/MatchScore";
-import { Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2, ExternalLink } from "lucide-react";
+import { Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2, ExternalLink, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -32,6 +32,8 @@ interface MatchDetailsDialogProps {
     onClose: () => void;
     creator: CreatorDetails;
     campaign?: any;
+    isApplicant?: boolean;
+    onApprove?: () => void;
 }
 
 interface InstagramMedia {
@@ -43,7 +45,7 @@ interface InstagramMedia {
     timestamp: string;
 }
 
-export function MatchDetailsDialog({ isOpen, onClose, creator, campaign }: MatchDetailsDialogProps) {
+export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isApplicant, onApprove }: MatchDetailsDialogProps) {
     const [loadingPosts, setLoadingPosts] = useState(false);
     const [posts, setPosts] = useState<InstagramMedia[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -308,8 +310,9 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign }: Match
                         <Button className="flex-1" variant="outline" onClick={onClose}>
                             Close
                         </Button>
-                        <Button className="flex-1" variant="hero">
-                            Send Proposal
+                        <Button className="flex-1" variant="hero" onClick={onApprove}>
+                            <Check className="w-4 h-4 mr-2" />
+                            {isApplicant ? "Approve Application" : "Send Proposal"}
                         </Button>
                     </div>
                 </div>

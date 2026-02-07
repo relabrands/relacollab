@@ -6,7 +6,7 @@ import { OpportunityDetailsDialog } from "@/components/dashboard/OpportunityDeta
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Filter, SlidersHorizontal, Sparkles, Loader2 } from "lucide-react";
-import { collection, query, where, getDocs, orderBy, documentId, getDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, doc, getDoc, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useAuth } from "@/context/AuthContext";
@@ -16,26 +16,36 @@ export default function Opportunities() {
   const { user } = useAuth();
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'all' | 'paid' | 'experience'>('all');
 
   // Dialog State
   const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Track applied campaign IDs to hide them or show as applied
+  const [appliedCampaignIds, setAppliedCampaignIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchOpportunities = async () => {
       if (!user) return;
       try {
+        // 0. Fetch existing applications to exclude/mark them
+        const appsQuery = query(collection(db, "applications"), where("creatorId", "==", user.uid));
+        const appsSnapshot = await getDocs(appsQuery);
+        const appliedIds = new Set(appsSnapshot.docs.map(doc => doc.data().campaignId));
+        setAppliedCampaignIds(appliedIds);
+
         // 1. Fetch Invitations for this user
         const invitationsQuery = query(
           collection(db, "invitations"),
           where("creatorId", "==", user.uid),
-          where("status", "==", "pending") // Only show pending invitations
+          where("status", "==", "pending")
         );
         const invSnapshot = await getDocs(invitationsQuery);
 
         const invitationsPromises = invSnapshot.docs.map(async (invDoc) => {
           const invData = invDoc.data();
-          // Fetch the actual campaign data to ensure we have up-to-date info
           const campaignDocRef = doc(db, "campaigns", invData.campaignId);
           const campaignSnap = await getDoc(campaignDocRef);
 
@@ -45,15 +55,12 @@ export default function Opportunities() {
               id: invData.campaignId,
               invitationId: invDoc.id,
               ...campaignData,
-              title: campaignData.name || "Untitled Campaign", // Map name to title
+              title: campaignData.name || "Untitled Campaign",
               isInvited: true,
               matchScore: 98,
-              createdAt: invData.createdAt,
-              // Ensure reward type exists
               rewardType: campaignData.reward === 'paid' ? 'paid' : (campaignData.reward === 'experience' ? 'experience' : 'hybrid')
             };
           }
-          // Fallback if campaign deleted but invite exists (should cleanup but for now fallback)
           return null;
         });
 
@@ -74,12 +81,14 @@ export default function Opportunities() {
             return {
               id: doc.id,
               ...data,
-              title: data.name, // Map name to title for consistency
+              title: data.name,
               matchScore: data.matchScore || (80 + Math.floor(Math.random() * 15)),
-              isInvited: false
+              isInvited: false,
+              rewardType: data.reward === 'paid' ? 'paid' : (data.reward === 'experience' ? 'experience' : 'hybrid')
             };
           })
-          .filter(op => !invitedCampaignIds.has(op.id)); // Dedup
+          .filter(op => !invitedCampaignIds.has(op.id))
+          .filter(op => !appliedIds.has(op.id)); // Hide already applied campaigns
 
         setOpportunities([...resolvedInvitations, ...generalOpportunities]);
       } catch (error) {
@@ -92,18 +101,64 @@ export default function Opportunities() {
     fetchOpportunities();
   }, [user]);
 
-  const handleApply = (id: string) => {
-    // This is called when "Accept" or "Apply" is clicked directly on card or dialog
-    toast.success("Application Sent!", {
-      description: "The brand has been notified.",
-    });
-    setIsDialogOpen(false);
+  const handleApply = async (campaignId: string) => {
+    if (!user || processingId) return;
+
+    // Find campaign details
+    const campaign = opportunities.find(op => op.id === campaignId);
+    if (!campaign) return;
+
+    setProcessingId(campaignId);
+
+    try {
+      // Create application
+      await addDoc(collection(db, "applications"), {
+        campaignId: campaignId,
+        creatorId: user.uid,
+        brandId: campaign.brandId,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        campaignData: {
+          title: campaign.title,
+          name: campaign.name,
+          image: campaign.images?.[0] || ""
+        },
+        creatorData: {
+          // In a real app we'd fetch this from user profile or context
+          // For now we rely on backend or simple ID
+          id: user.uid,
+          email: user.email
+        }
+      });
+
+      toast.success("Application Sent!", {
+        description: "The brand has been notified of your interest.",
+      });
+
+      // Update local state to remove from list
+      setOpportunities(prev => prev.filter(op => op.id !== campaignId));
+      setAppliedCampaignIds(prev => new Set(prev).add(campaignId));
+      setIsDialogOpen(false);
+
+    } catch (error) {
+      console.error("Error applying:", error);
+      toast.error("Failed to submit application");
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const handleCardClick = (opportunity: any) => {
     setSelectedOpportunity(opportunity);
     setIsDialogOpen(true);
   };
+
+  const filteredOpportunities = opportunities.filter(op => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'paid') return op.rewardType === 'paid' || op.rewardType === 'hybrid';
+    if (activeTab === 'experience') return op.rewardType === 'experience' || op.rewardType === 'hybrid';
+    return true;
+  });
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -139,14 +194,28 @@ export default function Opportunities() {
         {/* Filters */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto no-scrollbar">
-            <Button variant="outline" size="sm" className="whitespace-nowrap">
-              <Filter className="w-4 h-4 mr-2" />
+            <Button
+              variant={activeTab === 'all' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab('all')}
+              className="whitespace-nowrap"
+            >
               All ({opportunities.length})
             </Button>
-            <Button variant="ghost" size="sm" className="whitespace-nowrap">
+            <Button
+              variant={activeTab === 'paid' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab('paid')}
+              className="whitespace-nowrap"
+            >
               Paid Only
             </Button>
-            <Button variant="ghost" size="sm" className="whitespace-nowrap">
+            <Button
+              variant={activeTab === 'experience' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab('experience')}
+              className="whitespace-nowrap"
+            >
               Experience
             </Button>
           </div>
@@ -161,9 +230,9 @@ export default function Opportunities() {
           <div className="flex justify-center py-12">
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
           </div>
-        ) : opportunities.length > 0 ? (
+        ) : filteredOpportunities.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {opportunities.map((opportunity, index) => (
+            {filteredOpportunities.map((opportunity, index) => (
               <motion.div
                 key={opportunity.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -172,16 +241,18 @@ export default function Opportunities() {
                 onClick={() => handleCardClick(opportunity)}
                 className="cursor-pointer"
               >
-                <OpportunityCard
-                  opportunity={opportunity}
-                  onAccept={(id) => {
-                    // If they click the button directly, we handle it
-                    // But usually we might want to open details first? 
-                    // Let's let the button do the action for now or bubbling might trigger details
-                    // We handled propagation in OpportunityCard? Check.
-                    handleApply(id);
-                  }}
-                />
+                <div className="relative">
+                  <OpportunityCard
+                    opportunity={opportunity}
+                    onAccept={(id) => handleApply(id)}
+                  />
+                  {/* Block interaction if applying */}
+                  {processingId === opportunity.id && (
+                    <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-xl z-10">
+                      <Loader2 className="animate-spin" />
+                    </div>
+                  )}
+                </div>
               </motion.div>
             ))}
           </div>

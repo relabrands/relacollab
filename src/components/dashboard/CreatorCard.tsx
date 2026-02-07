@@ -21,10 +21,11 @@ interface CreatorCardProps {
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
   isInvite?: boolean;
+  isApplicant?: boolean;
   hideActions?: boolean;
 }
 
-export function CreatorCard({ creator, onApprove, onReject, isInvite = false, hideActions = false }: CreatorCardProps) {
+export function CreatorCard({ creator, onApprove, onReject, isInvite = false, isApplicant = false, hideActions = false }: CreatorCardProps) {
 
   const handleApprove = () => {
     if (onApprove) {
@@ -119,7 +120,7 @@ export function CreatorCard({ creator, onApprove, onReject, isInvite = false, hi
               ) : (
                 <Check className="w-4 h-4 mr-2" />
               )}
-              {isInvite ? "Invite" : "Approve"}
+              {isApplicant ? "Approve App" : (isInvite ? "Invite" : "Approve")}
             </Button>
           </div>
         ) : (
