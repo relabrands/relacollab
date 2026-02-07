@@ -192,6 +192,18 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign }: Match
                                     </div>
                                 </div>
 
+                                {((creator as any).matchBreakdown?.bonus || 0) > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Bonus (Follower Fit)</span>
+                                            <span className="font-medium">{(creator as any).matchBreakdown?.bonus || 0}/10</span>
+                                        </div>
+                                        <div className="w-full bg-primary/10 rounded-full h-2">
+                                            <div className="bg-primary h-2 rounded-full" style={{ width: `${((creator as any).matchBreakdown?.bonus || 0) / 10 * 100}%` }}></div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="pt-2">
                                     <p className="text-xs text-muted-foreground italic">
                                         "{creator.matchReason}"
