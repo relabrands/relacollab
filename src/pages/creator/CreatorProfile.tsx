@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { db, storage, auth } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, deleteField } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateProfile } from "firebase/auth";
 import {
@@ -159,6 +159,33 @@ export default function CreatorProfile() {
   const handleInstagramConnect = () => {
     const authUrl = "https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=1284439146828000&redirect_uri=https://relacollab.com/auth/facebook/callback&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights";
     window.location.href = authUrl;
+  };
+
+  const handleInstagramDisconnect = async () => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        instagramConnected: false,
+        instagramAccessToken: deleteField(),
+        instagramMetrics: deleteField(),
+        instagramId: deleteField(),
+        instagramUsername: deleteField(),
+        instagramTokenExpiresAt: deleteField(),
+        "socialHandles.instagram": deleteField()
+      });
+
+      setProfile((prev: any) => ({
+        ...prev,
+        instagramConnected: false,
+        instagramMetrics: null
+      }));
+      setSocialHandles(prev => ({ ...prev, instagram: "" }));
+
+      toast.success("Instagram disconnected.");
+    } catch (error) {
+      console.error("Error disconnecting:", error);
+      toast.error("Failed to disconnect.");
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -450,7 +477,7 @@ export default function CreatorProfile() {
                       return (
                         <div className="text-sm">
                           <p className="text-muted-foreground">Username: @{socialHandles.instagram}</p>
-                          <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setSocialHandles(prev => ({ ...prev, instagram: "" }))}>
+                          <Button variant="outline" size="sm" className="w-full mt-2" onClick={handleInstagramDisconnect}>
                             Disconnect
                           </Button>
                         </div>
