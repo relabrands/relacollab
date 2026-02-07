@@ -142,7 +142,7 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
             // Fetch Media from Instagram Graph API
             try {
                 const response = await axios.get(
-                    `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp&limit=18&access_token=${accessToken}`
+                    `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=18&access_token=${accessToken}`
                 );
 
                 const mediaItems = response.data.data.map(item => ({
@@ -152,7 +152,9 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
                     // For VIDEO, use thumbnail_url. For IMAGE/CAROUSEL, use media_url
                     thumbnail: item.media_type === 'VIDEO' ? item.thumbnail_url : item.media_url,
                     permalink: item.permalink,
-                    timestamp: item.timestamp
+                    timestamp: item.timestamp,
+                    like_count: item.like_count || 0,
+                    comments_count: item.comments_count || 0
                 }));
 
                 return res.json({ success: true, data: mediaItems });

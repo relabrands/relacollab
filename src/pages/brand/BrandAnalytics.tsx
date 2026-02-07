@@ -4,29 +4,133 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 
 export default function BrandAnalytics() {
     const { user } = useAuth();
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<any[]>([]);
+    const [stats, setStats] = useState({
+        totalPosts: 0,
+        totalLikes: 0,
+        totalComments: 0,
+        totalReach: 0
+    });
+    const [creatorPerformance, setCreatorPerformance] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
             if (!user) return;
             try {
+                // 1. Get Brand Campaigns
                 const q = query(collection(db, "campaigns"), where("brandId", "==", user.uid));
-                const snapshot = await getDocs(q);
-                // Mocking analytics data based on campaign count for now, as we don't have real analytics events yet
-                const chartData = snapshot.docs.map((doc, index) => ({
-                    name: doc.data().name.substring(0, 10),
-                    views: Math.floor(Math.random() * 1000) + 100, // Real analytics would fetch this
-                    clicks: Math.floor(Math.random() * 500) + 50
-                }));
+                const campaignSnapshot = await getDocs(q);
+                const campaignIds = campaignSnapshot.docs.map(d => d.id);
+                const campaignMap = new Map(campaignSnapshot.docs.map(d => [d.id, d.data().name]));
+
+                if (campaignIds.length === 0) {
+                    setLoading(false);
+                    return;
+                }
+
+                // 2. Get Submissions for these campaigns
+                // Firestore 'in' query supports up to 10 items. If more, we might need multiple queries or just fetch all submissions and filter (if not too many).
+                // For Scalability: Query submissions by brandId if we added it, but we didn't.
+                // Alternative: Query *all* submissions and filter in JS (okay for MVP).
+                // Better: Fetch submissions for each campaign (Promise.all).
+
+                const submissionsPromises = campaignIds.map(id =>
+                    getDocs(query(collection(db, "submissions"), where("campaignId", "==", id)))
+                );
+
+                const snapshots = await Promise.all(submissionsPromises);
+                let allSubmissions: any[] = [];
+                snapshots.forEach(snap => {
+                    allSubmissions = [...allSubmissions, ...snap.docs.map(d => ({ id: d.id, ...d.data() }))];
+                });
+
+                // 3. Aggregate Data
+                let tPosts = 0;
+                let tLikes = 0;
+                let tComments = 0;
+
+                // Group by Creator
+                const creatorStats: any = {};
+
+                for (const sub of allSubmissions) {
+                    tPosts++;
+                    const likes = sub.likes || 0;
+                    const comments = sub.comments || 0;
+                    tLikes += likes;
+                    tComments += comments;
+
+                    if (!creatorStats[sub.userId]) {
+                        // We need creator name/avatar. We might need to fetch user profile or store it in submission. 
+                        // For now, let's assume we fetch it or just show ID/placeholder if not fast enough.
+                        // Actually, let's fetch unique users involved.
+                        creatorStats[sub.userId] = {
+                            userId: sub.userId,
+                            posts: 0,
+                            likes: 0,
+                            comments: 0,
+                            campaigns: new Set()
+                        };
+                    }
+                    creatorStats[sub.userId].posts++;
+                    creatorStats[sub.userId].likes += likes;
+                    creatorStats[sub.userId].comments += comments;
+                    creatorStats[sub.userId].campaigns.add(campaignMap.get(sub.campaignId) || "Unknown");
+                }
+
+                setStats({
+                    totalPosts: tPosts,
+                    totalLikes: tLikes,
+                    totalComments: tComments,
+                    totalReach: 0 // We'd need to sum follower counts of unique creators
+                });
+
+                // Fetch Creator Profiles for the table
+                const creatorIds = Object.keys(creatorStats);
+                if (creatorIds.length > 0) {
+                    // Chunk requests if needed, for now Promise.all
+                    const creatorDocs = await Promise.all(creatorIds.map(id => getDocs(query(collection(db, "users"), where("__name__", "==", id))))); // Effectively getting by ID but using query for consistency
+                    // Actually getDoc is better
+                    const userPromises = creatorIds.map(id => getDoc(doc(db, "users", id)));
+                    const userSnaps = await Promise.all(userPromises);
+
+                    const creatorsData = userSnaps.map(snap => snap.exists() ? { id: snap.id, ...snap.data() } : null).filter(Boolean);
+
+                    const enrichedPerformance = creatorIds.map(id => {
+                        const profile: any = creatorsData.find((c: any) => c.id === id);
+                        const stat = creatorStats[id];
+                        return {
+                            ...stat,
+                            name: profile?.displayName || "Unknown Creator",
+                            avatar: profile?.photoURL || profile?.avatar,
+                            handle: profile?.instagramUsername,
+                            campaigns: Array.from(stat.campaigns).join(", ")
+                        };
+                    });
+                    setCreatorPerformance(enrichedPerformance);
+                } else {
+                    setCreatorPerformance([]);
+                }
+
+                // Data for Chart (Posts per Campaign?)
+                const chartData = campaignSnapshot.docs.map(doc => {
+                    const cId = doc.id;
+                    const cName = doc.data().name || "Untitled";
+                    const campaignSubs = allSubmissions.filter(s => s.campaignId === cId);
+                    const cLikes = campaignSubs.reduce((acc, curr) => acc + (curr.likes || 0), 0);
+                    return {
+                        name: cName.substring(0, 10),
+                        likes: cLikes,
+                        posts: campaignSubs.length
+                    };
+                });
                 setData(chartData);
+
             } catch (error) {
                 console.error(error);
             } finally {
@@ -44,25 +148,98 @@ export default function BrandAnalytics() {
             <MobileNav type="brand" />
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
-                <DashboardHeader title="Analytics Overview" subtitle="Performance of your campaigns" />
+                <DashboardHeader title="Analytics Overview" subtitle="Real-time performance from valid submissions" />
 
-                {data.length > 0 ? (
-                    <Card className="col-span-4">
-                        <CardHeader>
-                            <CardTitle>Overview</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pl-2">
-                            <ResponsiveContainer width="100%" height={350}>
-                                <BarChart data={data}>
-                                    <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
-                                    <Tooltip />
-                                    <Bar dataKey="views" fill="#adfa1d" radius={[4, 4, 0, 0]} />
-                                    <Bar dataKey="clicks" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                {/* Overall Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Posts</CardTitle></CardHeader>
+                        <CardContent><div className="text-2xl font-bold">{stats.totalPosts}</div></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Likes</CardTitle></CardHeader>
+                        <CardContent><div className="text-2xl font-bold text-primary">{stats.totalLikes.toLocaleString()}</div></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Comments</CardTitle></CardHeader>
+                        <CardContent><div className="text-2xl font-bold text-primary">{stats.totalComments.toLocaleString()}</div></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Avg. Engagement</CardTitle></CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-success">
+                                {stats.totalPosts > 0 ? Math.round((stats.totalLikes + stats.totalComments) / stats.totalPosts) : 0}
+                            </div>
                         </CardContent>
                     </Card>
+                </div>
+
+                {data.length > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Chart */}
+                        <Card className="col-span-3 lg:col-span-2">
+                            <CardHeader>
+                                <CardTitle>Campaign Performance (Likes)</CardTitle>
+                            </CardHeader>
+                            <CardContent className="pl-2">
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <BarChart data={data}>
+                                        <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip />
+                                        <Bar dataKey="likes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+
+                        {/* Creator Breakdown Table */}
+                        <Card className="col-span-3">
+                            <CardHeader>
+                                <CardTitle>Creator Performance</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {creatorPerformance.length > 0 ? (
+                                        <div className="w-full overflow-auto">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
+                                                    <tr>
+                                                        <th className="px-4 py-3 rounded-l-lg">Creator</th>
+                                                        <th className="px-4 py-3">Campaigns</th>
+                                                        <th className="px-4 py-3 text-right">Posts</th>
+                                                        <th className="px-4 py-3 text-right">Likes</th>
+                                                        <th className="px-4 py-3 text-right rounded-r-lg">Comments</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {creatorPerformance.map((item) => (
+                                                        <tr key={item.userId} className="border-b border-border/50 hover:bg-muted/20">
+                                                            <td className="px-4 py-3 font-medium flex items-center gap-3">
+                                                                <div className="w-8 h-8 rounded-full bg-muted overflow-hidden">
+                                                                    {item.avatar && <img src={item.avatar} className="w-full h-full object-cover" />}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="font-semibold">{item.name}</div>
+                                                                    <div className="text-xs text-muted-foreground">@{item.handle}</div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-muted-foreground">{item.campaigns}</td>
+                                                            <td className="px-4 py-3 text-right">{item.posts}</td>
+                                                            <td className="px-4 py-3 text-right text-success font-medium">{item.likes.toLocaleString()}</td>
+                                                            <td className="px-4 py-3 text-right">{item.comments.toLocaleString()}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ) : (
+                                        <p className="text-center text-muted-foreground py-8">No specific creator data available yet.</p>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 ) : (
                     <div className="text-center p-8 border rounded-lg bg-white">
                         <p>No analytics data available yet. Start a campaign to see results!</p>
