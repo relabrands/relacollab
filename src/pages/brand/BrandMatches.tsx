@@ -267,6 +267,11 @@ export default function BrandMatches() {
   };
 
   const handleRejectApplicant = async (creator: any) => {
+    // Add confirmation
+    if (!confirm(`Are you sure you want to reject ${creator.name}'s application? This action cannot be undone.`)) {
+      return;
+    }
+
     try {
       await updateDoc(doc(db, "applications", creator.applicationId), {
         status: "rejected"
@@ -275,6 +280,7 @@ export default function BrandMatches() {
       toast.info("Application rejected");
     } catch (error) {
       console.error("Error rejecting:", error);
+      toast.error("Failed to reject application. Please try again.");
     }
   };
 
@@ -481,18 +487,37 @@ export default function BrandMatches() {
 
         {/* Empty States */}
         {activeCampaign && visibleCreators.length === 0 && (
-          <div className="text-center py-20">
+          <div className="text-center py-20 max-w-md mx-auto">
             <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
               <Filter className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="text-xl font-semibold mb-2">
-              {viewMode === 'applicants' ? "No pending applications" : "No matches found"}
+              {viewMode === 'applicants' ? "No pending applications yet" :
+                viewMode === 'matches' ? "No matching creators found" :
+                  viewMode === 'collaborating' ? "No active collaborations" :
+                    "No invited creators"}
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-6">
               {viewMode === 'applicants'
-                ? "Creators will appear here when they apply to your campaign."
-                : "Try adjusting your filters or campaign criteria."}
+                ? "Creators will appear here when they discover and apply to your campaign. Share your campaign to attract more applicants."
+                : viewMode === 'matches'
+                  ? "We couldn't find creators matching your campaign criteria. Try broadening your requirements or check back later as new creators join daily."
+                  : viewMode === 'collaborating'
+                    ? "Once you approve applicants or creators accept invitations, they'll appear here."
+                    : "Creators you invite will show here. Browse the Matches tab to find and invite creators."}
             </p>
+
+            {viewMode === 'matches' && (
+              <div className="bg-muted/30 rounded-lg p-4 text-sm text-left">
+                <p className="font-medium mb-2">💡 Tips to get more matches:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Adjust location preferences</li>
+                  <li>• Review campaign vibes and categories</li>
+                  <li>• Ensure budget is competitive</li>
+                  <li>• Make campaign description compelling</li>
+                </ul>
+              </div>
+            )}
           </div>
         )}
 

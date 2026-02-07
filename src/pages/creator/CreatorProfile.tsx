@@ -163,6 +163,12 @@ export default function CreatorProfile() {
 
   const handleInstagramDisconnect = async () => {
     if (!user) return;
+
+    // Add confirmation
+    if (!confirm("Are you sure you want to disconnect Instagram? You'll lose access to your metrics and won't appear in brand matches.")) {
+      return;
+    }
+
     try {
       await updateDoc(doc(db, "users", user.uid), {
         instagramConnected: false,
@@ -184,7 +190,7 @@ export default function CreatorProfile() {
       toast.success("Instagram disconnected.");
     } catch (error) {
       console.error("Error disconnecting:", error);
-      toast.error("Failed to disconnect.");
+      toast.error("Failed to disconnect. Please try again.");
     }
   };
 

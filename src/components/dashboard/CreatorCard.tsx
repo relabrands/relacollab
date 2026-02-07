@@ -13,6 +13,12 @@ interface CreatorCardProps {
     followers: string;
     engagement: string;
     matchScore: number;
+    matchBreakdown?: {
+      location: number;
+      vibe: number;
+      engagement: number;
+      bonus: number;
+    };
     tags: string[];
     matchReason?: string;
     bio?: string;
@@ -61,7 +67,7 @@ export function CreatorCard({ creator, onApprove, onReject, isInvite = false, is
             </div>
           </div>
         </div>
-        <MatchScore score={creator.matchScore} />
+        <MatchScore score={creator.matchScore} breakdown={creator.matchBreakdown} />
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-4">
