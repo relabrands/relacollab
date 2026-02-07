@@ -522,67 +522,20 @@ export default function CreatorProfile() {
               </div>
             </div>
 
-            {/* AI Profile Analysis */}
+            {/* AI Profile Analysis Link */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-primary" />
                 AI Profile Analysis
               </h3>
-              <div className="glass-card p-6 bg-gradient-to-br from-primary/5 to-accent/5">
-                {socialHandles.instagram && profile.instagramMetrics ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="p-4 bg-background/50 rounded-lg text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Followers</p>
-                        <p className="text-xl font-bold text-primary">
-                          {profile.instagramMetrics?.followers
-                            ? (profile.instagramMetrics.followers > 1000
-                              ? `${(profile.instagramMetrics.followers / 1000).toFixed(1)}K`
-                              : profile.instagramMetrics.followers)
-                            : "0"}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-background/50 rounded-lg text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Eng. Rate</p>
-                        <p className="text-xl font-bold text-success">
-                          {profile.instagramMetrics?.engagementRate || 0}%
-                        </p>
-                      </div>
-                      <div className="p-4 bg-background/50 rounded-lg text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Avg. Likes</p>
-                        <p className="text-xl font-bold text-primary">
-                          {profile.instagramMetrics?.avgLikes?.toLocaleString() || "0"}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-background/50 rounded-lg text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Avg. Reel Views</p>
-                        <p className="text-xl font-bold text-primary">
-                          {profile.instagramMetrics?.avgViews?.toLocaleString() || "N/A"}
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-2">Content Insights</h4>
-                      <ul className="space-y-2 text-sm text-muted-foreground">
-                        <li className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-success mt-0.5" />
-                          High engagement on video content (Reels).
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-success mt-0.5" />
-                          <span>Audience primarily active between 6pm - 9pm.</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-muted-foreground mb-4">Connect your Instagram account to unlock AI-powered insights about your audience and content performance.</p>
-                    <Button variant="hero" onClick={handleInstagramConnect}>
-                      Unlock Insights
-                    </Button>
-                  </div>
-                )}
+              <div className="glass-card p-6 bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium">View your AI Insights</h4>
+                  <p className="text-sm text-muted-foreground">Deep dive into your performance, content analysis, and audience metrics.</p>
+                </div>
+                <Button asChild>
+                  <a href="/creator/analytics">View Analytics</a>
+                </Button>
               </div>
             </div>
           </div>

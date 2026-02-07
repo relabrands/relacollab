@@ -35,6 +35,7 @@ const creatorNavItems = [
   { icon: Zap, label: "Active Campaigns", path: "/creator/active" },
   { icon: Image, label: "My Content", path: "/creator/content" },
   { icon: User, label: "My Profile", path: "/creator/profile" },
+  { icon: Sparkles, label: "AI Insights", path: "/creator/analytics" },
   { icon: CreditCard, label: "Earnings", path: "/creator/earnings" },
   { icon: Settings, label: "Settings", path: "/creator/settings" },
 ];
