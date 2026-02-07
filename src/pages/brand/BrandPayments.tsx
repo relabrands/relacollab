@@ -57,9 +57,9 @@ export default function BrandPayments() {
                 ...doc.data()
             })) as Plan[];
             setPlans(fetchedPlans);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error fetching plans:", error);
-            // toast.error("Failed to load plans");
+            toast.error("Failed to load plans: " + (error.message || "Unknown error"));
         } finally {
             setLoadingPlans(false);
         }
