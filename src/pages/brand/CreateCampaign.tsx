@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
@@ -35,16 +35,14 @@ const rewardOptions = [
   { id: "hybrid", label: "Hybrid", description: "Experience + cash" },
 ];
 
-import { useState, useEffect } from "react";
-// ... imports
 
-// ...
 
 export default function CreateCampaign() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [credits, setCredits] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -72,6 +70,7 @@ export default function CreateCampaign() {
             // Only pre-fill description if the user hasn't typed anything yet (though on mount it's empty)
             description: userData.description || ""
           }));
+          setCredits(userData.credits || 0);
         }
       } catch (error) {
         console.error("Error fetching brand profile:", error);
@@ -422,8 +421,8 @@ export default function CreateCampaign() {
                       }
                       className="mt-2"
                     />
-                    <p className={`text-xs mt-1 ${creditsAvailable < (parseInt(formData.creatorCount) || 1) ? "text-destructive" : "text-muted-foreground"}`}>
-                      Available Credits: {creditsAvailable}
+                    <p className={`text-xs mt-1 ${credits < (parseInt(formData.creatorCount) || 1) ? "text-destructive" : "text-muted-foreground"}`}>
+                      Available Credits: {credits}
                     </p>
                   </div>
                 </div>
