@@ -60,7 +60,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
 
     const generateAnalysis = () => {
         const vibes = campaign?.vibes?.join(", ") || "brand";
-        const categories = creator.tags.join(", ");
+        const categories = (creator.tags || []).join(", ");
         const er = creator.instagramMetrics?.engagementRate || 0;
 
         // 1. Fit Analysis

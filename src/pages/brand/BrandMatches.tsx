@@ -139,6 +139,7 @@ export default function BrandMatches() {
               matchScore: score,
               matchReason: matchReason,
               matchBreakdown: breakdown,
+              tags: creator.categories || creator.tags || ["General"],
             };
           })
             .filter(c => c.matchScore >= 40)
