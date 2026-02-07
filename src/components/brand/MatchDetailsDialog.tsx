@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchScore } from "@/components/dashboard/MatchScore";
-import { Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2, ExternalLink, Check } from "lucide-react";
+import { Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2, ExternalLink, Check, Eye } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -33,6 +33,7 @@ interface MatchDetailsDialogProps {
     creator: CreatorDetails;
     campaign?: any;
     isApplicant?: boolean;
+    isCollaborating?: boolean;
     onApprove?: () => void;
 }
 
@@ -45,7 +46,7 @@ interface InstagramMedia {
     timestamp: string;
 }
 
-export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isApplicant, onApprove }: MatchDetailsDialogProps) {
+export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isApplicant, isCollaborating, onApprove }: MatchDetailsDialogProps) {
     const [loadingPosts, setLoadingPosts] = useState(false);
     const [posts, setPosts] = useState<InstagramMedia[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -310,9 +311,9 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                         <Button className="flex-1" variant="outline" onClick={onClose}>
                             Close
                         </Button>
-                        <Button className="flex-1" variant="hero" onClick={onApprove}>
-                            <Check className="w-4 h-4 mr-2" />
-                            {isApplicant ? "Approve Application" : "Send Proposal"}
+                        <Button className="flex-1" variant={isCollaborating ? "outline" : "hero"} onClick={onApprove}>
+                            {isCollaborating ? <Eye className="w-4 h-4 mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+                            {isApplicant ? "Approve Application" : isCollaborating ? "View Content" : "Send Proposal"}
                         </Button>
                     </div>
                 </div>

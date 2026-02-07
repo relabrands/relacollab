@@ -35,7 +35,7 @@ const rewardTypeColors = {
 
 const rewardTypeLabels = {
   paid: "Paid",
-  experience: "Free Experience",
+  experience: "Product/Service Exchange",
   hybrid: "Experience + Cash",
 };
 
@@ -74,7 +74,7 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false }: Opp
           </div>
           <p className="text-sm text-muted-foreground">{opportunity.brandName}</p>
         </div>
-        <MatchScore score={opportunity.matchScore} size="md" showLabel={false} />
+        {!isActive && <MatchScore score={opportunity.matchScore} size="md" showLabel={false} />}
       </div>
 
       {/* Details */}

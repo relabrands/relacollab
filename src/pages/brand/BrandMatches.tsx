@@ -441,6 +441,7 @@ export default function BrandMatches() {
           creator={selectedCreator}
           campaign={activeCampaign}
           isApplicant={viewMode === 'applicants'} // Pass context to dialog
+          isCollaborating={viewMode === 'collaborating'}
           onApprove={() => {
             if (viewMode === 'applicants') handleApproveApplicant(selectedCreator);
             else handleSendProposal(selectedCreator.id, selectedCreator.name);

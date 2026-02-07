@@ -36,9 +36,25 @@ export default function ActiveCampaigns() {
                     const campaignDoc = await getDoc(campaignRef);
 
                     if (campaignDoc.exists()) {
+                        const brandId = campaignDoc.data().brandId;
+                        let brandLogo = campaignDoc.data().brandLogo || "";
+
+                        // Try to fetch brand's profile picture if not present on campaign
+                        if (brandId) {
+                            try {
+                                const brandDoc = await getDoc(doc(db, "users", brandId));
+                                if (brandDoc.exists()) {
+                                    brandLogo = brandDoc.data().photoURL || brandDoc.data().avatar || brandLogo;
+                                }
+                            } catch (e) {
+                                console.log("Error fetching brand logo", e);
+                            }
+                        }
+
                         campaigns.push({
                             id: campaignDoc.id,
                             ...campaignDoc.data(),
+                            brandLogo: brandLogo, // Use the fetched logo
                             applicationId: appDoc.id, // Keep track of the application ID if needed
                             matchScore: 100, // It's a match!
                             title: campaignDoc.data().title || campaignDoc.data().name || "Untitled Campaign",
