@@ -6,7 +6,7 @@ import { OpportunityDetailsDialog } from "@/components/dashboard/OpportunityDeta
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Filter, SlidersHorizontal, Sparkles, Loader2 } from "lucide-react";
-import { collection, query, where, getDocs, orderBy, doc, getDoc, addDoc, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, doc, getDoc, addDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useAuth } from "@/context/AuthContext";
@@ -51,6 +51,18 @@ export default function Opportunities() {
 
           if (campaignSnap.exists()) {
             const campaignData = campaignSnap.data();
+
+            // Fetch Brand Details
+            let brandData = {};
+            try {
+              const brandDoc = await getDoc(doc(db, "users", campaignData.brandId));
+              if (brandDoc.exists()) {
+                brandData = brandDoc.data();
+              }
+            } catch (e) {
+              console.error("Error fetching brand details for invite", e);
+            }
+
             return {
               id: invData.campaignId,
               invitationId: invDoc.id,
@@ -58,7 +70,8 @@ export default function Opportunities() {
               title: campaignData.name || "Untitled Campaign",
               isInvited: true,
               matchScore: 98,
-              rewardType: campaignData.reward === 'paid' ? 'paid' : (campaignData.reward === 'experience' ? 'experience' : 'hybrid')
+              rewardType: campaignData.reward === 'paid' ? 'paid' : (campaignData.reward === 'experience' ? 'experience' : 'hybrid'),
+              brandProfile: brandData
             };
           }
           return null;
@@ -75,22 +88,36 @@ export default function Opportunities() {
         );
 
         const querySnapshot = await getDocs(q);
-        const generalOpportunities = querySnapshot.docs
-          .map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              title: data.name,
-              matchScore: data.matchScore || (80 + Math.floor(Math.random() * 15)),
-              isInvited: false,
-              rewardType: data.reward === 'paid' ? 'paid' : (data.reward === 'experience' ? 'experience' : 'hybrid')
-            };
-          })
+        const generalOpportunities = await Promise.all(querySnapshot.docs.map(async (docSnap) => {
+          const data = docSnap.data();
+
+          // Fetch Brand Details
+          let brandData = {};
+          try {
+            const brandDoc = await getDoc(doc(db, "users", data.brandId));
+            if (brandDoc.exists()) {
+              brandData = brandDoc.data();
+            }
+          } catch (e) {
+            console.error("Error fetching brand details for opportunity", e);
+          }
+
+          return {
+            id: docSnap.id,
+            ...data,
+            title: data.name,
+            matchScore: data.matchScore || (80 + Math.floor(Math.random() * 15)),
+            isInvited: false,
+            rewardType: data.reward === 'paid' ? 'paid' : (data.reward === 'experience' ? 'experience' : 'hybrid'),
+            brandProfile: brandData
+          };
+        }));
+
+        const filteredGeneral = generalOpportunities
           .filter(op => !invitedCampaignIds.has(op.id))
           .filter(op => !appliedIds.has(op.id)); // Hide already applied campaigns
 
-        setOpportunities([...resolvedInvitations, ...generalOpportunities]);
+        setOpportunities([...resolvedInvitations, ...filteredGeneral]);
       } catch (error) {
         console.error("Error fetching opportunities:", error);
       } finally {
@@ -100,6 +127,9 @@ export default function Opportunities() {
 
     fetchOpportunities();
   }, [user]);
+
+
+
 
   const handleApply = async (campaignId: string) => {
     if (!user || processingId) return;

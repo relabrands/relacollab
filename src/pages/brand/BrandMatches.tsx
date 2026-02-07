@@ -6,7 +6,7 @@ import { MatchDetailsDialog } from "@/components/brand/MatchDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Sparkles, Filter, SlidersHorizontal, Loader2, Plus, Users, UserCheck } from "lucide-react";
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, addDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, addDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchParams, Link } from "react-router-dom";
@@ -193,6 +193,13 @@ export default function BrandMatches() {
         status: "approved",
         approvedAt: new Date().toISOString()
       });
+
+      // Increment approvedCount on campaign
+      if (activeCampaign?.id) {
+        await updateDoc(doc(db, "campaigns", activeCampaign.id), {
+          approvedCount: increment(1)
+        });
+      }
 
       toast.success(`Approved ${creator.name}!`, {
         description: "The campaign is now active for them."

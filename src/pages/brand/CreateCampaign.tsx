@@ -104,6 +104,8 @@ export default function CreateCampaign() {
         createdAt: new Date().toISOString(),
         budget: parseFloat(formData.budget) || 0,
         creatorCount: parseInt(formData.creatorCount) || 1,
+        approvedCount: 0,
+        applicationCount: 0,
       };
 
       await addDoc(collection(db, "campaigns"), campaignData);

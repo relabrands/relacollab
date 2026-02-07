@@ -25,7 +25,8 @@ export default function BrandSettings() {
         website: "",
         industry: "",
         location: "",
-        description: ""
+        description: "",
+        instagram: ""
     });
 
     useEffect(() => {
@@ -42,7 +43,8 @@ export default function BrandSettings() {
                         website: data.website || "",
                         industry: data.industry || "",
                         location: data.location || "",
-                        description: data.description || ""
+                        description: data.description || "",
+                        instagram: data.instagram || ""
                     });
                 }
             } catch (error) {
@@ -132,6 +134,19 @@ export default function BrandSettings() {
                                     onChange={(e) => handleUpdate("website", e.target.value)}
                                     placeholder="https://example.com"
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="instagram">Instagram Username</Label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                                    <Input
+                                        id="instagram"
+                                        value={(formData as any).instagram || ""}
+                                        onChange={(e) => handleUpdate("instagram", e.target.value)}
+                                        placeholder="brandname"
+                                        className="pl-8"
+                                    />
+                                </div>
                             </div>
                         </div>
 

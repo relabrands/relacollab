@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, DollarSign, Gift, Check, ExternalLink, Sparkles, Building2 } from "lucide-react";
+import { MapPin, Calendar, DollarSign, Gift, Check, ExternalLink, Sparkles, Building2, Users, UserCheck, Instagram } from "lucide-react";
 
 interface OpportunityDetailsDialogProps {
     isOpen: boolean;
@@ -36,10 +36,33 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                             <div className="flex items-center gap-2 text-muted-foreground mt-1">
                                 <Building2 className="w-4 h-4" />
                                 <span>{opportunity.brandName}</span>
+                                {opportunity.brandProfile?.instagram && (
+                                    <a
+                                        href={`https://instagram.com/${opportunity.brandProfile.instagram.replace('@', '')}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center ml-2 text-pink-600 hover:text-pink-700 font-medium text-xs bg-pink-50 px-2 py-0.5 rounded-full"
+                                    >
+                                        <Instagram className="w-3 h-3 mr-1" />
+                                        @{opportunity.brandProfile.instagram.replace('@', '')}
+                                    </a>
+                                )}
                             </div>
                         </div>
                     </div>
                 </DialogHeader>
+
+                {/* Campaign Stats Bar */}
+                <div className="flex gap-4 mb-2 overflow-x-auto pb-2">
+                    <div className="flex items-center gap-2 text-sm bg-muted/50 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                        <Users className="w-4 h-4 text-primary" />
+                        <span className="font-medium">{opportunity.applicationCount || 0}</span> Applications
+                    </div>
+                    <div className="flex items-center gap-2 text-sm bg-muted/50 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                        <UserCheck className="w-4 h-4 text-success" />
+                        <span className="font-medium">{opportunity.approvedCount || 0} / {opportunity.creatorCount || "?"}</span> Spots Filled
+                    </div>
+                </div>
 
                 <div className="space-y-6 py-4">
                     {/* Main Info Grid */}
@@ -87,7 +110,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                         <div>
                             <h4 className="font-semibold mb-2">About the Brand</h4>
                             <p className="text-muted-foreground leading-relaxed">
-                                {opportunity.brandDescription || "A leading brand in the active lifestyle space."}
+                                {opportunity.brandProfile?.description || opportunity.brandDescription || "A leading brand in the active lifestyle space."}
                             </p>
                         </div>
 
@@ -118,8 +141,16 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                     <Button variant="outline" onClick={onClose}>
                         Close
                     </Button>
-                    <Button variant="hero" onClick={onAccept} className="w-full sm:w-auto">
-                        {isInvited ? "Accept Invitation" : "Apply to Campaign"}
+                    <Button
+                        variant="hero"
+                        onClick={onAccept}
+                        className="w-full sm:w-auto"
+                        disabled={!isInvited && (opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999)}
+                    >
+                        {isInvited
+                            ? "Accept Invitation"
+                            : ((opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999) ? "Campaign Full" : "Apply to Campaign")
+                        }
                     </Button>
                 </DialogFooter>
             </DialogContent>
