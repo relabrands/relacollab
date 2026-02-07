@@ -130,11 +130,14 @@ export default function Opportunities() {
           };
         }));
 
+        // Filter invitations that might have corresponding applications (redundancy check)
+        const filteredInvitations = resolvedInvitations.filter((op: any) => !appliedIds.has(op.id));
+
         const filteredGeneral = generalOpportunities
           .filter(op => !invitedCampaignIds.has(op.id))
           .filter(op => !appliedIds.has(op.id)); // Hide already applied campaigns
 
-        setOpportunities([...resolvedInvitations, ...filteredGeneral]);
+        setOpportunities([...filteredInvitations, ...filteredGeneral]);
       } catch (error) {
         console.error("Error fetching opportunities:", error);
       } finally {
