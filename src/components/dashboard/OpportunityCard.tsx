@@ -51,11 +51,21 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
     });
   };
 
+  const handleCardClick = () => {
+    if (onViewDetails) {
+      onViewDetails();
+    }
+  };
+
   return (
-    <div className={cn(
-      "glass-card p-6 hover-lift relative transition-all",
-      opportunity.isInvited && "border-primary/50 shadow-lg shadow-primary/5"
-    )}>
+    <div
+      className={cn(
+        "glass-card p-6 hover-lift relative transition-all",
+        opportunity.isInvited && "border-primary/50 shadow-lg shadow-primary/5",
+        onViewDetails && "cursor-pointer"
+      )}
+      onClick={handleCardClick}
+    >
       {opportunity.isInvited && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-brand text-primary-foreground px-4 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
           <Gift className="w-3 h-3" />
