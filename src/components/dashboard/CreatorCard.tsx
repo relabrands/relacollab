@@ -42,7 +42,7 @@ export function CreatorCard({ creator, onApprove, onReject, isInvite = false, hi
 
   return (
     <div className="glass-card p-6 hover-lift relative overflow-hidden group h-full flex flex-col">
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-4 gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/20">
             <img src={creator.avatar} alt={creator.name} className="w-full h-full object-cover" />
