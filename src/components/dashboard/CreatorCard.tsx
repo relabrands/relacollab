@@ -68,6 +68,14 @@ export function CreatorCard({ creator, onApprove, onReject, isInvite = false, hi
         </div>
       </div>
 
+      {creator.matchReason && (
+        <div className="mb-4">
+          <p className="text-xs text-muted-foreground italic border-l-2 border-primary/30 pl-2 leading-relaxed">
+            "{creator.matchReason}"
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2 mb-4">
         {creator.tags.slice(0, 3).map(tag => (
           <span key={tag} className="text-[10px] px-2 py-1 rounded-full bg-secondary text-secondary-foreground font-medium">

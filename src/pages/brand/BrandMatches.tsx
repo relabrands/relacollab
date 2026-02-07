@@ -97,27 +97,33 @@ export default function BrandMatches() {
           });
 
         // 3. Match Logic
-        const matchedCreators = validCreators.map((creator: any) => {
-          let score = 60; // Base score
-          const reasons: string[] = [];
-          const analysisPoints: string[] = [];
-          const creatorCategories = creator.categories || [];
+        // 3. Match Logic
+        let matchedCreators = [];
 
-          // A. Campaign-Based Matching
-          if (campaign) {
-            // Location Match
-            if (creator.location && campaign.location &&
-              creator.location.toLowerCase().includes(campaign.location.toLowerCase())) {
-              score += 20;
-              reasons.push("Location");
-              analysisPoints.push(`Their location in ${creator.location} perfectly aligns with your campaign target.`);
-            }
-
-            // Niche/Vibe Match
-            // Campaign has 'vibes', Creator has 'categories'
+        if (campaign) {
+          matchedCreators = validCreators.map((creator: any) => {
+            let score = 0;
+            const reasons: string[] = [];
+            const analysisPoints: string[] = [];
+            const creatorCategories = creator.categories || [];
             const campaignVibes = campaign.vibes || [];
 
-            // Simple intersection check (loose matching)
+            // A. Campaign Location (Crucial)
+            if (campaign.location) {
+              const campaignLoc = campaign.location.toLowerCase();
+              const creatorLoc = (creator.location || "").toLowerCase();
+
+              if (creatorLoc.includes(campaignLoc) || campaignLoc === "global" || campaignLoc === "any") {
+                score += 30;
+                reasons.push("Location");
+                analysisPoints.push(`Located in ${creator.location || "target area"} matching campaign requirement.`);
+              }
+            } else {
+              // If no location specified, treat as global/neutral
+              score += 15;
+            }
+
+            // B. Campaign Niche/Vibe (Crucial)
             const matchedVibes = campaignVibes.filter((v: string) =>
               creatorCategories.some((c: string) =>
                 c.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(c.toLowerCase())
@@ -125,77 +131,78 @@ export default function BrandMatches() {
             );
 
             if (matchedVibes.length > 0) {
-              score += 20;
-              reasons.push("Niche/Vibe");
-              analysisPoints.push(`Their content content categories (${matchedVibes.join(", ")}) match your desired campaign vibe.`);
+              score += 40;
+              reasons.push("Niche");
+              analysisPoints.push(`Creates content in ${matchedVibes.join(", ")} which fits the campaign vibe.`);
             } else if (creatorCategories.length > 0) {
-              // Fallback: if no direct match but creator has categories, give partial points
-              score += 5;
-              analysisPoints.push(`While not an exact niche match, their content in ${creatorCategories[0]} is relevant.`);
+              // Soft match
+              const allTags = creatorCategories.join(" ").toLowerCase();
+              const campaignName = (campaign.name + " " + (campaign.description || "")).toLowerCase();
+              if (creatorCategories.some((c: string) => campaignName.includes(c.toLowerCase()))) {
+                score += 20;
+                analysisPoints.push(`Content style (${creatorCategories[0]}) is relevant to campaign description.`);
+              }
             }
-          }
 
-          // B. Brand Profile-Based Matching (Fallback/Boost)
-          if (brandProfile && brandProfile.industry) {
-            const brandIndustry = brandProfile.industry.toLowerCase();
-            const isIndustryMatch = creatorCategories.some((c: string) => c.toLowerCase().includes(brandIndustry));
+            // C. Brand Fit (Bonus)
+            if (brandProfile?.industry) {
+              const brandInd = brandProfile.industry.toLowerCase();
+              if (creatorCategories.some((c: string) => c.toLowerCase().includes(brandInd))) {
+                score += 15;
+                if (!reasons.includes("Niche")) {
+                  analysisPoints.push(`Matches your brand industry (${brandProfile.industry}).`);
+                }
+              }
+            }
 
-            if (isIndustryMatch) {
-              // Boost score if industry matches, even if campaign vibes don't perfectly align
+            // D. Engagement Quality (Bonus)
+            const engagementRate = creator.instagramMetrics?.engagementRate || 0;
+            if (engagementRate >= 2) {
               score += 15;
-              // Only add reason if not already covered by campaign match
-              if (!reasons.includes("Niche/Vibe")) {
-                analysisPoints.push(`They create content in the ${brandProfile.industry} space, a perfect fit for your brand.`);
-              }
+              analysisPoints.push(`High engagement rate (${engagementRate}%).`);
             }
 
-            if (brandProfile.location && creator.location && !reasons.includes("Location")) {
-              if (creator.location.toLowerCase().includes(brandProfile.location.toLowerCase())) {
-                score += 10;
-                analysisPoints.push(`They are located in ${creator.location}, near your brand headquarters.`);
-              }
+            // E. Past Performance / Reliability (Future)
+            // if (creator.completedJobs > 5) score += 10;
+
+            // Cap Score
+            if (score > 98) score = 98;
+            // Minimum score to show: 50
+            // If Location matches (+30) and Engagement (+15) = 45 -> Needs a little more niche fit.
+
+            // Build Reason
+            let matchReason = "";
+            if (analysisPoints.length > 0) {
+              matchReason = analysisPoints.join(" ");
+            } else {
+              matchReason = "Matched based on general availability.";
             }
-          }
 
-          // Engagement Boost
-          const engagementRate = creator.instagramMetrics?.engagementRate || 0;
-          if (engagementRate > 3) {
-            score += 10;
-            analysisPoints.push(`They have a solid engagement rate of ${engagementRate}%, indicating an active audience.`);
-          }
-          if (engagementRate > 5) score += 5;
-
-          // Cap score
-          if (score > 99) score = 99;
-
-          // Build Detailed Reason
-          let matchReason = "AI Analysis: ";
-          if (analysisPoints.length > 0) {
-            matchReason += analysisPoints.join(" ");
-          } else {
-            matchReason += "This creator was matched based on general platform fit and availability.";
-          }
-
-          return {
-            ...creator,
-            name: creator.displayName || "Unnamed Creator",
-            avatar: creator.photoURL || creator.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop",
-            location: creator.location || "Unknown",
-            followers: creator.instagramMetrics?.followers
-              ? (creator.instagramMetrics.followers > 1000
-                ? `${(creator.instagramMetrics.followers / 1000).toFixed(1)}K`
-                : creator.instagramMetrics.followers)
-              : "0",
-            engagement: `${engagementRate}%`,
-            matchScore: score,
-            tags: creator.categories || ["General"],
-            rawEngagement: engagementRate, // for sorting
-            instagramUsername: creator.instagramUsername,
-            bio: creator.bio
-          };
-        })
-          .filter(c => c.matchScore >= 60) // Only showing decent matches
-          .sort((a, b) => b.matchScore - a.matchScore);
+            return {
+              ...creator,
+              name: creator.displayName || "Unnamed Creator",
+              avatar: creator.photoURL || creator.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop",
+              location: creator.location || "Unknown",
+              followers: creator.instagramMetrics?.followers
+                ? (creator.instagramMetrics.followers > 1000
+                  ? `${(creator.instagramMetrics.followers / 1000).toFixed(1)}K`
+                  : creator.instagramMetrics.followers)
+                : "0",
+              engagement: `${engagementRate}%`,
+              matchScore: score,
+              tags: creator.categories || ["General"],
+              rawEngagement: engagementRate,
+              instagramUsername: creator.instagramUsername,
+              bio: creator.bio,
+              matchReason: matchReason // Pass this to the card
+            };
+          })
+            .filter(c => c.matchScore >= 45) // Strict filter
+            .sort((a, b) => b.matchScore - a.matchScore);
+        } else {
+          // No campaign = No matches
+          matchedCreators = [];
+        }
 
         setCreators(matchedCreators);
       } catch (error) {
