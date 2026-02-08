@@ -60,7 +60,8 @@ export function InstagramMediaPicker({
                 if (filterType) {
                     mediaData = mediaData.filter((m: InstagramMedia) => {
                         if (filterType === "Post") {
-                            return m.media_type === "IMAGE";
+                            // Include Images and Carousels in "Posts"
+                            return m.media_type === "IMAGE" || m.media_type === "CAROUSEL_ALBUM";
                         }
                         if (filterType === "Reel") {
                             return m.media_type === "REELS" || m.media_type === "VIDEO";
@@ -70,6 +71,11 @@ export function InstagramMediaPicker({
                         }
                         if (filterType === "Video") {
                             return m.media_type === "VIDEO" || m.media_type === "REELS";
+                        }
+                        if (filterType === "Story") {
+                            // API typically doesn't return stories, so return empty to show "No stories found"
+                            // unless we specifically support STORY type in future
+                            return m.media_type === ("STORY" as any);
                         }
                         return true;
                     });
@@ -113,6 +119,7 @@ export function InstagramMediaPicker({
                                 {filterType === "Reel" && "🎬"}
                                 {filterType === "Carousel" && "🖼️"}
                                 {filterType === "Video" && "🎥"}
+                                {filterType === "Story" && "📱"}
                                 {" "}{filterType}s Only
                             </Badge>
                         )}
@@ -144,9 +151,14 @@ export function InstagramMediaPicker({
                             <Instagram className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                             <p className="text-muted-foreground">
                                 {filterType
-                                    ? `No ${filterType.toLowerCase()}s found`
+                                    ? `No ${filterType.toLowerCase()}s found associated with this account.`
                                     : "No posts found"}
                             </p>
+                            {filterType === 'Story' && (
+                                <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
+                                    Note: Instagram Stories disappear after 24 hours and may not be retrievable via the API.
+                                </p>
+                            )}
                         </div>
                     ) : (
                         <div className="grid grid-cols-3 gap-3 max-h-[50vh] overflow-y-auto">
@@ -155,15 +167,33 @@ export function InstagramMediaPicker({
                                     key={item.id}
                                     onClick={() => setSelectedMedia(item)}
                                     className={`relative group rounded-lg overflow-hidden aspect-square border-2 transition-all ${selectedMedia?.id === item.id
-                                            ? "border-primary ring-2 ring-primary"
-                                            : "border-transparent hover:border-primary/50"
+                                        ? "border-primary ring-2 ring-primary"
+                                        : "border-transparent hover:border-primary/50"
                                         }`}
                                 >
-                                    <img
-                                        src={item.thumbnail_url || item.media_url}
-                                        alt={item.caption || "Instagram post"}
-                                        className="w-full h-full object-cover"
-                                    />
+                                    {(item.media_type === 'VIDEO' || item.media_type === 'REELS') && !item.thumbnail_url ? (
+                                        <video
+                                            src={item.media_url}
+                                            className="w-full h-full object-cover"
+                                            muted
+                                            playsInline
+                                            onMouseOver={(e) => e.currentTarget.play()}
+                                            onMouseOut={(e) => {
+                                                e.currentTarget.pause();
+                                                e.currentTarget.currentTime = 0;
+                                            }}
+                                        />
+                                    ) : (
+                                        <img
+                                            src={item.thumbnail_url || item.media_url}
+                                            alt={item.caption || "Instagram post"}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback if image fails (e.g. expired URL)
+                                                e.currentTarget.src = "https://placehold.co/400x400?text=No+Image";
+                                            }}
+                                        />
+                                    )}
 
                                     {/* Overlay */}
                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all" />
