@@ -372,9 +372,7 @@ export default function CreatorOnboarding() {
                             )}
                         </div>
                     </motion.div>
-                )
-
-                    ;
+                );
 
             case 2:
                 return (
