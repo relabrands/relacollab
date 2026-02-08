@@ -95,7 +95,6 @@ export default function CreateCampaign() {
           setFormData(prev => ({
             ...prev,
             location: userData.location || "",
-            description: userData.description || "",
             brandName: userData.displayName || userData.name || ""
           }));
           setCredits(userData.credits || 0);
@@ -274,8 +273,8 @@ export default function CreateCampaign() {
         />
 
         {/* Progress Steps */}
-        <div className="max-w-2xl mx-auto mb-12">
-          <div className="flex items-center justify-between">
+        <div className="max-w-4xl mx-auto mb-12">
+          <div className="flex items-center justify-center">
             {[1, 2, 3, 4, 5].map((s) => (
               <div key={s} className="flex items-center">
                 <div
@@ -288,19 +287,19 @@ export default function CreateCampaign() {
                 </div>
                 {s < 5 && (
                   <div
-                    className={`w-20 md:w-32 h-1 mx-2 rounded-full transition-all ${step > s ? "bg-primary" : "bg-muted"
+                    className={`w-16 md:w-24 h-1 mx-2 rounded-full transition-all ${step > s ? "bg-primary" : "bg-muted"
                       }`}
                   />
                 )}
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-3 text-xs md:text-sm text-muted-foreground">
-            <span>Basics</span>
-            <span>Goals</span>
-            <span>Audience</span>
-            <span>Budget</span>
-            <span>Visit</span>
+          <div className="flex justify-center gap-16 md:gap-24 mt-4 text-xs md:text-sm text-muted-foreground">
+            <span className={step === 1 ? "text-primary font-medium" : ""}>Basics</span>
+            <span className={step === 2 ? "text-primary font-medium" : ""}>Goals</span>
+            <span className={step === 3 ? "text-primary font-medium" : ""}>Audience</span>
+            <span className={step === 4 ? "text-primary font-medium" : ""}>Budget</span>
+            <span className={step === 5 ? "text-primary font-medium" : ""}>Visit</span>
           </div>
         </div>
 
