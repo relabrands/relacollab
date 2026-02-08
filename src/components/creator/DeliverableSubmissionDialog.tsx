@@ -1,1 +1,277 @@
-import { useState } from \"react\";\nimport { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from \"@/components/ui/dialog\";\nimport { Button } from \"@/components/ui/button\";\nimport { Badge } from \"@/components/ui/badge\";\nimport { ScrollArea } from \"@/components/ui/scroll-area\";\nimport { Check, Loader2, AlertCircle, Upload } from \"lucide-react\";\nimport { toast } from \"sonner\";\nimport { collection, addDoc, query, where, getDocs } from \"firebase/firestore\";\nimport { db } from \"@/lib/firebase\";\nimport { useAuth } from \"@/context/AuthContext\";\n\ninterface DeliverableItem {\n  type: string;\n  quantity: number;\n  required: boolean;\n}\n\ninterface CampaignWithDeliverables {\n  id: string;\n  name: string;\n  deliverables: DeliverableItem[];\n}\n\ninterface SubmittedContent {\n  deliverableType: string;\n  deliverableNumber: number;\n  contentUrl: string;\n  status: \"pending\" | \"approved\" | \"needs_revision\";\n}\n\ninterface DeliverableSubmissionDialogProps {\n  campaign: CampaignWithDeliverables;\n  open: boolean;\n  onClose: () => void;\n  onSuccess: () => void;\n}\n\nexport function DeliverableSubmissionDialog({\n  campaign,\n  open,\n  onClose,\n  onSuccess,\n}: DeliverableSubmissionDialogProps) {\n  const { user } = useAuth();\n  const [loading, setLoading] = useState(false);\n  const [submittedContent, setSubmittedContent] = useState<SubmittedContent[]>([]);\n  const [selectedDeliverables, setSelectedDeliverables] = useState<Map<string, string>>(new Map());\n\n  // Fetch existing submissions when dialog opens\n  const fetchExistingSubmissions = async () => {\n    if (!user || !campaign.id) return;\n    \n    try {\n      const q = query(\n        collection(db, \"content_submissions\"),\n        where(\"campaignId\", \"==\", campaign.id),\n        where(\"creatorId\", \"==\", user.uid)\n      );\n      const snapshot = await getDocs(q);\n      const submissions = snapshot.docs.map(doc => doc.data() as SubmittedContent);\n      setSubmittedContent(submissions);\n    } catch (error) {\n      console.error(\"Error fetching submissions:\", error);\n    }\n  };\n\n  // Generate deliverable items from campaign config\n  const generateDeliverableSlots = () => {\n    const slots: Array<{\n      type: string;\n      number: number;\n      required: boolean;\n      key: string;\n      submitted?: SubmittedContent;\n    }> = [];\n\n    campaign.deliverables?.forEach(deliverable => {\n      for (let i = 1; i <= deliverable.quantity; i++) {\n        const key = `${deliverable.type}_${i}`;\n        const existing = submittedContent.find(\n          s => s.deliverableType === deliverable.type && s.deliverableNumber === i\n        );\n\n        slots.push({\n          type: deliverable.type,\n          number: i,\n          required: deliverable.required,\n          key,\n          submitted: existing,\n        });\n      }\n    });\n\n    return slots;\n  };\n\n  const deliverableSlots = generateDeliverableSlots();\n  const missingRequired = deliverableSlots.filter(\n    slot => slot.required && !slot.submitted\n  ).length;\n\n  const handleSelectContent = (key: string, url: string) => {\n    setSelectedDeliverables(prev => {\n      const newMap = new Map(prev);\n      newMap.set(key, url);\n      return newMap;\n    });\n  };\n\n  const handleSubmitSelected = async () => {\n    if (selectedDeliverables.size === 0) {\n      toast.error(\"Please select at least one deliverable to submit\");\n      return;\n    }\n\n    setLoading(true);\n    try {\n      const submissions = [];\n\n      // Create submissions for each selected deliverable\n      for (const [key, url] of selectedDeliverables.entries()) {\n        const [type, numberStr] = key.split(\"_\");\n        const number = parseInt(numberStr);\n\n        submissions.push(addDoc(collection(db, \"content_submissions\"), {\n          campaignId: campaign.id,\n          creatorId: user!.uid,\n          deliverableType: type,\n          deliverableNumber: number,\n          contentUrl: url,\n          status: \"pending\",\n          createdAt: new Date().toISOString(),\n          metrics: {}, // Will be fetched from Instagram later\n        }));\n      }\n\n      await Promise.all(submissions);\n      toast.success(`Submitted ${selectedDeliverables.size} deliverable(s)`);\n      setSelectedDeliverables(new Map());\n      onSuccess();\n      onClose();\n    } catch (error) {\n      console.error(\"Error submitting deliverables:\", error);\n      toast.error(\"Failed to submit content\");\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  return (\n    <Dialog open={open} onOpenChange={onClose}>\n      <DialogContent className=\"max-w-3xl max-h-[80vh]\">\n        <DialogHeader>\n          <DialogTitle>Submit Campaign Deliverables</DialogTitle>\n          <DialogDescription>\n            Campaign: <span className=\"font-medium\">{campaign.name}</span>\n            {missingRequired > 0 && (\n              <span className=\"text-orange-600 ml-2\">\n                • {missingRequired} required deliverable(s) remaining\n              </span>\n            )}\n          </DialogDescription>\n        </DialogHeader>\n\n        <ScrollArea className=\"max-h-[50vh] pr-4\">\n          <div className=\"space-y-3\">\n            {deliverableSlots.map(slot => (\n              <div\n                key={slot.key}\n                className={`p-4 border-2 rounded-lg ${\n                  slot.submitted\n                    ? slot.submitted.status === \"approved\"\n                      ? \"border-green-500 bg-green-50 dark:bg-green-950/20\"\n                      : slot.submitted.status === \"needs_revision\"\n                      ? \"border-orange-500 bg-orange-50 dark:bg-orange-950/20\"\n                      : \"border-blue-500 bg-blue-50 dark:bg-blue-950/20\"\n                    : \"border-border\"\n                }`}\n              >\n                <div className=\"flex items-center justify-between\">\n                  <div className=\"flex items-center gap-3\">\n                    <div className=\"text-2xl\">\n                      {slot.type === \"Post\" && \"📸\"}\n                      {slot.type === \"Reel\" && \"🎬\"}\n                      {slot.type === \"Story\" && \"📱\"}\n                      {slot.type === \"Carousel\" && \"🖼️\"}\n                      {slot.type === \"Video\" && \"🎥\"}\n                    </div>\n                    <div>\n                      <div className=\"font-medium\">\n                        {slot.type} #{slot.number}\n                      </div>\n                      <div className=\"flex items-center gap-2 mt-1\">\n                        <Badge variant={slot.required ? \"default\" : \"outline\"}>\n                          {slot.required ? \"Required\" : \"Optional\"}\n                        </Badge>\n                        {slot.submitted && (\n                          <Badge\n                            variant={\n                              slot.submitted.status === \"approved\"\n                                ? \"success\"\n                                : slot.submitted.status === \"needs_revision\"\n                                ? \"destructive\"\n                                : \"secondary\"\n                            }\n                          >\n                            {slot.submitted.status === \"approved\" && <Check className=\"w-3 h-3 mr-1\" />}\n                            {slot.submitted.status === \"needs_revision\" && <AlertCircle className=\"w-3 h-3 mr-1\" />}\n                            {slot.submitted.status === \"pending\" && \"⏳\"}\n                            {\" \"}\n                            {slot.submitted.status.toUpperCase().replace(\"_\", \" \")}\n                          </Badge>\n                        )}\n                      </div>\n                    </div>\n                  </div>\n\n                  <div>\n                    {slot.submitted ? (\n                      <div className=\"text-sm text-muted-foreground\">\n                        {slot.submitted.status === \"needs_revision\" && (\n                          <Button\n                            variant=\"outline\"\n                            size=\"sm\"\n                            onClick={() => {\n                              // TODO: Open Instagram picker for resubmission\n                              toast.info(\"Resubmission coming soon\");\n                            }}\n                          >\n                            Resubmit\n                          </Button>\n                        )}\n                      </div>\n                    ) : (\n                      <Button\n                        variant=\"outline\"\n                        size=\"sm\"\n                        onClick={() => {\n                          // TODO: Open Instagram media picker\n                          // For now, use placeholder\n                          const placeholderUrl = `https://instagram.com/p/placeholder_${slot.key}`;\n                          handleSelectContent(slot.key, placeholderUrl);\n                          toast.success(`Selected ${slot.type} #${slot.number}`);\n                        }}\n                        disabled={loading}\n                      >\n                        <Upload className=\"w-4 h-4 mr-2\" />\n                        {selectedDeliverables.has(slot.key) ? \"Selected ✓\" : \"Select from Instagram\"}\n                      </Button>\n                    )}\n                  </div>\n                </div>\n              </div>\n            ))}\n          </div>\n        </ScrollArea>\n\n        <div className=\"flex items-center justify-between pt-4 border-t\">\n          <div className=\"text-sm text-muted-foreground\">\n            {selectedDeliverables.size} deliverable(s) selected\n          </div>\n          <div className=\"flex gap-2\">\n            <Button variant=\"ghost\" onClick={onClose} disabled={loading}>\n              Close\n            </Button>\n            <Button\n              variant=\"hero\"\n              onClick={handleSubmitSelected}\n              disabled={loading || selectedDeliverables.size === 0}\n            >\n              {loading && <Loader2 className=\"w-4 h-4 mr-2 animate-spin\" />}\n              Submit Selected\n            </Button>\n          </div>\n        </div>\n      </DialogContent>\n    </Dialog>\n  );\n}\n
+import { useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Check, Loader2, AlertCircle, Upload } from "lucide-react";
+import { toast } from "sonner";
+import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
+
+interface DeliverableItem {
+    type: string;
+    quantity: number;
+    required: boolean;
+}
+
+interface CampaignWithDeliverables {
+    id: string;
+    name: string;
+    deliverables: DeliverableItem[];
+}
+
+interface SubmittedContent {
+    deliverableType: string;
+    deliverableNumber: number;
+    contentUrl: string;
+    status: "pending" | "approved" | "needs_revision";
+}
+
+interface DeliverableSubmissionDialogProps {
+    campaign: CampaignWithDeliverables;
+    open: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+}
+
+export function DeliverableSubmissionDialog({
+    campaign,
+    open,
+    onClose,
+    onSuccess,
+}: DeliverableSubmissionDialogProps) {
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const [submittedContent, setSubmittedContent] = useState<SubmittedContent[]>([]);
+    const [selectedDeliverables, setSelectedDeliverables] = useState<Map<string, string>>(new Map());
+
+    // Fetch existing submissions when dialog opens
+    const fetchExistingSubmissions = async () => {
+        if (!user || !campaign.id) return;
+
+        try {
+            const q = query(
+                collection(db, "content_submissions"),
+                where("campaignId", "==", campaign.id),
+                where("creatorId", "==", user.uid)
+            );
+            const snapshot = await getDocs(q);
+            const submissions = snapshot.docs.map(doc => doc.data() as SubmittedContent);
+            setSubmittedContent(submissions);
+        } catch (error) {
+            console.error("Error fetching submissions:", error);
+        }
+    };
+
+    // Generate deliverable items from campaign config
+    const generateDeliverableSlots = () => {
+        const slots: Array<{
+            type: string;
+            number: number;
+            required: boolean;
+            key: string;
+            submitted?: SubmittedContent;
+        }> = [];
+
+        campaign.deliverables?.forEach(deliverable => {
+            for (let i = 1; i <= deliverable.quantity; i++) {
+                const key = `${deliverable.type}_${i}`;
+                const existing = submittedContent.find(
+                    s => s.deliverableType === deliverable.type && s.deliverableNumber === i
+                );
+
+                slots.push({
+                    type: deliverable.type,
+                    number: i,
+                    required: deliverable.required,
+                    key,
+                    submitted: existing,
+                });
+            }
+        });
+
+        return slots;
+    };
+
+    const deliverableSlots = generateDeliverableSlots();
+    const missingRequired = deliverableSlots.filter(
+        slot => slot.required && !slot.submitted
+    ).length;
+
+    const handleSelectContent = (key: string, url: string) => {
+        setSelectedDeliverables(prev => {
+            const newMap = new Map(prev);
+            newMap.set(key, url);
+            return newMap;
+        });
+    };
+
+    const handleSubmitSelected = async () => {
+        if (selectedDeliverables.size === 0) {
+            toast.error("Please select at least one deliverable to submit");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const submissions = [];
+
+            // Create submissions for each selected deliverable
+            for (const [key, url] of selectedDeliverables.entries()) {
+                const [type, numberStr] = key.split("_");
+                const number = parseInt(numberStr);
+
+                submissions.push(addDoc(collection(db, "content_submissions"), {
+                    campaignId: campaign.id,
+                    creatorId: user!.uid,
+                    deliverableType: type,
+                    deliverableNumber: number,
+                    contentUrl: url,
+                    status: "pending",
+                    createdAt: new Date().toISOString(),
+                    metrics: {}, // Will be fetched from Instagram later
+                }));
+            }
+
+            await Promise.all(submissions);
+            toast.success(`Submitted ${selectedDeliverables.size} deliverable(s)`);
+            setSelectedDeliverables(new Map());
+            onSuccess();
+            onClose();
+        } catch (error) {
+            console.error("Error submitting deliverables:", error);
+            toast.error("Failed to submit content");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onClose}>
+            <DialogContent className="max-w-3xl max-h-[80vh]">
+                <DialogHeader>
+                    <DialogTitle>Submit Campaign Deliverables</DialogTitle>
+                    <DialogDescription>
+                        Campaign: <span className="font-medium">{campaign.name}</span>
+                        {missingRequired > 0 && (
+                            <span className="text-orange-600 ml-2">
+                                • {missingRequired} required deliverable(s) remaining
+                            </span>
+                        )}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="max-h-[50vh] overflow-y-auto pr-4">
+                    <div className="space-y-3">
+                        {deliverableSlots.map(slot => (
+                            <div
+                                key={slot.key}
+                                className={`p-4 border-2 rounded-lg ${slot.submitted
+                                        ? slot.submitted.status === "approved"
+                                            ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                                            : slot.submitted.status === "needs_revision"
+                                                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
+                                                : "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+                                        : "border-border"
+                                    }`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-2xl">
+                                            {slot.type === "Post" && "📸"}
+                                            {slot.type === "Reel" && "🎬"}
+                                            {slot.type === "Story" && "📱"}
+                                            {slot.type === "Carousel" && "🖼️"}
+                                            {slot.type === "Video" && "🎥"}
+                                        </div>
+                                        <div>
+                                            <div className="font-medium">
+                                                {slot.type} #{slot.number}
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <Badge variant={slot.required ? "default" : "outline"}>
+                                                    {slot.required ? "Required" : "Optional"}
+                                                </Badge>
+                                                {slot.submitted && (
+                                                    <Badge
+                                                        variant={
+                                                            slot.submitted.status === "approved"
+                                                                ? "success"
+                                                                : slot.submitted.status === "needs_revision"
+                                                                    ? "destructive"
+                                                                    : "secondary"
+                                                        }
+                                                    >
+                                                        {slot.submitted.status === "approved" && <Check className="w-3 h-3 mr-1" />}
+                                                        {slot.submitted.status === "needs_revision" && <AlertCircle className="w-3 h-3 mr-1" />}
+                                                        {slot.submitted.status === "pending" && "⏳"}
+                                                        {" "}
+                                                        {slot.submitted.status.toUpperCase().replace("_", " ")}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        {slot.submitted ? (
+                                            <div className="text-sm text-muted-foreground">
+                                                {slot.submitted.status === "needs_revision" && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            // TODO: Open Instagram picker for resubmission
+                                                            toast.info("Resubmission coming soon");
+                                                        }}
+                                                    >
+                                                        Resubmit
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    // TODO: Open Instagram media picker
+                                                    // For now, use placeholder
+                                                    const placeholderUrl = `https://instagram.com/p/placeholder_${slot.key}`;
+                                                    handleSelectContent(slot.key, placeholderUrl);
+                                                    toast.success(`Selected ${slot.type} #${slot.number}`);
+                                                }}
+                                                disabled={loading}
+                                            >
+                                                <Upload className="w-4 h-4 mr-2" />
+                                                {selectedDeliverables.has(slot.key) ? "Selected ✓" : "Select from Instagram"}
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                        {selectedDeliverables.size} deliverable(s) selected
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="ghost" onClick={onClose} disabled={loading}>
+                            Close
+                        </Button>
+                        <Button
+                            variant="hero"
+                            onClick={handleSubmitSelected}
+                            disabled={loading || selectedDeliverables.size === 0}
+                        >
+                            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            Submit Selected
+                        </Button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
