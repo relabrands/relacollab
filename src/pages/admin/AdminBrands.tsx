@@ -21,29 +21,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { motion } from "framer-motion";
-import { Plus, Search, Edit, Trash2, Building2, Loader2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Building2, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { collection, query, where, getDocs, doc, updateDoc, deleteDoc, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { BrandDetailsDialog } from "@/components/admin/BrandDetailsDialog";
 
 interface Brand {
   id: string;
   name: string;
   email: string;
-  plan: "Basic" | "Starter" | "Enterprise" | "Free";
+  plan: string;
   status: "active" | "pending" | "inactive";
   campaigns: number;
   joined: string;
+  // Extra fields for details
+  avatar?: string;
+  website?: string;
+  industry?: string;
+  companySize?: string;
+  location?: string;
+  phone?: string;
+  bio?: string;
 }
 
-const planColors = {
-  Basic: "bg-muted text-muted-foreground",
-  Starter: "bg-primary/10 text-primary",
-  Enterprise: "bg-accent/10 text-accent",
-  Free: "bg-gray-100 text-gray-500"
-};
-
-const statusColors = {
+const statusColors: Record<string, string> = {
   active: "bg-success/10 text-success",
   pending: "bg-warning/10 text-warning",
   inactive: "bg-destructive/10 text-destructive",
@@ -57,16 +59,37 @@ export default function AdminBrands() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
 
+  // Dynamic Plans State
+  const [availablePlans, setAvailablePlans] = useState<{ id: string, name: string }[]>([]);
+
+  // Details Dialog State
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
   // New Brand State (Conceptual - requires Auth creation separately)
   const [newBrand, setNewBrand] = useState({
     name: "",
     email: "",
-    plan: "Basic" as "Basic" | "Starter" | "Enterprise",
+    plan: "Basic",
   });
 
   useEffect(() => {
     fetchBrands();
+    fetchPlans();
   }, []);
+
+  const fetchPlans = async () => {
+    try {
+      const q = query(collection(db, "plans"), orderBy("price", "asc"));
+      const snapshot = await getDocs(q);
+      const plans = snapshot.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name
+      }));
+      setAvailablePlans(plans);
+    } catch (e) {
+      console.error("Error fetching plans", e);
+    }
+  };
 
   const fetchBrands = async () => {
     try {
@@ -92,7 +115,15 @@ export default function AdminBrands() {
           plan: data.plan || "Free",
           status: data.status || "active", // Default to active if missing
           campaigns: campaignCounts[doc.id] || 0,
-          joined: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : "N/A"
+          joined: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : "N/A",
+          // Extra Details
+          avatar: data.photoURL || data.avatar,
+          website: data.website,
+          industry: data.industry,
+          companySize: data.companySize,
+          location: data.location,
+          phone: data.phone,
+          bio: data.bio
         } as Brand;
       });
 
@@ -113,7 +144,7 @@ export default function AdminBrands() {
 
   const handleAddBrand = () => {
     // This implies creating a user, which usually requires Auth. 
-    // For now, we'll just show a toast that this feature needs Auth integration
+    // For now, we'll just show a toast that feature needs Auth integration
     toast.info("To add a brand manually, uses the invitation flow or register page.");
     setIsAddOpen(false);
   };
@@ -171,6 +202,11 @@ export default function AdminBrands() {
       console.error("Error updating status:", error);
       toast.error("Failed to update status");
     }
+  };
+
+  const handleViewDetails = (brand: Brand) => {
+    setSelectedBrand(brand);
+    setIsDetailsOpen(true);
   };
 
   return (
@@ -235,7 +271,7 @@ export default function AdminBrands() {
                   <Label>Subscription Plan</Label>
                   <Select
                     value={newBrand.plan}
-                    onValueChange={(value: "Basic" | "Starter" | "Enterprise") =>
+                    onValueChange={(value) =>
                       setNewBrand({ ...newBrand, plan: value })
                     }
                   >
@@ -243,9 +279,11 @@ export default function AdminBrands() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Basic">Basic - $49/month</SelectItem>
-                      <SelectItem value="Starter">Starter - $149/month</SelectItem>
-                      <SelectItem value="Enterprise">Enterprise - $499/month</SelectItem>
+                      {availablePlans.map(plan => (
+                        <SelectItem key={plan.id} value={plan.name}>{plan.name}</SelectItem>
+                      ))}
+                      {/* Fallback option if no plans loaded */}
+                      {availablePlans.length === 0 && <SelectItem value="Free">Free</SelectItem>}
                     </SelectContent>
                   </Select>
                 </div>
@@ -284,8 +322,8 @@ export default function AdminBrands() {
                 <tr key={brand.id} className="border-t border-border hover:bg-muted/30 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <Building2 className="w-5 h-5 text-primary" />
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden">
+                        {brand.avatar ? <img src={brand.avatar} alt={brand.name} className="w-full h-full object-cover" /> : <Building2 className="w-5 h-5 text-primary" />}
                       </div>
                       <span className="font-medium">{brand.name}</span>
                     </div>
@@ -294,17 +332,21 @@ export default function AdminBrands() {
                   <td className="p-4">
                     <Select
                       value={brand.plan}
-                      onValueChange={(value: "Basic" | "Starter" | "Enterprise") =>
+                      onValueChange={(value) =>
                         handleChangePlan(brand.id, value)
                       }
                     >
-                      <SelectTrigger className={`w-32 h-8 text-xs font-medium ${planColors[brand.plan]}`}>
+                      <SelectTrigger className={`w-32 h-8 text-xs font-medium`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Basic">Basic</SelectItem>
-                        <SelectItem value="Starter">Starter</SelectItem>
-                        <SelectItem value="Enterprise">Enterprise</SelectItem>
+                        {availablePlans.map(plan => (
+                          <SelectItem key={plan.id} value={plan.name}>{plan.name}</SelectItem>
+                        ))}
+                        {/* Ensure current value is always an option to avoid UI bugs if plan is deprecated */}
+                        {!availablePlans.find(p => p.name === brand.plan) && brand.plan && (
+                          <SelectItem value={brand.plan}>{brand.plan}</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </td>
@@ -328,6 +370,13 @@ export default function AdminBrands() {
                   <td className="p-4">{brand.campaigns}</td>
                   <td className="p-4">
                     <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleViewDetails(brand)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -402,7 +451,7 @@ export default function AdminBrands() {
                   <Label>Subscription Plan</Label>
                   <Select
                     value={selectedBrand.plan}
-                    onValueChange={(value: "Basic" | "Starter" | "Enterprise") =>
+                    onValueChange={(value) =>
                       setSelectedBrand({ ...selectedBrand, plan: value })
                     }
                   >
@@ -410,9 +459,9 @@ export default function AdminBrands() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Basic">Basic - $49/month</SelectItem>
-                      <SelectItem value="Starter">Starter - $149/month</SelectItem>
-                      <SelectItem value="Enterprise">Enterprise - $499/month</SelectItem>
+                      {availablePlans.map(plan => (
+                        <SelectItem key={plan.id} value={plan.name}>{plan.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -428,6 +477,14 @@ export default function AdminBrands() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Detail Dialog */}
+        <BrandDetailsDialog
+          brand={selectedBrand}
+          isOpen={isDetailsOpen}
+          onClose={() => setIsDetailsOpen(false)}
+        />
+
       </main>
     </div>
   );
