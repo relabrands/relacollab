@@ -29,10 +29,16 @@ const vibeOptions = [
   { id: "adventure", label: "Adventure", emoji: "🏔️" },
 ];
 
-const rewardOptions = [
-  { id: "experience", label: "Free Experience", description: "Product/service only" },
-  { id: "paid", label: "Paid Collaboration", description: "Cash payment" },
-  { id: "hybrid", label: "Hybrid", description: "Experience + cash" },
+const contentTypeOptions = [
+  { id: "post", label: "Post", emoji: "📸" },
+  { id: "reels", label: "Reels", emoji: "🎬" },
+  { id: "stories", label: "Historias", emoji: "📱" },
+  { id: "carousel", label: "Carretes", emoji: "🎠" },
+];
+
+const compensationOptions = [
+  { id: "exchange", label: "Intercambio", description: "Producto, comida, servicios, etc." },
+  { id: "monetary", label: "Pago Monetario", description: "Compensación en efectivo (cuesta créditos)" },
 ];
 
 
@@ -48,14 +54,27 @@ export default function CreateCampaign() {
     description: "",
     goal: "",
     vibes: [] as string[],
+    contentTypes: [] as string[], // NEW: Post, Reels, Stories, Carousel
     location: "",
     ageRange: "18-35",
-    reward: "",
+    compensationType: "", // NEW: exchange or monetary
+    exchangeDetails: "", // NEW: What they're offering (food, product, etc.)
+    creatorPayment: "", // NEW: Admin-set payment for creator (if monetary)
+    creditCost: "1", // NEW: Credits cost for brand (if monetary)
     budget: "",
     startDate: "",
     endDate: "",
     creatorCount: "1",
   });
+
+  const handleContentTypeToggle = (typeId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      contentTypes: prev.contentTypes.includes(typeId)
+        ? prev.contentTypes.filter((t) => t !== typeId)
+        : [...prev.contentTypes, typeId],
+    }));
+  };
 
   useEffect(() => {
     const fetchBrandProfile = async () => {
@@ -371,56 +390,129 @@ export default function CreateCampaign() {
                 exit={{ opacity: 0, x: -20 }}
                 className="glass-card p-8"
               >
-                <h2 className="text-xl font-semibold mb-6">Budget & Reward</h2>
+                <h2 className="text-xl font-semibold mb-6">Tipo de Contenido & Compensación</h2>
 
                 <div className="space-y-6">
+                  {/* Content Types */}
                   <div>
-                    <Label className="mb-4 block">Reward Type</Label>
-                    <div className="grid grid-cols-3 gap-4">
-                      {rewardOptions.map((reward) => (
+                    <Label className="mb-4 block">¿Qué tipo de contenido necesitas? *</Label>
+                    <p className="text-sm text-muted-foreground mb-3">Selecciona todos los que apliquen</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {contentTypeOptions.map((type) => (
                         <button
-                          key={reward.id}
-                          onClick={() =>
-                            setFormData((prev) => ({ ...prev, reward: reward.id }))
-                          }
-                          className={`p-4 rounded-xl border-2 text-left transition-all ${formData.reward === reward.id
+                          key={type.id}
+                          onClick={() => handleContentTypeToggle(type.id)}
+                          className={`p-4 rounded-xl border-2 text-center transition-all ${formData.contentTypes.includes(type.id)
                             ? "border-primary bg-primary/5"
                             : "border-border hover:border-primary/50"
                             }`}
                         >
-                          <div className="font-medium mb-1">{reward.label}</div>
+                          <div className="text-2xl mb-1">{type.emoji}</div>
+                          <div className="font-medium text-sm">{type.label}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Compensation Type */}
+                  <div>
+                    <Label className="mb-4 block">¿Qué ofreces a cambio? *</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {compensationOptions.map((comp) => (
+                        <button
+                          key={comp.id}
+                          onClick={() =>
+                            setFormData((prev) => ({ ...prev, compensationType: comp.id }))
+                          }
+                          className={`p-4 rounded-xl border-2 text-left transition-all ${formData.compensationType === comp.id
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                            }`}
+                        >
+                          <div className="font-medium mb-1">{comp.label}</div>
                           <div className="text-sm text-muted-foreground">
-                            {reward.description}
+                            {comp.description}
                           </div>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="budget">Campaign Budget</Label>
-                    <div className="relative mt-2">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        $
-                      </span>
+                  {/* Exchange Details (if exchange selected) */}
+                  {formData.compensationType === "exchange" && (
+                    <div className="bg-muted/30 p-4 rounded-xl space-y-3">
+                      <Label htmlFor="exchangeDetails">¿Qué ofreces específicamente?</Label>
                       <Input
-                        id="budget"
-                        type="number"
-                        placeholder="5,000"
-                        value={formData.budget}
+                        id="exchangeDetails"
+                        placeholder="Ej: Comida gratis, producto valorado en $50, experiencia spa, etc."
+                        value={formData.exchangeDetails}
                         onChange={(e) =>
                           setFormData((prev) => ({
                             ...prev,
-                            budget: e.target.value,
+                            exchangeDetails: e.target.value,
                           }))
                         }
-                        className="pl-8"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Sé específico para que los creators sepan exactamente qué recibirán.
+                      </p>
                     </div>
-                  </div>
+                  )}
 
+                  {/* Monetary Details (if monetary selected) */}
+                  {formData.compensationType === "monetary" && (
+                    <div className="bg-muted/30 p-4 rounded-xl space-y-4">
+                      <div>
+                        <Label htmlFor="creatorPayment">Pago al Creator</Label>
+                        <div className="relative mt-2">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            $
+                          </span>
+                          <Input
+                            id="creatorPayment"
+                            type="number"
+                            placeholder="500"
+                            value={formData.creatorPayment}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                creatorPayment: e.target.value,
+                              }))
+                            }
+                            className="pl-8"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Cantidad que recibirá cada creator aprobado.
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="creditCost">Costo en Créditos</Label>
+                        <Input
+                          id="creditCost"
+                          type="number"
+                          min="1"
+                          placeholder="1"
+                          value={formData.creditCost}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              creditCost: e.target.value,
+                            }))
+                          }
+                          className="mt-2"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Créditos que te costará esta campaña por creator.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Creator Count */}
                   <div>
-                    <Label htmlFor="creatorCount">How many creators needed?</Label>
+                    <Label htmlFor="creatorCount">¿Cuántos creators necesitas?</Label>
                     <Input
                       id="creatorCount"
                       type="number"
@@ -435,9 +527,15 @@ export default function CreateCampaign() {
                       }
                       className="mt-2"
                     />
-                    <p className={`text-xs mt-1 ${credits < (parseInt(formData.creatorCount) || 1) ? "text-destructive" : "text-muted-foreground"}`}>
-                      Available Credits: {credits}
-                    </p>
+                    {formData.compensationType === "monetary" && (
+                      <p className={`text-xs mt-2 ${credits < (parseInt(formData.creditCost) || 1) * (parseInt(formData.creatorCount) || 1)
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                        }`}>
+                        Créditos disponibles: {credits} |
+                        Costo total: {(parseInt(formData.creditCost) || 1) * (parseInt(formData.creatorCount) || 1)} créditos
+                      </p>
+                    )}
                   </div>
                 </div>
               </motion.div>
