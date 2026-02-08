@@ -92,9 +92,19 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                         </h4>
                         <div className="flex items-center justify-between">
                             <div className="space-y-1">
-                                <p className="font-medium text-lg">{opportunity.reward || opportunity.budget || "Negotiable"}</p>
+                                <p className="font-medium text-lg">
+                                    {opportunity.compensationType === 'monetary'
+                                        ? `$${opportunity.creatorPayment}`
+                                        : (opportunity.compensationType === 'exchange'
+                                            ? opportunity.exchangeDetails
+                                            : (opportunity.reward || opportunity.budget || "Negotiable"))}
+                                </p>
                                 <div className="flex gap-2">
-                                    <Badge variant="secondary">{opportunity.rewardType === 'paid' ? 'Paid Project' : 'Product Exchange'}</Badge>
+                                    <Badge variant="secondary">
+                                        {opportunity.compensationType === 'monetary' || opportunity.rewardType === 'paid'
+                                            ? 'Paid Project'
+                                            : 'Product Exchange'}
+                                    </Badge>
                                 </div>
                             </div>
                             {opportunity.matchScore && (

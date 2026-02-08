@@ -22,6 +22,9 @@ interface OpportunityCardProps {
     endDate?: string;
     brandDescription?: string;
     goal?: string;
+    compensationType?: string;
+    creatorPayment?: string;
+    exchangeDetails?: string;
   };
   onAccept?: (id: string) => void;
   isActive?: boolean;
@@ -104,15 +107,25 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
       <div className="p-4 rounded-xl bg-muted/50 mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {opportunity.rewardType === "paid" ? (
+            {opportunity.compensationType === "monetary" || opportunity.rewardType === "paid" ? (
               <DollarSign className="w-5 h-5 text-success" />
             ) : (
               <Gift className="w-5 h-5 text-primary" />
             )}
-            <span className="font-semibold">{opportunity.reward || "Negotiable"}</span>
+            <span className="font-semibold truncate max-w-[150px]">
+              {opportunity.compensationType === 'monetary'
+                ? `$${opportunity.creatorPayment}`
+                : (opportunity.compensationType === 'exchange'
+                  ? (opportunity.exchangeDetails || "Product Exchange")
+                  : (opportunity.reward || "Negotiable"))}
+            </span>
           </div>
-          <Badge className={cn("font-medium", rewardTypeColors[opportunity.rewardType || "experience"])}>
-            {rewardTypeLabels[opportunity.rewardType || "experience"]}
+          <Badge className={cn("font-medium", rewardTypeColors[
+            opportunity.compensationType === 'monetary' ? 'paid' :
+              (opportunity.compensationType === 'exchange' ? 'experience' :
+                (opportunity.rewardType || "experience"))
+          ])}>
+            {opportunity.compensationType === 'monetary' ? 'Paid' : (opportunity.compensationType === 'exchange' ? 'Exchange' : rewardTypeLabels[opportunity.rewardType || "experience"])}
           </Badge>
         </div>
       </div>
