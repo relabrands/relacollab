@@ -31,6 +31,58 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+const CONTENT_FORMATS = [
+  { id: "posts", label: "Posts", emoji: "📸" },
+  { id: "reels", label: "Reels", emoji: "🎬" },
+  { id: "stories", label: "Stories", emoji: "📱" },
+  { id: "carousels", label: "Carousels", emoji: "🖼️" },
+  { id: "videos", label: "Videos", emoji: "🎥" },
+];
+
+const CREATOR_VIBES = [
+  { id: "romantic", label: "Romantic", emoji: "💕" },
+  { id: "party", label: "Party", emoji: "🎉" },
+  { id: "family", label: "Family", emoji: "👨‍👩‍👧" },
+  { id: "healthy", label: "Healthy", emoji: "🥗" },
+  { id: "premium", label: "Premium", emoji: "👑" },
+  { id: "adventure", label: "Adventure", emoji: "🏔️" },
+  { id: "minimal", label: "Minimal", emoji: "⚪" },
+  { id: "vibrant", label: "Vibrant", emoji: "🌈" },
+];
+
+const CONTENT_CATEGORIES = [
+  "Estilo de vida",
+  "Belleza y moda",
+  "Recetas",
+  "Humor",
+  "Fitness",
+  "Edición",
+  "Tecnología"
+];
+
+const WHO_APPEARS = [
+  "Solo yo",
+  "Mi pareja",
+  "Mis amigos",
+  "Mi familia",
+  "No aparecen personas"
+];
+
+const EXPERIENCE_TIME = [
+  "Menos de 6 meses",
+  "6-12 meses",
+  "1-2 años",
+  "3+ años"
+];
+
+const COLLABORATION_TYPES = [
+  { value: "Con remuneración", label: "Con remuneración" },
+  { value: "Intercambios", label: "Intercambios" },
+  { value: "Ambos", label: "Ambos" }
+];
 
 export default function CreatorProfile() {
   const { user } = useAuth();
@@ -64,6 +116,17 @@ export default function CreatorProfile() {
   });
   const [tempHandle, setTempHandle] = useState("");
 
+  // Professional fields
+  const [professionalData, setProfessionalData] = useState({
+    contentFormats: [] as string[],
+    vibes: [] as string[],
+    categories: [] as string[],
+    whoAppearsInContent: [] as string[],
+    experienceTime: "",
+    collaborationPreference: "",
+    hasBrandExperience: false
+  });
+
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
@@ -91,6 +154,17 @@ export default function CreatorProfile() {
           if (data.socialHandles) {
             setSocialHandles(data.socialHandles);
           }
+
+          // Load professional data
+          setProfessionalData({
+            contentFormats: data.contentFormats || [],
+            vibes: data.vibes || [],
+            categories: data.categories || [],
+            whoAppearsInContent: data.whoAppearsInContent || [],
+            experienceTime: data.experienceTime || "",
+            collaborationPreference: data.collaborationPreference || "",
+            hasBrandExperience: data.hasBrandExperience || false
+          });
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -200,13 +274,22 @@ export default function CreatorProfile() {
 
     try {
       await updateDoc(doc(db, "users", user.uid), {
-        ...profile,
-        // Don't save instagramMetrics here as it's managed separately via auth flow, 
-        // to avoid overwriting with stale data if not careful, but profile.instagramMetrics is from DB so it's fine.
-        // Actually best to exclude it from the update here just in case.
-        categories: selectedCategories,
-        socialHandles,
         displayName: profile.name,
+        phone: profile.phone,
+        location: profile.location,
+        bio: profile.bio,
+        categories: selectedCategories,
+        socialHandles: {
+          instagram: socialHandles.instagram || "",
+          tiktok: socialHandles.tiktok || "",
+        },
+        // Professional fields
+        contentFormats: professionalData.contentFormats,
+        vibes: professionalData.vibes,
+        whoAppearsInContent: professionalData.whoAppearsInContent,
+        experienceTime: professionalData.experienceTime,
+        collaborationPreference: professionalData.collaborationPreference,
+        hasBrandExperience: professionalData.hasBrandExperience,
         updatedAt: new Date().toISOString(),
       });
       toast.success("Profile saved successfully!");
@@ -396,6 +479,205 @@ export default function CreatorProfile() {
                   placeholder="Tell brands a little bit about yourself..."
                   className="mt-2 min-h-[100px]"
                 />
+              </div>
+
+              {/* Content Formats */}
+              <div className="mt-6">
+                <Label>Content Formats</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  What type of content do you create?
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {CONTENT_FORMATS.map((format) => (
+                    <div
+                      key={format.id}
+                      onClick={() => {
+                        const isSelected = professionalData.contentFormats.includes(format.id);
+                        setProfessionalData(prev => ({
+                          ...prev,
+                          contentFormats: isSelected
+                            ? prev.contentFormats.filter(f => f !== format.id)
+                            : [...prev.contentFormats, format.id]
+                        }));
+                      }}
+                      className={`
+                        p-4 rounded-lg border-2 cursor-pointer transition-all
+                        ${professionalData.contentFormats.includes(format.id)
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{format.emoji}</span>
+                        <span className="font-medium text-sm">{format.label}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Vibes */}
+              <div className="mt-6">
+                <Label>Content Vibes</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  What's your content style? (Optional)
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {CREATOR_VIBES.map((vibe) => (
+                    <div
+                      key={vibe.id}
+                      onClick={() => {
+                        const isSelected = professionalData.vibes.includes(vibe.id);
+                        setProfessionalData(prev => ({
+                          ...prev,
+                          vibes: isSelected
+                            ? prev.vibes.filter(v => v !== vibe.id)
+                            : [...prev.vibes, vibe.id]
+                        }));
+                      }}
+                      className={`
+                        p-3 rounded-lg border-2 cursor-pointer transition-all text-center
+                        ${professionalData.vibes.includes(vibe.id)
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50'
+                        }
+                      `}
+                    >
+                      <div className="text-2xl mb-1">{vibe.emoji}</div>
+                      <div className="text-xs font-medium">{vibe.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Who Appears */}
+              <div className="mt-6">
+                <Label>Who Appears in Your Content</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Select all that apply
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {WHO_APPEARS.map((option) => (
+                    <div
+                      key={option}
+                      onClick={() => {
+                        const isSelected = professionalData.whoAppearsInContent.includes(option);
+                        setProfessionalData(prev => ({
+                          ...prev,
+                          whoAppearsInContent: isSelected
+                            ? prev.whoAppearsInContent.filter(o => o !== option)
+                            : [...prev.whoAppearsInContent, option]
+                        }));
+                      }}
+                      className={`
+                        p-3 rounded-lg border-2 cursor-pointer transition-all
+                        ${professionalData.whoAppearsInContent.includes(option)
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={professionalData.whoAppearsInContent.includes(option)}
+                          onCheckedChange={() => { }}
+                        />
+                        <span className="text-sm font-medium">{option}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Experience & Collaboration */}
+              <div className="grid md:grid-cols-2 gap-6 mt-6">
+                {/* Experience Time */}
+                <div>
+                  <Label>Content Creation Experience</Label>
+                  <RadioGroup
+                    value={professionalData.experienceTime}
+                    onValueChange={(value) => setProfessionalData(prev => ({ ...prev, experienceTime: value }))}
+                    className="mt-3 space-y-2"
+                  >
+                    {EXPERIENCE_TIME.map((time) => (
+                      <div
+                        key={time}
+                        className={`
+                          flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer
+                          ${professionalData.experienceTime === time
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
+                          }
+                        `}
+                      >
+                        <RadioGroupItem value={time} id={time} />
+                        <Label htmlFor={time} className="cursor-pointer flex-1 font-normal">
+                          {time}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                {/* Collaboration Preference */}
+                <div>
+                  <Label>Collaboration Preference</Label>
+                  <RadioGroup
+                    value={professionalData.collaborationPreference}
+                    onValueChange={(value) => setProfessionalData(prev => ({ ...prev, collaborationPreference: value }))}
+                    className="mt-3 space-y-2"
+                  >
+                    {COLLABORATION_TYPES.map((type) => (
+                      <div
+                        key={type.value}
+                        className={`
+                          flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer
+                          ${professionalData.collaborationPreference === type.value
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
+                          }
+                        `}
+                      >
+                        <RadioGroupItem value={type.value} id={type.value} />
+                        <Label htmlFor={type.value} className="cursor-pointer flex-1 font-normal">
+                          {type.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              </div>
+
+              {/* Brand Experience */}
+              <div className="mt-6">
+                <Label>Brand Experience</Label>
+                <div className="flex items-center gap-4 mt-3">
+                  <div
+                    onClick={() => setProfessionalData(prev => ({ ...prev, hasBrandExperience: true }))}
+                    className={`
+                      flex-1 p-3 rounded-lg border-2 cursor-pointer text-center transition-all
+                      ${professionalData.hasBrandExperience
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary/50'
+                      }
+                    `}
+                  >
+                    <span className="text-sm font-medium">Yes, I have experience</span>
+                  </div>
+                  <div
+                    onClick={() => setProfessionalData(prev => ({ ...prev, hasBrandExperience: false }))}
+                    className={`
+                      flex-1 p-3 rounded-lg border-2 cursor-pointer text-center transition-all
+                      ${!professionalData.hasBrandExperience
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary/50'
+                      }
+                    `}
+                  >
+                    <span className="text-sm font-medium">No, I'm new to this</span>
+                  </div>
+                </div>
               </div>
 
               <Button
