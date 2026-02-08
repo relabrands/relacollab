@@ -23,6 +23,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { CampaignDetailsDialog } from "@/components/admin/CampaignDetailsDialog";
 
 interface Campaign {
     id: string;
@@ -33,6 +34,7 @@ interface Campaign {
     budget: string;
     applications: number;
     createdAt: string;
+    description?: string; // Add description for details view
 }
 
 const statusColors: Record<string, string> = {
@@ -46,8 +48,14 @@ export default function AdminCampaigns() {
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+
+    // Deletion State
+    const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+    // Details State
+    const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
     useEffect(() => {
         fetchCampaigns();
@@ -82,7 +90,8 @@ export default function AdminCampaigns() {
                     status: data.status || "draft",
                     budget: data.reward || data.budget || "N/A",
                     applications: data.applicationCount || 0,
-                    createdAt: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : "N/A"
+                    createdAt: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : "N/A",
+                    description: data.description || ""
                 } as Campaign;
             }));
 
@@ -113,17 +122,22 @@ export default function AdminCampaigns() {
     };
 
     const handleDeleteCampaign = async () => {
-        if (!selectedCampaign) return;
+        if (!campaignToDelete) return;
 
         try {
-            await deleteDoc(doc(db, "campaigns", selectedCampaign.id));
-            setCampaigns(campaigns.filter((c) => c.id !== selectedCampaign.id));
+            await deleteDoc(doc(db, "campaigns", campaignToDelete.id));
+            setCampaigns(campaigns.filter((c) => c.id !== campaignToDelete.id));
             toast.success("Campaign deleted successfully");
             setIsDeleteDialogOpen(false);
         } catch (error) {
             console.error("Error deleting campaign:", error);
             toast.error("Failed to delete campaign");
         }
+    };
+
+    const handleViewDetails = (campaign: Campaign) => {
+        setSelectedCampaign(campaign);
+        setIsDetailsOpen(true);
     };
 
     return (
@@ -211,9 +225,16 @@ export default function AdminCampaigns() {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
+                                                    onClick={() => handleViewDetails(campaign)}
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
                                                     className="text-destructive hover:text-destructive"
                                                     onClick={() => {
-                                                        setSelectedCampaign(campaign);
+                                                        setCampaignToDelete(campaign);
                                                         setIsDeleteDialogOpen(true);
                                                     }}
                                                 >
@@ -243,7 +264,7 @@ export default function AdminCampaigns() {
                         <DialogHeader>
                             <DialogTitle>Delete Campaign</DialogTitle>
                             <DialogDescription>
-                                Are you sure you want to delete "{selectedCampaign?.title}"? This action cannot be undone.
+                                Are you sure you want to delete "{campaignToDelete?.title}"? This action cannot be undone.
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
@@ -252,6 +273,14 @@ export default function AdminCampaigns() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Details Dialog */}
+                <CampaignDetailsDialog
+                    campaign={selectedCampaign}
+                    isOpen={isDetailsOpen}
+                    onClose={() => setIsDetailsOpen(false)}
+                />
+
             </main>
         </div>
     );
