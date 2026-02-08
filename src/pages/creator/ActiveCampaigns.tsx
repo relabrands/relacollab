@@ -12,6 +12,8 @@ import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Link } from "react-router-dom";
 import { OpportunityDetailsDialog } from "@/components/dashboard/OpportunityDetailsDialog";
 
+import { calculateMatchScore } from "@/lib/matchScoring";
+
 export default function ActiveCampaigns() {
     const { user } = useAuth();
     const [activeCampaigns, setActiveCampaigns] = useState<any[]>([]);
@@ -20,10 +22,14 @@ export default function ActiveCampaigns() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     useEffect(() => {
-        // ... (existing useEffect)
         const fetchActiveCampaigns = async () => {
             if (!user) return;
             try {
+                // Fetch Creator Profile for Scoring
+                const userDocRef = doc(db, "users", user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                const creatorProfile = userDocSnap.exists() ? userDocSnap.data() : {};
+
                 // Fetch approved applications for this user
                 const q = query(
                     collection(db, "applications"),
@@ -40,30 +46,41 @@ export default function ActiveCampaigns() {
                     const campaignDoc = await getDoc(campaignRef);
 
                     if (campaignDoc.exists()) {
-                        const brandId = campaignDoc.data().brandId;
-                        let brandLogo = campaignDoc.data().brandLogo || "";
+                        const campaignData = campaignDoc.data();
+                        const brandId = campaignData.brandId;
 
-                        // Try to fetch brand's profile picture if not present on campaign
+                        let brandName = "Unknown Brand";
+                        let brandLogo = campaignData.brandLogo || "";
+                        let brandProfile = {};
+
+                        // Fetch detailed brand info
                         if (brandId) {
                             try {
                                 const brandDoc = await getDoc(doc(db, "users", brandId));
                                 if (brandDoc.exists()) {
-                                    brandLogo = brandDoc.data().photoURL || brandDoc.data().avatar || brandLogo;
+                                    const brandData = brandDoc.data();
+                                    brandName = brandData.brandName || brandData.displayName || "Unknown Brand";
+                                    brandLogo = brandData.photoURL || brandData.avatar || brandLogo;
+                                    brandProfile = brandData;
                                 }
                             } catch (e) {
-                                console.log("Error fetching brand logo", e);
+                                console.log("Error fetching brand details", e);
                             }
                         }
 
+                        // Calculate Match Score
+                        const { score } = calculateMatchScore(campaignData, creatorProfile);
+
                         campaigns.push({
                             id: campaignDoc.id,
-                            ...campaignDoc.data(),
-                            brandLogo: brandLogo, // Use the fetched logo
-                            applicationId: appDoc.id, // Keep track of the application ID if needed
-                            matchScore: 100, // It's a match!
-                            title: campaignDoc.data().title || campaignDoc.data().name || "Untitled Campaign",
-                            brandDescription: campaignDoc.data().brandDescription || campaignDoc.data().description || "",
-                            goal: campaignDoc.data().goal || ""
+                            ...campaignData,
+                            brandName: brandName, // Correct brand name
+                            brandLogo: brandLogo, // Correct brand logo
+                            applicationId: appDoc.id,
+                            matchScore: score, // Real calculated score
+                            title: campaignData.title || campaignData.name || "Untitled Campaign",
+                            brandDescription: campaignData.brandDescription || campaignData.description || "",
+                            brandProfile: brandProfile
                         });
                     }
                 }
