@@ -72,14 +72,28 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics }: ContentCardP
     return num.toString();
   };
 
+  const [imgError, setImgError] = useState(false);
+
   return (
     <Card className="glass-card overflow-hidden group hover:shadow-elevated transition-all duration-300">
-      <div className="relative aspect-[4/5] overflow-hidden">
-        <img
-          src={content.thumbnail}
-          alt={content.campaignName}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
+      <div className="relative aspect-[4/5] overflow-hidden bg-muted">
+        {!imgError ? (
+          <img
+            src={content.thumbnail}
+            alt={content.campaignName}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-4 bg-muted/50">
+            {content.type === 'video' || content.type === 'reel' ? (
+              <Video className="w-12 h-12 mb-2 opacity-50" />
+            ) : (
+              <Image className="w-12 h-12 mb-2 opacity-50" />
+            )}
+            <span className="text-xs text-center">Preview unavailable</span>
+          </div>
+        )}
 
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -112,7 +126,7 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics }: ContentCardP
 
         {/* Play button for videos */}
         {(content.type === "video" || content.type === "reel") && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
               <Play className="w-6 h-6 text-white fill-white" />
             </div>
@@ -137,7 +151,7 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics }: ContentCardP
               e.stopPropagation();
               onRefreshMetrics?.(content);
             }}
-            title="Refresh Metrics"
+            title="Refresh Metrics (Get latest cover & stats)"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -409,11 +423,17 @@ export default function ContentLibrary() {
           toast.error("Failed to get metrics", { id: toastId });
         }
       } else {
-        toast.error("Server error", { id: toastId });
+        // Try to get error message from response
+        let errorMessage = "Server error";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.details || errorData.error || "Server error";
+        } catch (e) { }
+        toast.error(`Error: ${errorMessage}`, { id: toastId });
       }
     } catch (error) {
       console.error(error);
-      toast.error("Network error", { id: toastId });
+      toast.error("Network error handling refresh", { id: toastId });
     }
   };
 

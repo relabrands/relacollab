@@ -293,10 +293,13 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
             }
 
             // Fetch post metrics from Instagram API
+            console.log(`Fetching metrics for post ${postId} with token ending in ...${accessToken.slice(-5)}`);
             try {
                 const response = await axios.get(
-                    `https://graph.instagram.com/${postId}?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url&access_token=${accessToken}`
+                    `https://graph.instagram.com/${postId}?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink&access_token=${accessToken}`
                 );
+
+                console.log("Instagram API Response:", JSON.stringify(response.data));
 
                 const metrics = {
                     likes: response.data.like_count || 0,
@@ -312,9 +315,9 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 });
 
             } catch (apiError) {
-                console.error("Instagram API Error:", apiError.response?.data || apiError.message);
+                console.error("Instagram API Error Details:", apiError.response?.data || apiError.message);
                 return res.status(500).json({
-                    error: "Failed to fetch post metrics",
+                    error: "Failed to fetch post metrics from Instagram",
                     details: apiError.response?.data?.error?.message || apiError.message
                 });
             }
