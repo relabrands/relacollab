@@ -34,7 +34,8 @@ interface Campaign {
     budget: string;
     applications: number;
     createdAt: string;
-    description?: string; // Add description for details view
+    description?: string;
+    coverImage?: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -66,6 +67,16 @@ export default function AdminCampaigns() {
             const q = query(collection(db, "campaigns"), orderBy("createdAt", "desc"));
             const querySnapshot = await getDocs(q);
 
+            // Fetch all applications to count them dynamically
+            const appsSnapshot = await getDocs(collection(db, "applications"));
+            const appCounts: Record<string, number> = {};
+            appsSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                if (data.campaignId) {
+                    appCounts[data.campaignId] = (appCounts[data.campaignId] || 0) + 1;
+                }
+            });
+
             const campaignsData = await Promise.all(querySnapshot.docs.map(async (docSnap) => {
                 const data = docSnap.data();
 
@@ -89,9 +100,10 @@ export default function AdminCampaigns() {
                     brandId: data.brandId,
                     status: data.status || "draft",
                     budget: data.reward || data.budget || "N/A",
-                    applications: data.applicationCount || 0,
+                    applications: appCounts[docSnap.id] || 0, // Use real count
                     createdAt: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : "N/A",
-                    description: data.description || ""
+                    description: data.description || "",
+                    coverImage: data.coverImage || data.image || "" // Capture cover image
                 } as Campaign;
             }));
 

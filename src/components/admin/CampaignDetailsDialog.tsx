@@ -110,22 +110,36 @@ export function CampaignDetailsDialog({ campaign, isOpen, onClose }: CampaignDet
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
-                <DialogHeader className="p-6 pb-4 border-b">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                                {campaign.title}
-                                <Badge variant="outline" className="ml-2 capitalize">{campaign.status}</Badge>
-                            </DialogTitle>
-                            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                                <Building2 className="w-3 h-3" /> {campaign.brandName}
-                                <span className="text-border mx-1">|</span>
-                                <Calendar className="w-3 h-3" /> Created: {campaign.createdAt}
-                            </p>
+                <DialogHeader className="p-0 border-b overflow-hidden rounded-t-lg">
+                    {/* Cover Image */}
+                    {campaign.coverImage && (
+                        <div className="w-full h-32 bg-muted relative">
+                            <img
+                                src={campaign.coverImage}
+                                alt={campaign.title}
+                                className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                         </div>
-                        <div className="text-right">
-                            <div className="text-lg font-bold text-primary">{campaign.budget}</div>
-                            <div className="text-xs text-muted-foreground">Budget/Reward</div>
+                    )}
+
+                    <div className="p-6 pb-4 pt-4 relative">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                                    {campaign.title}
+                                    <Badge variant="outline" className="ml-2 capitalize">{campaign.status}</Badge>
+                                </DialogTitle>
+                                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                                    <Building2 className="w-3 h-3" /> {campaign.brandName}
+                                    <span className="text-border mx-1">|</span>
+                                    <Calendar className="w-3 h-3" /> Created: {campaign.createdAt}
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-lg font-bold text-primary">{campaign.budget}</div>
+                                <div className="text-xs text-muted-foreground">Budget/Reward</div>
+                            </div>
                         </div>
                     </div>
                 </DialogHeader>
@@ -194,32 +208,38 @@ export function CampaignDetailsDialog({ campaign, isOpen, onClose }: CampaignDet
                                     <TabsContent value="content" className="mt-0">
                                         {submissions.length > 0 ? (
                                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                {submissions.map((sub: any) => (
-                                                    <div key={sub.id} className="group relative aspect-[4/5] rounded-xl overflow-hidden border bg-black/5">
-                                                        {sub.mediaUrl ? (
-                                                            <img src={sub.mediaUrl} alt="Submission" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center">
-                                                                <FileImage className="w-8 h-8 text-muted-foreground/50" />
-                                                            </div>
-                                                        )}
+                                                {submissions.map((sub: any) => {
+                                                    // Try to find a valid image URL from various potential fields
+                                                    const displayImage = sub.mediaUrl || sub.imageUrl || sub.coverUrl || sub.thumbnailUrl;
 
-                                                        {/* Overlay Info */}
-                                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 text-white">
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <Heart className="w-3 h-3 fill-white" />
-                                                                <span className="text-xs font-bold">{sub.likes || 0}</span>
-                                                                <MessageCircle className="w-3 h-3 fill-white ml-2" />
-                                                                <span className="text-xs font-bold">{sub.comments || 0}</span>
-                                                            </div>
-                                                            {sub.postUrl && (
-                                                                <a href={sub.postUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] hover:underline text-white/80">
-                                                                    View Post <ExternalLink className="w-2 h-2" />
-                                                                </a>
+                                                    return (
+                                                        <div key={sub.id} className="group relative aspect-[4/5] rounded-xl overflow-hidden border bg-black/5">
+                                                            {displayImage ? (
+                                                                <img src={displayImage} alt="Submission" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                                                            ) : (
+                                                                <div className="w-full h-full flex flex-col items-center justify-center bg-muted">
+                                                                    <FileImage className="w-8 h-8 text-muted-foreground/50 mb-2" />
+                                                                    <span className="text-xs text-muted-foreground">No Preview</span>
+                                                                </div>
                                                             )}
+
+                                                            {/* Overlay Info */}
+                                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 text-white">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <Heart className="w-3 h-3 fill-white" />
+                                                                    <span className="text-xs font-bold">{sub.likes || 0}</span>
+                                                                    <MessageCircle className="w-3 h-3 fill-white ml-2" />
+                                                                    <span className="text-xs font-bold">{sub.comments || 0}</span>
+                                                                </div>
+                                                                {sub.postUrl && (
+                                                                    <a href={sub.postUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] hover:underline text-white/80">
+                                                                        View Post <ExternalLink className="w-2 h-2" />
+                                                                    </a>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         ) : (
                                             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border border-dashed rounded-xl">
