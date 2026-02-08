@@ -173,10 +173,6 @@ export default function CreateCampaign() {
           toast.error("Select at least one vibe for your campaign");
           return false;
         }
-        if (formData.contentTypes.length === 0) {
-          toast.error("Select at least one content type");
-          return false;
-        }
         if (!formData.goal.trim()) {
           toast.error("Campaign goal is required");
           return false;
