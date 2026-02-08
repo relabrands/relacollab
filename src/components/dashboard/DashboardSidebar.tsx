@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -42,6 +43,7 @@ const creatorNavItems = [
 
 export function DashboardSidebar({ type }: DashboardSidebarProps) {
   const location = useLocation();
+  const { logout } = useAuth();
   const navItems = type === "brand" ? brandNavItems : creatorNavItems;
 
   return (
@@ -83,7 +85,10 @@ export function DashboardSidebar({ type }: DashboardSidebarProps) {
 
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border">
-        <button className="sidebar-item w-full text-sidebar-foreground/50 hover:text-sidebar-foreground">
+        <button
+          onClick={() => logout()}
+          className="sidebar-item w-full text-sidebar-foreground/50 hover:text-sidebar-foreground text-left"
+        >
           <LogOut className="w-5 h-5" />
           Sign Out
         </button>
