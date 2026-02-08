@@ -83,17 +83,21 @@ export default function AdminDashboard() {
         const users = usersSnapshot.docs.map(doc => doc.data());
 
         const brandCount = users.filter(u => u.role === 'brand').length;
-        const creatorCount = users.filter(u => u.role === 'creator').length;
+        const creators = users.filter(u => u.role === 'creator');
+        const creatorCount = creators.length;
 
         // Fetch Campaigns count
         const campaignsSnapshot = await getDocs(collection(db, "campaigns"));
         const campaignCount = campaignsSnapshot.size;
 
+        // Calculate Revenue (Mock for now, or sum budgets if available)
+        // For now we keep it as placeholder or sum paid campaigns budget
+
         setStats(prev => [
-          { ...prev[0], value: brandCount },
-          { ...prev[1], value: creatorCount },
-          { ...prev[2], value: campaignCount },
-          { ...prev[3], value: "$0" } // Revenue Placeholder
+          { ...prev[0], value: brandCount, change: `Total registered` },
+          { ...prev[1], value: creatorCount, change: `Total registered` },
+          { ...prev[2], value: campaignCount, change: `Total active` },
+          { ...prev[3], value: "$0" } // Keep as placeholder until payments are real
         ]);
 
         // Recent Brands
