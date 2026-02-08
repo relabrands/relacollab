@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, AlertCircle, Upload } from "lucide-react";
+import { Check, Loader2, AlertCircle, Upload, Image } from "lucide-react";
 import { toast } from "sonner";
 import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -36,7 +36,13 @@ interface SubmittedContent {
     deliverableType: string;
     deliverableNumber: number;
     contentUrl: string;
+    thumbnailUrl?: string;
+    caption?: string;
     status: "pending" | "approved" | "needs_revision";
+    metrics?: {
+        likes?: number;
+        comments?: number;
+    };
 }
 
 interface DeliverableSubmissionDialogProps {
@@ -55,9 +61,17 @@ export function DeliverableSubmissionDialog({
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [submittedContent, setSubmittedContent] = useState<SubmittedContent[]>([]);
-    const [selectedDeliverables, setSelectedDeliverables] = useState<Map<string, string>>(new Map());
+    const [selectedDeliverables, setSelectedDeliverables] = useState<Map<string, InstagramMedia>>(new Map());
+    const [showInstagramPicker, setShowInstagramPicker] = useState(false);
+    const [currentDeliverable, setCurrentDeliverable] = useState<{ key: string; type: string } | null>(null);
 
     // Fetch existing submissions when dialog opens
+    useEffect(() => {
+        if (open) {
+            fetchExistingSubmissions();
+        }
+    }, [open, user, campaign.id]);
+
     const fetchExistingSubmissions = async () => {
         if (!user || !campaign.id) return;
 
@@ -110,12 +124,22 @@ export function DeliverableSubmissionDialog({
         slot => slot.required && !slot.submitted
     ).length;
 
-    const handleSelectContent = (key: string, url: string) => {
-        setSelectedDeliverables(prev => {
-            const newMap = new Map(prev);
-            newMap.set(key, url);
-            return newMap;
-        });
+    const handleOpenInstagramPicker = (key: string, type: string) => {
+        setCurrentDeliverable({ key, type });
+        setShowInstagramPicker(true);
+    };
+
+    const handleInstagramMediaSelected = (media: InstagramMedia) => {
+        if (currentDeliverable) {
+            setSelectedDeliverables(prev => {
+                const newMap = new Map(prev);
+                newMap.set(currentDeliverable.key, media);
+                return newMap;
+            });
+            toast.success(`Selected ${currentDeliverable.type}`);
+        }
+        setShowInstagramPicker(false);
+        setCurrentDeliverable(null);
     };
 
     const handleSubmitSelected = async () => {
@@ -129,7 +153,7 @@ export function DeliverableSubmissionDialog({
             const submissions = [];
 
             // Create submissions for each selected deliverable
-            for (const [key, url] of selectedDeliverables.entries()) {
+            for (const [key, media] of selectedDeliverables.entries()) {
                 const [type, numberStr] = key.split("_");
                 const number = parseInt(numberStr);
 
@@ -138,10 +162,17 @@ export function DeliverableSubmissionDialog({
                     creatorId: user!.uid,
                     deliverableType: type,
                     deliverableNumber: number,
-                    contentUrl: url,
+                    contentUrl: media.permalink,
+                    mediaUrl: media.media_url,
+                    thumbnailUrl: media.thumbnail_url || media.media_url,
+                    caption: media.caption || "",
+                    mediaType: media.media_type,
                     status: "pending",
                     createdAt: new Date().toISOString(),
-                    metrics: {}, // Will be fetched from Instagram later
+                    metrics: {
+                        likes: media.like_count || 0,
+                        comments: media.comments_count || 0,
+                    },
                 }));
             }
 
@@ -159,131 +190,191 @@ export function DeliverableSubmissionDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-3xl max-h-[80vh]">
-                <DialogHeader>
-                    <DialogTitle>Submit Campaign Deliverables</DialogTitle>
-                    <DialogDescription>
-                        Campaign: <span className="font-medium">{campaign.name}</span>
-                        {missingRequired > 0 && (
-                            <span className="text-orange-600 ml-2">
-                                • {missingRequired} required deliverable(s) remaining
-                            </span>
-                        )}
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={open} onOpenChange={onClose}>
+                <DialogContent className="max-w-3xl max-h-[80vh]">
+                    <DialogHeader>
+                        <DialogTitle>Submit Campaign Deliverables</DialogTitle>
+                        <DialogDescription>
+                            Campaign: <span className="font-medium">{campaign.name}</span>
+                            {missingRequired > 0 && (
+                                <span className="text-orange-600 ml-2">
+                                    • {missingRequired} required deliverable(s) remaining
+                                </span>
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
 
-                <div className="max-h-[50vh] overflow-y-auto pr-4">
-                    <div className="space-y-3">
-                        {deliverableSlots.map(slot => (
-                            <div
-                                key={slot.key}
-                                className={`p-4 border-2 rounded-lg ${slot.submitted
-                                    ? slot.submitted.status === "approved"
-                                        ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                                        : slot.submitted.status === "needs_revision"
-                                            ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
-                                            : "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                                    : "border-border"
-                                    }`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="text-2xl">
-                                            {slot.type === "Post" && "📸"}
-                                            {slot.type === "Reel" && "🎬"}
-                                            {slot.type === "Story" && "📱"}
-                                            {slot.type === "Carousel" && "🖼️"}
-                                            {slot.type === "Video" && "🎥"}
-                                        </div>
-                                        <div>
-                                            <div className="font-medium">
-                                                {slot.type} #{slot.number}
-                                            </div>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <Badge variant={slot.required ? "default" : "outline"}>
-                                                    {slot.required ? "Required" : "Optional"}
-                                                </Badge>
-                                                {slot.submitted && (
-                                                    <Badge
-                                                        variant={
-                                                            slot.submitted.status === "approved"
-                                                                ? "success"
-                                                                : slot.submitted.status === "needs_revision"
-                                                                    ? "destructive"
-                                                                    : "secondary"
-                                                        }
-                                                    >
-                                                        {slot.submitted.status === "approved" && <Check className="w-3 h-3 mr-1" />}
-                                                        {slot.submitted.status === "needs_revision" && <AlertCircle className="w-3 h-3 mr-1" />}
-                                                        {slot.submitted.status === "pending" && "⏳"}
-                                                        {" "}
-                                                        {slot.submitted.status.toUpperCase().replace("_", " ")}
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                    <div className="max-h-[50vh] overflow-y-auto pr-4">
+                        <div className="space-y-3">
+                            {deliverableSlots.map(slot => {
+                                const selectedMedia = selectedDeliverables.get(slot.key);
 
-                                    <div>
-                                        {slot.submitted ? (
-                                            <div className="text-sm text-muted-foreground">
-                                                {slot.submitted.status === "needs_revision" && (
+                                return (
+                                    <div
+                                        key={slot.key}
+                                        className={`p-4 border-2 rounded-lg ${slot.submitted
+                                                ? slot.submitted.status === "approved"
+                                                    ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                                                    : slot.submitted.status === "needs_revision"
+                                                        ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
+                                                        : "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+                                                : selectedMedia
+                                                    ? "border-primary bg-primary/5"
+                                                    : "border-border"
+                                            }`}
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-start gap-3 flex-1">
+                                                {/* Icon or Thumbnail */}
+                                                <div className="flex-shrink-0">
+                                                    {slot.submitted?.thumbnailUrl ? (
+                                                        <img
+                                                            src={slot.submitted.thumbnailUrl}
+                                                            alt={`${slot.type} #${slot.number}`}
+                                                            className="w-16 h-16 rounded-lg object-cover"
+                                                        />
+                                                    ) : selectedMedia ? (
+                                                        <img
+                                                            src={selectedMedia.thumbnail_url || selectedMedia.media_url}
+                                                            alt="Selected"
+                                                            className="w-16 h-16 rounded-lg object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-2xl">
+                                                            {slot.type === "Post" && "📸"}
+                                                            {slot.type === "Reel" && "🎬"}
+                                                            {slot.type === "Story" && "📱"}
+                                                            {slot.type === "Carousel" && "🖼️"}
+                                                            {slot.type === "Video" && "🎥"}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-medium">
+                                                        {slot.type} #{slot.number}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                        <Badge variant={slot.required ? "default" : "outline"} className="text-xs">
+                                                            {slot.required ? "Required" : "Optional"}
+                                                        </Badge>
+                                                        {slot.submitted && (
+                                                            <Badge
+                                                                variant={
+                                                                    slot.submitted.status === "approved"
+                                                                        ? "success"
+                                                                        : slot.submitted.status === "needs_revision"
+                                                                            ? "destructive"
+                                                                            : "secondary"
+                                                                }
+                                                                className="text-xs"
+                                                            >
+                                                                {slot.submitted.status === "approved" && <Check className="w-3 h-3 mr-1" />}
+                                                                {slot.submitted.status === "needs_revision" && <AlertCircle className="w-3 h-3 mr-1" />}
+                                                                {slot.submitted.status === "pending" && "⏳"}
+                                                                {" "}
+                                                                {slot.submitted.status.replace("_", " ").toUpperCase()}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Caption preview */}
+                                                    {(slot.submitted?.caption || selectedMedia?.caption) && (
+                                                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                                                            {slot.submitted?.caption || selectedMedia?.caption}
+                                                        </p>
+                                                    )}
+
+                                                    {/* Metrics */}
+                                                    {(slot.submitted?.metrics || selectedMedia) && (
+                                                        <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                                                            {(slot.submitted?.metrics?.likes || selectedMedia?.like_count) && (
+                                                                <span>❤️ {(slot.submitted?.metrics?.likes || selectedMedia?.like_count || 0).toLocaleString()}</span>
+                                                            )}
+                                                            {(slot.submitted?.metrics?.comments || selectedMedia?.comments_count) && (
+                                                                <span>💬 {slot.submitted?.metrics?.comments || selectedMedia?.comments_count}</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex-shrink-0">
+                                                {slot.submitted ? (
+                                                    <div className="text-sm text-muted-foreground">
+                                                        {slot.submitted.status === "needs_revision" && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
+                                                            >
+                                                                Resubmit
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                ) : (
                                                     <Button
-                                                        variant="outline"
+                                                        variant={selectedMedia ? "default" : "outline"}
                                                         size="sm"
-                                                        onClick={() => {
-                                                            // TODO: Open Instagram picker for resubmission
-                                                            toast.info("Resubmission coming soon");
-                                                        }}
+                                                        onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
+                                                        disabled={loading}
                                                     >
-                                                        Resubmit
+                                                        {selectedMedia ? (
+                                                            <>
+                                                                <Check className="w-4 h-4 mr-2" />
+                                                                Selected
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Upload className="w-4 h-4 mr-2" />
+                                                                Select from Instagram
+                                                            </>
+                                                        )}
                                                     </Button>
                                                 )}
                                             </div>
-                                        ) : (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => {
-                                                    // TODO: Open Instagram media picker
-                                                    // For now, use placeholder
-                                                    const placeholderUrl = `https://instagram.com/p/placeholder_${slot.key}`;
-                                                    handleSelectContent(slot.key, placeholderUrl);
-                                                    toast.success(`Selected ${slot.type} #${slot.number}`);
-                                                }}
-                                                disabled={loading}
-                                            >
-                                                <Upload className="w-4 h-4 mr-2" />
-                                                {selectedDeliverables.has(slot.key) ? "Selected ✓" : "Select from Instagram"}
-                                            </Button>
-                                        )}
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        ))}
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
 
-                <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="text-sm text-muted-foreground">
-                        {selectedDeliverables.size} deliverable(s) selected
+                    <div className="flex items-center justify-between pt-4 border-t">
+                        <div className="text-sm text-muted-foreground">
+                            {selectedDeliverables.size} deliverable(s) selected
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="ghost" onClick={onClose} disabled={loading}>
+                                Close
+                            </Button>
+                            <Button
+                                variant="hero"
+                                onClick={handleSubmitSelected}
+                                disabled={loading || selectedDeliverables.size === 0}
+                            >
+                                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                Submit Selected
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="ghost" onClick={onClose} disabled={loading}>
-                            Close
-                        </Button>
-                        <Button
-                            variant="hero"
-                            onClick={handleSubmitSelected}
-                            disabled={loading || selectedDeliverables.size === 0}
-                        >
-                            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            Submit Selected
-                        </Button>
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
+                </DialogContent>
+            </Dialog>
+
+            {/* Instagram Media Picker */}
+            {showInstagramPicker && currentDeliverable && user && (
+                <InstagramMediaPicker
+                    open={showInstagramPicker}
+                    onClose={() => {
+                        setShowInstagramPicker(false);
+                        setCurrentDeliverable(null);
+                    }}
+                    onSelect={handleInstagramMediaSelected}
+                    userId={user.uid}
+                    filterType={currentDeliverable.type as any}
+                />
+            )}
+        </>
     );
 }

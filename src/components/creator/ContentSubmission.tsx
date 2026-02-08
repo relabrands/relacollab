@@ -27,6 +27,12 @@ interface SubmittedContent {
   deliverableNumber: number;
   status: "pending" | "approved" | "needs_revision";
   contentUrl: string;
+  thumbnailUrl?: string;
+  caption?: string;
+  metrics?: {
+    likes?: number;
+    comments?: number;
+  };
   editRequest?: {
     feedback: string;
     createdAt: string;
@@ -262,12 +268,12 @@ export function ContentSubmission() {
                           <div
                             key={`${deliverable.type}_${deliverableNumber}`}
                             className={`flex items-center justify-between p-3 rounded-lg border ${submission?.status === "approved"
-                                ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                                : submission?.status === "needs_revision"
-                                  ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
-                                  : submission?.status === "pending"
-                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                                    : "border-border"
+                              ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                              : submission?.status === "needs_revision"
+                                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
+                                : submission?.status === "pending"
+                                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+                                  : "border-border"
                               }`}
                           >
                             <div className="flex items-center gap-3">
