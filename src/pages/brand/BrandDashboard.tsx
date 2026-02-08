@@ -64,13 +64,31 @@ export default function BrandDashboard() {
         const campaigns = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setRecentCampaigns(campaigns);
 
-        // Calculate Stats (Basic implementation)
+        // Calculate Stats
         const activeCount = campaigns.filter((c: any) => c.status === 'active').length;
 
+        // Fetch all applications for this brand's campaigns
+        const campaignIds = campaigns.map(c => c.id);
+        let totalMatched = 0;
+
+        if (campaignIds.length > 0) {
+          // Fetch applications for all campaigns
+          const appsQuery = query(
+            collection(db, "applications"),
+            where("campaignId", "in", campaignIds.slice(0, 10)) // Firestore limit
+          );
+          const appsSnapshot = await getDocs(appsQuery);
+          // Count approved/collaborating creators
+          totalMatched = appsSnapshot.docs.filter(doc => {
+            const status = doc.data().status;
+            return status === "approved" || status === "active" || status === "collaborating";
+          }).length;
+        }
+
         setStats(prev => [
-          { ...prev[0], value: activeCount }, // Active Campaigns
-          { ...prev[1], value: 0 }, // Matched Creators (Placeholder logic)
-          { ...prev[2], value: "$0" } // Total Spend (Placeholder logic)
+          { ...prev[0], value: activeCount, change: `${activeCount} this month` },
+          { ...prev[1], value: totalMatched, change: `${totalMatched} this week`, changeType: totalMatched > 0 ? "positive" : "neutral" },
+          { ...prev[2], value: "$0" }
         ]);
 
       } catch (error) {

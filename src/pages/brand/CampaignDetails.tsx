@@ -5,8 +5,8 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Users, DollarSign, ArrowLeft, Target, Sparkles, Loader2, MapPin, Briefcase } from "lucide-react";
-import { doc, getDoc } from "firebase/firestore";
+import { Calendar, Users, DollarSign, ArrowLeft, Target, Sparkles, Loader2, MapPin, Briefcase, FileCheck, UserCheck, Send } from "lucide-react";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { MobileNav } from "@/components/dashboard/MobileNav";
@@ -17,23 +17,51 @@ export default function CampaignDetails() {
     const [loading, setLoading] = useState(true);
     const [campaign, setCampaign] = useState<any>(null);
 
+    // Real-time stats
+    const [applicationsCount, setApplicationsCount] = useState(0);
+    const [approvedCount, setApprovedCount] = useState(0);
+    const [collaboratingCount, setCollaboratingCount] = useState(0);
+
     useEffect(() => {
-        const fetchCampaign = async () => {
+        const fetchCampaignData = async () => {
             if (!id || !user) return;
             try {
+                // Fetch campaign
                 const docRef = doc(db, "campaigns", id);
                 const docSnap = await getDoc(docRef);
+
                 if (docSnap.exists()) {
-                    setCampaign({ id: docSnap.id, ...docSnap.data() });
+                    const campaignData = { id: docSnap.id, ...docSnap.data() };
+                    setCampaign(campaignData);
+
+                    // Fetch applications for this campaign
+                    const appsQuery = query(
+                        collection(db, "applications"),
+                        where("campaignId", "==", id)
+                    );
+                    const appsSnapshot = await getDocs(appsQuery);
+
+                    const allApps = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                    // Count by status
+                    const total = allApps.length;
+                    const approved = allApps.filter((app: any) => app.status === "approved").length;
+                    const collaborating = allApps.filter((app: any) =>
+                        app.status === "approved" || app.status === "active" || app.status === "collaborating"
+                    ).length;
+
+                    setApplicationsCount(total);
+                    setApprovedCount(approved);
+                    setCollaboratingCount(collaborating);
                 }
             } catch (error) {
-                console.error("Error fetching campaign:", error);
+                console.error("Error fetching campaign data:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchCampaign();
+        fetchCampaignData();
     }, [id, user]);
 
     if (loading) {
@@ -55,10 +83,8 @@ export default function CampaignDetails() {
         );
     }
 
-    // Calculate Progress (Placeholder logic for now, assumes 'hiredCount' might exist later)
-    const hiredCount = campaign.hiredCount || 0;
     const neededCount = campaign.creatorCount || 1;
-    const progress = (hiredCount / neededCount) * 100;
+    const progress = (approvedCount / neededCount) * 100;
 
     return (
         <div className="flex min-h-screen bg-background">
@@ -91,11 +117,87 @@ export default function CampaignDetails() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-8">
+                        {/* Stats Cards Row */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="glass-card p-6 bg-gradient-to-br from-blue-50 to-blue-50/50 dark:from-blue-950/20 dark:to-blue-950/10 border-blue-200/50">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="p-2 bg-blue-500/10 rounded-lg">
+                                        <FileCheck className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Applications</p>
+                                        <p className="text-2xl font-bold">{applicationsCount}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="glass-card p-6 bg-gradient-to-br from-green-50 to-green-50/50 dark:from-green-950/20 dark:to-green-950/10 border-green-200/50">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="p-2 bg-green-500/10 rounded-lg">
+                                        <UserCheck className="w-5 h-5 text-green-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Approved</p>
+                                        <p className="text-2xl font-bold">{approvedCount}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="glass-card p-6 bg-gradient-to-br from-purple-50 to-purple-50/50 dark:from-purple-950/20 dark:to-purple-950/10 border-purple-200/50">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="p-2 bg-purple-500/10 rounded-lg">
+                                        <Users className="w-5 h-5 text-purple-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Collaborating</p>
+                                        <p className="text-2xl font-bold">{collaboratingCount}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Description */}
                         <div className="glass-card p-6">
                             <h3 className="text-lg font-semibold mb-4">About this Campaign</h3>
                             <p className="text-muted-foreground whitespace-pre-wrap">{campaign.description}</p>
                         </div>
+
+                        {/* Content Types & Compensation */}
+                        {(campaign.contentTypes || campaign.compensationType) && (
+                            <div className="glass-card p-6">
+                                <h3 className="text-lg font-semibold mb-4">Content & Compensation</h3>
+                                <div className="space-y-4">
+                                    {campaign.contentTypes && campaign.contentTypes.length > 0 && (
+                                        <div>
+                                            <p className="text-sm text-muted-foreground mb-2">Content Types Needed</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {campaign.contentTypes.map((type: string) => (
+                                                    <Badge key={type} variant="secondary" className="capitalize">
+                                                        {type}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {campaign.compensationType && (
+                                        <div className="bg-muted/30 p-4 rounded-lg">
+                                            <p className="text-sm text-muted-foreground mb-1">Compensation Type</p>
+                                            <p className="font-medium capitalize">{campaign.compensationType === "monetary" ? "💰 Pago Monetario" : "🎁 Intercambio"}</p>
+                                            {campaign.compensationType === "exchange" && campaign.exchangeDetails && (
+                                                <p className="text-sm text-muted-foreground mt-2">{campaign.exchangeDetails}</p>
+                                            )}
+                                            {campaign.compensationType === "monetary" && campaign.creatorPayment && (
+                                                <p className="text-sm mt-2">
+                                                    <span className="text-muted-foreground">Creator Payment:</span>
+                                                    <span className="font-medium text-green-600 ml-2">${campaign.creatorPayment}</span>
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Requirements */}
                         <div className="glass-card p-6">
@@ -124,16 +226,18 @@ export default function CampaignDetails() {
                                 </div>
                             </div>
 
-                            <div className="mt-6">
-                                <p className="text-sm text-muted-foreground mb-3">Vibe Keywords</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {campaign.vibes?.map((vibe: string) => (
-                                        <Badge key={vibe} variant="secondary" className="px-3 py-1 capitalize">
-                                            {vibe}
-                                        </Badge>
-                                    ))}
+                            {campaign.vibes && campaign.vibes.length > 0 && (
+                                <div className="mt-6">
+                                    <p className="text-sm text-muted-foreground mb-3">Vibe Keywords</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {campaign.vibes.map((vibe: string) => (
+                                            <Badge key={vibe} variant="secondary" className="px-3 py-1 capitalize">
+                                                {vibe}
+                                            </Badge>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
@@ -147,11 +251,14 @@ export default function CampaignDetails() {
                             </h3>
                             <div className="mb-2 flex justify-between text-sm">
                                 <span className="text-muted-foreground">Creators Hired</span>
-                                <span className="font-medium">{hiredCount} / {neededCount}</span>
+                                <span className="font-medium">{approvedCount} / {neededCount}</span>
                             </div>
                             <Progress value={progress} className="h-2 mb-4" />
                             <p className="text-xs text-muted-foreground mb-4">
-                                You need {neededCount - hiredCount} more creator{neededCount - hiredCount !== 1 ? 's' : ''} to reach your goal.
+                                {approvedCount >= neededCount
+                                    ? "🎉 Goal reached! You've hired all needed creators."
+                                    : `You need ${neededCount - approvedCount} more creator${neededCount - approvedCount !== 1 ? 's' : ''} to reach your goal.`
+                                }
                             </p>
                             <Link to={`/brand/matches?campaignId=${campaign.id}`}>
                                 <Button className="w-full" variant="outline">Find Creators</Button>
