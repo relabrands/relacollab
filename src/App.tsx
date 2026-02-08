@@ -15,6 +15,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataDeletion from "./pages/DataDeletion";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import InstagramCallback from "./pages/auth/InstagramCallback";
+import Apply from "./pages/Apply";
 
 // Brand pages
 import BrandDashboard from "./pages/brand/BrandDashboard";
@@ -58,6 +59,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/apply" element={<Apply />} />
             <Route path="/politica-de-privacidad" element={<PrivacyPolicy />} />
             <Route path="/eliminacion-de-datos" element={<DataDeletion />} />
             <Route path="/terminos-y-condiciones" element={<TermsAndConditions />} />
