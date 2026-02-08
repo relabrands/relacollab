@@ -60,7 +60,7 @@ export default function AdminBrands() {
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
 
   // Dynamic Plans State
-  const [availablePlans, setAvailablePlans] = useState<{ id: string, name: string }[]>([]);
+  const [availablePlans, setAvailablePlans] = useState<any[]>([]);
 
   // Details Dialog State
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -83,7 +83,9 @@ export default function AdminBrands() {
       const snapshot = await getDocs(q);
       const plans = snapshot.docs.map(doc => ({
         id: doc.id,
-        name: doc.data().name
+        name: doc.data().name,
+        credits: doc.data().credits,
+        permissions: doc.data().permissions
       }));
       setAvailablePlans(plans);
     } catch (e) {
@@ -182,11 +184,31 @@ export default function AdminBrands() {
     }
   };
 
-  const handleChangePlan = async (brandId: string, newPlan: string) => {
+  /* Update handleChangePlan to sync with plan data */
+  const handleChangePlan = async (brandId: string, newPlanName: string) => {
     try {
-      await updateDoc(doc(db, "users", brandId), { plan: newPlan });
-      setBrands(brands.map((b) => (b.id === brandId ? { ...b, plan: newPlan as any } : b)));
-      toast.success("Subscription plan updated");
+      // Find the plan details
+      const planDetails = availablePlans.find(p => p.name === newPlanName);
+      let updateData: any = { plan: newPlanName };
+
+      // If we have details, update credits/permissions on the user profile too
+      if (planDetails) {
+        updateData = {
+          ...updateData,
+          credits: planDetails.credits || 0,
+          permissions: planDetails.permissions || []
+        };
+      }
+
+      await updateDoc(doc(db, "users", brandId), updateData);
+
+      // Update local state
+      setBrands(brands.map((b) => (b.id === brandId ? { ...b, plan: newPlanName } : b)));
+
+      toast.success(`Plan updated to ${newPlanName}`);
+      if (planDetails && planDetails.credits) {
+        toast.info(`Credits updated to ${planDetails.credits}`);
+      }
     } catch (error) {
       console.error("Error updating plan:", error);
       toast.error("Failed to update subscription plan");

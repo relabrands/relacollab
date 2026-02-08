@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -27,14 +29,14 @@ import { motion } from "framer-motion";
 import {
   Edit,
   Plus,
-  Check,
   CreditCard,
   Trash2,
   Zap,
-  Crown,
   Copy,
   Archive,
-  RotateCcw
+  RotateCcw,
+  Shield,
+  Gift
 } from "lucide-react";
 import { toast } from "sonner";
 import { collection, getDocs, addDoc, updateDoc, doc, query, orderBy } from "firebase/firestore";
@@ -47,9 +49,11 @@ interface Plan {
   credits: number; // Credits included per month
   stripePriceId: string;
   costPerExtraCredit: number;
-  features: string[];
+  features: string[]; // Display text features
+  permissions: string[]; // Functional permissions
   active: boolean;
   interval: "month" | "year";
+  isFree: boolean; // Verification check for free trial/plan
 }
 
 const defaultPlan: Omit<Plan, "id"> = {
@@ -59,9 +63,21 @@ const defaultPlan: Omit<Plan, "id"> = {
   stripePriceId: "",
   costPerExtraCredit: 0,
   features: ["Access to Creator Database", "Basic Analytics"],
+  permissions: ["view_creators"],
   active: true,
-  interval: "month"
+  interval: "month",
+  isFree: false
 };
+
+const AVAILABLE_PERMISSIONS = [
+  { id: "view_creators", label: "View Creator Database" },
+  { id: "create_campaigns", label: "Create Campaigns" },
+  { id: "advanced_analytics", label: "Access Advanced Analytics" },
+  { id: "export_data", label: "Export Data (CSV/PDF)" },
+  { id: "priority_support", label: "Priority Support" },
+  { id: "api_access", label: "API Access" },
+  { id: "invite_team", label: "Invite Team Members" }
+];
 
 export default function AdminSubscriptions() {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -106,9 +122,11 @@ export default function AdminSubscriptions() {
         credits: plan.credits,
         stripePriceId: plan.stripePriceId,
         costPerExtraCredit: plan.costPerExtraCredit,
-        features: plan.features,
+        features: plan.features || [],
+        permissions: plan.permissions || [],
         active: plan.active,
-        interval: plan.interval
+        interval: plan.interval,
+        isFree: plan.isFree || false
       });
     } else {
       setEditingPlan(null);
@@ -119,14 +137,21 @@ export default function AdminSubscriptions() {
 
   const handleSavePlan = async () => {
     try {
+      const planData = {
+        ...formData,
+        // Ensure nulls/undefineds are handled
+        price: formData.isFree ? 0 : formData.price,
+        stripePriceId: formData.isFree ? "" : formData.stripePriceId
+      };
+
       if (editingPlan) {
         // Update
-        await updateDoc(doc(db, "plans", editingPlan.id), formData);
+        await updateDoc(doc(db, "plans", editingPlan.id), planData);
         toast.success("Plan updated successfully");
       } else {
         // Create
         await addDoc(collection(db, "plans"), {
-          ...formData,
+          ...planData,
           createdAt: new Date().toISOString()
         });
         toast.success("New plan created");
@@ -173,6 +198,17 @@ export default function AdminSubscriptions() {
     }));
   };
 
+  const togglePermission = (permissionId: string) => {
+    setFormData(prev => {
+      const current = prev.permissions || [];
+      if (current.includes(permissionId)) {
+        return { ...prev, permissions: current.filter(p => p !== permissionId) };
+      } else {
+        return { ...prev, permissions: [...current, permissionId] };
+      }
+    });
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <AdminSidebar />
@@ -180,7 +216,7 @@ export default function AdminSubscriptions() {
       <main className="flex-1 ml-64 p-8">
         <DashboardHeader
           title="Plan & Pricing Configuration"
-          subtitle="Manage platform tiers, credit allocations, and Stripe connections."
+          subtitle="Manage platform tiers, credit allocations, and permissions."
         />
 
         {/* Actions */}
@@ -215,19 +251,25 @@ export default function AdminSubscriptions() {
                   </div>
                 )}
 
+                {plan.isFree && (
+                  <div className="absolute top-0 right-0 p-3">
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">Free / Trial</Badge>
+                  </div>
+                )}
+
                 <div className="p-6 flex-1 flex flex-col">
                   {/* Header */}
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="flex justify-between items-start mb-4 pr-16">
                     <div>
                       <h3 className="text-xl font-bold">{plan.name}</h3>
                       <Badge variant="secondary" className="mt-1">
                         {plan.interval === "year" ? "Yearly" : "Monthly"}
                       </Badge>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">${plan.price}</div>
-                      <div className="text-xs text-muted-foreground">USD / mo</div>
-                    </div>
+                  </div>
+                  <div className="text-3xl font-bold mb-4">
+                    ${plan.price}
+                    <span className="text-sm font-normal text-muted-foreground ml-1">/ {plan.interval}</span>
                   </div>
 
                   {/* Credit Allocation */}
@@ -243,29 +285,35 @@ export default function AdminSubscriptions() {
                     </div>
                   </div>
 
-                  {/* Stripe ID */}
-                  <div className="mb-6">
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Stripe Price ID</Label>
-                    <div
-                      className="flex items-center justify-between text-xs bg-muted p-2 rounded cursor-pointer hover:bg-muted/80 transition-colors group"
-                      onClick={() => copyToClipboard(plan.stripePriceId)}
-                      title="Click to copy"
-                    >
-                      <span className="font-mono truncate mr-2">{plan.stripePriceId || "Not configured"}</span>
-                      <Copy className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
-                    </div>
-                  </div>
-
-                  {/* Features */}
-                  <div className="flex-1 space-y-2 mb-6">
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">Features</Label>
-                    {plan.features.map((feature, i) => (
-                      <div key={i} className="flex items-start gap-2 text-sm">
-                        <Check className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
-                        <span className="text-muted-foreground">{feature}</span>
+                  {/* Permissions Preview */}
+                  {plan.permissions && plan.permissions.length > 0 && (
+                    <div className="mb-4">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">Permissions</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {plan.permissions.slice(0, 3).map(p => (
+                          <Badge key={p} variant="secondary" className="text-[10px] px-1.5 py-0 h-5">{p.replace(/_/g, " ")}</Badge>
+                        ))}
+                        {plan.permissions.length > 3 && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">+{plan.permissions.length - 3}</Badge>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Stripe ID */}
+                  {!plan.isFree && (
+                    <div className="mb-6">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Stripe Price ID</Label>
+                      <div
+                        className="flex items-center justify-between text-xs bg-muted p-2 rounded cursor-pointer hover:bg-muted/80 transition-colors group"
+                        onClick={() => copyToClipboard(plan.stripePriceId)}
+                        title="Click to copy"
+                      >
+                        <span className="font-mono truncate mr-2">{plan.stripePriceId || "Not configured"}</span>
+                        <Copy className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Footer Actions */}
@@ -290,15 +338,30 @@ export default function AdminSubscriptions() {
 
         {/* Edit/Create Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingPlan ? "Edit Plan Configuration" : "Create New Subscription Plan"}</DialogTitle>
               <DialogDescription>
-                Configure the pricing, credits, and features for this tier.
+                Configure pricing, credits, and system permissions.
               </DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-6 py-4">
+              {/* Free / Paid Toggle */}
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  <Gift className="w-5 h-5 text-primary" />
+                  <div>
+                    <div className="font-medium">Free / Trial Plan</div>
+                    <div className="text-xs text-muted-foreground">Does not require payment method</div>
+                  </div>
+                </div>
+                <Switch
+                  checked={formData.isFree}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isFree: checked })}
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Plan Name</Label>
@@ -317,6 +380,8 @@ export default function AdminSubscriptions() {
                     placeholder="49"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    disabled={formData.isFree}
+                    className={formData.isFree ? "opacity-50" : ""}
                   />
                 </div>
               </div>
@@ -332,33 +397,50 @@ export default function AdminSubscriptions() {
                     onChange={(e) => setFormData({ ...formData, credits: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="extraCost">Cost per Extra Credit ($)</Label>
-                  <Input
-                    id="extraCost"
-                    type="number"
-                    placeholder="150"
-                    value={formData.costPerExtraCredit}
-                    onChange={(e) => setFormData({ ...formData, costPerExtraCredit: parseFloat(e.target.value) || 0 })}
-                  />
+                {!formData.isFree && (
+                  <div className="space-y-2">
+                    <Label htmlFor="stripeId">Stripe Price ID</Label>
+                    <Input
+                      id="stripeId"
+                      placeholder="price_H8..."
+                      value={formData.stripePriceId}
+                      onChange={(e) => setFormData({ ...formData, stripePriceId: e.target.value })}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Permissions Section */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" />
+                  System Permissions
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {AVAILABLE_PERMISSIONS.map(perm => (
+                    <div key={perm.id} className="flex items-start space-x-2">
+                      <Checkbox
+                        id={`perm-${perm.id}`}
+                        checked={(formData.permissions || []).includes(perm.id)}
+                        onCheckedChange={() => togglePermission(perm.id)}
+                      />
+                      <Label
+                        htmlFor={`perm-${perm.id}`}
+                        className="text-sm font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mt-0.5"
+                      >
+                        {perm.label}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="stripeId">Stripe Product/Price ID</Label>
-                <Input
-                  id="stripeId"
-                  placeholder="price_H8..."
-                  value={formData.stripePriceId}
-                  onChange={(e) => setFormData({ ...formData, stripePriceId: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Plan Features</Label>
+              {/* Display Features Section */}
+              <div className="space-y-2 border-t pt-4">
+                <Label>Display Features (Marketing List)</Label>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Add a feature..."
+                    placeholder="Add a feature text..."
                     value={newFeature}
                     onChange={(e) => setNewFeature(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addFeature()}
@@ -366,7 +448,7 @@ export default function AdminSubscriptions() {
                   <Button type="button" onClick={addFeature} variant="secondary">Add</Button>
                 </div>
                 <div className="space-y-2 mt-3 max-h-[150px] overflow-y-auto pr-2">
-                  {formData.features.map((feature, index) => (
+                  {formData.features?.map((feature, index) => (
                     <div key={index} className="flex items-center justify-between bg-muted p-2 rounded-md text-sm group">
                       <span>{feature}</span>
                       <Button
@@ -379,9 +461,6 @@ export default function AdminSubscriptions() {
                       </Button>
                     </div>
                   ))}
-                  {formData.features.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-2">No features added yet.</p>
-                  )}
                 </div>
               </div>
             </div>
@@ -391,7 +470,7 @@ export default function AdminSubscriptions() {
                 Cancel
               </Button>
               <Button variant="hero" onClick={handleSavePlan}>
-                {editingPlan ? "Update Plan Configuration" : "Create Plan"}
+                {editingPlan ? "Update Plan" : "Create Plan"}
               </Button>
             </DialogFooter>
           </DialogContent>
