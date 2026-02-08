@@ -14,10 +14,14 @@ interface CreatorCardProps {
     engagement: string;
     matchScore: number;
     matchBreakdown?: {
-      location: number;
-      vibe: number;
-      engagement: number;
-      bonus: number;
+      compensation?: boolean;
+      contentType?: number;
+      niche?: number;
+      experience?: number;
+      socialMetrics?: number;
+      composition?: number;
+      demographics?: number;
+      availability?: number;
     };
     tags: string[];
     matchReason?: string;

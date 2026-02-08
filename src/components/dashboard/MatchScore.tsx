@@ -12,10 +12,14 @@ interface MatchScoreProps {
   size?: "sm" | "md" | "lg";
   showLabel?: boolean;
   breakdown?: {
-    location: number;
-    vibe: number;
-    engagement: number;
-    bonus: number;
+    compensation?: boolean;
+    contentType?: number;
+    niche?: number;
+    experience?: number;
+    socialMetrics?: number;
+    composition?: number;
+    demographics?: number;
+    availability?: number;
   };
 }
 
@@ -63,20 +67,32 @@ export function MatchScore({ score, size = "md", showLabel = true, breakdown }: 
                     <p className="font-semibold mb-2">Match Score Breakdown:</p>
                     <div className="space-y-1">
                       <div className="flex justify-between gap-4">
-                        <span className="text-muted-foreground">📍 Location Match:</span>
-                        <span className="font-medium">{breakdown.location}/30</span>
+                        <span className="text-muted-foreground">📸 Content Types:</span>
+                        <span className="font-medium">{breakdown.contentType || 0}/25</span>
                       </div>
                       <div className="flex justify-between gap-4">
-                        <span className="text-muted-foreground">✨ Vibe/Niche:</span>
-                        <span className="font-medium">{breakdown.vibe}/40</span>
+                        <span className="text-muted-foreground">✨ Vibe & Niche:</span>
+                        <span className="font-medium">{breakdown.niche || 0}/20</span>
                       </div>
                       <div className="flex justify-between gap-4">
-                        <span className="text-muted-foreground">📈 Engagement:</span>
-                        <span className="font-medium">{breakdown.engagement}/20</span>
+                        <span className="text-muted-foreground">⭐ Experience:</span>
+                        <span className="font-medium">{breakdown.experience || 0}/15</span>
                       </div>
                       <div className="flex justify-between gap-4">
-                        <span className="text-muted-foreground">🎯 Reach/Bonus:</span>
-                        <span className="font-medium">{breakdown.bonus}/10</span>
+                        <span className="text-muted-foreground">📈 Metrics:</span>
+                        <span className="font-medium">{breakdown.socialMetrics || 0}/15</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-muted-foreground">📍 Location:</span>
+                        <span className="font-medium">{breakdown.demographics || 0}/10</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-muted-foreground">👥 Composition:</span>
+                        <span className="font-medium">{breakdown.composition || 0}/10</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-muted-foreground">🟢 Availability:</span>
+                        <span className="font-medium">{breakdown.availability || 0}/5</span>
                       </div>
                       <div className="border-t pt-1 mt-2 flex justify-between gap-4 font-semibold">
                         <span>Total:</span>

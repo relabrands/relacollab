@@ -25,6 +25,17 @@ interface CreatorDetails {
         avgComments?: number;
         avgViews?: number;
     };
+    matchBreakdown?: {
+        compensation?: boolean;
+        contentType?: number;
+        niche?: number;
+        experience?: number;
+        socialMetrics?: number;
+        composition?: number;
+        demographics?: number;
+        availability?: number;
+        bonus?: number; // Keep bonus for compatibility if needed, though not in core logic anymore
+    };
 }
 
 interface MatchDetailsDialogProps {
@@ -167,45 +178,83 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                                 Match Breakdown
                             </h3>
                             <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10 space-y-3">
+                                {/* Content Type (25) */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Location Fit</span>
-                                        <span className="font-medium">{(creator as any).matchBreakdown?.location || 0}/30</span>
+                                        <span className="text-muted-foreground flex items-center gap-2">
+                                            📸 Content Types
+                                        </span>
+                                        <span className="font-medium">{creator.matchBreakdown?.contentType || 0}/25</span>
                                     </div>
                                     <div className="w-full bg-primary/10 rounded-full h-2">
-                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${((creator as any).matchBreakdown?.location || 0) / 30 * 100}%` }}></div>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Vibe & Niche</span>
-                                        <span className="font-medium">{(creator as any).matchBreakdown?.vibe || 0}/40</span>
-                                    </div>
-                                    <div className="w-full bg-primary/10 rounded-full h-2">
-                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${((creator as any).matchBreakdown?.vibe || 0) / 40 * 100}%` }}></div>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Engagement</span>
-                                        <span className="font-medium">{(creator as any).matchBreakdown?.engagement || 0}/20</span>
-                                    </div>
-                                    <div className="w-full bg-primary/10 rounded-full h-2">
-                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${((creator as any).matchBreakdown?.engagement || 0) / 20 * 100}%` }}></div>
+                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${(creator.matchBreakdown?.contentType || 0) / 25 * 100}%` }}></div>
                                     </div>
                                 </div>
 
-                                {((creator as any).matchBreakdown?.bonus || 0) > 0 && (
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Bonus (Follower Fit)</span>
-                                            <span className="font-medium">{(creator as any).matchBreakdown?.bonus || 0}/10</span>
-                                        </div>
-                                        <div className="w-full bg-primary/10 rounded-full h-2">
-                                            <div className="bg-primary h-2 rounded-full" style={{ width: `${((creator as any).matchBreakdown?.bonus || 0) / 10 * 100}%` }}></div>
-                                        </div>
+                                {/* Vibe & Niche (20) */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground flex items-center gap-2">
+                                            ✨ Vibe & Niche
+                                        </span>
+                                        <span className="font-medium">{creator.matchBreakdown?.niche || 0}/20</span>
                                     </div>
-                                )}
+                                    <div className="w-full bg-primary/10 rounded-full h-2">
+                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${(creator.matchBreakdown?.niche || 0) / 20 * 100}%` }}></div>
+                                    </div>
+                                </div>
+
+                                {/* Experience (15) */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground flex items-center gap-2">
+                                            ⭐ Experience
+                                        </span>
+                                        <span className="font-medium">{creator.matchBreakdown?.experience || 0}/15</span>
+                                    </div>
+                                    <div className="w-full bg-primary/10 rounded-full h-2">
+                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${(creator.matchBreakdown?.experience || 0) / 15 * 100}%` }}></div>
+                                    </div>
+                                </div>
+
+                                {/* Social Metrics (15) */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground flex items-center gap-2">
+                                            📈 Metrics
+                                        </span>
+                                        <span className="font-medium">{creator.matchBreakdown?.socialMetrics || 0}/15</span>
+                                    </div>
+                                    <div className="w-full bg-primary/10 rounded-full h-2">
+                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${(creator.matchBreakdown?.socialMetrics || 0) / 15 * 100}%` }}></div>
+                                    </div>
+                                </div>
+
+                                {/* Location (10) */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground flex items-center gap-2">
+                                            📍 Location
+                                        </span>
+                                        <span className="font-medium">{creator.matchBreakdown?.demographics || 0}/10</span>
+                                    </div>
+                                    <div className="w-full bg-primary/10 rounded-full h-2">
+                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${(creator.matchBreakdown?.demographics || 0) / 10 * 100}%` }}></div>
+                                    </div>
+                                </div>
+
+                                {/* Composition (10) */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground flex items-center gap-2">
+                                            👥 Audience Fit
+                                        </span>
+                                        <span className="font-medium">{creator.matchBreakdown?.composition || 0}/10</span>
+                                    </div>
+                                    <div className="w-full bg-primary/10 rounded-full h-2">
+                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${(creator.matchBreakdown?.composition || 0) / 10 * 100}%` }}></div>
+                                    </div>
+                                </div>
 
                                 <div className="pt-2">
                                     <p className="text-xs text-muted-foreground italic">
