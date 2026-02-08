@@ -7,6 +7,18 @@ import { toast } from "sonner";
 import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
+import { InstagramMediaPicker } from "./InstagramMediaPicker";
+
+interface InstagramMedia {
+    id: string;
+    caption: string;
+    media_type: string;
+    media_url: string;
+    thumbnail_url?: string;
+    permalink: string;
+    like_count?: number;
+    comments_count?: number;
+}
 
 interface DeliverableItem {
     type: string;
@@ -167,12 +179,12 @@ export function DeliverableSubmissionDialog({
                             <div
                                 key={slot.key}
                                 className={`p-4 border-2 rounded-lg ${slot.submitted
-                                        ? slot.submitted.status === "approved"
-                                            ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                                            : slot.submitted.status === "needs_revision"
-                                                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
-                                                : "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                                        : "border-border"
+                                    ? slot.submitted.status === "approved"
+                                        ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                                        : slot.submitted.status === "needs_revision"
+                                            ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
+                                            : "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+                                    : "border-border"
                                     }`}
                             >
                                 <div className="flex items-center justify-between">
