@@ -214,14 +214,14 @@ export function DeliverableSubmissionDialog({
                                     <div
                                         key={slot.key}
                                         className={`p-4 border-2 rounded-lg ${slot.submitted
-                                                ? slot.submitted.status === "approved"
-                                                    ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                                                    : slot.submitted.status === "needs_revision"
-                                                        ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
-                                                        : "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                                                : selectedMedia
-                                                    ? "border-primary bg-primary/5"
-                                                    : "border-border"
+                                            ? slot.submitted.status === "approved"
+                                                ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                                                : slot.submitted.status === "needs_revision"
+                                                    ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
+                                                    : "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+                                            : selectedMedia
+                                                ? "border-primary bg-primary/5"
+                                                : "border-border"
                                             }`}
                                     >
                                         <div className="flex items-start justify-between gap-3">
@@ -235,11 +235,22 @@ export function DeliverableSubmissionDialog({
                                                             className="w-16 h-16 rounded-lg object-cover"
                                                         />
                                                     ) : selectedMedia ? (
-                                                        <img
-                                                            src={selectedMedia.thumbnail_url || selectedMedia.media_url}
-                                                            alt="Selected"
-                                                            className="w-16 h-16 rounded-lg object-cover"
-                                                        />
+                                                        (selectedMedia.media_type === 'VIDEO' || selectedMedia.media_type === 'REELS') && !selectedMedia.thumbnail_url ? (
+                                                            <video
+                                                                src={selectedMedia.media_url}
+                                                                className="w-16 h-16 rounded-lg object-cover"
+                                                                muted
+                                                            />
+                                                        ) : (
+                                                            <img
+                                                                src={selectedMedia.thumbnail_url || selectedMedia.media_url}
+                                                                alt="Selected"
+                                                                className="w-16 h-16 rounded-lg object-cover"
+                                                                onError={(e) => {
+                                                                    e.currentTarget.src = "https://placehold.co/400x400?text=No+Image";
+                                                                }}
+                                                            />
+                                                        )
                                                     ) : (
                                                         <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-2xl">
                                                             {slot.type === "Post" && "📸"}
@@ -319,11 +330,12 @@ export function DeliverableSubmissionDialog({
                                                         size="sm"
                                                         onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
                                                         disabled={loading}
+                                                        className={selectedMedia ? "bg-green-600 hover:bg-green-700 text-white" : ""}
                                                     >
                                                         {selectedMedia ? (
                                                             <>
                                                                 <Check className="w-4 h-4 mr-2" />
-                                                                Selected
+                                                                Change Selection
                                                             </>
                                                         ) : (
                                                             <>
