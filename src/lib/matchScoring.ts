@@ -63,11 +63,11 @@ export const calculateMatchScore = (campaign: any, creator: any): MatchScoreResu
     // 2. CONTENT TYPE (Max 25 points)
     // ========================================
     const campaignContentTypes = campaign.contentTypes || [];
-    const creatorContentTypes = creator.contentTypes || [];
+    const creatorContentFormats = creator.contentFormats || creator.contentTypes || []; // Use new field with fallback
 
-    if (campaignContentTypes.length > 0 && creatorContentTypes.length > 0) {
+    if (campaignContentTypes.length > 0 && creatorContentFormats.length > 0) {
         const matchedTypes = campaignContentTypes.filter((type: string) =>
-            creatorContentTypes.includes(type)
+            creatorContentFormats.includes(type)
         );
 
         if (matchedTypes.length > 0) {
@@ -90,7 +90,7 @@ export const calculateMatchScore = (campaign: any, creator: any): MatchScoreResu
     // ========================================
     // 3. NICHE/CATEGORIES (Max 20 points)
     // ========================================
-    const creatorCategories = creator.contentTypes || creator.categories || creator.tags || [];
+    const creatorCategories = creator.vibes || creator.categories || creator.contentTypes || creator.tags || []; // Prioritize vibes, fallback to categories
     const campaignVibes = campaign.vibes || [];
 
     const matchedVibes = campaignVibes.filter((v: string) =>
