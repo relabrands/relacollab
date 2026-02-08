@@ -85,10 +85,12 @@ export default function AdminCreators() {
       });
 
       // Map app titles
-      const enrichedApps = allApps.map(app => ({
-        ...app,
-        campaignTitle: campaignMap[app.campaignId] || "Unknown Campaign"
-      }));
+      const enrichedApps = allApps
+        .map(app => ({
+          ...app,
+          campaignTitle: campaignMap[app.campaignId] || "Unknown Campaign"
+        }))
+        .filter(app => app.campaignTitle !== "Unknown Campaign"); // Filter out orphaned applications
 
       setApplications(enrichedApps);
 
