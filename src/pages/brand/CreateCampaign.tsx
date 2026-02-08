@@ -54,17 +54,26 @@ export default function CreateCampaign() {
     description: "",
     goal: "",
     vibes: [] as string[],
-    contentTypes: [] as string[], // NEW: Post, Reels, Stories, Carousel
+    contentTypes: [] as string[],
     location: "",
     ageRange: "18-35",
-    compensationType: "", // NEW: exchange or monetary
-    exchangeDetails: "", // NEW: What they're offering (food, product, etc.)
-    creatorPayment: "", // NEW: Admin-set payment for creator (if monetary)
-    creditCost: "1", // NEW: Credits cost for brand (if monetary)
+    compensationType: "",
+    exchangeDetails: "",
+    creatorPayment: "",
+    creditCost: "1",
     budget: "",
     startDate: "",
     endDate: "",
     creatorCount: "1",
+    // Visit/Scheduling fields
+    requiresVisit: false,
+    visitLocation: "",
+    visitCity: "",
+    visitDays: [] as string[],
+    visitStartTime: "09:00",
+    visitEndTime: "17:00",
+    visitDuration: "60", // minutes
+    contentDeadlineDays: "3", // days after visit
   });
 
   const handleContentTypeToggle = (typeId: string) => {
@@ -150,7 +159,7 @@ export default function CreateCampaign() {
     }
   };
 
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -176,7 +185,7 @@ export default function CreateCampaign() {
         {/* Progress Steps */}
         <div className="max-w-2xl mx-auto mb-12">
           <div className="flex items-center justify-between">
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3, 4, 5].map((s) => (
               <div key={s} className="flex items-center">
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center font-semibold transition-all ${step >= s
@@ -186,7 +195,7 @@ export default function CreateCampaign() {
                 >
                   {step > s ? <Check className="w-5 h-5" /> : s}
                 </div>
-                {s < 4 && (
+                {s < 5 && (
                   <div
                     className={`w-20 md:w-32 h-1 mx-2 rounded-full transition-all ${step > s ? "bg-primary" : "bg-muted"
                       }`}
@@ -195,11 +204,12 @@ export default function CreateCampaign() {
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-3 text-sm text-muted-foreground">
+          <div className="flex justify-between mt-3 text-xs md:text-sm text-muted-foreground">
             <span>Basics</span>
             <span>Goals</span>
             <span>Audience</span>
             <span>Budget</span>
+            <span>Visit</span>
           </div>
         </div>
 
@@ -537,6 +547,162 @@ export default function CreateCampaign() {
                       </p>
                     )}
                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {step === 5 && (
+              <motion.div
+                key="step5"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="glass-card p-8"
+              >
+                <h2 className="text-xl font-semibold mb-6">Visit & Scheduling</h2>
+
+                <div className="space-y-6">
+                  {/* Requires Visit Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                    <div>
+                      <Label className="text-base font-medium">¿Requiere visita del creator?</Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Activa si el creator necesita ir a tu local o ubicación específica
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant={formData.requiresVisit ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFormData(prev => ({ ...prev, requiresVisit: !prev.requiresVisit }))}
+                    >
+                      {formData.requiresVisit ? "Sí" : "No"}
+                    </Button>
+                  </div>
+
+                  {formData.requiresVisit && (
+                    <div className="space-y-6 p-6 bg-primary/5 rounded-xl border border-primary/10">
+                      {/* Visit Location */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="visitLocation">Dirección / Local</Label>
+                          <Input
+                            id="visitLocation"
+                            placeholder="Ej: Calle Principal #123"
+                            value={formData.visitLocation}
+                            onChange={(e) => setFormData(prev => ({ ...prev, visitLocation: e.target.value }))}
+                            className="mt-2"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="visitCity">Ciudad</Label>
+                          <Input
+                            id="visitCity"
+                            placeholder="Ej: Santo Domingo"
+                            value={formData.visitCity}
+                            onChange={(e) => setFormData(prev => ({ ...prev, visitCity: e.target.value }))}
+                            className="mt-2"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Visit Days */}
+                      <div>
+                        <Label className="mb-3 block">Días disponibles para visitas</Label>
+                        <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
+                          {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((day, idx) => (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => {
+                                const fullDay = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][idx];
+                                setFormData(prev => ({
+                                  ...prev,
+                                  visitDays: prev.visitDays.includes(fullDay)
+                                    ? prev.visitDays.filter(d => d !== fullDay)
+                                    : [...prev.visitDays, fullDay]
+                                }));
+                              }}
+                              className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${formData.visitDays.includes(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][idx])
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border hover:border-primary/50"
+                                }`}
+                            >
+                              {day}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Time Windows */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="visitStartTime">Hora de inicio</Label>
+                          <Input
+                            id="visitStartTime"
+                            type="time"
+                            value={formData.visitStartTime}
+                            onChange={(e) => setFormData(prev => ({ ...prev, visitStartTime: e.target.value }))}
+                            className="mt-2"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="visitEndTime">Hora de fin</Label>
+                          <Input
+                            id="visitEndTime"
+                            type="time"
+                            value={formData.visitEndTime}
+                            onChange={(e) => setFormData(prev => ({ ...prev, visitEndTime: e.target.value }))}
+                            className="mt-2"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Visit Duration */}
+                      <div>
+                        <Label htmlFor="visitDuration">Duración de visita</Label>
+                        <select
+                          id="visitDuration"
+                          value={formData.visitDuration}
+                          onChange={(e) => setFormData(prev => ({ ...prev, visitDuration: e.target.value }))}
+                          className="mt-2 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="30">30 minutos</option>
+                          <option value="60">1 hora</option>
+                          <option value="90">1.5 horas</option>
+                          <option value="120">2 horas</option>
+                          <option value="180">3 horas</option>
+                        </select>
+                      </div>
+
+                      {/* Content Deadline */}
+                      <div>
+                        <Label htmlFor="contentDeadlineDays">Plazo para entrega de contenido</Label>
+                        <select
+                          id="contentDeadlineDays"
+                          value={formData.contentDeadlineDays}
+                          onChange={(e) => setFormData(prev => ({ ...prev, contentDeadlineDays: e.target.value }))}
+                          className="mt-2 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="1">1 día después de la visita</option>
+                          <option value="2">2 días después de la visita</option>
+                          <option value="3">3 días después de la visita</option>
+                          <option value="5">5 días después de la visita</option>
+                          <option value="7">1 semana después de la visita</option>
+                        </select>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          El creator debe entregar el contenido en este plazo tras completar la visita
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!formData.requiresVisit && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Esta campaña no requiere visita física del creator</p>
+                      <p className="text-sm mt-2">El creator puede crear el contenido remotamente</p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}

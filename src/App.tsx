@@ -27,6 +27,7 @@ import BrandPayments from "./pages/brand/BrandPayments";
 import BrandSettings from "./pages/brand/BrandSettings";
 import CampaignDetails from "./pages/brand/CampaignDetails";
 import BrandCampaigns from "./pages/brand/BrandCampaigns";
+import BrandMessages from "./pages/brand/Messages";
 
 // Creator pages
 import CreatorDashboard from "./pages/creator/CreatorDashboard";
@@ -37,6 +38,8 @@ import ActiveCampaigns from "./pages/creator/ActiveCampaigns";
 import CreatorEarnings from "./pages/creator/CreatorEarnings";
 import CreatorSettings from "./pages/creator/CreatorSettings";
 import CreatorAnalytics from "./pages/creator/CreatorAnalytics";
+import CreatorScheduling from "./pages/creator/CreatorScheduling";
+import CreatorMessages from "./pages/creator/CreatorMessages";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -118,6 +121,11 @@ const App = () => (
                 <BrandSettings />
               </ProtectedRoute>
             } />
+            <Route path="/brand/messages" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <BrandMessages />
+              </ProtectedRoute>
+            } />
 
             {/* Creator Routes */}
             <Route path="/creator" element={
@@ -148,6 +156,16 @@ const App = () => (
             <Route path="/creator/analytics" element={
               <ProtectedRoute allowedRoles={['creator']}>
                 <CreatorAnalytics />
+              </ProtectedRoute>
+            } />
+            <Route path="/creator/schedule" element={
+              <ProtectedRoute allowedRoles={['creator']}>
+                <CreatorScheduling />
+              </ProtectedRoute>
+            } />
+            <Route path="/creator/messages" element={
+              <ProtectedRoute allowedRoles={['creator']}>
+                <CreatorMessages />
               </ProtectedRoute>
             } />
             <Route path="/creator/earnings" element={
