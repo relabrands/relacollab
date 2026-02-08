@@ -13,8 +13,9 @@ import {
 import { motion } from "framer-motion";
 import { Search, Eye, Ban, CheckCircle, Users, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { CreatorDetailsDialog } from "@/components/admin/CreatorDetailsDialog";
 
 interface Creator {
   id: string;
@@ -26,6 +27,12 @@ interface Creator {
   status: "active" | "pending" | "suspended";
   campaigns: number;
   earnings: string;
+  // Additional fields for details view
+  location?: string;
+  phone?: string;
+  bio?: string;
+  socialHandles?: { instagram?: string; tiktok?: string };
+  categories?: string[];
 }
 
 const statusColors: Record<string, string> = {
@@ -36,8 +43,13 @@ const statusColors: Record<string, string> = {
 
 export default function AdminCreators() {
   const [creators, setCreators] = useState<Creator[]>([]);
+  const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Dialog State
+  const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
     fetchCreators();
@@ -50,26 +62,66 @@ export default function AdminCreators() {
 
       // Fetch applications to count active/completed campaigns per creator
       const appsSnapshot = await getDocs(collection(db, "applications"));
+      const allApps = await Promise.all(appsSnapshot.docs.map(async docSnap => {
+        const appData = docSnap.data();
+        // Enrich with campaign title if possible (for details view)
+        let campaignTitle = "Unknown Campaign";
+        if (appData.campaignId) {
+          // Optimization: In a real app we would cache this or fetch differently
+          // For now we just use what we have or fetch if needed (skipping for list performance, assuming app has title snapshot or we fetch later)
+          // Let's assume the app might NOT have the title saved, so we try to get it if missing, 
+          // but to avoid N+1 queries here we'll just store the ID and fetch details only when opening the modal or use a map.
+          // BETTER: Fetch all campaigns once.
+          return { id: docSnap.id, ...appData };
+        }
+        return { id: docSnap.id, ...appData };
+      }));
+
+      // Fetch active campaigns map for title lookup
+      const campaignsSnapshot = await getDocs(collection(db, "campaigns"));
+      const campaignMap: Record<string, string> = {};
+      campaignsSnapshot.docs.forEach(doc => {
+        campaignMap[doc.id] = doc.data().title || doc.data().name || "Untitled";
+      });
+
+      // Map app titles
+      const enrichedApps = allApps.map(app => ({
+        ...app,
+        campaignTitle: campaignMap[app.campaignId] || "Unknown Campaign"
+      }));
+
+      setApplications(enrichedApps);
+
       const appCounts: Record<string, number> = {};
-      appsSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        if (data.creatorId && data.status === 'approved') {
-          appCounts[data.creatorId] = (appCounts[data.creatorId] || 0) + 1;
+      enrichedApps.forEach(app => {
+        if (app.creatorId && app.status === 'approved') {
+          appCounts[app.creatorId] = (appCounts[app.creatorId] || 0) + 1;
         }
       });
 
       const creatorsData = querySnapshot.docs.map(doc => {
         const data = doc.data();
+
+        // Correctly extract metrics from instagramMetrics object if it exists
+        const followersCount = data.instagramMetrics?.followers || data.instagramFollowers || 0;
+        const engagementRate = data.instagramMetrics?.engagementRate || data.engagementRate || 0;
+
         return {
           id: doc.id,
           name: data.displayName || data.name || "Unknown Creator",
           email: data.email || "",
           avatar: data.photoURL || data.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
-          followers: data.instagramFollowers ? `${(data.instagramFollowers / 1000).toFixed(1)}K` : "0",
-          engagement: data.engagementRate ? `${data.engagementRate}%` : "0%",
+          followers: followersCount > 0 ? `${(followersCount / 1000).toFixed(1)}K` : "0",
+          engagement: engagementRate > 0 ? `${parseFloat(engagementRate).toFixed(2)}%` : "0%",
           status: data.status || "active",
           campaigns: appCounts[doc.id] || 0,
-          earnings: "$0" // Placeholder until payments are implemented
+          earnings: "$0", // Placeholder
+          // Extra data
+          location: data.location,
+          phone: data.phone,
+          bio: data.bio,
+          socialHandles: data.socialHandles,
+          categories: data.categories
         } as Creator;
       });
 
@@ -122,6 +174,11 @@ export default function AdminCreators() {
     }
   };
 
+  const handleViewDetails = (creator: Creator) => {
+    setSelectedCreator(creator);
+    setIsDetailsOpen(true);
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <AdminSidebar />
@@ -164,7 +221,7 @@ export default function AdminCreators() {
                 <th className="text-left p-4 font-medium text-muted-foreground">Followers</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Engagement</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Campaigns</th>
+                <th className="text-left p-4 font-medium text-muted-foreground">Active Collabs</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Earnings</th>
                 <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
               </tr>
@@ -206,11 +263,11 @@ export default function AdminCreators() {
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className="p-4">{creator.campaigns}</td>
+                  <td className="p-4 text-center">{creator.campaigns}</td>
                   <td className="p-4 font-medium">{creator.earnings}</td>
                   <td className="p-4">
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => handleViewDetails(creator)}>
                         <Eye className="w-4 h-4" />
                       </Button>
                       {creator.status === "suspended" ? (
@@ -249,7 +306,17 @@ export default function AdminCreators() {
             </div>
           )}
         </motion.div>
+
+        {/* Creator Details Dialog */}
+        <CreatorDetailsDialog
+          creator={selectedCreator}
+          isOpen={isDetailsOpen}
+          onClose={() => setIsDetailsOpen(false)}
+          applications={applications}
+        />
+
       </main>
     </div>
   );
 }
+```
