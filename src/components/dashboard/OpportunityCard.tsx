@@ -70,8 +70,8 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
       onClick={handleCardClick}
     >
       {opportunity.isInvited && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-brand text-primary-foreground px-4 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
-          <Gift className="w-3 h-3" />
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1 z-10">
+          <Gift className="w-3 h-3 text-white" />
           Personal Invitation
         </div>
       )}
