@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Sparkles, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Check, Loader2, X, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { addDoc, collection, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 const goalOptions = [
   { id: "awareness", label: "Awareness", description: "Increase brand visibility" },
@@ -74,6 +76,12 @@ export default function CreateCampaign() {
     visitEndTime: "17:00",
     visitDuration: "60", // minutes
     contentDeadlineDays: "3", // days after visit
+    // Deliverables
+    deliverables: [] as Array<{
+      type: string;
+      quantity: number;
+      required: boolean;
+    }>,
   });
 
   const handleContentTypeToggle = (typeId: string) => {
@@ -82,6 +90,29 @@ export default function CreateCampaign() {
       contentTypes: prev.contentTypes.includes(typeId)
         ? prev.contentTypes.filter((t) => t !== typeId)
         : [...prev.contentTypes, typeId],
+    }));
+  };
+
+  const handleAddDeliverable = () => {
+    setFormData(prev => ({
+      ...prev,
+      deliverables: [...prev.deliverables, { type: "", quantity: 1, required: true }]
+    }));
+  };
+
+  const handleUpdateDeliverable = (index: number, field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      deliverables: prev.deliverables.map((d, i) =>
+        i === index ? { ...d, [field]: value } : d
+      )
+    }));
+  };
+
+  const handleRemoveDeliverable = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      deliverables: prev.deliverables.filter((_, i) => i !== index)
     }));
   };
 
@@ -515,6 +546,114 @@ export default function CreateCampaign() {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Deliverables Configuration */}
+                  <div className="border-t pt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <Label className="block">Deliverables per Creator</Label>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Specify what content each creator should deliver
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddDeliverable}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Deliverable
+                      </Button>
+                    </div>
+
+                    {formData.deliverables.length === 0 ? (
+                      <div className="text-center py-8 border-2 border-dashed rounded-xl">
+                        <p className="text-muted-foreground">
+                          No deliverables set. Click "Add Deliverable" to specify content requirements.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {formData.deliverables.map((deliverable, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-4 border rounded-xl bg-muted/30"
+                          >
+                            {/* Type Selector */}
+                            <div className="flex-1">
+                              <Select
+                                value={deliverable.type}
+                                onValueChange={(value) =>
+                                  handleUpdateDeliverable(index, "type", value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Post">📸 Post</SelectItem>
+                                  <SelectItem value="Reel">🎬 Reel</SelectItem>
+                                  <SelectItem value="Story">📱 Story</SelectItem>
+                                  <SelectItem value="Carousel">🖼️ Carousel</SelectItem>
+                                  <SelectItem value="Video">🎥 Video</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Quantity */}
+                            <div className="w-24">
+                              <Input
+                                type="number"
+                                min="1"
+                                max="20"
+                                value={deliverable.quantity}
+                                onChange={(e) =>
+                                  handleUpdateDeliverable(
+                                    index,
+                                    "quantity",
+                                    parseInt(e.target.value) || 1
+                                  )
+                                }
+                                placeholder="Qty"
+                              />
+                            </div>
+
+                            {/* Required Toggle */}
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={deliverable.required}
+                                onCheckedChange={(checked) =>
+                                  handleUpdateDeliverable(index, "required", checked)
+                                }
+                              />
+                              <span className="text-sm whitespace-nowrap">
+                                {deliverable.required ? "Required" : "Optional"}
+                              </span>
+                            </div>
+
+                            {/* Remove Button */}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveDeliverable(index)}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {formData.deliverables.length > 0 && (
+                      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          💡 Creators will submit each deliverable individually and can do so progressively.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Compensation Type */}
