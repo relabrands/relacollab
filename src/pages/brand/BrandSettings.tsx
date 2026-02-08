@@ -9,15 +9,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, storage, auth } from "@/lib/firebase";
 import { toast } from "sonner";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Loader2 } from "lucide-react";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { updateProfile } from "firebase/auth";
+import { useRef } from "react";
 
 export default function BrandSettings() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState({
         brandName: "",
         contactPerson: "",
@@ -26,7 +30,8 @@ export default function BrandSettings() {
         industry: "",
         location: "",
         description: "",
-        instagram: ""
+        instagram: "",
+        photoURL: ""
     });
 
     useEffect(() => {
@@ -44,7 +49,8 @@ export default function BrandSettings() {
                         industry: data.industry || "",
                         location: data.location || "",
                         description: data.description || "",
-                        instagram: data.instagram || ""
+                        instagram: data.instagram || "",
+                        photoURL: data.photoURL || user.photoURL || ""
                     });
                 }
             } catch (error) {
@@ -58,6 +64,51 @@ export default function BrandSettings() {
 
     const handleUpdate = (key: string, value: string) => {
         setFormData(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !user) return;
+
+        if (!file.type.startsWith("image/")) {
+            toast.error("Please upload an image file");
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("File size must be less than 5MB");
+            return;
+        }
+
+        const toastId = toast.loading("Uploading logo...");
+
+        try {
+            const storageRef = ref(storage, `brand_logos/${user.uid}/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            // 1. Update Firestore
+            await updateDoc(doc(db, "users", user.uid), {
+                photoURL: downloadURL,
+                logo: downloadURL // Also save as logo for clarity
+            });
+
+            // 2. Update Auth Profile
+            if (auth.currentUser) {
+                await updateProfile(auth.currentUser, { photoURL: downloadURL });
+            }
+
+            // 3. Update Local State
+            setFormData(prev => ({ ...prev, photoURL: downloadURL }));
+
+            toast.success("Brand logo updated!", { id: toastId });
+        } catch (error) {
+            console.error("Error uploading logo:", error);
+            toast.error("Failed to upload logo", { id: toastId });
+        }
+    };
+
+    const handleChangePhoto = () => {
+        fileInputRef.current?.click();
     };
 
     const handleSave = async () => {
@@ -96,6 +147,31 @@ export default function BrandSettings() {
                         <CardDescription>This information will be visible to creators matching with your campaigns.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                        {/* Avatar Upload */}
+                        <div className="flex items-center gap-6 mb-6">
+                            <img
+                                src={formData.photoURL || "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&h=200&fit=crop"}
+                                alt="Brand Logo"
+                                className="w-24 h-24 rounded-2xl object-cover ring-2 ring-border"
+                            />
+                            <div>
+                                <h3 className="font-medium mb-1">Brand Logo</h3>
+                                <p className="text-sm text-muted-foreground mb-3">This will be displayed on your campaigns.</p>
+                                <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={handleChangePhoto}>
+                                        Change Logo
+                                    </Button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="brandName">Brand Name</Label>
