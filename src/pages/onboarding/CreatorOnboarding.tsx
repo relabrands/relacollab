@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Loader2, X, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Loader2, X, ChevronLeft, ChevronRight, Sparkles, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CONTENT_TYPES = [
@@ -48,7 +48,7 @@ const COLLABORATION_TYPES = [
 ];
 
 export default function CreatorOnboarding() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [userName, setUserName] = useState("");
@@ -201,6 +201,15 @@ export default function CreatorOnboarding() {
             toast.error("Algo salió mal");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate("/login");
+        } catch (error) {
+            console.error("Error logging out:", error);
         }
     };
 
@@ -532,6 +541,19 @@ export default function CreatorOnboarding() {
     return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
             <div className="w-full max-w-2xl space-y-6">
+                {/* Logout Button */}
+                <div className="flex justify-end">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleLogout}
+                        className="text-muted-foreground hover:text-destructive"
+                    >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Cerrar sesión
+                    </Button>
+                </div>
+
                 {/* Progress */}
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm text-muted-foreground">

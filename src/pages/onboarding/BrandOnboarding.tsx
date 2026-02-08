@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, LogOut } from "lucide-react";
 
 const PLANS = [
     {
@@ -33,7 +33,7 @@ const PLANS = [
 ];
 
 export default function BrandOnboarding() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -96,8 +96,30 @@ export default function BrandOnboarding() {
         }
     };
 
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate("/login");
+        } catch (error) {
+            console.error("Error logging out:", error);
+        }
+    };
+
     return (
         <div className="space-y-6">
+            {/* Logout Button */}
+            <div className="flex justify-end">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="text-muted-foreground hover:text-destructive"
+                >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Cerrar sesión
+                </Button>
+            </div>
+
             <div className="text-center space-y-2">
                 <h1 className="text-3xl font-bold">Set up your Brand Profile</h1>
                 <p className="text-muted-foreground">Step {step} of 2: {step === 1 ? "Company Details" : "Select Plan"}</p>
