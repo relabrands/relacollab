@@ -150,8 +150,8 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
                     id: item.id,
                     caption: item.caption || "",
                     media_type: item.media_type,
-                    // For VIDEO, use thumbnail_url. If missing, fallback to media_url (frontend will handle video tag)
-                    thumbnail: item.media_type === 'VIDEO' ? (item.thumbnail_url || item.media_url) : item.media_url,
+                    // For VIDEO, check thumbnail_url. If missing, leave undefined so frontend uses video tag. For IMAGE, use media_url.
+                    thumbnail_url: item.media_type === 'VIDEO' ? item.thumbnail_url : item.media_url,
                     permalink: item.permalink,
                     timestamp: item.timestamp,
                     like_count: item.like_count || 0,
