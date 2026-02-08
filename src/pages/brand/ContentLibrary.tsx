@@ -19,8 +19,13 @@ import {
   Calendar,
   Instagram,
   Play,
-  Loader2
+  Loader2,
+  Check,
+  X,
+  RefreshCw
 } from "lucide-react";
+import { toast } from "sonner";
+import { updateDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
@@ -29,6 +34,7 @@ import { MobileNav } from "@/components/dashboard/MobileNav";
 
 interface ContentItem {
   id: string;
+  creatorId: string;
   creatorName: string;
   creatorAvatar: string;
   campaignName: string;
@@ -36,17 +42,24 @@ interface ContentItem {
   platform: "instagram" | "tiktok";
   thumbnail: string;
   postUrl: string;
-  status: "pending" | "approved" | "live";
+  status: "pending" | "approved" | "live" | "rejected";
   submittedAt: string;
   metrics?: {
     views: number;
     likes: number;
     comments: number;
     shares: number;
+    updatedAt?: string;
   };
 }
 
-function ContentCard({ content }: { content: ContentItem }) {
+interface ContentCardProps {
+  content: ContentItem;
+  onStatusChange?: (id: string, status: "approved" | "rejected") => void;
+  onRefreshMetrics?: (content: ContentItem) => void;
+}
+
+function ContentCard({ content, onStatusChange, onRefreshMetrics }: ContentCardProps) {
   const statusColors = {
     pending: "bg-warning/20 text-warning border-warning/30",
     approved: "bg-primary/20 text-primary border-primary/30",
@@ -111,14 +124,50 @@ function ContentCard({ content }: { content: ContentItem }) {
           {content.postUrl && (
             <Button size="sm" variant="glass" className="flex-1" asChild>
               <a href={content.postUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="w-4 h-4" />
-                View Post
+                <ExternalLink className="w-4 h-4 mr-1" />
+                View
               </a>
             </Button>
           )}
-          <Button size="sm" variant="glass">
-            <Download className="w-4 h-4" />
+
+          <Button
+            size="sm"
+            variant="glass"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRefreshMetrics?.(content);
+            }}
+            title="Refresh Metrics"
+          >
+            <RefreshCw className="w-4 h-4" />
           </Button>
+
+          {content.status === "pending" && (
+            <>
+              <Button
+                size="sm"
+                className="bg-success/80 hover:bg-success text-white"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStatusChange?.(content.id, "approved");
+                }}
+                title="Approve Content"
+              >
+                <Check className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                className="bg-destructive/80 hover:bg-destructive text-white"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStatusChange?.(content.id, "rejected");
+                }}
+                title="Request Changes"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -135,26 +184,26 @@ function ContentCard({ content }: { content: ContentItem }) {
             <p className="text-xs text-muted-foreground truncate">{content.campaignName}</p>
           </div>
           <Badge className={statusColors[content.status]}>
-            {content.status}
+            {content.status === "rejected" ? "changes requested" : content.status}
           </Badge>
         </div>
 
         {/* Metrics */}
         {content.metrics && (
           <div className="grid grid-cols-4 gap-2 pt-3 border-t border-border/50">
-            <div className="text-center">
+            <div className="text-center group-hover:scale-105 transition-transform">
               <Eye className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs font-medium">{formatNumber(content.metrics.views)}</p>
             </div>
-            <div className="text-center">
-              <Heart className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+            <div className="text-center group-hover:scale-105 transition-transform">
+              <Heart className={`w-4 h-4 mx-auto mb-1 ${content.metrics.likes > 0 ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
               <p className="text-xs font-medium">{formatNumber(content.metrics.likes)}</p>
             </div>
-            <div className="text-center">
+            <div className="text-center group-hover:scale-105 transition-transform">
               <MessageCircle className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs font-medium">{formatNumber(content.metrics.comments)}</p>
             </div>
-            <div className="text-center">
+            <div className="text-center group-hover:scale-105 transition-transform">
               <Share2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs font-medium">{formatNumber(content.metrics.shares)}</p>
             </div>
@@ -162,9 +211,16 @@ function ContentCard({ content }: { content: ContentItem }) {
         )}
 
         {/* Submitted Date */}
-        <div className="flex items-center gap-1 mt-3 text-xs text-muted-foreground">
-          <Calendar className="w-3 h-3" />
-          Submitted {content.submittedAt}
+        <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
+            {content.submittedAt}
+          </div>
+          {content.metrics?.updatedAt && (
+            <span className="text-[10px] opacity-70">
+              Updated {new Date(content.metrics.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -218,6 +274,7 @@ export default function ContentLibrary() {
 
             return {
               id: sub.id,
+              creatorId: sub.userId,
               creatorName: creatorData.displayName || "Unknown Creator",
               creatorAvatar: creatorData.photoURL || creatorData.avatar || "https://via.placeholder.com/150",
               campaignName: campaignMap.get(sub.campaignId) || sub.campaignName || "Unknown Campaign",
@@ -274,6 +331,91 @@ export default function ContentLibrary() {
   };
 
   if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
+
+  // Handler for status updates
+  const handleStatusChange = async (id: string, newStatus: "approved" | "rejected") => {
+    try {
+      await updateDoc(doc(db, "submissions", id), {
+        status: newStatus,
+        reviewedAt: new Date().toISOString()
+      });
+
+      setContentList(prev => prev.map(item =>
+        item.id === id ? { ...item, status: newStatus } : item
+      ));
+
+      toast.success(newStatus === "approved" ? "Content approved!" : "Changes requested");
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Failed to update status");
+    }
+  };
+
+  // Handler for metrics refresh
+  const handleRefreshMetrics = async (content: ContentItem) => {
+    if (!content.postUrl) return;
+
+    // Extract post ID
+    const match = content.postUrl.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
+    const postId = match ? match[2] : null;
+
+    if (!postId || !content.creatorId) { // Need creatorId to fetch metrics (we need their token)
+      // Wait we need creatorId in content item, let's check if we have it. Yes we enriched it.
+      // But wait, in ContentLibrary we enriched creatorName but maybe didn't save creatorId?
+      // Ah, in enrichment map we use sub.userId.
+      // Let's check enrichment logic.
+      toast.error("Cannot refresh: missing post information");
+      return;
+    }
+
+    const toastId = toast.loading("Refreshing metrics...");
+
+    try {
+      const response = await fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: content.creatorId, postId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.metrics) {
+          // Update in Firestore
+          await updateDoc(doc(db, "submissions", content.id), {
+            likes: data.metrics.likes,
+            comments: data.metrics.comments,
+            type: data.metrics.type,
+            thumbnail: data.metrics.thumbnail,
+            metricsLastFetched: new Date().toISOString()
+          });
+
+          // Update local state
+          setContentList(prev => prev.map(item => {
+            if (item.id === content.id) {
+              return {
+                ...item,
+                metrics: {
+                  ...item.metrics!,
+                  likes: data.metrics.likes,
+                  comments: data.metrics.comments,
+                  updatedAt: new Date().toISOString()
+                }
+              };
+            }
+            return item;
+          }));
+          toast.success("Metrics updated!", { id: toastId });
+        } else {
+          toast.error("Failed to get metrics", { id: toastId });
+        }
+      } else {
+        toast.error("Server error", { id: toastId });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Network error", { id: toastId });
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -344,7 +486,12 @@ export default function ContentLibrary() {
         {/* Content Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredContent.map((content) => (
-            <ContentCard key={content.id} content={content} />
+            <ContentCard
+              key={content.id}
+              content={content}
+              onStatusChange={handleStatusChange}
+              onRefreshMetrics={handleRefreshMetrics}
+            />
           ))}
         </div>
 
