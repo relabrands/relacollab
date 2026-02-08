@@ -174,6 +174,15 @@ export function ContentSubmission() {
     }
   }, [submissionType, isDialogOpen, user]);
 
+  // Helper function to extract Instagram post ID from URL
+  const extractInstagramPostId = (url: string): string | null => {
+    // Instagram URL formats:
+    // https://www.instagram.com/p/POST_ID/
+    // https://www.instagram.com/reel/POST_ID/
+    const match = url.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
+    return match ? match[2] : null;
+  };
+
   const handleSubmitLink = async () => {
     if (!selectedCampaign || !postUrl) {
       toast.error("Please fill in all fields");
@@ -185,7 +194,8 @@ export function ContentSubmission() {
     const platform = postUrl.includes("instagram") ? "instagram" : "tiktok";
 
     try {
-      const newSubmission = {
+      // Initial submission data
+      let submissionData: any = {
         userId: user.uid,
         campaignId: selectedCampaign,
         campaignName: campaign?.name,
@@ -195,7 +205,36 @@ export function ContentSubmission() {
         submittedAt: new Date().toISOString()
       };
 
-      const docRef = await addDoc(collection(db, "submissions"), newSubmission);
+      // If Instagram, try to fetch real metrics
+      if (platform === "instagram") {
+        const postId = extractInstagramPostId(postUrl);
+        if (postId) {
+          try {
+            const response = await fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: user.uid, postId })
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success && data.metrics) {
+                // Add real metrics to submission
+                submissionData.likes = data.metrics.likes;
+                submissionData.comments = data.metrics.comments;
+                submissionData.type = data.metrics.type;
+                submissionData.thumbnail = data.metrics.thumbnail;
+                submissionData.metricsLastFetched = data.metrics.fetchedAt;
+              }
+            }
+          } catch (metricsError) {
+            console.warn("Could not fetch metrics, submitting without:", metricsError);
+            // Continue with submission even if metrics fetch fails
+          }
+        }
+      }
+
+      const docRef = await addDoc(collection(db, "submissions"), submissionData);
 
       const displayedSubmission: SubmittedContent = {
         id: docRef.id,
@@ -230,6 +269,36 @@ export function ContentSubmission() {
     if (!post) return;
 
     try {
+      // Fetch real metrics for the selected post
+      let metrics = {
+        likes: 0,
+        comments: 0,
+        type: post.media_type?.toLowerCase() || 'image',
+        thumbnail: post.thumbnail || ''
+      };
+
+      try {
+        const response = await fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.uid, postId: post.id })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.metrics) {
+            metrics = {
+              likes: data.metrics.likes,
+              comments: data.metrics.comments,
+              type: data.metrics.type,
+              thumbnail: data.metrics.thumbnail
+            };
+          }
+        }
+      } catch (metricsError) {
+        console.warn("Could not fetch metrics:", metricsError);
+      }
+
       const newSubmission = {
         userId: user.uid,
         campaignId: selectedCampaign,
@@ -237,7 +306,12 @@ export function ContentSubmission() {
         platform: "instagram",
         postUrl: post.permalink,
         status: "pending",
-        submittedAt: new Date().toISOString()
+        submittedAt: new Date().toISOString(),
+        likes: metrics.likes,
+        comments: metrics.comments,
+        type: metrics.type,
+        thumbnail: metrics.thumbnail,
+        metricsLastFetched: new Date().toISOString()
       };
 
       const docRef = await addDoc(collection(db, "submissions"), newSubmission);

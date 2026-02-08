@@ -47,6 +47,20 @@
             ]
         },
         {
+            "collectionGroup": "submissions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "campaignId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "submittedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "plans",
             "queryScope": "COLLECTION",
             "fields": [

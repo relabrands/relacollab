@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 
@@ -182,15 +182,64 @@ export default function ContentLibrary() {
     const fetchContent = async () => {
       if (!user) return;
       try {
-        // NOTE: 'submissions' collection does not exist yet in this context, 
-        // but we are implementing the read logic for when it does.
-        // For now, this will likely return empty, which is better than fake data.
-        const q = query(collection(db, "submissions"), where("brandId", "==", user.uid));
-        const snapshot = await getDocs(q);
-        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ContentItem));
-        setContentList(items);
+        // 1. Get Brand's Campaigns
+        const campaignsQuery = query(collection(db, "campaigns"), where("brandId", "==", user.uid));
+        const campaignsSnapshot = await getDocs(campaignsQuery);
+        const campaignIds = campaignsSnapshot.docs.map(d => d.id);
+        const campaignMap = new Map(campaignsSnapshot.docs.map(d => [d.id, d.data().name || "Untitled"]));
+
+        if (campaignIds.length === 0) {
+          setLoading(false);
+          return;
+        }
+
+        // 2. Get Submissions for these campaigns
+        const submissionsPromises = campaignIds.map(id =>
+          getDocs(query(collection(db, "submissions"), where("campaignId", "==", id)))
+        );
+        const snapshots = await Promise.all(submissionsPromises);
+        let allSubmissions: any[] = [];
+        snapshots.forEach(snap => {
+          allSubmissions = [...allSubmissions, ...snap.docs.map(d => ({ id: d.id, ...d.data() }))];
+        });
+
+        // 3. Enrich with Creator Data
+        const enrichedContent = await Promise.all(
+          allSubmissions.map(async (sub) => {
+            let creatorData: any = {};
+            try {
+              const creatorDoc = await getDoc(doc(db, "users", sub.userId));
+              if (creatorDoc.exists()) {
+                creatorData = creatorDoc.data();
+              }
+            } catch (e) {
+              console.error("Error fetching creator:", e);
+            }
+
+            return {
+              id: sub.id,
+              creatorName: creatorData.displayName || "Unknown Creator",
+              creatorAvatar: creatorData.photoURL || creatorData.avatar || "https://via.placeholder.com/150",
+              campaignName: campaignMap.get(sub.campaignId) || sub.campaignName || "Unknown Campaign",
+              type: sub.type || (sub.postUrl?.includes("reel") ? "reel" : "image"),
+              platform: sub.platform || "instagram",
+              thumbnail: sub.thumbnail || "https://via.placeholder.com/400x500",
+              postUrl: sub.postUrl,
+              status: sub.status || "pending",
+              submittedAt: new Date(sub.submittedAt).toLocaleDateString(),
+              metrics: sub.metrics || {
+                views: sub.views || 0,
+                likes: sub.likes || 0,
+                comments: sub.comments || 0,
+                shares: sub.shares || 0
+              }
+            } as ContentItem;
+          })
+        );
+
+        setContentList(enrichedContent);
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching content:", error);
       } finally {
         setLoading(false);
       }

@@ -264,3 +264,67 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 
     res.json({ received: true });
 });
+
+// Get Instagram Post Metrics
+exports.getPostMetrics = functions.https.onRequest((req, res) => {
+    return cors(req, res, async () => {
+        if (req.method !== 'POST') {
+            return res.status(405).json({ error: "Method Not Allowed" });
+        }
+
+        const { userId, postId } = req.body;
+
+        if (!userId || !postId) {
+            return res.status(400).json({ error: "Missing userId or postId" });
+        }
+
+        try {
+            // Get user's access token
+            const userDoc = await db.collection("users").doc(userId).get();
+            if (!userDoc.exists) {
+                return res.status(404).json({ error: "User not found" });
+            }
+
+            const userData = userDoc.data();
+            const accessToken = userData.instagramAccessToken;
+
+            if (!accessToken) {
+                return res.status(400).json({ error: "Instagram not connected" });
+            }
+
+            // Fetch post metrics from Instagram API
+            try {
+                const response = await axios.get(
+                    `https://graph.instagram.com/${postId}?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url&access_token=${accessToken}`
+                );
+
+                const metrics = {
+                    likes: response.data.like_count || 0,
+                    comments: response.data.comments_count || 0,
+                    type: response.data.media_type?.toLowerCase() || 'image',
+                    thumbnail: response.data.thumbnail_url || response.data.media_url || '',
+                    fetchedAt: new Date().toISOString()
+                };
+
+                return res.json({
+                    success: true,
+                    metrics: metrics
+                });
+
+            } catch (apiError) {
+                console.error("Instagram API Error:", apiError.response?.data || apiError.message);
+                return res.status(500).json({
+                    error: "Failed to fetch post metrics",
+                    details: apiError.response?.data?.error?.message || apiError.message
+                });
+            }
+
+        } catch (error) {
+            console.error("Error in getPostMetrics:", error.message);
+            return res.status(500).json({
+                error: "System Error",
+                details: error.message
+            });
+        }
+    });
+});
