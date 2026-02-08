@@ -117,6 +117,97 @@ export default function CreateCampaign() {
     }));
   };
 
+  const validateStep = (currentStep: number): boolean => {
+    switch (currentStep) {
+      case 1:
+        if (!formData.name.trim()) {
+          toast.error("Campaign name is required");
+          return false;
+        }
+        if (!formData.description.trim()) {
+          toast.error("Campaign description is required");
+          return false;
+        }
+        if (!formData.startDate || !formData.endDate) {
+          toast.error("Start and end dates are required");
+          return false;
+        }
+        if (new Date(formData.startDate) >= new Date(formData.endDate)) {
+          toast.error("End date must be after start date");
+          return false;
+        }
+        return true;
+
+      case 2:
+        if (formData.vibes.length === 0) {
+          toast.error("Select at least one vibe for your campaign");
+          return false;
+        }
+        if (formData.contentTypes.length === 0) {
+          toast.error("Select at least one content type");
+          return false;
+        }
+        if (!formData.goal.trim()) {
+          toast.error("Campaign goal is required");
+          return false;
+        }
+        return true;
+
+      case 3:
+        if (!formData.location.trim()) {
+          toast.error("Target location is required");
+          return false;
+        }
+        if (!formData.ageRange) {
+          toast.error("Target age range is required");
+          return false;
+        }
+        return true;
+
+      case 4:
+        if (!formData.compensationType) {
+          toast.error("Select a compensation type");
+          return false;
+        }
+        if (formData.compensationType === "exchange" && !formData.exchangeDetails.trim()) {
+          toast.error("Please describe what you're offering in exchange");
+          return false;
+        }
+        if (formData.compensationType === "monetary") {
+          if (!formData.creatorPayment || parseFloat(formData.creatorPayment) <= 0) {
+            toast.error("Creator payment amount is required");
+            return false;
+          }
+          const totalCost = (parseInt(formData.creditCost) || 1) * (parseInt(formData.creatorCount) || 1);
+          if (credits < totalCost) {
+            toast.error(`Insufficient credits. You need ${totalCost} credits but have ${credits}`);
+            return false;
+          }
+        }
+        if (!formData.creatorCount || parseInt(formData.creatorCount) < 1) {
+          toast.error("Number of creators must be at least 1");
+          return false;
+        }
+        return true;
+
+      case 5:
+        if (formData.requiresVisit) {
+          if (!formData.visitLocation.trim() || !formData.visitCity.trim()) {
+            toast.error("Visit location and city are required");
+            return false;
+          }
+          if (formData.visitDays.length === 0) {
+            toast.error("Select at least one available day for visits");
+            return false;
+          }
+        }
+        return true;
+
+      default:
+        return true;
+    }
+  };
+
   const handleSubmit = async () => {
     if (!user) {
       toast.error("You must be logged in to create a campaign.");
@@ -241,10 +332,10 @@ export default function CreateCampaign() {
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Description</Label>
+                    <Label htmlFor="description">Campaign Description *</Label>
                     <Textarea
                       id="description"
-                      placeholder="Tell creators about your brand and what you're looking for..."
+                      placeholder="Describe your campaign, what you're promoting, and what creators will showcase..."
                       value={formData.description}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -254,6 +345,9 @@ export default function CreateCampaign() {
                       }
                       className="mt-2 min-h-[120px]"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This will help creators understand what your campaign is about
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -624,8 +718,8 @@ export default function CreateCampaign() {
                                 }));
                               }}
                               className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${formData.visitDays.includes(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][idx])
-                                  ? "border-primary bg-primary/10 text-primary"
-                                  : "border-border hover:border-primary/50"
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border hover:border-primary/50"
                                 }`}
                             >
                               {day}
@@ -720,7 +814,14 @@ export default function CreateCampaign() {
             </Button>
 
             {step < totalSteps ? (
-              <Button variant="hero" onClick={() => setStep((s) => s + 1)}>
+              <Button
+                variant="hero"
+                onClick={() => {
+                  if (validateStep(step)) {
+                    setStep((s) => s + 1);
+                  }
+                }}
+              >
                 Next Step
                 <ArrowRight className="w-4 h-4" />
               </Button>

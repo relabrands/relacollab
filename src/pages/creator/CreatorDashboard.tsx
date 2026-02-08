@@ -62,50 +62,88 @@ export default function CreatorDashboard() {
     const fetchData = async () => {
       if (!user) return;
       try {
-        // 1. Calculate Profile Completion being real
+        // 1. Fetch creator profile data
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
-        let completion = 20; // Base for being registered
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          if (data.niche) completion += 20;
-          if (data.bio) completion += 20;
-          if (data.socialLinks?.instagram) completion += 20;
-          if (data.photoURL) completion += 20;
+
+        if (!userDoc.exists()) {
+          setLoading(false);
+          return;
         }
+
+        const userData = userDoc.data();
+
+        // Calculate Profile Completion
+        let completion = 20; // Base for being registered
+        if (userData.niche || userData.categories?.length > 0) completion += 20;
+        if (userData.bio) completion += 20;
+        if (userData.socialHandles?.instagram) completion += 20;
+        if (userData.photoURL) completion += 20;
         setProfileCompletion(completion);
 
-        // 2. Fetch Opportunities (Active campaigns)
-        // For now, fetch all active campaigns. In future, filter by niche match.
-        const q = query(
-          collection(db, "campaigns"),
-          where("status", "==", "active"),
-          orderBy("createdAt", "desc"),
-          limit(4)
-        );
-        const querySnapshot = await getDocs(q);
-        const opps = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          matchScore: 85 + Math.floor(Math.random() * 10) // Mock match score
-        }));
-        setOpportunities(opps);
-
-        // 3. Fetch Active Applications count
-        const activeAppsQuery = query(
+        // 2. Fetch all creator's applications to filter them out
+        const applicationsQuery = query(
           collection(db, "applications"),
-          where("userId", "==", user.uid),
-          where("status", "==", "approved")
+          where("creatorId", "==", user.uid)
         );
-        const activeAppsSnap = await getDocs(activeAppsQuery);
-        const activeCount = activeAppsSnap.size;
+        const applicationsSnap = await getDocs(applicationsQuery);
+        const appliedCampaignIds = applicationsSnap.docs.map(doc => doc.data().campaignId);
+
+        // Count active campaigns (approved applications)
+        const activeCount = applicationsSnap.docs.filter(
+          doc => doc.data().status === "approved"
+        ).length;
+
+        // 3. Fetch ALL active campaigns
+        const campaignsQuery = query(
+          collection(db, "campaigns"),
+          where("status", "==", "active")
+        );
+        const campaignsSnap = await getDocs(campaignsQuery);
+
+        // 4. Filter out campaigns already applied to and calculate match scores
+        const { calculateMatchScore } = await import("@/lib/matchScoring");
+
+        const matchedOpportunities = [];
+        for (const campaignDoc of campaignsSnap.docs) {
+          const campaignId = campaignDoc.id;
+
+          // Skip if already applied
+          if (appliedCampaignIds.includes(campaignId)) continue;
+
+          const campaignData = campaignDoc.data();
+
+          // Calculate real match score
+          const matchResult = calculateMatchScore(campaignData, userData);
+
+          // Only include campaigns with score > 0 (passed compensation filter)
+          if (matchResult.score > 0) {
+            matchedOpportunities.push({
+              id: campaignId,
+              ...campaignData,
+              matchScore: matchResult.score,
+              matchBreakdown: matchResult.breakdown
+            });
+          }
+        }
+
+        // Sort by match score and get top 4
+        matchedOpportunities.sort((a, b) => b.matchScore - a.matchScore);
+        const topOpportunities = matchedOpportunities.slice(0, 4);
+
+        setOpportunities(topOpportunities);
+
+        // Calculate average match score
+        const avgMatchScore = topOpportunities.length > 0
+          ? Math.round(topOpportunities.reduce((sum, opp) => sum + opp.matchScore, 0) / topOpportunities.length)
+          : 0;
 
         // Update stats
         setStats(prev => [
-          { ...prev[0], value: opps.length },
-          { ...prev[1], value: activeCount },
-          { ...prev[2], value: opps.length > 0 ? "88%" : "0%" },
-          { ...prev[3], value: "$0" } // Still mocked until earnings logic is fully connected
+          { ...prev[0], value: matchedOpportunities.length, change: `${topOpportunities.length} top matches` },
+          { ...prev[1], value: activeCount, change: activeCount > 0 ? "In progress" : "No active campaigns" },
+          { ...prev[2], value: `${avgMatchScore}%`, change: avgMatchScore >= 70 ? "Great fit!" : "Find your match" },
+          { ...prev[3], value: "$0", change: "Pending: $0" }
         ]);
 
       } catch (error) {
