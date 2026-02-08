@@ -298,19 +298,27 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
 
             try {
                 // Fetch recent media (limit 50 to be safe)
-                // Try to get video_view_count and play_count first, fallback to basic fields if not supported
+                // Try to get view counts first (video_view_count, play_count, view_count)
+                // Reduced limit to 25 to avoid timeouts and large payloads
                 let mediaItems = [];
+                let viewsFieldSupported = true;
+
                 try {
                     const response = await axios.get(
-                        `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp,video_view_count,play_count&limit=50&access_token=${accessToken}`
+                        `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp,video_view_count,play_count,view_count&limit=25&access_token=${accessToken}`
                     );
                     mediaItems = response.data.data || [];
                 } catch (e) {
-                    console.warn("Failed to fetch with view counts, retrying with basic fields");
-                    const response = await axios.get(
-                        `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp&limit=50&access_token=${accessToken}`
-                    );
-                    mediaItems = response.data.data || [];
+                    console.warn("Retrying with basic fields (Views not supported):", e.message);
+                    viewsFieldSupported = false;
+                    try {
+                        const response = await axios.get(
+                            `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp&limit=25&access_token=${accessToken}`
+                        );
+                        mediaItems = response.data.data || [];
+                    } catch (fallbackError) {
+                        throw fallbackError; // If this fails, we really have an issue
+                    }
                 }
 
                 // Find the post that contains the shortcode in its permalink
@@ -329,7 +337,7 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 const metrics = {
                     likes: foundPost.like_count || 0,
                     comments: foundPost.comments_count || 0,
-                    views: foundPost.video_view_count || foundPost.play_count || 0,
+                    views: foundPost.video_view_count || foundPost.play_count || foundPost.view_count || 0,
                     type: foundPost.media_type?.toLowerCase() || 'image',
                     thumbnail: foundPost.thumbnail_url || foundPost.media_url || '',
                     fetchedAt: new Date().toISOString()
