@@ -298,15 +298,15 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
 
             try {
                 // Fetch recent media (limit 50 to be safe)
-                // Try to get video_view_count first, fallback to basic fields if not supported
+                // Try to get video_view_count and play_count first, fallback to basic fields if not supported
                 let mediaItems = [];
                 try {
                     const response = await axios.get(
-                        `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp,video_view_count&limit=50&access_token=${accessToken}`
+                        `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp,video_view_count,play_count&limit=50&access_token=${accessToken}`
                     );
                     mediaItems = response.data.data || [];
                 } catch (e) {
-                    console.warn("Failed to fetch with video_view_count, retrying with basic fields");
+                    console.warn("Failed to fetch with view counts, retrying with basic fields");
                     const response = await axios.get(
                         `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp&limit=50&access_token=${accessToken}`
                     );
@@ -329,7 +329,7 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 const metrics = {
                     likes: foundPost.like_count || 0,
                     comments: foundPost.comments_count || 0,
-                    views: foundPost.video_view_count || 0,
+                    views: foundPost.video_view_count || foundPost.play_count || 0,
                     type: foundPost.media_type?.toLowerCase() || 'image',
                     thumbnail: foundPost.thumbnail_url || foundPost.media_url || '',
                     fetchedAt: new Date().toISOString()
