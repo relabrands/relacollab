@@ -292,20 +292,36 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 return res.status(400).json({ error: "Instagram not connected" });
             }
 
-            // Fetch post metrics from Instagram API
-            console.log(`Fetching metrics for post ${postId} with token ending in ...${accessToken.slice(-5)}`);
+            // Fetch recent media to find the post by shortcode/permalink
+            // We cannot fetch by shortcode directly in Basic Display API
+            console.log(`Searching for post with shortcode ${postId} in user media...`);
+
             try {
+                // Fetch recent media (limit 50 to be safe)
                 const response = await axios.get(
-                    `https://graph.instagram.com/${postId}?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink&access_token=${accessToken}`
+                    `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp&limit=50&access_token=${accessToken}`
                 );
 
-                console.log("Instagram API Response:", JSON.stringify(response.data));
+                const mediaItems = response.data.data || [];
+
+                // Find the post that contains the shortcode in its permalink
+                const foundPost = mediaItems.find(item => item.permalink && item.permalink.includes(postId));
+
+                if (!foundPost) {
+                    console.warn(`Post with shortcode ${postId} not found in last 50 posts`);
+                    return res.status(404).json({
+                        error: "Post not found or too old",
+                        details: "Could not find this post in your recent media. Please ensure it's on the connected account."
+                    });
+                }
+
+                console.log("Found post:", foundPost.id);
 
                 const metrics = {
-                    likes: response.data.like_count || 0,
-                    comments: response.data.comments_count || 0,
-                    type: response.data.media_type?.toLowerCase() || 'image',
-                    thumbnail: response.data.thumbnail_url || response.data.media_url || '',
+                    likes: foundPost.like_count || 0,
+                    comments: foundPost.comments_count || 0,
+                    type: foundPost.media_type?.toLowerCase() || 'image',
+                    thumbnail: foundPost.thumbnail_url || foundPost.media_url || '',
                     fetchedAt: new Date().toISOString()
                 };
 
@@ -317,7 +333,7 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
             } catch (apiError) {
                 console.error("Instagram API Error Details:", apiError.response?.data || apiError.message);
                 return res.status(500).json({
-                    error: "Failed to fetch post metrics from Instagram",
+                    error: "Failed to fetch media list from Instagram",
                     details: apiError.response?.data?.error?.message || apiError.message
                 });
             }
