@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Mail, MapPin, Phone, Instagram, Globe, Calendar, DollarSign, Award } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Mail, MapPin, Phone, Instagram, Globe, Calendar, DollarSign, Award, AlertCircle, CheckCircle2, Clock } from "lucide-react";
 
 interface CreatorDetailsDialogProps {
     creator: any;
@@ -22,6 +23,32 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
 
     // Filter applications for this creator
     const creatorApps = applications.filter(app => app.creatorId === creator.id && app.status === 'approved');
+
+    // Check onboarding completion
+    const getOnboardingStep = () => {
+        if (!creator.contentTypes || creator.contentTypes.length === 0) {
+            return { step: 1, message: "No ha completado el tipo de contenido" };
+        }
+        if (!creator.whoAppearsInContent || creator.whoAppearsInContent.length === 0) {
+            return { step: 2, message: "No ha indicado quién aparece en su contenido" };
+        }
+        if (!creator.experienceTime) {
+            return { step: 2, message: "No ha indicado su tiempo de experiencia" };
+        }
+        if (!creator.collaborationPreference) {
+            return { step: 2, message: "No ha indicado su preferencia de colaboración" };
+        }
+        if (creator.hasBrandExperience === undefined) {
+            return { step: 2, message: "No ha indicado experiencia con marcas" };
+        }
+        if (creator.onboardingCompleted) {
+            return null; // Completed
+        }
+        return { step: 3, message: "Onboarding incompleto (información de redes)" };
+    };
+
+    const onboardingStatus = getOnboardingStep();
+    const isOnboardingIncomplete = onboardingStatus !== null;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -40,7 +67,7 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
                             </div>
                         </div>
                         <div className="ml-auto">
-                            <Badge variant={creator.status === 'active' ? 'default' : 'destructive'} className="capitalize">
+                            <Badge variant={creator.status === 'active' ? 'default' : creator.status === 'pending' ? 'secondary' : 'destructive'} className="capitalize">
                                 {creator.status}
                             </Badge>
                         </div>
@@ -49,6 +76,40 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
 
                 <ScrollArea className="flex-1 overflow-y-auto">
                     <div className="p-6 space-y-6">
+
+                        {/* Onboarding Status Alert */}
+                        {creator.status === 'pending' && (
+                            <Alert variant={isOnboardingIncomplete ? "destructive" : "default"} className="border-2">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertDescription className="flex items-center justify-between">
+                                    <div>
+                                        {isOnboardingIncomplete ? (
+                                            <div>
+                                                <p className="font-medium">Onboarding Incompleto</p>
+                                                <p className="text-sm mt-1">
+                                                    Se quedó en: <strong>Paso {onboardingStatus.step}</strong> - {onboardingStatus.message}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                                <p className="font-medium">Onboarding completado - Pendiente de aprobación</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        {/* Bio */}
+                        {creator.bio && (
+                            <div className="space-y-2">
+                                <h4 className="font-medium text-sm">Biografía</h4>
+                                <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                                    {creator.bio}
+                                </p>
+                            </div>
+                        )}
 
                         {/* Stats Grid */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -77,6 +138,69 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
                                 <div className="font-semibold">{creator.earnings}</div>
                             </div>
                         </div>
+
+                        {/* Onboarding Data (if pending) */}
+                        {creator.status === 'pending' && (
+                            <>
+                                <Separator />
+                                <div className="space-y-4">
+                                    <h4 className="font-medium text-sm flex items-center gap-2">
+                                        <Clock className="w-4 h-4" />
+                                        Datos del Onboarding
+                                    </h4>
+
+                                    {/* Content Types */}
+                                    {creator.contentTypes && creator.contentTypes.length > 0 && (
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-muted-foreground">Tipo de Contenido</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {creator.contentTypes.map((type: string) => (
+                                                    <Badge key={type} variant="secondary">{type}</Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Who Appears */}
+                                    {creator.whoAppearsInContent && creator.whoAppearsInContent.length > 0 && (
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-muted-foreground">Quién aparece en el contenido</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {creator.whoAppearsInContent.map((who: string) => (
+                                                    <Badge key={who} variant="outline">{who}</Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Experience */}
+                                    {creator.experienceTime && (
+                                        <div className="bg-muted/20 p-3 rounded-lg">
+                                            <p className="text-xs text-muted-foreground">Tiempo de experiencia</p>
+                                            <p className="text-sm font-medium mt-1">{creator.experienceTime}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Collaboration Preference */}
+                                    {creator.collaborationPreference && (
+                                        <div className="bg-muted/20 p-3 rounded-lg">
+                                            <p className="text-xs text-muted-foreground">Preferencia de colaboración</p>
+                                            <p className="text-sm font-medium mt-1">{creator.collaborationPreference}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Brand Experience */}
+                                    {creator.hasBrandExperience !== undefined && (
+                                        <div className="bg-muted/20 p-3 rounded-lg">
+                                            <p className="text-xs text-muted-foreground">Experiencia con marcas</p>
+                                            <p className="text-sm font-medium mt-1">{creator.hasBrandExperience ? "Sí" : "No"}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
+
+                        <Separator />
 
                         {/* Additional Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

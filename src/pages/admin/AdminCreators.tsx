@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/dashboard/AdminSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -33,6 +34,13 @@ interface Creator {
   bio?: string;
   socialHandles?: { instagram?: string; tiktok?: string };
   categories?: string[];
+  // Onboarding fields
+  contentTypes?: string[];
+  whoAppearsInContent?: string[];
+  experienceTime?: string;
+  collaborationPreference?: string;
+  hasBrandExperience?: boolean;
+  onboardingCompleted?: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -123,7 +131,14 @@ export default function AdminCreators() {
           phone: data.phone,
           bio: data.bio,
           socialHandles: data.socialHandles,
-          categories: data.categories
+          categories: data.categories,
+          // Onboarding fields for pending approval
+          contentTypes: data.contentTypes,
+          whoAppearsInContent: data.whoAppearsInContent,
+          experienceTime: data.experienceTime,
+          collaborationPreference: data.collaborationPreference,
+          hasBrandExperience: data.hasBrandExperience,
+          onboardingCompleted: data.onboardingCompleted
         } as Creator;
       });
 
@@ -136,10 +151,17 @@ export default function AdminCreators() {
     }
   };
 
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "pending" | "suspended">("all");
+
   const filteredCreators = creators.filter(
-    (creator) =>
-      creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      creator.email.toLowerCase().includes(searchQuery.toLowerCase())
+    (creator) => {
+      const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        creator.email.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesStatus = statusFilter === "all" || creator.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    }
   );
 
   const handleChangeStatus = async (creatorId: string, newStatus: string) => {
@@ -190,6 +212,29 @@ export default function AdminCreators() {
           title="Manage Creators"
           subtitle="View and manage creator accounts"
         />
+
+        {/* Status Filter Tabs */}
+        <div className="mb-6 flex gap-2">
+          {[
+            { key: "all" as const, label: "Todos", count: creators.length },
+            { key: "active" as const, label: "Activos", count: creators.filter(c => c.status === "active").length },
+            { key: "pending" as const, label: "Pendientes", count: creators.filter(c => c.status === "pending").length },
+            { key: "suspended" as const, label: "Suspendidos", count: creators.filter(c => c.status === "suspended").length }
+          ].map(tab => (
+            <Button
+              key={tab.key}
+              variant={statusFilter === tab.key ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter(tab.key)}
+              className="gap-2"
+            >
+              {tab.label}
+              <Badge variant={statusFilter === tab.key ? "secondary" : "outline"} className="ml-1">
+                {tab.count}
+              </Badge>
+            </Button>
+          ))}
+        </div>
 
         {/* Actions Bar */}
         <div className="flex items-center justify-between mb-6">

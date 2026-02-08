@@ -129,9 +129,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await setDoc(doc(db, "users", user.uid), {
                 email: user.email,
                 role: selectedRole,
+                status: selectedRole === "creator" ? "pending" : "active", // Creators need approval
                 createdAt: new Date().toISOString(),
                 displayName: name,
-                photoURL: null
+                photoURL: null,
+                onboardingCompleted: false
             });
             setRole(selectedRole);
             return selectedRole;
@@ -147,9 +149,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await setDoc(doc(db, "users", user.uid), {
                 email: user.email,
                 role: selectedRole,
+                status: selectedRole === "creator" ? "pending" : "active",
                 createdAt: new Date().toISOString(),
                 displayName: user.displayName,
-                photoURL: user.photoURL
+                photoURL: user.photoURL,
+                onboardingCompleted: false
             });
             setRole(selectedRole);
             return selectedRole;
