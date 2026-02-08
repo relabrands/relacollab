@@ -41,6 +41,25 @@ const EXPERIENCE_TIME = [
     "Más de 3 años"
 ];
 
+const CONTENT_FORMATS = [
+    { id: "posts", label: "Posts", emoji: "📸", description: "Single images" },
+    { id: "reels", label: "Reels", emoji: "🎬", description: "Short videos" },
+    { id: "stories", label: "Stories", emoji: "📱", description: "24h content" },
+    { id: "carousels", label: "Carousels", emoji: "🖼️", description: "Multiple images" },
+    { id: "videos", label: "Videos", emoji: "🎥", description: "Long-form videos" },
+];
+
+const CREATOR_VIBES = [
+    { id: "romantic", label: "Romantic", emoji: "💕" },
+    { id: "party", label: "Party", emoji: "🎉" },
+    { id: "family", label: "Family", emoji: "👨‍👩‍👧" },
+    { id: "healthy", label: "Healthy", emoji: "🥗" },
+    { id: "premium", label: "Premium", emoji: "👑" },
+    { id: "adventure", label: "Adventure", emoji: "🏔️" },
+    { id: "minimal", label: "Minimal", emoji: "⚪" },
+    { id: "vibrant", label: "Vibrant", emoji: "🌈" },
+];
+
 const COLLABORATION_TYPES = [
     { value: "Con remuneración", label: "Con remuneración", description: "Solo colaboraciones pagadas" },
     { value: "Intercambios", label: "Intercambios", description: "Solo productos o servicios" },
@@ -56,8 +75,10 @@ export default function CreatorOnboarding() {
 
     const [formData, setFormData] = useState({
         bio: "",
-        contentTypes: [] as string[],
+        contentTypes: [] as string[], // Keep for categories
         customContentTypes: [] as string[],
+        contentFormats: [] as string[], // NEW: Posts, Reels, Stories, etc.
+        vibes: [] as string[], // NEW: Romantic, Party, Family, etc.
         whoAppearsInContent: [] as string[],
         experienceTime: "",
         collaborationPreference: "",
@@ -68,7 +89,7 @@ export default function CreatorOnboarding() {
 
     const [customContentType, setCustomContentType] = useState("");
 
-    const totalSteps = 4;
+    const totalSteps = 6; // Updated from 4 to 6
     const progress = ((currentStep + 1) / totalSteps) * 100;
 
     useEffect(() => {
@@ -105,6 +126,24 @@ export default function CreatorOnboarding() {
         }));
     };
 
+    const handleContentFormatToggle = (formatId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            contentFormats: prev.contentFormats.includes(formatId)
+                ? prev.contentFormats.filter(f => f !== formatId)
+                : [...prev.contentFormats, formatId]
+        }));
+    };
+
+    const handleVibeToggle = (vibeId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            vibes: prev.vibes.includes(vibeId)
+                ? prev.vibes.filter(v => v !== vibeId)
+                : [...prev.vibes, vibeId]
+        }));
+    };
+
     const addCustomContentType = () => {
         if (customContentType.trim() && !formData.customContentTypes.includes(customContentType.trim())) {
             setFormData(prev => ({
@@ -126,13 +165,21 @@ export default function CreatorOnboarding() {
         switch (step) {
             case 0: // Bio (optional, can skip)
                 return true;
-            case 1: // Content types
+            case 1: // Content categories
                 if (formData.contentTypes.length === 0 && formData.customContentTypes.length === 0) {
-                    toast.error("Por favor selecciona al menos un tipo de contenido");
+                    toast.error("Por favor selecciona al menos una categoría de contenido");
                     return false;
                 }
                 return true;
-            case 2: // Who appears, experience, collaboration
+            case 2: // Content formats - NEW
+                if (formData.contentFormats.length === 0) {
+                    toast.error("Por favor selecciona al menos un formato de contenido");
+                    return false;
+                }
+                return true;
+            case 3: // Vibes - NEW (optional)
+                return true; // Vibes are optional
+            case 4: // Who appears, experience, collaboration
                 if (formData.whoAppearsInContent.length === 0) {
                     toast.error("Por favor selecciona quién aparece en tu contenido");
                     return false;
@@ -150,7 +197,7 @@ export default function CreatorOnboarding() {
                     return false;
                 }
                 return true;
-            case 3: // Social handles (optional)
+            case 5: // Social handles (optional)
                 return true;
             default:
                 return true;
@@ -177,7 +224,9 @@ export default function CreatorOnboarding() {
             const userRef = doc(db, "users", user.uid);
             await updateDoc(userRef, {
                 bio: formData.bio,
-                contentTypes: [...formData.contentTypes, ...formData.customContentTypes],
+                categories: [...formData.contentTypes, ...formData.customContentTypes], // Renamed from contentTypes
+                contentFormats: formData.contentFormats, // NEW
+                vibes: formData.vibes, // NEW
                 whoAppearsInContent: formData.whoAppearsInContent,
                 experienceTime: formData.experienceTime,
                 collaborationPreference: formData.collaborationPreference,
@@ -323,9 +372,141 @@ export default function CreatorOnboarding() {
                             )}
                         </div>
                     </motion.div>
-                );
+                )
+
+                    ;
 
             case 2:
+                return (
+                    <motion.div
+                        key="step-2"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-6"
+                    >
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-bold">¿Qué formatos de contenido creas?</h3>
+                            <p className="text-muted-foreground">
+                                Selecciona los tipos de contenido que produces.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {CONTENT_FORMATS.map((format) => (
+                                <div
+                                    key={format.id}
+                                    onClick={() => handleContentFormatToggle(format.id)}
+                                    className={`
+                                        p-5 rounded-xl border-2 cursor-pointer transition-all
+                                        ${formData.contentFormats.includes(format.id)
+                                            ? 'border-primary bg-primary/10 shadow-sm'
+                                            : 'border-border hover:border-primary/50 hover:shadow-sm'
+                                        }
+                                    `}
+                                >
+                                    <div className="flex items-start gap-4">
+                                        <div className="text-4xl">{format.emoji}</div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Checkbox
+                                                    checked={formData.contentFormats.includes(format.id)}
+                                                    onCheckedChange={() => handleContentFormatToggle(format.id)}
+                                                />
+                                                <label className="text-base font-semibold cursor-pointer">
+                                                    {format.label}
+                                                </label>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">{format.description}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {formData.contentFormats.length > 0 && (
+                            <div className="p-4 rounded-lg bg-muted/50">
+                                <p className="text-sm font-medium mb-2">Formatos seleccionados:</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {formData.contentFormats.map((formatId) => {
+                                        const format = CONTENT_FORMATS.find(f => f.id === formatId);
+                                        return (
+                                            <Badge key={formatId} variant="secondary">
+                                                {format?.emoji} {format?.label}
+                                            </Badge>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                );
+
+            case 3:
+                return (
+                    <motion.div
+                        key="step-3"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-6"
+                    >
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-bold">¿Cuál es tu vibe?</h3>
+                            <p className="text-muted-foreground">
+                                Selecciona los estilos que mejor describen tu contenido. Esto es opcional pero ayuda a mejorar los matches.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {CREATOR_VIBES.map((vibe) => (
+                                <div
+                                    key={vibe.id}
+                                    onClick={() => handleVibeToggle(vibe.id)}
+                                    className={`
+                                        p-4 rounded-xl border-2 cursor-pointer transition-all text-center
+                                        ${formData.vibes.includes(vibe.id)
+                                            ? 'border-primary bg-primary/10 shadow-sm scale-105'
+                                            : 'border-border hover:border-primary/50 hover:scale-105'
+                                        }
+                                    `}
+                                >
+                                    <div className="text-4xl mb-2">{vibe.emoji}</div>
+                                    <div className="font-medium text-sm">{vibe.label}</div>
+                                    {formData.vibes.includes(vibe.id) && (
+                                        <div className="text-primary text-xs mt-1">✓</div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {formData.vibes.length === 0 && (
+                            <div className="text-center p-6 border-2 border-dashed border-border rounded-lg">
+                                <p className="text-sm text-muted-foreground">
+                                    Puedes omitir este paso si lo prefieres, pero seleccionar tus vibes ayuda a encontrar mejores matches.
+                                </p>
+                            </div>
+                        )}
+
+                        {formData.vibes.length > 0 && (
+                            <div className="p-4 rounded-lg bg-muted/50">
+                                <p className="text-sm font-medium mb-2">Vibes seleccionados:</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {formData.vibes.map((vibeId) => {
+                                        const vibe = CREATOR_VIBES.find(v => v.id === vibeId);
+                                        return (
+                                            <Badge key={vibeId} variant="secondary" className="gap-1">
+                                                {vibe?.emoji} {vibe?.label}
+                                            </Badge>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                );
+
+            case 4:
                 return (
                     <motion.div
                         key="step-2"
@@ -472,7 +653,7 @@ export default function CreatorOnboarding() {
                     </motion.div>
                 );
 
-            case 3:
+            case 5:
                 return (
                     <motion.div
                         key="step-3"
