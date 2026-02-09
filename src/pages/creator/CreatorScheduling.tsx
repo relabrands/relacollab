@@ -100,14 +100,16 @@ export default function CreatorScheduling() {
                         if (campaignDoc.exists()) {
                             const campaignData = campaignDoc.data();
 
-                            // Check for deadline
-                            if (campaignData.deadline) {
+                            // Check for deadline or endDate
+                            const deadlineField = campaignData.deadline || campaignData.endDate;
+
+                            if (deadlineField) {
                                 let deadlineDate: Date;
                                 // Handle Timestamp or string
-                                if (campaignData.deadline instanceof Timestamp) {
-                                    deadlineDate = campaignData.deadline.toDate();
+                                if (deadlineField instanceof Timestamp) {
+                                    deadlineDate = deadlineField.toDate();
                                 } else {
-                                    deadlineDate = new Date(campaignData.deadline);
+                                    deadlineDate = new Date(deadlineField);
                                 }
 
                                 // Fetch brand name

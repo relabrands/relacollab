@@ -60,12 +60,14 @@ export default function BrandScheduling() {
 
                     // Add Deadline Event
                     const data = doc.data();
-                    if (data.deadline) {
+                    const deadlineField = data.deadline || data.endDate;
+
+                    if (deadlineField) {
                         let deadlineDate: Date;
-                        if (data.deadline instanceof Timestamp) {
-                            deadlineDate = data.deadline.toDate();
+                        if (deadlineField instanceof Timestamp) {
+                            deadlineDate = deadlineField.toDate();
                         } else {
-                            deadlineDate = new Date(data.deadline);
+                            deadlineDate = new Date(deadlineField);
                         }
 
                         // Only add if future or recent past
