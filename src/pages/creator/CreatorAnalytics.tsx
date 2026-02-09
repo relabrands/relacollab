@@ -12,8 +12,9 @@ import axios from "axios";
 interface InstagramMedia {
     id: string;
     caption: string;
-    media_type: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
-    thumbnail: string;
+    media_type: "IMAGE" | "VIDEO" | "REELS" | "CAROUSEL_ALBUM";
+    thumbnail_url?: string;
+    media_url: string;
     permalink: string;
     timestamp: string;
 }
@@ -193,13 +194,30 @@ export default function CreatorAnalytics() {
                                             rel="noopener noreferrer"
                                             className="group relative aspect-square rounded-xl overflow-hidden bg-muted block hover-lift transition-all"
                                         >
-                                            <img
-                                                src={post.thumbnail || post.permalink}
-                                                alt={post.caption}
-                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                            />
-                                            {post.media_type === "VIDEO" && (
-                                                <div className="absolute top-3 right-3 bg-black/50 p-1.5 rounded-full backdrop-blur-sm">
+                                            {(post.media_type === 'VIDEO' || post.media_type === 'REELS') && !post.thumbnail_url ? (
+                                                <video
+                                                    src={post.media_url}
+                                                    className="w-full h-full object-cover"
+                                                    muted
+                                                    playsInline
+                                                    onMouseOver={(e) => e.currentTarget.play()}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.pause();
+                                                        e.currentTarget.currentTime = 0;
+                                                    }}
+                                                />
+                                            ) : (
+                                                <img
+                                                    src={post.thumbnail_url || post.media_url}
+                                                    alt={post.caption}
+                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = "https://placehold.co/400x400?text=No+Image";
+                                                    }}
+                                                />
+                                            )}
+                                            {(post.media_type === "VIDEO" || post.media_type === "REELS") && (
+                                                <div className="absolute top-3 right-3 bg-black/50 p-1.5 rounded-full backdrop-blur-sm pointer-events-none">
                                                     <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[10px] border-l-white border-b-[5px] border-b-transparent ml-0.5" />
                                                 </div>
                                             )}
