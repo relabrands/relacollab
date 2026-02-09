@@ -265,7 +265,7 @@ export default function ContentLibrary() {
 
         // 2. Get Submissions for these campaigns
         const submissionsPromises = campaignIds.map(id =>
-          getDocs(query(collection(db, "submissions"), where("campaignId", "==", id)))
+          getDocs(query(collection(db, "content_submissions"), where("campaignId", "==", id)))
         );
         const snapshots = await Promise.all(submissionsPromises);
         let allSubmissions: any[] = [];
@@ -278,9 +278,13 @@ export default function ContentLibrary() {
           allSubmissions.map(async (sub) => {
             let creatorData: any = {};
             try {
-              const creatorDoc = await getDoc(doc(db, "users", sub.userId));
-              if (creatorDoc.exists()) {
-                creatorData = creatorDoc.data();
+              // Ensure we have correct creatorId field (userId or creatorId)
+              const creatorId = sub.creatorId || sub.userId;
+              if (creatorId) {
+                const creatorDoc = await getDoc(doc(db, "users", creatorId));
+                if (creatorDoc.exists()) {
+                  creatorData = creatorDoc.data();
+                }
               }
             } catch (e) {
               console.error("Error fetching creator:", e);
@@ -288,16 +292,18 @@ export default function ContentLibrary() {
 
             return {
               id: sub.id,
-              creatorId: sub.userId,
+              creatorId: sub.creatorId || sub.userId,
               creatorName: creatorData.displayName || "Unknown Creator",
               creatorAvatar: creatorData.photoURL || creatorData.avatar || "https://via.placeholder.com/150",
               campaignName: campaignMap.get(sub.campaignId) || sub.campaignName || "Unknown Campaign",
-              type: sub.type || (sub.postUrl?.includes("reel") ? "reel" : "image"),
+              // Determine type from mediaType or fallback
+              type: (sub.mediaType === "VIDEO" || sub.mediaType === "REELS") ? "reel" : "image",
               platform: sub.platform || "instagram",
-              thumbnail: sub.thumbnail || "https://via.placeholder.com/400x500",
-              postUrl: sub.postUrl,
+              // Use thumbnailUrl or mediaUrl (for images)
+              thumbnail: sub.thumbnailUrl || sub.mediaUrl || "https://via.placeholder.com/400x500",
+              postUrl: sub.contentUrl || sub.postUrl, // Handle both potential field names
               status: sub.status || "pending",
-              submittedAt: new Date(sub.submittedAt).toLocaleDateString(),
+              submittedAt: sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
               metrics: sub.metrics || {
                 views: sub.views || 0,
                 likes: sub.likes || 0,
@@ -349,7 +355,7 @@ export default function ContentLibrary() {
   // Handler for status updates
   const handleStatusChange = async (id: string, newStatus: "approved" | "rejected") => {
     try {
-      await updateDoc(doc(db, "submissions", id), {
+      await updateDoc(doc(db, "content_submissions", id), {
         status: newStatus,
         reviewedAt: new Date().toISOString()
       });
