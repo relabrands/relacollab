@@ -3,96 +3,157 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, MapPin, Clock, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar as CalendarIcon, MapPin, Clock, AlertCircle, CheckCircle, Loader2, ChevronRight } from "lucide-react";
+import { collection, query, where, getDocs, doc, getDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Link } from "react-router-dom";
+import { format, isSameDay, parseISO } from "date-fns";
 
-interface VisitSchedule {
+interface ScheduleEvent {
     id: string;
-    campaignTitle: string;
+    type: "visit" | "deadline";
+    title: string;
     brandName: string;
-    scheduledDate: string;
-    scheduledTime: string;
-    duration: number;
-    location: {
-        address: string;
-        city: string;
-    };
-    status: "scheduled" | "confirmed" | "completed" | "rescheduled" | "cancelled";
-    contentDeadline: string;
+    date: Date;
+    status: string;
+    location?: string;
+    time?: string;
+    duration?: number;
+    campaignId: string;
 }
 
 export default function CreatorScheduling() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [visits, setVisits] = useState<VisitSchedule[]>([]);
+    const [events, setEvents] = useState<ScheduleEvent[]>([]);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+    const [visitsCount, setVisitsCount] = useState(0);
+    const [deadlinesCount, setDeadlinesCount] = useState(0);
 
     useEffect(() => {
-        const fetchVisits = async () => {
+        const fetchSchedule = async () => {
             if (!user) return;
             try {
+                const newEvents: ScheduleEvent[] = [];
+                let vCount = 0;
+                let dCount = 0;
+
+                // 1. Fetch Visits
                 const visitsQuery = query(
                     collection(db, "visitSchedules"),
                     where("creatorId", "==", user.uid)
                 );
                 const visitsSnapshot = await getDocs(visitsQuery);
 
-                const visitsList: VisitSchedule[] = [];
-
                 for (const visitDoc of visitsSnapshot.docs) {
                     const visitData = visitDoc.data();
 
-                    // Fetch campaign info
-                    const campaignDoc = await getDoc(doc(db, "campaigns", visitData.campaignId));
-                    const campaignData = campaignDoc.exists() ? campaignDoc.data() : {};
+                    // Fetch campaign & brand info if needed (or just use stored fields if they exist)
+                    // Assuming visitData has campaignId/brandId
+                    let campaignTitle = "Campaign Visit";
+                    let brandName = "Brand";
 
-                    // Fetch brand info
-                    const brandDoc = await getDoc(doc(db, "users", visitData.brandId));
-                    const brandData = brandDoc.exists() ? brandDoc.data() : {};
+                    if (visitData.campaignId) {
+                        const cDoc = await getDoc(doc(db, "campaigns", visitData.campaignId));
+                        if (cDoc.exists()) campaignTitle = cDoc.data().name;
+                    }
+                    if (visitData.brandId) {
+                        const bDoc = await getDoc(doc(db, "users", visitData.brandId));
+                        if (bDoc.exists()) brandName = bDoc.data().displayName || bDoc.data().brandName || "Brand";
+                    }
 
-                    visitsList.push({
+                    newEvents.push({
                         id: visitDoc.id,
-                        campaignTitle: campaignData.name || "Campaign",
-                        brandName: brandData.displayName || "Brand",
-                        ...visitData
-                    } as VisitSchedule);
+                        type: "visit",
+                        title: `${campaignTitle} (Visit)`,
+                        brandName: brandName,
+                        date: new Date(visitData.scheduledDate),
+                        status: visitData.status,
+                        location: visitData.location?.city || "Location",
+                        time: visitData.scheduledTime,
+                        duration: visitData.duration,
+                        campaignId: visitData.campaignId
+                    });
+                    vCount++;
                 }
 
-                // Sort by date
-                visitsList.sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
+                // 2. Fetch Active Campaigns for Deadlines
+                // First get approved applications
+                const appsQuery = query(
+                    collection(db, "applications"),
+                    where("creatorId", "==", user.uid),
+                    where("status", "==", "approved")
+                );
+                const appsSnapshot = await getDocs(appsQuery);
 
-                setVisits(visitsList);
+                for (const appDoc of appsSnapshot.docs) {
+                    const appData = appDoc.data();
+                    const campaignId = appData.campaignId;
+
+                    if (campaignId) {
+                        const campaignDoc = await getDoc(doc(db, "campaigns", campaignId));
+                        if (campaignDoc.exists()) {
+                            const campaignData = campaignDoc.data();
+
+                            // Check for deadline
+                            if (campaignData.deadline) {
+                                let deadlineDate: Date;
+                                // Handle Timestamp or string
+                                if (campaignData.deadline instanceof Timestamp) {
+                                    deadlineDate = campaignData.deadline.toDate();
+                                } else {
+                                    deadlineDate = new Date(campaignData.deadline);
+                                }
+
+                                // Fetch brand name
+                                let brandName = campaignData.brandName || "Brand";
+                                if (!brandName && campaignData.brandId) {
+                                    const bDoc = await getDoc(doc(db, "users", campaignData.brandId));
+                                    if (bDoc.exists()) brandName = bDoc.data().displayName || bDoc.data().brandName;
+                                }
+
+                                newEvents.push({
+                                    id: `deadline_${campaignId}`,
+                                    type: "deadline",
+                                    title: `${campaignData.name} (Deadline)`,
+                                    brandName: brandName,
+                                    date: deadlineDate,
+                                    status: "active",
+                                    campaignId: campaignId
+                                });
+                                dCount++;
+                            }
+                        }
+                    }
+                }
+
+                setEvents(newEvents);
+                setVisitsCount(vCount);
+                setDeadlinesCount(dCount);
+
             } catch (error) {
-                console.error("Error fetching visits:", error);
+                console.error("Error fetching schedule:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchVisits();
+        fetchSchedule();
     }, [user]);
 
-    const upcomingVisits = visits.filter(v =>
-        new Date(v.scheduledDate) >= new Date() && v.status !== "cancelled" && v.status !== "completed"
+    // Filter events for selected date
+    const selectedDateEvents = events.filter(event =>
+        selectedDate && isSameDay(event.date, selectedDate)
     );
 
-    const pastVisits = visits.filter(v =>
-        new Date(v.scheduledDate) < new Date() || v.status === "completed"
-    );
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "confirmed": return "bg-green-500/10 text-green-600 border-green-500/20";
-            case "scheduled": return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-            case "completed": return "bg-gray-500/10 text-gray-600 border-gray-500/20";
-            case "rescheduled": return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
-            case "cancelled": return "bg-red-500/10 text-red-600 border-red-500/20";
-            default: return "bg-muted text-muted-foreground";
-        }
-    };
+    const upcomingEvents = events
+        .filter(e => e.date >= new Date())
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .slice(0, 5);
 
     if (loading) {
         return (
@@ -110,134 +171,143 @@ export default function CreatorScheduling() {
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader
                     title="My Schedule"
-                    subtitle="Manage your upcoming visits and content deadlines"
+                    subtitle="Manage visits and track campaign deadlines"
                 />
 
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                    <div className="glass-card p-6 bg-gradient-to-br from-blue-50 to-blue-50/50 dark:from-blue-950/20 dark:to-blue-950/10">
-                        <div className="flex items-center gap-3">
-                            <CalendarIcon className="w-8 h-8 text-blue-600" />
-                            <div>
-                                <p className="text-sm text-muted-foreground">Upcoming Visits</p>
-                                <p className="text-2xl font-bold">{upcomingVisits.length}</p>
-                            </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Column: Calendar & Stats */}
+                    <div className="lg:col-span-1 space-y-6">
+                        {/* Calendar Card */}
+                        <Card className="border-border/50 shadow-sm">
+                            <CardContent className="p-4 flex justify-center">
+                                <Calendar
+                                    mode="single"
+                                    selected={selectedDate}
+                                    onSelect={setSelectedDate}
+                                    className="rounded-md border shadow-none"
+                                    modifiers={{
+                                        hasEvent: (date) => events.some(e => isSameDay(e.date, date)),
+                                        hasVisit: (date) => events.some(e => e.type === 'visit' && isSameDay(e.date, date)),
+                                        hasDeadline: (date) => events.some(e => e.type === 'deadline' && isSameDay(e.date, date))
+                                    }}
+                                    modifiersClassNames={{
+                                        hasEvent: "font-bold",
+                                        hasVisit: "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300",
+                                        hasDeadline: "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300"
+                                    }}
+                                />
+                            </CardContent>
+                        </Card>
+
+                        {/* Stats Summary */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <Card>
+                                <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+                                    <MapPin className="w-6 h-6 text-blue-500 mb-2" />
+                                    <span className="text-2xl font-bold">{visitsCount}</span>
+                                    <span className="text-xs text-muted-foreground">Total Visits</span>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+                                    <Clock className="w-6 h-6 text-orange-500 mb-2" />
+                                    <span className="text-2xl font-bold">{deadlinesCount}</span>
+                                    <span className="text-xs text-muted-foreground">Active Deadlines</span>
+                                </CardContent>
+                            </Card>
                         </div>
                     </div>
 
-                    <div className="glass-card p-6 bg-gradient-to-br from-green-50 to-green-50/50 dark:from-green-950/20 dark:to-green-950/10">
-                        <div className="flex items-center gap-3">
-                            <CheckCircle className="w-8 h-8 text-green-600" />
-                            <div>
-                                <p className="text-sm text-muted-foreground">Completed</p>
-                                <p className="text-2xl font-bold">{pastVisits.filter(v => v.status === "completed").length}</p>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Right Column: Events List */}
+                    <div className="lg:col-span-2 space-y-6">
 
-                    <div className="glass-card p-6 bg-gradient-to-br from-orange-50 to-orange-50/50 dark:from-orange-950/20 dark:to-orange-950/10">
-                        <div className="flex items-center gap-3">
-                            <AlertCircle className="w-8 h-8 text-orange-600" />
-                            <div>
-                                <p className="text-sm text-muted-foreground">Pending Content</p>
-                                <p className="text-2xl font-bold">
-                                    {pastVisits.filter(v =>
-                                        v.status === "completed" && new Date(v.contentDeadline) >= new Date()
-                                    ).length}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        {/* Selected Date Events */}
+                        <div>
+                            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <CalendarIcon className="w-5 h-5 text-primary" />
+                                {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Select a date"}
+                            </h2>
 
-                {/* Upcoming Visits */}
-                <div className="mb-8">
-                    <h2 className="text-xl font-semibold mb-4">Upcoming Visits</h2>
-                    {upcomingVisits.length === 0 ? (
-                        <div className="glass-card p-12 text-center text-muted-foreground">
-                            <CalendarIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p>No upcoming visits scheduled</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {upcomingVisits.map((visit) => (
-                                <div key={visit.id} className="glass-card p-6 hover-lift">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div>
-                                            <h3 className="font-semibold text-lg">{visit.campaignTitle}</h3>
-                                            <p className="text-sm text-muted-foreground">{visit.brandName}</p>
-                                        </div>
-                                        <Badge className={`border ${getStatusColor(visit.status)}`}>
-                                            {visit.status}
-                                        </Badge>
-                                    </div>
+                            {selectedDateEvents.length > 0 ? (
+                                <div className="space-y-3">
+                                    {selectedDateEvents.map(event => (
+                                        <Card key={event.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                                            <div className={`h-full w-1.5 absolute left-0 top-0 bottom-0 ${event.type === 'visit' ? 'bg-blue-500' : 'bg-orange-500'
+                                                }`} />
+                                            <CardContent className="p-5 pl-7">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <Badge variant={event.type === 'visit' ? "default" : "secondary"}
+                                                                className={event.type === 'visit' ? "bg-blue-500 hover:bg-blue-600" : "bg-orange-500 hover:bg-orange-600 text-white"}>
+                                                                {event.type === 'visit' ? "Visit" : "Deadline"}
+                                                            </Badge>
+                                                            <span className="text-sm text-muted-foreground">{event.brandName}</span>
+                                                        </div>
+                                                        <h3 className="font-semibold text-lg">{event.title}</h3>
 
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <CalendarIcon className="w-4 h-4 text-muted-foreground" />
-                                            <span>{new Date(visit.scheduledDate).toLocaleDateString()} at {visit.scheduledTime}</span>
-                                        </div>
+                                                        {event.type === 'visit' && (
+                                                            <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Clock className="w-4 h-4" />
+                                                                    {event.time} ({event.duration} mins)
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <MapPin className="w-4 h-4" />
+                                                                    {event.location}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
 
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Clock className="w-4 h-4 text-muted-foreground" />
-                                            <span>{visit.duration} minutes</span>
-                                        </div>
-
-                                        <div className="flex items-start gap-2 text-sm">
-                                            <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
-                                            <div>
-                                                <p>{visit.location.address}</p>
-                                                <p className="text-muted-foreground">{visit.location.city}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="pt-3 border-t">
-                                            <p className="text-xs text-muted-foreground">Content deadline</p>
-                                            <p className="text-sm font-medium">
-                                                {new Date(visit.contentDeadline).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-2 mt-4">
-                                        <Button variant="outline" size="sm" className="flex-1">
-                                            Get Directions
-                                        </Button>
-                                        <Link to="/creator/messages" className="flex-1">
-                                            <Button variant="default" size="sm" className="w-full">
-                                                Message Brand
-                                            </Button>
-                                        </Link>
-                                    </div>
+                                                    <Link to={`/creator/campaigns`}>
+                                                        <Button variant="ghost" size="icon">
+                                                            <ChevronRight className="w-5 h-5" />
+                                                        </Button>
+                                                    </Link>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
                                 </div>
-                            ))}
+                            ) : (
+                                <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/20">
+                                    <CalendarIcon className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                                    <p className="text-muted-foreground">No events scheduled for this day</p>
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
 
-                {/* Past Visits */}
-                {pastVisits.length > 0 && (
-                    <div>
-                        <h2 className="text-xl font-semibold mb-4">Past Visits</h2>
-                        <div className="glass-card p-4">
-                            <div className="space-y-2">
-                                {pastVisits.map((visit) => (
-                                    <div key={visit.id} className="p-4 bg-muted/30 rounded-lg flex items-center justify-between">
-                                        <div>
-                                            <p className="font-medium">{visit.campaignTitle}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {new Date(visit.scheduledDate).toLocaleDateString()} - {visit.location.city}
-                                            </p>
+                        {/* Upcoming Events List */}
+                        <div className="pt-6 border-t">
+                            <h2 className="text-lg font-semibold mb-3">All Upcoming</h2>
+                            <div className="space-y-3">
+                                {upcomingEvents.length > 0 ? (
+                                    upcomingEvents.map(event => (
+                                        <div key={`upcoming_${event.id}`} className="flex items-center gap-4 p-3 rounded-lg border bg-card/50 hover:bg-card transition-colors">
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${event.type === 'visit' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'
+                                                }`}>
+                                                {event.type === 'visit' ? <MapPin className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-medium truncate">{event.title}</h4>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {format(event.date, "MMM d")} • {event.brandName}
+                                                </p>
+                                            </div>
+                                            <Badge variant="outline" className="ml-2">
+                                                {event.type === 'visit' ? 'Visit' : 'Deadline'}
+                                            </Badge>
                                         </div>
-                                        <Badge className={`border ${getStatusColor(visit.status)}`}>
-                                            {visit.status}
-                                        </Badge>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No upcoming events</p>
+                                )}
                             </div>
                         </div>
+
                     </div>
-                )}
+                </div>
             </main>
         </div>
     );
