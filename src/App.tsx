@@ -27,6 +27,7 @@ import BrandPayments from "./pages/brand/BrandPayments";
 import BrandSettings from "./pages/brand/BrandSettings";
 import CampaignDetails from "./pages/brand/CampaignDetails";
 import BrandCampaigns from "./pages/brand/BrandCampaigns";
+import BrandScheduling from "./pages/brand/BrandScheduling";
 import BrandMessages from "./pages/brand/Messages";
 
 // Creator pages
@@ -94,6 +95,11 @@ const App = () => (
             <Route path="/brand/campaigns/:id" element={
               <ProtectedRoute allowedRoles={['brand']}>
                 <CampaignDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/brand/schedule" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <BrandScheduling />
               </ProtectedRoute>
             } />
             <Route path="/brand/matches" element={

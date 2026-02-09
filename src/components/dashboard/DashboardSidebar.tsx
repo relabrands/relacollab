@@ -25,6 +25,7 @@ interface DashboardSidebarProps {
 const brandNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/brand" },
   { icon: FileText, label: "Campaigns", path: "/brand/campaigns" },
+  { icon: Calendar, label: "Schedule", path: "/brand/schedule" },
   { icon: Users, label: "Matches", path: "/brand/matches" },
   { icon: Image, label: "Content Library", path: "/brand/content" },
   { icon: MessageSquare, label: "Messages", path: "/brand/messages" },

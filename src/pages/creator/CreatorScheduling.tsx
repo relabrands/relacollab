@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar as CalendarIcon, MapPin, Clock, AlertCircle, CheckCircle, Loader2, ChevronRight } from "lucide-react";
-import { collection, query, where, getDocs, doc, getDoc, Timestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Link } from "react-router-dom";
 import { format, isSameDay, parseISO } from "date-fns";
@@ -155,6 +156,20 @@ export default function CreatorScheduling() {
         .sort((a, b) => a.date.getTime() - b.date.getTime())
         .slice(0, 5);
 
+    const handleConfirmVisit = async (visitId: string) => {
+        try {
+            await updateDoc(doc(db, "visitSchedules", visitId), {
+                status: "confirmed"
+            });
+            // Update local state
+            setEvents(prevEvents => prevEvents.map(e => e.id === visitId ? { ...e, status: "confirmed" } : e));
+            toast.success("Visit confirmed!");
+        } catch (error) {
+            console.error("Error confirming visit:", error);
+            toast.error("Failed to confirm visit");
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex h-screen items-center justify-center">
@@ -235,13 +250,14 @@ export default function CreatorScheduling() {
                                             <div className={`h-full w-1.5 absolute left-0 top-0 bottom-0 ${event.type === 'visit' ? 'bg-blue-500' : 'bg-orange-500'
                                                 }`} />
                                             <CardContent className="p-5 pl-7">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
+                                                <div className="flex flex-col md:flex-row gap-4 justify-between items-start">
+                                                    <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <Badge variant={event.type === 'visit' ? "default" : "secondary"}
                                                                 className={event.type === 'visit' ? "bg-blue-500 hover:bg-blue-600" : "bg-orange-500 hover:bg-orange-600 text-white"}>
                                                                 {event.type === 'visit' ? "Visit" : "Deadline"}
                                                             </Badge>
+                                                            {event.status === 'confirmed' && <Badge variant="success" className="text-xs">Confirmed</Badge>}
                                                             <span className="text-sm text-muted-foreground">{event.brandName}</span>
                                                         </div>
                                                         <h3 className="font-semibold text-lg">{event.title}</h3>
@@ -260,11 +276,24 @@ export default function CreatorScheduling() {
                                                         )}
                                                     </div>
 
-                                                    <Link to={`/creator/campaigns`}>
-                                                        <Button variant="ghost" size="icon">
-                                                            <ChevronRight className="w-5 h-5" />
-                                                        </Button>
-                                                    </Link>
+                                                    <div className="flex gap-2 w-full md:w-auto">
+                                                        {event.type === 'visit' && event.status === 'scheduled' && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="success"
+                                                                onClick={() => handleConfirmVisit(event.id)}
+                                                                className="flex-1 md:flex-none"
+                                                            >
+                                                                <CheckCircle className="w-4 h-4 mr-2" />
+                                                                Confirm
+                                                            </Button>
+                                                        )}
+                                                        <Link to={`/creator/campaigns`}>
+                                                            <Button variant="outline" size="sm" className="w-full md:w-auto">
+                                                                Details
+                                                            </Button>
+                                                        </Link>
+                                                    </div>
                                                 </div>
                                             </CardContent>
                                         </Card>
