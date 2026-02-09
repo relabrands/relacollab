@@ -280,19 +280,27 @@ export default function CreatorScheduling() {
 
                                                     <div className="flex gap-2 w-full md:w-auto">
                                                         {event.type === 'visit' && event.status === 'scheduled' && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="success"
-                                                                onClick={() => handleConfirmVisit(event.id)}
-                                                                className="flex-1 md:flex-none"
-                                                            >
-                                                                <CheckCircle className="w-4 h-4 mr-2" />
-                                                                Confirm
-                                                            </Button>
+                                                            <>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="success"
+                                                                    onClick={() => handleConfirmVisit(event.id)}
+                                                                    className="flex-1 md:flex-none"
+                                                                >
+                                                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                                                    Confirm
+                                                                </Button>
+                                                                <Link to="/creator/messages" className="flex-1 md:flex-none">
+                                                                    <Button variant="outline" size="sm" className="w-full">
+                                                                        <Clock className="w-4 h-4 mr-2" />
+                                                                        Reschedule
+                                                                    </Button>
+                                                                </Link>
+                                                            </>
                                                         )}
-                                                        <Link to={`/creator/campaigns`}>
+                                                        <Link to={`/creator/active`}>
                                                             <Button variant="outline" size="sm" className="w-full md:w-auto">
-                                                                Details
+                                                                Go to Campaign
                                                             </Button>
                                                         </Link>
                                                     </div>
