@@ -369,7 +369,7 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 try {
                     console.log(`📡 Fetching media for IG user ${igUserId}...`);
                     const response = await axios.get(
-                        `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp,shortcode&limit=25&access_token=${accessToken}`
+                        `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,like_count,comments_count,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,shortcode&limit=25&access_token=${accessToken}`
                     );
                     mediaItems = response.data.data || [];
                     console.log(`📦 Found ${mediaItems.length} media items`);
@@ -390,7 +390,12 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                     });
                 }
 
-                console.log("✅ Found post:", { id: foundPost.id, type: foundPost.media_type, permalink: foundPost.permalink });
+                console.log("✅ Found post:", {
+                    id: foundPost.id,
+                    media_type: foundPost.media_type,
+                    media_product_type: foundPost.media_product_type,
+                    permalink: foundPost.permalink
+                });
                 const mediaId = foundPost.id;
                 let detailedMetrics = {};
 
@@ -408,14 +413,19 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                     // We will use foundPost.media_type which is reliable.
 
 
-
                     const mediaType = foundPost.media_type;
+                    const mediaProductType = foundPost.media_product_type; // CRITICAL: Identifies if it's a REEL
                     let metricsParams = "";
 
                     // Safe metrics based on API documentation
-                    if (mediaType === 'VIDEO' || mediaType === 'REELS') {
-                        // Reel/Video
+                    // IMPORTANT: Use media_product_type to detect Reels, not media_type
+                    if (mediaProductType === 'REELS' || mediaProductType === 'STORY') {
+                        // Reel/Story: These support plays, reach, saved, shares
                         metricsParams = "plays,reach,saved,shares,total_interactions";
+                    } else if (mediaType === 'VIDEO') {
+                        // Regular video (not a Reel): May not support all metrics
+                        // Safer to use basic video metrics
+                        metricsParams = "plays,reach,saved";
                     } else {
                         // Image/Carousel
                         // Note: 'engagement' metric is available.
@@ -434,8 +444,8 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
 
                         // Fallback Logic
                         try {
-                            if (mediaType === 'VIDEO' || mediaType === 'REELS') {
-                                // Try minimal video metrics
+                            if (mediaProductType === 'REELS' || mediaType === 'VIDEO') {
+                                // Try minimal video/reel metrics
                                 metricsParams = "plays,reach,saved";
                             } else {
                                 // Try minimal image metrics
@@ -468,8 +478,8 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                         const insightsMap = {};
                         insights.forEach(i => insightsMap[i.name] = i.values[0].value);
 
-                        // Mapping
-                        if (mediaType === 'VIDEO' || mediaType === 'REELS') {
+                        // Mapping - use media_product_type for accurate Reel detection
+                        if (mediaProductType === 'REELS' || mediaType === 'VIDEO') {
                             detailedMetrics = {
                                 views: insightsMap['plays'] || foundPost.video_view_count || 0,
                                 reach: insightsMap['reach'] || 0,
