@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2, AlertCircle, Upload, Image } from "lucide-react";
 import { toast } from "sonner";
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { InstagramMediaPicker } from "./InstagramMediaPicker";
@@ -150,14 +150,12 @@ export function DeliverableSubmissionDialog({
 
         setLoading(true);
         try {
-            const submissions = [];
-
-            // Create submissions for each selected deliverable
-            for (const [key, media] of selectedDeliverables.entries()) {
+            const submissionPromises = Array.from(selectedDeliverables.entries()).map(async ([key, media]) => {
                 const [type, numberStr] = key.split("_");
                 const number = parseInt(numberStr);
 
-                submissions.push(addDoc(collection(db, "content_submissions"), {
+                // 1. Create the submission document locally first
+                const docRef = await addDoc(collection(db, "content_submissions"), {
                     campaignId: campaign.id,
                     creatorId: user!.uid,
                     deliverableType: type,
@@ -173,10 +171,49 @@ export function DeliverableSubmissionDialog({
                         likes: media.like_count || 0,
                         comments: media.comments_count || 0,
                     },
-                }));
-            }
+                });
 
-            await Promise.all(submissions);
+                // 2. Fetch detailed metrics immediately (Fire and forget, but we await the start)
+                try {
+                    const match = media.permalink.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
+                    const postId = match ? match[2] : null;
+
+                    if (postId) {
+                        // We use fetch here to call our cloud function
+                        fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userId: user!.uid, postId })
+                        }).then(async (res) => {
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data.success && data.metrics) {
+                                    // Update the doc we just created
+                                    await updateDoc(docRef, {
+                                        likes: data.metrics.likes,
+                                        comments: data.metrics.comments,
+                                        "metrics.views": data.metrics.views || 0,
+                                        "metrics.reach": data.metrics.reach || 0,
+                                        "metrics.saved": data.metrics.saved || 0,
+                                        "metrics.shares": data.metrics.shares || 0,
+                                        "metrics.interactions": data.metrics.interactions || 0,
+                                        "metrics.likes": data.metrics.likes,
+                                        "metrics.comments": data.metrics.comments,
+                                        metricsLastFetched: new Date().toISOString()
+                                    });
+                                    console.log("Automatically fetched detailed metrics for submission");
+                                }
+                            }
+                        }).catch(err => console.error("Error auto-fetching metrics:", err));
+                    }
+                } catch (e) {
+                    console.error("Error initiating metric fetch", e);
+                }
+
+                return docRef;
+            });
+
+            await Promise.all(submissionPromises);
             toast.success(`Submitted ${selectedDeliverables.size} deliverable(s)`);
             setSelectedDeliverables(new Map());
             onSuccess();
