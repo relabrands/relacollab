@@ -24,7 +24,8 @@ import {
   X,
   RefreshCw,
   Bookmark,
-  BarChart2
+  BarChart2,
+  Edit
 } from "lucide-react";
 import { toast } from "sonner";
 import { updateDoc } from "firebase/firestore";
@@ -33,6 +34,7 @@ import { useAuth } from "@/context/AuthContext";
 import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
+import { RequestEditsDialog } from "@/components/brand/RequestEditsDialog";
 
 interface ContentItem {
   id: string;
@@ -62,9 +64,10 @@ interface ContentCardProps {
   content: ContentItem;
   onStatusChange?: (id: string, status: "approved" | "rejected") => void;
   onRefreshMetrics?: (content: ContentItem) => void;
+  onRequestEdit?: (content: ContentItem) => void;
 }
 
-function ContentCard({ content, onStatusChange, onRefreshMetrics }: ContentCardProps) {
+function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit }: ContentCardProps) {
   const statusColors = {
     pending: "bg-warning/20 text-warning border-warning/30",
     approved: "bg-primary/20 text-primary border-primary/30",
@@ -176,14 +179,14 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics }: ContentCardP
               </Button>
               <Button
                 size="sm"
-                className="bg-destructive/80 hover:bg-destructive text-white"
+                variant="glass"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onStatusChange?.(content.id, "rejected");
+                  onRequestEdit?.(content);
                 }}
-                title="Request Changes"
+                title="Request Edits"
               >
-                <X className="w-4 h-4" />
+                <Edit className="w-4 h-4" />
               </Button>
             </>
           )}
@@ -263,6 +266,8 @@ export default function ContentLibrary() {
   const [contentList, setContentList] = useState<ContentItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [contentToEdit, setContentToEdit] = useState<ContentItem | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -390,6 +395,12 @@ export default function ContentLibrary() {
       console.error("Error updating status:", error);
       toast.error("Failed to update status");
     }
+  };
+
+  // Handler for requesting edits
+  const handleRequestEdit = (content: ContentItem) => {
+    setContentToEdit(content);
+    setIsEditDialogOpen(true);
   };
 
   // Handler for metrics refresh
@@ -548,6 +559,7 @@ export default function ContentLibrary() {
               content={content}
               onStatusChange={handleStatusChange}
               onRefreshMetrics={handleRefreshMetrics}
+              onRequestEdit={handleRequestEdit}
             />
           ))}
         </div>
@@ -562,6 +574,30 @@ export default function ContentLibrary() {
           </div>
         )}
       </main>
+
+      {/* Request Edits Dialog */}
+      {contentToEdit && (
+        <RequestEditsDialog
+          content={{
+            id: contentToEdit.id,
+            campaignId: contentToEdit.id, // This should be the actual campaign ID
+            creatorId: contentToEdit.creatorId,
+            deliverableType: contentToEdit.type,
+            deliverableNumber: 1, // This should be tracked from submission
+            contentUrl: contentToEdit.postUrl,
+            status: contentToEdit.status as any
+          }}
+          open={isEditDialogOpen}
+          onClose={() => {
+            setIsEditDialogOpen(false);
+            setContentToEdit(null);
+          }}
+          onSuccess={() => {
+            // Refresh the page to show updated status
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 }

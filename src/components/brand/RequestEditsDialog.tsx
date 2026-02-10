@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { addDoc, collection, updateDoc, doc } from "firebase/firestore";
+import { updateDoc, doc, arrayUnion } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -18,7 +18,7 @@ interface ContentSubmission {
     deliverableType: string;
     deliverableNumber: number;
     contentUrl: string;
-    status: "pending" | "approved" | "needs_revision";
+    status: "pending" | "approved" | "needs_revision" | "revision_requested" | "resubmitted";
 }
 
 interface RequestEditsDialogProps {
@@ -63,25 +63,14 @@ export function RequestEditsDialog({
 
         setLoading(true);
         try {
-            // 1. Create edit request
-            await addDoc(collection(db, "content_edit_requests"), {
-                contentId: content.id,
-                campaignId: content.campaignId,
-                creatorId: content.creatorId,
-                brandId: user.uid,
-                feedback,
-                categories: selectedCategories,
-                status: "pending",
-                createdAt: new Date().toISOString(),
-            });
-
-            // 2. Update content status to needs_revision
+            // Update content status to revision_requested and add to revisionHistory
             await updateDoc(doc(db, "content_submissions", content.id), {
-                status: "needs_revision",
-                editRequest: {
-                    feedback,
-                    createdAt: new Date().toISOString(),
-                },
+                status: "revision_requested",
+                revisionHistory: arrayUnion({
+                    requestedAt: new Date().toISOString(),
+                    requestedBy: user.uid,
+                    notes: feedback.trim()
+                })
             });
 
             toast.success("Edit request sent to creator");
