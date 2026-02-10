@@ -64,6 +64,7 @@ export function ContentSubmission() {
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignWithDeliverables | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
+  const [submissionToResubmit, setSubmissionToResubmit] = useState<SubmittedContent | null>(null);
 
   useEffect(() => {
     fetchActiveCampaigns();
@@ -142,6 +143,13 @@ export function ContentSubmission() {
 
   const handleOpenDialog = (campaign: CampaignWithDeliverables) => {
     setSelectedCampaign(campaign);
+    setSubmissionToResubmit(null); // Clear any resubmission
+    setIsDialogOpen(true);
+  };
+
+  const handleResubmit = (campaign: CampaignWithDeliverables, submission: SubmittedContent) => {
+    setSelectedCampaign(campaign);
+    setSubmissionToResubmit(submission);
     setIsDialogOpen(true);
   };
 
@@ -355,6 +363,17 @@ export function ContentSubmission() {
                                     <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
                                       {submission.revisionHistory[submission.revisionHistory.length - 1].notes}
                                     </p>
+                                    {submission.status === "revision_requested" && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="mt-2 w-full text-xs"
+                                        onClick={() => handleResubmit(campaign, submission)}
+                                      >
+                                        <Upload className="w-3 h-3 mr-1" />
+                                        Resubmit Content
+                                      </Button>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -388,9 +407,11 @@ export function ContentSubmission() {
           <DeliverableSubmissionDialog
             campaign={selectedCampaign}
             open={isDialogOpen}
+            existingSubmission={submissionToResubmit || undefined}
             onClose={() => {
               setIsDialogOpen(false);
               setSelectedCampaign(null);
+              setSubmissionToResubmit(null);
             }}
             onSuccess={() => {
               fetchActiveCampaigns();

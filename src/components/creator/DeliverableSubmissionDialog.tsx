@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2, AlertCircle, Upload, Image } from "lucide-react";
 import { toast } from "sonner";
-import { collection, addDoc, query, where, getDocs, updateDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, updateDoc, doc, arrayUnion } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { InstagramMediaPicker } from "./InstagramMediaPicker";
@@ -33,16 +33,29 @@ interface CampaignWithDeliverables {
 }
 
 interface SubmittedContent {
+    id?: string;
     deliverableType: string;
     deliverableNumber: number;
     contentUrl: string;
     thumbnailUrl?: string;
     caption?: string;
-    status: "pending" | "approved" | "needs_revision";
+    status: "pending" | "approved" | "needs_revision" | "revision_requested" | "resubmitted";
     metrics?: {
         likes?: number;
         comments?: number;
+        views?: number;
+        reach?: number;
+        saved?: number;
+        shares?: number;
+        interactions?: number;
     };
+    revisionHistory?: Array<{
+        requestedAt: string;
+        requestedBy: string;
+        notes: string;
+        resubmittedAt?: string;
+        previousMediaUrl?: string;
+    }>;
 }
 
 interface DeliverableSubmissionDialogProps {
@@ -50,6 +63,7 @@ interface DeliverableSubmissionDialogProps {
     open: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    existingSubmission?: SubmittedContent; // For resubmission
 }
 
 export function DeliverableSubmissionDialog({
@@ -57,6 +71,7 @@ export function DeliverableSubmissionDialog({
     open,
     onClose,
     onSuccess,
+    existingSubmission,
 }: DeliverableSubmissionDialogProps) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -150,6 +165,88 @@ export function DeliverableSubmissionDialog({
 
         setLoading(true);
         try {
+            // RESUBMISSION MODE: Update existing submission
+            if (existingSubmission && existingSubmission.id) {
+                const [key, media] = Array.from(selectedDeliverables.entries())[0]; // Get first selected media
+
+                if (!media) {
+                    toast.error("Please select content to resubmit");
+                    setLoading(false);
+                    return;
+                }
+
+                const previousMediaUrl = existingSubmission.contentUrl;
+                const latestRevision = existingSubmission.revisionHistory?.[existingSubmission.revisionHistory.length - 1];
+
+                // Update existing submission
+                const submissionRef = doc(db, "content_submissions", existingSubmission.id);
+                await updateDoc(submissionRef, {
+                    contentUrl: media.permalink,
+                    mediaUrl: media.media_url || "",
+                    thumbnailUrl: media.thumbnail_url || media.media_url || "",
+                    caption: media.caption || "",
+                    mediaType: media.media_type,
+                    status: "resubmitted",
+                    updatedAt: new Date().toISOString(),
+                    metrics: {
+                        likes: media.like_count || 0,
+                        comments: media.comments_count || 0,
+                        views: 0,
+                        reach: 0,
+                        saved: 0,
+                        shares: 0,
+                        interactions: 0
+                    },
+                    revisionHistory: arrayUnion({
+                        ...latestRevision,
+                        resubmittedAt: new Date().toISOString(),
+                        previousMediaUrl
+                    })
+                });
+
+                // Auto-fetch metrics for resubmitted content
+                try {
+                    const match = media.permalink.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
+                    const postId = match ? match[2] : null;
+
+                    if (postId) {
+                        console.log("📡 Fetching metrics for resubmitted content:", postId);
+                        fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userId: user!.uid, postId })
+                        }).then(async (res) => {
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data.success && data.metrics) {
+                                    await updateDoc(submissionRef, {
+                                        "metrics.views": data.metrics.views || 0,
+                                        "metrics.reach": data.metrics.reach || 0,
+                                        "metrics.saved": data.metrics.saved || 0,
+                                        "metrics.shares": data.metrics.shares || 0,
+                                        "metrics.interactions": data.metrics.interactions || 0,
+                                        "metrics.likes": data.metrics.likes || 0,
+                                        "metrics.comments": data.metrics.comments || 0,
+                                        "metrics.updatedAt": new Date().toISOString()
+                                    });
+                                    console.log("✅ Fetched metrics for resubmitted content");
+                                }
+                            }
+                        }).catch(err => console.error("Error fetching metrics for resubmission:", err));
+                    }
+                } catch (e) {
+                    console.error("Error initiating metric fetch for resubmission:", e);
+                }
+
+                toast.success("Content resubmitted successfully!");
+                setSelectedDeliverables(new Map());
+                onSuccess();
+                onClose();
+                setLoading(false);
+                return;
+            }
+
+            // NORMAL SUBMISSION MODE: Create new documents
             const submissionPromises = Array.from(selectedDeliverables.entries()).map(async ([key, media]) => {
                 const [type, numberStr] = key.split("_");
                 const number = parseInt(numberStr);
