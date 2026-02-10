@@ -158,72 +158,85 @@ exports.auth = functions.https.onRequest((req, res) => {
 
 exports.getInstagramMedia = functions.https.onRequest((req, res) => {
     return cors(req, res, async () => {
-        // Allow GET for testing if needed, but primarily POST
-        if (req.method !== 'POST' && req.method !== 'GET') {
-            return res.status(405).json({ error: "Method Not Allowed" });
-        }
+        if (req.method !== 'POST' && req.method !== 'GET') return res.status(405).json({ error: "Method Not Allowed" });
 
         const userId = req.body.userId || req.query.userId;
-        if (!userId) {
-            console.error("getInstagramMedia: Missing userId");
-            return res.status(400).json({ error: "Missing userId" });
-        }
+        if (!userId) return res.status(400).json({ error: "Missing userId" });
 
         try {
-            console.log(`Fetching media for user: ${userId}`);
+            // 1. Obtener Token
             const userDoc = await db.collection("users").doc(userId).get();
-            if (!userDoc.exists) {
-                console.error(`User ${userId} not found`);
-                return res.status(404).json({ error: "User not found" });
-            }
+            if (!userDoc.exists) return res.status(404).json({ error: "User not found" });
 
             const userData = userDoc.data();
             const accessToken = userData.instagramAccessToken;
+            const igUserId = userData.instagramId;
 
-            if (!accessToken) {
-                console.warn(`User ${userId} has no Instagram access token`);
-                return res.status(400).json({ error: "Instagram not connected" });
-            }
+            if (!accessToken || !igUserId) return res.status(400).json({ error: "Instagram not connected" });
 
-            // Fetch Media from Instagram Graph API (Business)
-            try {
-                // Requires the IG User ID (which we saved as instagramId)
-                const igUserId = userData.instagramId;
+            // 2. Obtener Lista Básica (Limitado a 18 para no saturar)
+            // Note: Added media_product_type to fields request
+            const response = await axios.get(
+                `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=18&access_token=${accessToken}`
+            );
 
-                // Note: v19.0 endpoint
-                const response = await axios.get(
-                    `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=18&access_token=${accessToken}`
-                );
+            const rawPosts = response.data.data || [];
 
-                const mediaItems = response.data.data.map(item => ({
+            // 3. ENRIQUECER CON VIEWS (INSIGHTS)
+            // Hacemos peticiones en paralelo para buscar los views de cada post
+            const postsWithViews = await Promise.all(rawPosts.map(async (item) => {
+                let views = 0;
+                let reach = 0;
+
+                try {
+                    let metricParam = "";
+                    // Si es Video/Reel -> Pedimos 'plays'
+                    if (item.media_type === 'VIDEO' || item.media_product_type === 'REELS') {
+                        metricParam = "plays,reach";
+                    } else {
+                        // Si es Foto -> Pedimos 'impressions'
+                        metricParam = "impressions,reach";
+                    }
+
+                    // Llamada a la API de Insights para este post específico
+                    const insightRes = await axios.get(
+                        `https://graph.facebook.com/v19.0/${item.id}/insights?metric=${metricParam}&access_token=${accessToken}`
+                    );
+
+                    const data = insightRes.data.data;
+                    const getVal = (name) => {
+                        const m = data.find(x => x.name === name);
+                        return m ? m.values[0].value : 0;
+                    };
+
+                    views = getVal('plays') || getVal('impressions') || 0;
+                    reach = getVal('reach') || 0;
+
+                } catch (err) {
+                    // Si el post es muy viejo o da error, views se queda en 0
+                    // console.warn(`No insights for post ${item.id}`);
+                }
+
+                return {
                     id: item.id,
                     caption: item.caption || "",
                     media_type: item.media_type,
-                    // For VIDEO, check thumbnail_url. If missing, leave undefined so frontend uses video tag. For IMAGE, use media_url.
                     thumbnail_url: item.media_type === 'VIDEO' ? item.thumbnail_url : item.media_url,
                     permalink: item.permalink,
                     timestamp: item.timestamp,
                     like_count: item.like_count || 0,
-                    comments_count: item.comments_count || 0
-                }));
+                    comments_count: item.comments_count || 0,
+                    // AQUÍ ESTÁN TUS MÉTRICAS REALES
+                    views: views,
+                    reach: reach
+                };
+            }));
 
-                return res.json({ success: true, data: mediaItems });
-            } catch (apiError) {
-                console.error("Instagram API Error:", apiError.response?.data || apiError.message);
-                // Return a 200 with success: false so client doesn't throw generic 500
-                return res.json({
-                    success: false,
-                    error: "Instagram API Error",
-                    details: apiError.response?.data?.error?.message || apiError.message
-                });
-            }
+            return res.json({ success: true, data: postsWithViews });
 
         } catch (error) {
-            console.error("System Error fetching media:", error.message);
-            return res.status(500).json({
-                error: "System Error",
-                details: error.message
-            });
+            console.error("Error fetching media:", error.message);
+            return res.status(500).json({ error: "System Error", details: error.message });
         }
     });
 });
