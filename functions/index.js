@@ -23,7 +23,7 @@ exports.auth = functions.https.onRequest((req, res) => {
                     "https://graph.facebook.com/v19.0/oauth/access_token",
                     {
                         params: {
-                            client_id: "125324611002054",
+                            client_id: "1253246110020541",
                             client_secret: "04f86c0efe01c2017f0452bed26212f1",
                             redirect_uri: "https://relacollab.com/auth/facebook/callback",
                             code: code.toString(),
@@ -68,7 +68,7 @@ exports.auth = functions.https.onRequest((req, res) => {
                     {
                         params: {
                             grant_type: "fb_exchange_token",
-                            client_id: "125324611002054",
+                            client_id: "1253246110020541",
                             client_secret: "04f86c0efe01c2017f0452bed26212f1",
                             fb_exchange_token: access_token
                         }
