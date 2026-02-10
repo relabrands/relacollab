@@ -422,7 +422,7 @@ export default function ContentLibrary() {
         const data = await response.json();
         if (data.success && data.metrics) {
           // Update in Firestore
-          await updateDoc(doc(db, "submissions", content.id), {
+          await updateDoc(doc(db, "content_submissions", content.id), {
             likes: data.metrics.likes,
             comments: data.metrics.comments,
             views: data.metrics.views || 0,
