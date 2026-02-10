@@ -392,76 +392,88 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                     // We will use foundPost.media_type which is reliable.
 
 
+
                     const mediaType = foundPost.media_type;
                     let metricsParams = "";
 
                     // Safe metrics based on API documentation
                     if (mediaType === 'VIDEO' || mediaType === 'REELS') {
-                        // Reel/Video: plays, reach, saved, shares
-                        // Note: 'shares' is available for Reels. standard Video might fail if it's not a Reel.
-                        // To be safe, try 'plays,reach,saved' combined with 'shares,total_interactions' if Reel.
-                        // But since we can't easily distinguish "Reel vs Video" perfectly (media_type is just VIDEO for both sometimes, though fields might differ),
-                        // let's try the Reel set. If it fails, catch and try safe set? 
-                        // Simplified: 'plays,reach,saved'. 'shares' often causes 400 on non-reels.
-                        // BUT user wants shares.
-                        // Let's try: 'plays,reach,saved,shares,total_interactions'
-                        // If it fails, we will catch and fallback to basic.
-                        // Actually, let's refine: 
-                        // v19.0: Reels support 'shares' and 'total_interactions'.
+                        // Reel/Video
                         metricsParams = "plays,reach,saved,shares,total_interactions";
                     } else {
                         // Image/Carousel
-                        // 'total_interactions' is NOT a valid metric for Image/Carousel insights in v19.0.
-                        // 'shares' is also NOT valid.
-                        // Valid: 'impressions,reach,saved,engagement'
+                        // Note: 'engagement' metric is available.
                         metricsParams = "impressions,reach,saved,engagement";
                     }
 
                     // Attempt fetching insights
                     let insightsResponse;
                     try {
+                        console.log(`Fetching insights for ${mediaId} (${mediaType}) with params: ${metricsParams}`);
                         insightsResponse = await axios.get(
                             `https://graph.facebook.com/v19.0/${mediaId}/insights?metric=${metricsParams}&access_token=${accessToken}`
                         );
                     } catch (e1) {
-                        // If failed, maybe due to invalid metric (e.g. shares on standard video). Try safer set.
-                        console.warn("First attempt detailed insights failed, trying fallback details:", e1.message);
-                        if (mediaType === 'VIDEO' || mediaType === 'REELS') {
-                            metricsParams = "plays,reach,saved";
-                        } else {
-                            metricsParams = "impressions,reach,saved";
+                        console.warn("First attempt insights failed:", e1.response?.data || e1.message);
+
+                        // Fallback Logic
+                        try {
+                            if (mediaType === 'VIDEO' || mediaType === 'REELS') {
+                                // Try minimal video metrics
+                                metricsParams = "plays,reach,saved";
+                            } else {
+                                // Try minimal image metrics
+                                metricsParams = "impressions,reach,saved";
+                            }
+                            console.log(`Retry fetching insights for ${mediaId} with params: ${metricsParams}`);
+                            insightsResponse = await axios.get(
+                                `https://graph.facebook.com/v19.0/${mediaId}/insights?metric=${metricsParams}&access_token=${accessToken}`
+                            );
+                        } catch (e2) {
+                            console.error("Fallback insights failed:", e2.response?.data || e2.message);
+                            // Return basic metrics if insights fail compeletely
+                            const basicMetrics = {
+                                ...foundPost,
+                                details_status: "failed_insights",
+                                views: foundPost.video_view_count || 0,
+                                reach: 0,
+                                saved: 0,
+                                shares: 0,
+                                interactions: (foundPost.like_count || 0) + (foundPost.comments_count || 0)
+                            };
+                            // Must verify if we should throw or just set detailedMetrics?
+                            // Throwing will go to outer catch (line 466) which sets basic fallback.
+                            throw e2;
                         }
-                        insightsResponse = await axios.get(
-                            `https://graph.facebook.com/v19.0/${mediaId}/insights?metric=${metricsParams}&access_token=${accessToken}`
-                        );
                     }
 
-                    const insights = insightsResponse.data.data;
-                    const insightsMap = {};
-                    insights.forEach(i => insightsMap[i.name] = i.values[0].value);
+                    if (insightsResponse && insightsResponse.data) {
+                        const insights = insightsResponse.data.data;
+                        const insightsMap = {};
+                        insights.forEach(i => insightsMap[i.name] = i.values[0].value);
 
-                    // Mapping
-                    if (mediaType === 'VIDEO' || mediaType === 'REELS') {
-                        detailedMetrics = {
-                            views: insightsMap['plays'] || foundPost.video_view_count || 0,
-                            reach: insightsMap['reach'] || 0,
-                            saved: insightsMap['saved'] || 0,
-                            shares: insightsMap['shares'] || 0,
-                            interactions: insightsMap['total_interactions'] ||
-                                ((foundPost.like_count || 0) + (foundPost.comments_count || 0) + (insightsMap['saved'] || 0))
-                        };
-                    } else {
-                        detailedMetrics = {
-                            views: insightsMap['impressions'] || 0, // impressions as views
-                            reach: insightsMap['reach'] || 0,
-                            saved: insightsMap['saved'] || 0,
-                            shares: 0, // Not available for image
-                            interactions: insightsMap['engagement'] ||
-                                ((foundPost.like_count || 0) + (foundPost.comments_count || 0) + (insightsMap['saved'] || 0))
-                        };
+                        // Mapping
+                        if (mediaType === 'VIDEO' || mediaType === 'REELS') {
+                            detailedMetrics = {
+                                views: insightsMap['plays'] || foundPost.video_view_count || 0,
+                                reach: insightsMap['reach'] || 0,
+                                saved: insightsMap['saved'] || 0,
+                                shares: insightsMap['shares'] || 0,
+                                interactions: insightsMap['total_interactions'] ||
+                                    ((foundPost.like_count || 0) + (foundPost.comments_count || 0) + (insightsMap['saved'] || 0))
+                            };
+                        } else {
+                            detailedMetrics = {
+                                views: insightsMap['impressions'] || 0, // impressions as views
+                                reach: insightsMap['reach'] || 0,
+                                saved: insightsMap['saved'] || 0,
+                                shares: 0,
+                                interactions: insightsMap['engagement'] ||
+                                    ((foundPost.like_count || 0) + (foundPost.comments_count || 0) + (insightsMap['saved'] || 0))
+                            };
+                        }
+                        console.log("Fetched detailed insights successfully:", detailedMetrics);
                     }
-
-                    console.log("Fetched detailed insights successfully");
 
                 } catch (insightError) {
                     console.warn("Could not fetch detailed insights (likely Basic Display token):", insightError.message);
