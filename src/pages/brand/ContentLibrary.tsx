@@ -304,11 +304,12 @@ export default function ContentLibrary() {
               postUrl: sub.contentUrl || sub.postUrl, // Handle both potential field names
               status: sub.status || "pending",
               submittedAt: sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
-              metrics: sub.metrics || {
-                views: sub.views || 0,
-                likes: sub.likes || 0,
-                comments: sub.comments || 0,
-                shares: sub.shares || 0
+              metrics: {
+                views: 0,
+                likes: 0,
+                comments: 0,
+                shares: 0,
+                ...(sub.metrics || {})
               }
             } as ContentItem;
           })
@@ -344,7 +345,8 @@ export default function ContentLibrary() {
     )
   };
 
-  const formatNumber = (num: number) => {
+  const formatNumber = (num?: number) => {
+    if (!num) return "0";
     if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
     if (num >= 1000) return (num / 1000).toFixed(1) + "K";
     return num.toString();
