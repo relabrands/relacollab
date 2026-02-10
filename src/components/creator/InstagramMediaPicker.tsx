@@ -235,7 +235,7 @@ export function InstagramMediaPicker({
 
                     {/* Selected Preview */}
                     {selectedMedia && (
-                        <div className="p-4 border rounded-lg bg-muted/30 sticky bottom-0 bg-background/95 backdrop-blur shadow-sm">
+                        <div className="p-4 border rounded-lg sticky bottom-0 bg-background shadow-lg z-10 mt-auto">
                             <div className="flex gap-4">
                                 <img
                                     src={selectedMedia.thumbnail_url || selectedMedia.media_url}
