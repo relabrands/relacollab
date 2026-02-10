@@ -22,7 +22,9 @@ import {
   Loader2,
   Check,
   X,
-  RefreshCw
+  RefreshCw,
+  Bookmark,
+  BarChart2
 } from "lucide-react";
 import { toast } from "sonner";
 import { updateDoc } from "firebase/firestore";
@@ -49,6 +51,9 @@ interface ContentItem {
     likes: number;
     comments: number;
     shares: number;
+    reach: number;
+    saved: number;
+    interactions: number;
     updatedAt?: string;
   };
 }
@@ -204,20 +209,31 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics }: ContentCardP
 
         {/* Metrics */}
         {content.metrics && (
-          <div className="grid grid-cols-4 gap-2 pt-3 border-t border-border/50">
-            <div className="text-center group-hover:scale-105 transition-transform">
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/50">
+            {/* Row 1 */}
+            <div className="text-center group-hover:scale-105 transition-transform" title="Views">
               <Eye className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs font-medium">{formatNumber(content.metrics.views)}</p>
             </div>
-            <div className="text-center group-hover:scale-105 transition-transform">
+            <div className="text-center group-hover:scale-105 transition-transform" title="Reach">
+              <BarChart2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+              <p className="text-xs font-medium">{formatNumber(content.metrics.reach)}</p>
+            </div>
+            <div className="text-center group-hover:scale-105 transition-transform" title="Saved">
+              <Bookmark className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+              <p className="text-xs font-medium">{formatNumber(content.metrics.saved)}</p>
+            </div>
+
+            {/* Row 2 */}
+            <div className="text-center group-hover:scale-105 transition-transform" title="Likes">
               <Heart className={`w-4 h-4 mx-auto mb-1 ${content.metrics.likes > 0 ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
               <p className="text-xs font-medium">{formatNumber(content.metrics.likes)}</p>
             </div>
-            <div className="text-center group-hover:scale-105 transition-transform">
+            <div className="text-center group-hover:scale-105 transition-transform" title="Comments">
               <MessageCircle className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs font-medium">{formatNumber(content.metrics.comments)}</p>
             </div>
-            <div className="text-center group-hover:scale-105 transition-transform">
+            <div className="text-center group-hover:scale-105 transition-transform" title="Shares">
               <Share2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs font-medium">{formatNumber(content.metrics.shares)}</p>
             </div>
@@ -309,6 +325,9 @@ export default function ContentLibrary() {
                 likes: 0,
                 comments: 0,
                 shares: 0,
+                reach: 0,
+                saved: 0,
+                interactions: 0,
                 ...(sub.metrics || {})
               }
             } as ContentItem;
@@ -406,6 +425,11 @@ export default function ContentLibrary() {
           await updateDoc(doc(db, "submissions", content.id), {
             likes: data.metrics.likes,
             comments: data.metrics.comments,
+            views: data.metrics.views || 0,
+            reach: data.metrics.reach || 0,
+            saved: data.metrics.saved || 0,
+            shares: data.metrics.shares || 0,
+            interactions: data.metrics.interactions || 0,
             type: data.metrics.type,
             thumbnail: data.metrics.thumbnail,
             metricsLastFetched: new Date().toISOString()
@@ -420,6 +444,11 @@ export default function ContentLibrary() {
                   ...item.metrics!,
                   likes: data.metrics.likes,
                   comments: data.metrics.comments,
+                  views: data.metrics.views || 0,
+                  reach: data.metrics.reach || 0,
+                  saved: data.metrics.saved || 0,
+                  shares: data.metrics.shares || 0,
+                  interactions: data.metrics.interactions || 0,
                   updatedAt: new Date().toISOString()
                 }
               };

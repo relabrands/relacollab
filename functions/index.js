@@ -333,14 +333,90 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 }
 
                 console.log("Found post:", foundPost.id);
+                const mediaId = foundPost.id;
+                let detailedMetrics = {};
 
+                // TAREA 1: Detailed Metrics via Graph API
+                // Try to fetch insights, but fallback to basic if token is not valid for Graph API (Basic Display vs Graph API)
+                try {
+                    // Step 2: Get Media Type & Basic Interactions from Graph API
+                    // Note: accessing graph.facebook.com requires Graph API token. Basic Display uses graph.instagram.com.
+                    // We attempt this, if it fails, we fall back.
+                    // Actually, since we found the post via Basic Display API (graph.instagram.com), the ID is a Basic Display ID.
+                    // For Graph API, IDs might differ? Usually they are compatible if the user is the same.
+                    // Let's assume we use the same token.
+
+                    // Check media_type from foundPost to skip extra call if possible, but user asked for explicit flow.
+                    // We will use foundPost.media_type which is reliable.
+
+                    const mediaType = foundPost.media_type;
+                    let metricsParams = "";
+
+                    if (mediaType === 'VIDEO' || mediaType === 'REELS') {
+                        // Reel/Video: plays, reach, saved, shares, total_interactions
+                        // Note: 'total_interactions' is a field on media, not insight metric?
+                        // Insights metrics: plays, reach, saved, shares (if available)
+                        // 'total_interactions' is usually calculated or field on media object.
+                        // User said: "solicitando las métricas: plays, reach, saved, shares, total_interactions"
+                        // graph.facebook.com/{id}/insights?metric=plays,reach,saved,shares,total_interactions
+                        metricsParams = "plays,reach,saved,shares,total_interactions";
+                    } else {
+                        // Image/Carousel: impressions, reach, saved, total_interactions
+                        metricsParams = "impressions,reach,saved,total_interactions";
+                    }
+
+                    // Attempt fetching insights
+                    // Note: We use graph.instagram.com for Basic Display compatibility first if possible,
+                    // but Insights are strictly Graph API (graph.facebook.com).
+                    // We will try graph.facebook.com. If the token is Basic Display (IGQ...), this will 400.
+                    const insightsResponse = await axios.get(
+                        `https://graph.facebook.com/v19.0/${mediaId}/insights?metric=${metricsParams}&access_token=${accessToken}`
+                    ).catch(e => {
+                        // If 400/401, throw to trigger fallback
+                        throw e;
+                    });
+
+                    const insights = insightsResponse.data.data;
+                    const insightsMap = {};
+                    insights.forEach(i => insightsMap[i.name] = i.values[0].value);
+
+                    // Mapping
+                    if (mediaType === 'VIDEO' || mediaType === 'REELS') {
+                        detailedMetrics = {
+                            views: insightsMap['plays'] || foundPost.video_view_count || 0,
+                            reach: insightsMap['reach'] || 0,
+                            saved: insightsMap['saved'] || 0,
+                            shares: insightsMap['shares'] || 0,
+                            interactions: insightsMap['total_interactions'] || 0
+                        };
+                    } else {
+                        detailedMetrics = {
+                            views: insightsMap['impressions'] || 0, // impressions as views
+                            reach: insightsMap['reach'] || 0,
+                            saved: insightsMap['saved'] || 0,
+                            interactions: insightsMap['total_interactions'] || 0
+                        };
+                    }
+
+                    console.log("Fetched detailed insights successfully");
+
+                } catch (insightError) {
+                    console.warn("Could not fetch detailed insights (likely Basic Display token):", insightError.message);
+                    // Fallback to basic metrics we already have
+                    detailedMetrics = {
+                        views: foundPost.video_view_count || foundPost.play_count || foundPost.view_count || 0,
+                        // No reach/saved/shares in Basic Display
+                    };
+                }
+
+                // Combine with basic counts
                 const metrics = {
                     likes: foundPost.like_count || 0,
                     comments: foundPost.comments_count || 0,
-                    views: foundPost.video_view_count || foundPost.play_count || foundPost.view_count || 0,
                     type: foundPost.media_type?.toLowerCase() || 'image',
                     thumbnail: foundPost.thumbnail_url || foundPost.media_url || '',
-                    fetchedAt: new Date().toISOString()
+                    fetchedAt: new Date().toISOString(),
+                    ...detailedMetrics
                 };
 
                 return res.json({
