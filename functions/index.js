@@ -367,12 +367,14 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 let mediaItems = [];
 
                 try {
+                    console.log(`📡 Fetching media for IG user ${igUserId}...`);
                     const response = await axios.get(
                         `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp,shortcode&limit=25&access_token=${accessToken}`
                     );
                     mediaItems = response.data.data || [];
+                    console.log(`📦 Found ${mediaItems.length} media items`);
                 } catch (e) {
-                    console.error("Error fetching user media:", e.message);
+                    console.error("❌ Error fetching user media:", e.response?.data || e.message);
                     throw e;
                 }
 
@@ -380,14 +382,15 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 const foundPost = mediaItems.find(item => item.permalink && item.permalink.includes(postId));
 
                 if (!foundPost) {
-                    console.warn(`Post with shortcode ${postId} not found in last 50 posts`);
+                    console.warn(`⚠️ Post with shortcode ${postId} not found in last 25 posts`);
+                    console.log("Available permalinks:", mediaItems.map(i => i.permalink).slice(0, 5));
                     return res.status(404).json({
                         error: "Post not found or too old",
                         details: "Could not find this post in your recent media. Please ensure it's on the connected account."
                     });
                 }
 
-                console.log("Found post:", foundPost.id);
+                console.log("✅ Found post:", { id: foundPost.id, type: foundPost.media_type, permalink: foundPost.permalink });
                 const mediaId = foundPost.id;
                 let detailedMetrics = {};
 

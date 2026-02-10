@@ -184,15 +184,22 @@ export function DeliverableSubmissionDialog({
                     const match = media.permalink.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
                     const postId = match ? match[2] : null;
 
+                    console.log("🔍 Auto-fetch metrics:", { permalink: media.permalink, postId, hasMatch: !!match });
+
                     if (postId) {
                         // We use fetch here to call our cloud function
+                        console.log("📡 Calling getPostMetrics for postId:", postId);
                         fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ userId: user!.uid, postId })
                         }).then(async (res) => {
+                            console.log("📥 getPostMetrics response status:", res.status);
+
                             if (res.ok) {
                                 const data = await res.json();
+                                console.log("📊 getPostMetrics data:", data);
+
                                 if (data.success && data.metrics) {
                                     // Update the doc we just created with complete metrics
                                     await updateDoc(docRef, {
@@ -206,13 +213,20 @@ export function DeliverableSubmissionDialog({
                                         "metrics.updatedAt": new Date().toISOString(),
                                         metricsLastFetched: new Date().toISOString()
                                     });
-                                    console.log("Automatically fetched detailed metrics for submission");
+                                    console.log("✅ Automatically fetched detailed metrics for submission");
+                                } else {
+                                    console.warn("⚠️ getPostMetrics succeeded but no metrics:", data);
                                 }
+                            } else {
+                                const errorText = await res.text();
+                                console.error("❌ getPostMetrics HTTP error:", res.status, errorText);
                             }
-                        }).catch(err => console.error("Error auto-fetching metrics:", err));
+                        }).catch(err => console.error("❌ Error auto-fetching metrics:", err));
+                    } else {
+                        console.warn("⚠️ Could not extract postId from permalink:", media.permalink);
                     }
                 } catch (e) {
-                    console.error("Error initiating metric fetch", e);
+                    console.error("❌ Error initiating metric fetch", e);
                 }
 
                 return docRef;
