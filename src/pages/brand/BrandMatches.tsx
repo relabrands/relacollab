@@ -161,9 +161,9 @@ export default function BrandMatches() {
 
         const validCreators = creatorsSnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter((c: any) => c.instagramConnected && c.displayName);
+          .filter((c: any) => c.displayName); // Removed c.instagramConnected check for broader visibility
 
-        console.log("Valid Creators (Instagram Connected):", validCreators.length, validCreators);
+        console.log("Valid Creators:", validCreators.length, validCreators);
 
         // 3. Match Logic
         let matchedCreators = validCreators.map((creator: any) => {
@@ -189,7 +189,7 @@ export default function BrandMatches() {
             location: creator.location || "Unknown"
           };
         })
-          .filter(c => c.matchScore >= 40)
+          .filter(c => c.matchScore >= 20) // Lowered threshold from 40 to 20
           .sort((a, b) => b.matchScore - a.matchScore);
 
         console.log("Final Matched Creators:", matchedCreators.length);

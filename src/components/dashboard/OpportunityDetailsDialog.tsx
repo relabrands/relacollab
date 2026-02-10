@@ -141,6 +141,33 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                 </p>
                             </div>
                         )}
+                        {/* Deliverables */}
+                        {opportunity.deliverables && opportunity.deliverables.length > 0 && (
+                            <div>
+                                <h4 className="font-semibold mb-3">Required Content</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {opportunity.deliverables.map((item: any, i: number) => (
+                                        <div key={i} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+                                            <div className="text-2xl">
+                                                {item.type === "Post" && "📸"}
+                                                {item.type === "Reel" && "🎬"}
+                                                {item.type === "Story" && "📱"}
+                                                {item.type === "Carousel" && "🖼️"}
+                                                {item.type === "Video" && "🎥"}
+                                            </div>
+                                            <div>
+                                                <div className="font-medium">
+                                                    {item.quantity}x {item.type}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {item.required ? "Required" : "Optional"}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Requirements/Vibes */}
