@@ -22,8 +22,8 @@ exports.auth = functions.https.onRequest((req, res) => {
                 const tokenResponse = await axios.post(
                     "https://api.instagram.com/oauth/access_token",
                     new URLSearchParams({
-                        client_id: "1284439146828000",
-                        client_secret: "33bfa485ae62aecb167c499c89f53311",
+                        client_id: "125324611002054",
+                        client_secret: "04f86c0efe01c2017f0452bed26212f1",
                         grant_type: "authorization_code",
                         redirect_uri: "https://relacollab.com/auth/facebook/callback",
                         code: code.toString(),
@@ -39,7 +39,7 @@ exports.auth = functions.https.onRequest((req, res) => {
                     {
                         params: {
                             grant_type: "ig_exchange_token",
-                            client_secret: "33bfa485ae62aecb167c499c89f53311",
+                            client_secret: "04f86c0efe01c2017f0452bed26212f1",
                             access_token: access_token
                         }
                     }
