@@ -35,16 +35,25 @@ exports.auth = functions.https.onRequest((req, res) => {
 
                 // 2. Fetch Pages to find connected Instagram Business Account
                 const pagesResponse = await axios.get(
-                    `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,instagram_business_account{id,username,profile_picture_url,followers_count}&access_token=${access_token}`
+                    `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,instagram_business_account{id,username,profile_picture_url,followers_count}&limit=100&access_token=${access_token}`
                 );
 
                 const pages = pagesResponse.data.data;
                 const connectedPage = pages.find(page => page.instagram_business_account);
 
+                // DEBUG LOGGING
+                console.log(`Found ${pages.length} pages.`);
+                const pagesDebug = pages.map(p => ({
+                    name: p.name,
+                    hasIg: !!p.instagram_business_account,
+                    igId: p.instagram_business_account?.id
+                }));
+                console.log("Pages debug info:", JSON.stringify(pagesDebug));
+
                 if (!connectedPage) {
                     return res.status(400).json({
                         error: "No Instagram Business Account found",
-                        details: "Please ensure your Instagram account is a Business/Creator account and is connected to a Facebook Page."
+                        details: "We found the following Facebook Pages: " + pages.map(p => p.name).join(", ") + ". None of them seem to have an Instagram Business Account linked. Please check your Facebook Page settings."
                     });
                 }
 
