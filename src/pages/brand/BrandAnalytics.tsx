@@ -19,7 +19,9 @@ export default function BrandAnalytics() {
         totalComments: 0,
         totalReach: 0,
         totalSaved: 0,
-        totalShares: 0
+        totalShares: 0,
+        totalViews: 0,
+        totalInteractions: 0
     });
     const [creatorPerformance, setCreatorPerformance] = useState<any[]>([]);
 
@@ -61,46 +63,55 @@ export default function BrandAnalytics() {
                 let tReach = 0;
                 let tSaved = 0;
                 let tShares = 0;
+                let tViews = 0;
+                let tInteractions = 0;
 
                 // Group by Creator
                 const creatorStats: any = {};
 
                 for (const sub of allSubmissions) {
                     tPosts++;
-                    const likes = sub.likes || sub.metrics?.likes || 0;
-                    const comments = sub.comments || sub.metrics?.comments || 0;
+                    const likes = sub.metrics?.likes || 0;
+                    const comments = sub.metrics?.comments || 0;
                     const reach = sub.metrics?.reach || 0;
                     const saved = sub.metrics?.saved || 0;
                     const shares = sub.metrics?.shares || 0;
+                    const views = sub.metrics?.views || 0;
+                    const interactions = sub.metrics?.interactions || 0;
 
                     tLikes += likes;
                     tComments += comments;
                     tReach += reach;
                     tSaved += saved;
                     tShares += shares;
+                    tViews += views;
+                    tInteractions += interactions;
 
-                    if (!creatorStats[sub.userId]) {
-                        // We need creator name/avatar. We might need to fetch user profile or store it in submission. 
-                        // For now, let's assume we fetch it or just show ID/placeholder if not fast enough.
-                        // Actually, let's fetch unique users involved.
-                        creatorStats[sub.userId] = {
-                            userId: sub.userId,
+                    // Handle both userId and creatorId for backward compatibility
+                    const creatorKey = sub.userId || sub.creatorId;
+                    if (!creatorStats[creatorKey]) {
+                        creatorStats[creatorKey] = {
+                            userId: creatorKey,
                             posts: 0,
                             likes: 0,
                             comments: 0,
                             reach: 0,
                             saved: 0,
                             shares: 0,
+                            views: 0,
+                            interactions: 0,
                             campaigns: new Set()
                         };
                     }
-                    creatorStats[sub.userId].posts++;
-                    creatorStats[sub.userId].likes += likes;
-                    creatorStats[sub.userId].comments += comments;
-                    creatorStats[sub.userId].reach += reach;
-                    creatorStats[sub.userId].saved += saved;
-                    creatorStats[sub.userId].shares += shares;
-                    creatorStats[sub.userId].campaigns.add(campaignMap.get(sub.campaignId) || "Unknown");
+                    creatorStats[creatorKey].posts++;
+                    creatorStats[creatorKey].likes += likes;
+                    creatorStats[creatorKey].comments += comments;
+                    creatorStats[creatorKey].reach += reach;
+                    creatorStats[creatorKey].saved += saved;
+                    creatorStats[creatorKey].shares += shares;
+                    creatorStats[creatorKey].views += views;
+                    creatorStats[creatorKey].interactions += interactions;
+                    creatorStats[creatorKey].campaigns.add(campaignMap.get(sub.campaignId) || "Unknown");
                 }
 
                 setStats({
@@ -109,7 +120,9 @@ export default function BrandAnalytics() {
                     totalComments: tComments,
                     totalReach: tReach,
                     totalSaved: tSaved,
-                    totalShares: tShares
+                    totalShares: tShares,
+                    totalViews: tViews,
+                    totalInteractions: tInteractions
                 });
 
                 // Fetch Creator Profiles for the table
@@ -173,14 +186,22 @@ export default function BrandAnalytics() {
                 <DashboardHeader title="Analytics Overview" subtitle="Real-time performance from valid submissions" />
 
                 {/* Overall Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
                     <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Posts</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold">{stats.totalPosts}</div></CardContent>
                     </Card>
                     <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Views</CardTitle></CardHeader>
+                        <CardContent><div className="text-2xl font-bold text-indigo-600">{stats.totalViews?.toLocaleString() || 0}</div></CardContent>
+                    </Card>
+                    <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Reach</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold text-blue-600">{stats.totalReach?.toLocaleString() || 0}</div></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Interactions</CardTitle></CardHeader>
+                        <CardContent><div className="text-2xl font-bold text-teal-600">{stats.totalInteractions?.toLocaleString() || 0}</div></CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Likes</CardTitle></CardHeader>
@@ -197,14 +218,6 @@ export default function BrandAnalytics() {
                     <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Shares</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold text-orange-600">{stats.totalShares?.toLocaleString() || 0}</div></CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Avg. Engagement</CardTitle></CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-success">
-                                {stats.totalPosts > 0 ? Math.round((stats.totalLikes + stats.totalComments) / stats.totalPosts) : 0}
-                            </div>
-                        </CardContent>
                     </Card>
                 </div>
 
@@ -242,11 +255,13 @@ export default function BrandAnalytics() {
                                                         <th className="px-4 py-3 rounded-l-lg">Creator</th>
                                                         <th className="px-4 py-3">Campaigns</th>
                                                         <th className="px-4 py-3 text-right">Posts</th>
+                                                        <th className="px-4 py-3 text-right">Views</th>
                                                         <th className="px-4 py-3 text-right">Reach</th>
                                                         <th className="px-4 py-3 text-right">Likes</th>
                                                         <th className="px-4 py-3 text-right">Comments</th>
                                                         <th className="px-4 py-3 text-right">Saved</th>
-                                                        <th className="px-4 py-3 text-right rounded-r-lg">Shares</th>
+                                                        <th className="px-4 py-3 text-right">Shares</th>
+                                                        <th className="px-4 py-3 text-right rounded-r-lg">Interactions</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -263,11 +278,13 @@ export default function BrandAnalytics() {
                                                             </td>
                                                             <td className="px-4 py-3 text-muted-foreground">{item.campaigns}</td>
                                                             <td className="px-4 py-3 text-right">{item.posts}</td>
+                                                            <td className="px-4 py-3 text-right">{item.views?.toLocaleString() || 0}</td>
                                                             <td className="px-4 py-3 text-right">{item.reach?.toLocaleString() || 0}</td>
                                                             <td className="px-4 py-3 text-right text-success font-medium">{item.likes.toLocaleString()}</td>
                                                             <td className="px-4 py-3 text-right">{item.comments.toLocaleString()}</td>
                                                             <td className="px-4 py-3 text-right">{item.saved?.toLocaleString() || 0}</td>
                                                             <td className="px-4 py-3 text-right">{item.shares?.toLocaleString() || 0}</td>
+                                                            <td className="px-4 py-3 text-right">{item.interactions?.toLocaleString() || 0}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>

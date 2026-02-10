@@ -158,6 +158,7 @@ export function DeliverableSubmissionDialog({
                 const docRef = await addDoc(collection(db, "content_submissions"), {
                     campaignId: campaign.id,
                     creatorId: user!.uid,
+                    userId: user!.uid, // For BrandAnalytics grouping
                     deliverableType: type,
                     deliverableNumber: number,
                     contentUrl: media.permalink,
@@ -170,6 +171,11 @@ export function DeliverableSubmissionDialog({
                     metrics: {
                         likes: media.like_count || 0,
                         comments: media.comments_count || 0,
+                        views: 0,
+                        reach: 0,
+                        saved: 0,
+                        shares: 0,
+                        interactions: 0
                     },
                 });
 
@@ -188,17 +194,16 @@ export function DeliverableSubmissionDialog({
                             if (res.ok) {
                                 const data = await res.json();
                                 if (data.success && data.metrics) {
-                                    // Update the doc we just created
+                                    // Update the doc we just created with complete metrics
                                     await updateDoc(docRef, {
-                                        likes: data.metrics.likes,
-                                        comments: data.metrics.comments,
                                         "metrics.views": data.metrics.views || 0,
                                         "metrics.reach": data.metrics.reach || 0,
                                         "metrics.saved": data.metrics.saved || 0,
                                         "metrics.shares": data.metrics.shares || 0,
                                         "metrics.interactions": data.metrics.interactions || 0,
-                                        "metrics.likes": data.metrics.likes,
-                                        "metrics.comments": data.metrics.comments,
+                                        "metrics.likes": data.metrics.likes || 0,
+                                        "metrics.comments": data.metrics.comments || 0,
+                                        "metrics.updatedAt": new Date().toISOString(),
                                         metricsLastFetched: new Date().toISOString()
                                     });
                                     console.log("Automatically fetched detailed metrics for submission");
