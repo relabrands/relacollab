@@ -33,6 +33,14 @@ exports.auth = functions.https.onRequest((req, res) => {
 
                 const { access_token } = tokenResponse.data;
 
+                // 1.5 Fetch Permissions to debug
+                const permissionsResponse = await axios.get(
+                    `https://graph.facebook.com/v19.0/me/permissions?access_token=${access_token}`
+                );
+                const permissions = permissionsResponse.data.data;
+                const grantedPermissions = permissions.filter(p => p.status === 'granted').map(p => p.permission);
+                console.log("Granted Permissions:", grantedPermissions);
+
                 // 2. Fetch Pages to find connected Instagram Business Account
                 const pagesResponse = await axios.get(
                     `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,instagram_business_account{id,username,profile_picture_url,followers_count}&limit=100&access_token=${access_token}`
@@ -53,7 +61,7 @@ exports.auth = functions.https.onRequest((req, res) => {
                 if (!connectedPage) {
                     return res.status(400).json({
                         error: "No Instagram Business Account found",
-                        details: "We found the following Facebook Pages: " + pages.map(p => p.name).join(", ") + ". None of them seem to have an Instagram Business Account linked. Please check your Facebook Page settings."
+                        details: `We found ${pages.length} pages. Granted Permissions: [${grantedPermissions.join(', ')}]. Pages found: [${pages.map(p => p.name).join(", ")}]. None of them seem to have an Instagram Business Account linked. Please check that you granted 'pages_show_list' and 'instagram_basic' permissions.`
                     });
                 }
 
