@@ -18,64 +18,92 @@ exports.auth = functions.https.onRequest((req, res) => {
             }
 
             try {
-                // Exchange Code for Access Token
-                const tokenResponse = await axios.post(
-                    "https://api.instagram.com/oauth/access_token",
-                    new URLSearchParams({
-                        client_id: "125324611002054",
-                        client_secret: "04f86c0efe01c2017f0452bed26212f1",
-                        grant_type: "authorization_code",
-                        redirect_uri: "https://relacollab.com/auth/facebook/callback",
-                        code: code.toString(),
-                    })
-                );
-
-                const { access_token, user_id } = tokenResponse.data;
-
-                // 2. Exchange for Long-Lived Token
-                console.log("Exchanging for long-lived token...");
-                const longLivedTokenResponse = await axios.get(
-                    "https://graph.instagram.com/access_token",
+                // 1. Exchange Code for Facebook User Access Token
+                const tokenResponse = await axios.get(
+                    "https://graph.facebook.com/v19.0/oauth/access_token",
                     {
                         params: {
-                            grant_type: "ig_exchange_token",
+                            client_id: "125324611002054",
                             client_secret: "04f86c0efe01c2017f0452bed26212f1",
-                            access_token: access_token
+                            redirect_uri: "https://relacollab.com/auth/facebook/callback",
+                            code: code.toString(),
                         }
                     }
                 );
 
-                const longLivedAccessToken = longLivedTokenResponse.data.access_token;
-                const expiresInSeconds = longLivedTokenResponse.data.expires_in; // usually 60 days (5184000)
-                const expiresAt = Date.now() + (expiresInSeconds * 1000);
+                const { access_token } = tokenResponse.data;
 
-                console.log(`Long-lived token obtained. Expires in ${expiresInSeconds} seconds.`);
-
-                // Fetch User Info using Long-Lived Token
-                const userResponse = await axios.get(
-                    `https://graph.instagram.com/me?fields=id,username,followers_count,media_count&access_token=${longLivedAccessToken}`
+                // 2. Fetch Pages to find connected Instagram Business Account
+                const pagesResponse = await axios.get(
+                    `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,instagram_business_account{id,username,profile_picture_url,followers_count}&access_token=${access_token}`
                 );
-                const userData = userResponse.data;
 
-                // Fetch Insights (Simple Engagement)
+                const pages = pagesResponse.data.data;
+                const connectedPage = pages.find(page => page.instagram_business_account);
+
+                if (!connectedPage) {
+                    return res.status(400).json({
+                        error: "No Instagram Business Account found",
+                        details: "Please ensure your Instagram account is a Business/Creator account and is connected to a Facebook Page."
+                    });
+                }
+
+                const igAccount = connectedPage.instagram_business_account;
+                const igUserId = igAccount.id;
+
+                // 3. Fetch User Info & Metrics from IG Graph API
+                // We use the Page token or User token? 
+                // We can use the User token (access_token) if permissions are granted.
+                // Or we can use the Page Access Token?
+                // Usually User Token with page manage permissions works.
+                // Let's use the User Access Token we just got. It's long-lived?
+                // Facebook User tokens are usually short-lived (1-2 hours) unless we exchange them.
+                // But for server-side flow, the initial exchange usually gives a long-lived one? 
+                // Actually, standard OAuth gives short-lived. We should exchange for long-lived URL.
+                // GET /oauth/access_token?grant_type=fb_exchange_token...
+
+                // Let's do the exchange for long-lived token mostly for reliability
+                const longLivedTokenResponse = await axios.get(
+                    "https://graph.facebook.com/v19.0/oauth/access_token",
+                    {
+                        params: {
+                            grant_type: "fb_exchange_token",
+                            client_id: "125324611002054",
+                            client_secret: "04f86c0efe01c2017f0452bed26212f1",
+                            fb_exchange_token: access_token
+                        }
+                    }
+                );
+                const longLivedAccessToken = longLivedTokenResponse.data.access_token;
+
+                // Fetch extra details if needed (followers, media count) from the IG User node
+                const userDetailsResponse = await axios.get(
+                    `https://graph.facebook.com/v19.0/${igUserId}?fields=biography,followers_count,media_count,profile_picture_url,username&access_token=${longLivedAccessToken}`
+                );
+                const userData = userDetailsResponse.data;
+
+                // Calculate Engagement Rate (fetch recent media)
+                // Note: Insights API limit is strict. We just get basic media for calculation.
                 const mediaResponse = await axios.get(
-                    `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,timestamp&limit=10&access_token=${longLivedAccessToken}`
+                    `https://graph.facebook.com/v19.0/${igUserId}/media?fields=like_count,comments_count&limit=10&access_token=${longLivedAccessToken}`
                 );
                 const mediaItems = mediaResponse.data.data || [];
                 let totalEngagement = 0;
                 mediaItems.forEach(item => {
                     totalEngagement += (item.like_count || 0) + (item.comments_count || 0);
                 });
-                const avgEngagement = mediaItems.length > 0 ? totalEngagement / mediaItems.length : 0;
                 const followers = userData.followers_count || 1;
+                const avgEngagement = mediaItems.length > 0 ? totalEngagement / mediaItems.length : 0;
                 const engagementRate = ((avgEngagement / followers) * 100).toFixed(2);
+
+                const expiresAt = Date.now() + (60 * 24 * 60 * 60 * 1000); // approx 60 days
 
                 // Save to Firestore if userId provided
                 if (userId) {
                     await db.collection("users").doc(userId).set({
                         socialHandles: { instagram: userData.username },
                         instagramConnected: true,
-                        instagramId: userData.id,
+                        instagramId: igUserId,
                         instagramUsername: userData.username,
                         instagramAccessToken: longLivedAccessToken,
                         instagramTokenExpiresAt: expiresAt,
@@ -93,7 +121,7 @@ exports.auth = functions.https.onRequest((req, res) => {
                         id: userData.id,
                         username: userData.username,
                         engagementRate: engagementRate,
-                        access_token
+                        access_token: longLivedAccessToken
                     }
                 });
 
@@ -101,7 +129,7 @@ exports.auth = functions.https.onRequest((req, res) => {
                 console.error("Instagram Auth Error:", error.response?.data || error.message);
                 return res.status(500).json({
                     error: "Authentication Failed",
-                    details: error.response?.data?.error_message || error.message
+                    details: error.response?.data?.error?.message || error.message
                 });
             }
         }
@@ -140,10 +168,14 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
                 return res.status(400).json({ error: "Instagram not connected" });
             }
 
-            // Fetch Media from Instagram Graph API
+            // Fetch Media from Instagram Graph API (Business)
             try {
+                // Requires the IG User ID (which we saved as instagramId)
+                const igUserId = userData.instagramId;
+
+                // Note: v19.0 endpoint
                 const response = await axios.get(
-                    `https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=18&access_token=${accessToken}`
+                    `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=18&access_token=${accessToken}`
                 );
 
                 const mediaItems = response.data.data.map(item => ({
@@ -300,25 +332,18 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 // Fetch recent media (limit 50 to be safe)
                 // Try to get view counts first (video_view_count, play_count, view_count)
                 // Reduced limit to 25 to avoid timeouts and large payloads
+                // Fetch recent media (limit 25)
+                const igUserId = userData.instagramId;
                 let mediaItems = [];
-                let viewsFieldSupported = true;
 
                 try {
                     const response = await axios.get(
-                        `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp,video_view_count,play_count,view_count&limit=25&access_token=${accessToken}`
+                        `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp,shortcode&limit=25&access_token=${accessToken}`
                     );
                     mediaItems = response.data.data || [];
                 } catch (e) {
-                    console.warn("Retrying with basic fields (Views not supported):", e.message);
-                    viewsFieldSupported = false;
-                    try {
-                        const response = await axios.get(
-                            `https://graph.instagram.com/me/media?fields=id,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp&limit=25&access_token=${accessToken}`
-                        );
-                        mediaItems = response.data.data || [];
-                    } catch (fallbackError) {
-                        throw fallbackError; // If this fails, we really have an issue
-                    }
+                    console.error("Error fetching user media:", e.message);
+                    throw e;
                 }
 
                 // Find the post that contains the shortcode in its permalink
