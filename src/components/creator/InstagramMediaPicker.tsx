@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -108,8 +108,8 @@ export function InstagramMediaPicker({
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[90vh]">
-                <DialogHeader>
+            <DialogContent className="max-w-4xl h-[85vh] sm:max-h-[85vh] flex flex-col gap-0">
+                <DialogHeader className="pb-4">
                     <DialogTitle className="flex items-center gap-2">
                         <Instagram className="w-5 h-5 text-[#E1306C]" />
                         Select from Instagram
@@ -129,10 +129,10 @@ export function InstagramMediaPicker({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4">
+                <div className="flex-1 overflow-y-auto min-h-0 space-y-4 py-2 pr-2">
                     {/* Search */}
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <div className="relative sticky top-0 z-10 bg-background pb-2">
+                        <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                         <Input
                             placeholder="Search captions..."
                             value={searchTerm}
@@ -161,7 +161,7 @@ export function InstagramMediaPicker({
                             )}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-3 gap-3 max-h-[50vh] overflow-y-auto">
+                        <div className="grid grid-cols-3 gap-3">
                             {filteredMedia.map((item) => (
                                 <button
                                     key={item.id}
@@ -235,7 +235,7 @@ export function InstagramMediaPicker({
 
                     {/* Selected Preview */}
                     {selectedMedia && (
-                        <div className="p-4 border rounded-lg bg-muted/30">
+                        <div className="p-4 border rounded-lg bg-muted/30 sticky bottom-0 bg-background/95 backdrop-blur shadow-sm">
                             <div className="flex gap-4">
                                 <img
                                     src={selectedMedia.thumbnail_url || selectedMedia.media_url}
@@ -274,8 +274,8 @@ export function InstagramMediaPicker({
                     )}
                 </div>
 
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                    <Button variant="ghost" onClick={onClose}>
+                <DialogFooter className="pt-4 border-t">
+                    <Button variant="outline" onClick={onClose}>
                         Cancel
                     </Button>
                     <Button
@@ -285,7 +285,7 @@ export function InstagramMediaPicker({
                     >
                         Select Post
                     </Button>
-                </div>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
