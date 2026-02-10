@@ -180,6 +180,15 @@ export default function CreatorProfile() {
   // Handle Instagram Callback Data
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    const errorDescription = params.get("error_description");
+
+    if (error) {
+      toast.error(`Instagram Connection Failed: ${errorDescription || error}`);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
     const connected = params.get("connected");
 
     if (connected === "true" && user) {
