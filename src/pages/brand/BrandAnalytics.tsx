@@ -45,7 +45,7 @@ export default function BrandAnalytics() {
                 // Better: Fetch submissions for each campaign (Promise.all).
 
                 const submissionsPromises = campaignIds.map(id =>
-                    getDocs(query(collection(db, "submissions"), where("campaignId", "==", id)))
+                    getDocs(query(collection(db, "content_submissions"), where("campaignId", "==", id)))
                 );
 
                 const snapshots = await Promise.all(submissionsPromises);

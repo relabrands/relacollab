@@ -102,7 +102,7 @@ export default function BrandMatches() {
 
         // Submissions (Content)
         const submissionsQuery = query(
-          collection(db, "submissions"),
+          collection(db, "content_submissions"),
           where("campaignId", "==", activeCampaign.id),
           orderBy("submittedAt", "desc")
         );

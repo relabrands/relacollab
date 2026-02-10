@@ -391,32 +391,50 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                     // Check media_type from foundPost to skip extra call if possible, but user asked for explicit flow.
                     // We will use foundPost.media_type which is reliable.
 
+
                     const mediaType = foundPost.media_type;
                     let metricsParams = "";
 
+                    // Safe metrics based on API documentation
                     if (mediaType === 'VIDEO' || mediaType === 'REELS') {
-                        // Reel/Video: plays, reach, saved, shares, total_interactions
-                        // Note: 'total_interactions' is a field on media, not insight metric?
-                        // Insights metrics: plays, reach, saved, shares (if available)
-                        // 'total_interactions' is usually calculated or field on media object.
-                        // User said: "solicitando las métricas: plays, reach, saved, shares, total_interactions"
-                        // graph.facebook.com/{id}/insights?metric=plays,reach,saved,shares,total_interactions
+                        // Reel/Video: plays, reach, saved, shares
+                        // Note: 'shares' is available for Reels. standard Video might fail if it's not a Reel.
+                        // To be safe, try 'plays,reach,saved' combined with 'shares,total_interactions' if Reel.
+                        // But since we can't easily distinguish "Reel vs Video" perfectly (media_type is just VIDEO for both sometimes, though fields might differ),
+                        // let's try the Reel set. If it fails, catch and try safe set? 
+                        // Simplified: 'plays,reach,saved'. 'shares' often causes 400 on non-reels.
+                        // BUT user wants shares.
+                        // Let's try: 'plays,reach,saved,shares,total_interactions'
+                        // If it fails, we will catch and fallback to basic.
+                        // Actually, let's refine: 
+                        // v19.0: Reels support 'shares' and 'total_interactions'.
                         metricsParams = "plays,reach,saved,shares,total_interactions";
                     } else {
-                        // Image/Carousel: impressions, reach, saved, total_interactions
-                        metricsParams = "impressions,reach,saved,total_interactions";
+                        // Image/Carousel
+                        // 'total_interactions' is NOT a valid metric for Image/Carousel insights in v19.0.
+                        // 'shares' is also NOT valid.
+                        // Valid: 'impressions,reach,saved,engagement'
+                        metricsParams = "impressions,reach,saved,engagement";
                     }
 
                     // Attempt fetching insights
-                    // Note: We use graph.instagram.com for Basic Display compatibility first if possible,
-                    // but Insights are strictly Graph API (graph.facebook.com).
-                    // We will try graph.facebook.com. If the token is Basic Display (IGQ...), this will 400.
-                    const insightsResponse = await axios.get(
-                        `https://graph.facebook.com/v19.0/${mediaId}/insights?metric=${metricsParams}&access_token=${accessToken}`
-                    ).catch(e => {
-                        // If 400/401, throw to trigger fallback
-                        throw e;
-                    });
+                    let insightsResponse;
+                    try {
+                        insightsResponse = await axios.get(
+                            `https://graph.facebook.com/v19.0/${mediaId}/insights?metric=${metricsParams}&access_token=${accessToken}`
+                        );
+                    } catch (e1) {
+                        // If failed, maybe due to invalid metric (e.g. shares on standard video). Try safer set.
+                        console.warn("First attempt detailed insights failed, trying fallback details:", e1.message);
+                        if (mediaType === 'VIDEO' || mediaType === 'REELS') {
+                            metricsParams = "plays,reach,saved";
+                        } else {
+                            metricsParams = "impressions,reach,saved";
+                        }
+                        insightsResponse = await axios.get(
+                            `https://graph.facebook.com/v19.0/${mediaId}/insights?metric=${metricsParams}&access_token=${accessToken}`
+                        );
+                    }
 
                     const insights = insightsResponse.data.data;
                     const insightsMap = {};
@@ -429,14 +447,17 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                             reach: insightsMap['reach'] || 0,
                             saved: insightsMap['saved'] || 0,
                             shares: insightsMap['shares'] || 0,
-                            interactions: insightsMap['total_interactions'] || 0
+                            interactions: insightsMap['total_interactions'] ||
+                                ((foundPost.like_count || 0) + (foundPost.comments_count || 0) + (insightsMap['saved'] || 0))
                         };
                     } else {
                         detailedMetrics = {
                             views: insightsMap['impressions'] || 0, // impressions as views
                             reach: insightsMap['reach'] || 0,
                             saved: insightsMap['saved'] || 0,
-                            interactions: insightsMap['total_interactions'] || 0
+                            shares: 0, // Not available for image
+                            interactions: insightsMap['engagement'] ||
+                                ((foundPost.like_count || 0) + (foundPost.comments_count || 0) + (insightsMap['saved'] || 0))
                         };
                     }
 
