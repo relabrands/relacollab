@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Upload, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Upload, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { DeliverableSubmissionDialog } from "./DeliverableSubmissionDialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -23,20 +23,29 @@ interface CampaignWithDeliverables {
 }
 
 interface SubmittedContent {
+  id?: string; // Firestore document ID
   deliverableType: string;
   deliverableNumber: number;
-  status: "pending" | "approved" | "needs_revision";
+  status: "pending" | "approved" | "needs_revision" | "revision_requested" | "resubmitted";
   contentUrl: string;
   thumbnailUrl?: string;
   caption?: string;
   metrics?: {
     likes?: number;
     comments?: number;
+    views?: number;
+    reach?: number;
+    saved?: number;
+    shares?: number;
+    interactions?: number;
   };
-  editRequest?: {
-    feedback: string;
-    createdAt: string;
-  };
+  revisionHistory?: Array<{
+    requestedAt: string;
+    requestedBy: string;
+    notes: string;
+    resubmittedAt?: string;
+    previousMediaUrl?: string;
+  }>;
 }
 
 interface CampaignProgress {
@@ -91,7 +100,10 @@ export function ContentSubmission() {
           where("creatorId", "==", user.uid)
         );
         const submissionsSnapshot = await getDocs(submissionsQuery);
-        const submissions = submissionsSnapshot.docs.map(doc => doc.data() as SubmittedContent);
+        const submissions = submissionsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as SubmittedContent));
 
         // 4. Calculate progress
         const deliverables = campaignData.deliverables || [];
@@ -143,6 +155,27 @@ export function ContentSubmission() {
       }
       return newSet;
     });
+  };
+
+  const handleDeleteSubmission = async (submissionId: string) => {
+    if (!submissionId) {
+      toast.error("Cannot delete: submission ID missing");
+      return;
+    }
+
+    if (!confirm("Are you sure you want to delete this submission? This cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, "content_submissions", submissionId));
+      toast.success("Submission deleted successfully");
+      // Refresh the campaigns list
+      fetchActiveCampaigns();
+    } catch (error) {
+      console.error("Error deleting submission:", error);
+      toast.error("Failed to delete submission");
+    }
   };
 
   const getDeliverableStatus = (
@@ -276,7 +309,7 @@ export function ContentSubmission() {
                                   : "border-border"
                               }`}
                           >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 flex-1">
                               <span className="text-2xl">
                                 {deliverable.type === "Post" && "📸"}
                                 {deliverable.type === "Reel" && "🎬"}
@@ -284,7 +317,7 @@ export function ContentSubmission() {
                                 {deliverable.type === "Carousel" && "🖼️"}
                                 {deliverable.type === "Video" && "🎥"}
                               </span>
-                              <div>
+                              <div className="flex-1">
                                 <div className="font-medium">
                                   {deliverable.type} #{deliverableNumber}
                                 </div>
@@ -299,24 +332,45 @@ export function ContentSubmission() {
                                           ? "success"
                                           : submission.status === "needs_revision"
                                             ? "destructive"
-                                            : "secondary"
+                                            : submission.status === "revision_requested"
+                                              ? "destructive"
+                                              : submission.status === "resubmitted"
+                                                ? "secondary"
+                                                : "secondary"
                                       }
                                       className="text-xs"
                                     >
                                       {submission.status === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
-                                      {submission.status === "needs_revision" && <AlertCircle className="w-3 h-3 mr-1" />}
+                                      {(submission.status === "needs_revision" || submission.status === "revision_requested") && <AlertCircle className="w-3 h-3 mr-1" />}
                                       {submission.status === "pending" && <Clock className="w-3 h-3 mr-1" />}
-                                      {submission.status.replace("_", " ").toUpperCase()}
+                                      {submission.status.replace(/_/g, " ").toUpperCase()}
                                     </Badge>
                                   )}
                                 </div>
-                                {submission?.editRequest && (
-                                  <p className="text-sm text-orange-600 mt-2">
-                                    ✏️ {submission.editRequest.feedback}
-                                  </p>
+                                {submission?.revisionHistory && submission.revisionHistory.length > 0 && (
+                                  <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded border border-orange-200">
+                                    <p className="text-xs font-medium text-orange-800 dark:text-orange-300">
+                                      ✏️ Edits Requested:
+                                    </p>
+                                    <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
+                                      {submission.revisionHistory[submission.revisionHistory.length - 1].notes}
+                                    </p>
+                                  </div>
                                 )}
                               </div>
                             </div>
+
+                            {/* Delete button for pending submissions */}
+                            {submission?.status === "pending" && submission.id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteSubmission(submission.id!)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
                           </div>
                         );
                       });
@@ -329,19 +383,21 @@ export function ContentSubmission() {
         );
       })}
 
-      {selectedCampaign && (
-        <DeliverableSubmissionDialog
-          campaign={selectedCampaign}
-          open={isDialogOpen}
-          onClose={() => {
-            setIsDialogOpen(false);
-            setSelectedCampaign(null);
-          }}
-          onSuccess={() => {
-            fetchActiveCampaigns();
-          }}
-        />
-      )}
-    </div>
+      {
+        selectedCampaign && (
+          <DeliverableSubmissionDialog
+            campaign={selectedCampaign}
+            open={isDialogOpen}
+            onClose={() => {
+              setIsDialogOpen(false);
+              setSelectedCampaign(null);
+            }}
+            onSuccess={() => {
+              fetchActiveCampaigns();
+            }}
+          />
+        )
+      }
+    </div >
   );
 }
