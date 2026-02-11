@@ -190,12 +190,12 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
 
                 try {
                     let metricParam = "";
-                    // Si es Video/Reel -> Pedimos 'plays'
+                    // Si es Video/Reel -> Pedimos 'plays' (deprecated pero funciona)
                     if (item.media_type === 'VIDEO' || item.media_product_type === 'REELS') {
                         metricParam = "plays,reach";
                     } else {
-                        // Si es Foto -> Pedimos 'impressions'
-                        metricParam = "impressions,reach";
+                        // Si es Foto -> Solo 'reach' (impressions deprecated para posts nuevos)
+                        metricParam = "reach";
                     }
 
                     // Llamada a la API de Insights para este post específico
@@ -417,19 +417,22 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                     const mediaProductType = foundPost.media_product_type; // CRITICAL: Identifies if it's a REEL
                     let metricsParams = "";
 
-                    // Safe metrics based on API documentation
+                    // Safe metrics based on OFFICIAL API documentation
+                    // Source: https://developers.facebook.com/docs/instagram-api/reference/ig-media/insights
                     // IMPORTANT: Use media_product_type to detect Reels, not media_type
                     if (mediaProductType === 'REELS' || mediaProductType === 'STORY') {
-                        // Reel/Story: These support plays, reach, saved, shares
-                        metricsParams = "plays,reach,saved,shares,total_interactions";
+                        // Reel metrics: plays (deprecated v22+), reach, saved, shares, comments, likes
+                        // Note: plays will be deprecated April 2025, but keeping for now
+                        metricsParams = "plays,reach,saved,shares,comments,likes";
                     } else if (mediaType === 'VIDEO') {
                         // Regular video (not a Reel): May not support all metrics
                         // Safer to use basic video metrics
-                        metricsParams = "plays,reach,saved";
+                        metricsParams = "plays,reach,saved,comments,likes";
                     } else {
-                        // Image/Carousel
-                        // Note: 'engagement' metric is available.
-                        metricsParams = "impressions,reach,saved,engagement";
+                        // Image/Carousel/Post metrics
+                        // Note: impressions deprecated for media created after July 2024, but trying anyway
+                        // Valid metrics: reach, saved, shares, comments, likes
+                        metricsParams = "reach,saved,shares,comments,likes";
                     }
 
                     // Attempt fetching insights
@@ -446,10 +449,10 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                         try {
                             if (mediaProductType === 'REELS' || mediaType === 'VIDEO') {
                                 // Try minimal video/reel metrics
-                                metricsParams = "plays,reach,saved";
+                                metricsParams = "plays,reach,saved,comments,likes";
                             } else {
                                 // Try minimal image metrics
-                                metricsParams = "impressions,reach,saved";
+                                metricsParams = "reach,saved,comments,likes";
                             }
                             console.log(`Retry fetching insights for ${mediaId} with params: ${metricsParams}`);
                             insightsResponse = await axios.get(
