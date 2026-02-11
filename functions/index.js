@@ -412,9 +412,9 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 // (Quitamos 'shares' para evitar errores, ya que total_interactions lo incluye)
 
                 if (mediaType === 'VIDEO' || mediaProductType === 'REELS') {
-                    // REELS/VIDEO: plays, reach, saved, shares
-                    // Removed: total_interactions (Invalid)
-                    metricsParams = "plays,reach,saved,shares";
+                    // REELS/VIDEO: reach, saved, shares
+                    // Removed: plays (Deprecated/Error in v22+), total_interactions (Invalid)
+                    metricsParams = "reach,saved,shares";
                 } else {
                     // IMAGE: reach, saved, shares
                     // Removed: impressions (Deprecated/Invalid for new), total_interactions (Invalid)
@@ -434,7 +434,8 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 };
 
                 detailedMetrics = {
-                    views: getVal('plays') || getVal('impressions') || 0,
+                    // Plays metric is deprecated/erroring. Use media fields for views.
+                    views: foundPost.video_view_count || foundPost.play_count || foundPost.view_count || 0,
                     reach: getVal('reach') || 0,
                     saved: getVal('saved') || 0,
                     shares: getVal('shares') || 0,
