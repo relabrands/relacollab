@@ -89,10 +89,22 @@ export default function CreatorDashboard() {
         const applicationsSnap = await getDocs(applicationsQuery);
         const appliedCampaignIds = applicationsSnap.docs.map(doc => doc.data().campaignId);
 
-        // Count active campaigns (approved applications)
-        const activeCount = applicationsSnap.docs.filter(
+        // Count active campaigns (approved applications) by verifying campaign existence
+        const approvedApps = applicationsSnap.docs.filter(
           doc => doc.data().status === "approved"
-        ).length;
+        );
+
+        const activePromises = approvedApps.map(async (appDoc) => {
+          try {
+            const campaignDoc = await getDoc(doc(db, "campaigns", appDoc.data().campaignId));
+            return campaignDoc.exists();
+          } catch (e) {
+            return false;
+          }
+        });
+
+        const activeResults = await Promise.all(activePromises);
+        const activeCount = activeResults.filter(Boolean).length;
 
         // 3. Fetch ALL active campaigns
         const campaignsQuery = query(
@@ -138,12 +150,28 @@ export default function CreatorDashboard() {
           ? Math.round(topOpportunities.reduce((sum, opp) => sum + opp.matchScore, 0) / topOpportunities.length)
           : 0;
 
+        // 5. Fetch Earnings
+        const paymentsRef = collection(db, "users", user.uid, "payments");
+        const paymentsSnap = await getDocs(paymentsRef);
+
+        let totalEarned = 0;
+        let pendingEarnings = 0;
+
+        paymentsSnap.forEach((doc) => {
+          const data = doc.data();
+          if (data.status === 'completed') {
+            totalEarned += data.amount || 0;
+          } else if (data.status === 'pending') {
+            pendingEarnings += data.amount || 0;
+          }
+        });
+
         // Update stats
         setStats(prev => [
           { ...prev[0], value: matchedOpportunities.length, change: `${topOpportunities.length} top matches` },
           { ...prev[1], value: activeCount, change: activeCount > 0 ? "In progress" : "No active campaigns" },
           { ...prev[2], value: `${avgMatchScore}%`, change: avgMatchScore >= 70 ? "Great fit!" : "Find your match" },
-          { ...prev[3], value: "$0", change: "Pending: $0" }
+          { ...prev[3], value: `$${totalEarned.toLocaleString()}`, change: `Pending: $${pendingEarnings.toLocaleString()}` }
         ]);
 
       } catch (error) {
@@ -206,33 +234,35 @@ export default function CreatorDashboard() {
         )}
 
         {/* Profile Completion */}
-        <div className="glass-card p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-lg mb-1">Complete Your Profile</h3>
-              <p className="text-muted-foreground text-sm">
-                A complete profile helps us find better matches for you
-              </p>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <div className="text-2xl font-bold text-primary">{profileCompletion}%</div>
-                <div className="text-sm text-muted-foreground">Complete</div>
+        {profileCompletion < 100 && (
+          <div className="glass-card p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-lg mb-1">Complete Your Profile</h3>
+                <p className="text-muted-foreground text-sm">
+                  A complete profile helps us find better matches for you
+                </p>
               </div>
-              <Link to="/creator/profile">
-                <Button variant="hero">
-                  Complete Profile
-                </Button>
-              </Link>
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-primary">{profileCompletion}%</div>
+                  <div className="text-sm text-muted-foreground">Complete</div>
+                </div>
+                <Link to="/creator/profile">
+                  <Button variant="hero">
+                    Complete Profile
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div className="mt-4 h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-primary rounded-full transition-all duration-1000"
+                style={{ width: `${profileCompletion}%` }}
+              />
             </div>
           </div>
-          <div className="mt-4 h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-primary rounded-full transition-all duration-1000"
-              style={{ width: `${profileCompletion}%` }}
-            />
-          </div>
-        </div>
+        )}
       </main>
     </div>
   );
