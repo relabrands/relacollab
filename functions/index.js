@@ -351,237 +351,115 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 });
 
 // Get Instagram Post Metrics
+// ==========================================
+// 4. GET SINGLE POST METRICS (PARA SUBMIT CONTENT)
+// ==========================================
 exports.getPostMetrics = functions.https.onRequest((req, res) => {
     return cors(req, res, async () => {
-        if (req.method !== 'POST') {
-            return res.status(405).json({ error: "Method Not Allowed" });
-        }
+        if (req.method !== 'POST') return res.status(405).json({ error: "Method Not Allowed" });
 
         const { userId, postId } = req.body;
-
-        if (!userId || !postId) {
-            return res.status(400).json({ error: "Missing userId or postId" });
-        }
+        if (!userId || !postId) return res.status(400).json({ error: "Missing userId or postId" });
 
         try {
-            // Get user's access token
+            // 1. Obtener Token
             const userDoc = await db.collection("users").doc(userId).get();
-            if (!userDoc.exists) {
-                return res.status(404).json({ error: "User not found" });
-            }
+            if (!userDoc.exists) return res.status(404).json({ error: "User not found" });
 
             const userData = userDoc.data();
             const accessToken = userData.instagramAccessToken;
+            const igUserId = userData.instagramId;
 
-            if (!accessToken) {
-                return res.status(400).json({ error: "Instagram not connected" });
+            if (!accessToken) return res.status(400).json({ error: "Instagram not connected" });
+
+            // 2. Buscar el post en la lista reciente (API Graph no busca por shortcode directo)
+            // Pedimos 'media_product_type' para saber si es Reel con seguridad
+            let mediaItems = [];
+            try {
+                const response = await axios.get(
+                    `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,like_count,comments_count,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,shortcode&limit=50&access_token=${accessToken}`
+                );
+                mediaItems = response.data.data || [];
+            } catch (e) {
+                console.error("Error searching media:", e.message);
+                throw e;
             }
 
-            // Fetch recent media to find the post by shortcode/permalink
-            // We cannot fetch by shortcode directly in Basic Display API
-            console.log(`Searching for post with shortcode ${postId} in user media...`);
+            // Buscamos el post que coincida con el ID o Permalink
+            const foundPost = mediaItems.find(item =>
+                (item.permalink && item.permalink.includes(postId)) ||
+                (item.shortcode && item.shortcode === postId)
+            );
 
+            if (!foundPost) {
+                return res.status(404).json({ error: "Post not found in recent media" });
+            }
+
+            // 3. Obtener Insights (LÓGICA SEGURA v19.0)
+            let detailedMetrics = {};
             try {
-                // Fetch recent media (limit 50 to be safe)
-                // Try to get view counts first (video_view_count, play_count, view_count)
-                // Reduced limit to 25 to avoid timeouts and large payloads
-                // Fetch recent media (limit 25)
-                const igUserId = userData.instagramId;
-                let mediaItems = [];
+                const mediaType = foundPost.media_type;
+                const mediaProductType = foundPost.media_product_type;
+                let metricsParams = "";
 
-                try {
-                    console.log(`📡 Fetching media for IG user ${igUserId}...`);
-                    const response = await axios.get(
-                        `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,like_count,comments_count,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,shortcode&limit=25&access_token=${accessToken}`
-                    );
-                    mediaItems = response.data.data || [];
-                    console.log(`📦 Found ${mediaItems.length} media items`);
-                } catch (e) {
-                    console.error("❌ Error fetching user media:", e.response?.data || e.message);
-                    throw e;
+                // REGLA DE ORO:
+                // VIDEO/REEL -> plays, reach, saved, total_interactions
+                // IMAGE -> impressions, reach, saved, total_interactions
+                // (Quitamos 'shares' para evitar errores, ya que total_interactions lo incluye)
+
+                if (mediaType === 'VIDEO' || mediaProductType === 'REELS') {
+                    metricsParams = "plays,reach,saved,total_interactions";
+                } else {
+                    metricsParams = "impressions,reach,saved,total_interactions";
                 }
 
-                // Find the post that contains the shortcode in its permalink
-                const foundPost = mediaItems.find(item => item.permalink && item.permalink.includes(postId));
+                console.log(`Fetching insights for ${foundPost.id} with: ${metricsParams}`);
 
-                if (!foundPost) {
-                    console.warn(`⚠️ Post with shortcode ${postId} not found in last 25 posts`);
-                    console.log("Available permalinks:", mediaItems.map(i => i.permalink).slice(0, 5));
-                    return res.status(404).json({
-                        error: "Post not found or too old",
-                        details: "Could not find this post in your recent media. Please ensure it's on the connected account."
-                    });
-                }
+                const insightsResponse = await axios.get(
+                    `https://graph.facebook.com/v19.0/${foundPost.id}/insights?metric=${metricsParams}&access_token=${accessToken}`
+                );
 
-                console.log("✅ Found post:", {
-                    id: foundPost.id,
-                    media_type: foundPost.media_type,
-                    media_product_type: foundPost.media_product_type,
-                    permalink: foundPost.permalink
-                });
-                const mediaId = foundPost.id;
-                let detailedMetrics = {};
-
-                // TAREA 1: Detailed Metrics via Graph API
-                // Try to fetch insights, but fallback to basic if token is not valid for Graph API (Basic Display vs Graph API)
-                try {
-                    // Step 2: Get Media Type & Basic Interactions from Graph API
-                    // Note: accessing graph.facebook.com requires Graph API token. Basic Display uses graph.instagram.com.
-                    // We attempt this, if it fails, we fall back.
-                    // Actually, since we found the post via Basic Display API (graph.instagram.com), the ID is a Basic Display ID.
-                    // For Graph API, IDs might differ? Usually they are compatible if the user is the same.
-                    // Let's assume we use the same token.
-
-                    // Check media_type from foundPost to skip extra call if possible, but user asked for explicit flow.
-                    // We will use foundPost.media_type which is reliable.
-
-
-                    const mediaType = foundPost.media_type;
-                    const mediaProductType = foundPost.media_product_type; // CRITICAL: Identifies if it's a REEL
-                    let metricsParams = "";
-
-                    // Safe metrics based on OFFICIAL API documentation
-                    // Source: https://developers.facebook.com/docs/instagram-api/reference/ig-media/insights
-                    // IMPORTANT: Use media_product_type to detect Reels, not media_type
-                    if (mediaProductType === 'REELS' || mediaProductType === 'STORY') {
-                        // Reel metrics: plays (deprecated v22+), reach, saved, shares, comments, likes
-                        // Note: plays will be deprecated April 2025, but keeping for now
-                        metricsParams = "plays,reach,saved,shares,comments,likes";
-                    } else if (mediaType === 'VIDEO') {
-                        // Regular video (not a Reel): May not support all metrics
-                        // Safer to use basic video metrics
-                        metricsParams = "plays,reach,saved,comments,likes";
-                    } else {
-                        // Image/Carousel/Post metrics
-                        // Note: impressions deprecated for media created after July 2024, but trying anyway
-                        // Valid metrics: reach, saved, shares, comments, likes
-                        metricsParams = "reach,saved,shares,comments,likes";
-                    }
-
-                    // Attempt fetching insights
-                    let insightsResponse;
-                    try {
-                        console.log(`Fetching insights for ${mediaId} (${mediaType}) with params: ${metricsParams}`);
-                        insightsResponse = await axios.get(
-                            `https://graph.facebook.com/v19.0/${mediaId}/insights?metric=${metricsParams}&access_token=${accessToken}`
-                        );
-                    } catch (e1) {
-                        console.warn("First attempt insights failed:", e1.response?.data || e1.message);
-
-                        // Fallback Logic
-                        try {
-                            if (mediaProductType === 'REELS' || mediaType === 'VIDEO') {
-                                // Try minimal video/reel metrics
-                                metricsParams = "plays,reach,saved,comments,likes";
-                            } else {
-                                // Try minimal image metrics
-                                metricsParams = "reach,saved,comments,likes";
-                            }
-                            console.log(`Retry fetching insights for ${mediaId} with params: ${metricsParams}`);
-                            insightsResponse = await axios.get(
-                                `https://graph.facebook.com/v19.0/${mediaId}/insights?metric=${metricsParams}&access_token=${accessToken}`
-                            );
-                        } catch (e2) {
-                            console.error("Fallback insights failed:", e2.response?.data || e2.message);
-                            // Return basic metrics if insights fail compeletely
-                            const basicMetrics = {
-                                ...foundPost,
-                                details_status: "failed_insights",
-                                views: foundPost.video_view_count || 0,
-                                reach: 0,
-                                saved: 0,
-                                shares: 0,
-                                interactions: (foundPost.like_count || 0) + (foundPost.comments_count || 0)
-                            };
-                            // Must verify if we should throw or just set detailedMetrics?
-                            // Throwing will go to outer catch (line 466) which sets basic fallback.
-                            throw e2;
-                        }
-                    }
-
-                    if (insightsResponse && insightsResponse.data) {
-                        const insights = insightsResponse.data.data;
-                        const insightsMap = {};
-                        insights.forEach(i => insightsMap[i.name] = i.values[0].value);
-
-                        console.log("📊 Raw Instagram insights data:", JSON.stringify(insights, null, 2));
-                        console.log("📊 Insights map:", insightsMap);
-
-                        // Mapping - use media_product_type for accurate Reel detection
-                        if (mediaProductType === 'REELS' || mediaType === 'VIDEO') {
-                            detailedMetrics = {
-                                views: insightsMap['plays'] || foundPost.video_view_count || 0,
-                                reach: insightsMap['reach'] || 0,
-                                saved: insightsMap['saved'] || 0,
-                                shares: insightsMap['shares'] || 0,
-                                comments: insightsMap['comments'] || foundPost.comments_count || 0,
-                                likes: insightsMap['likes'] || foundPost.like_count || 0,
-                                interactions: (insightsMap['likes'] || foundPost.like_count || 0) +
-                                    (insightsMap['comments'] || foundPost.comments_count || 0) +
-                                    (insightsMap['saved'] || 0) +
-                                    (insightsMap['shares'] || 0)
-                            };
-                        } else {
-                            detailedMetrics = {
-                                views: insightsMap['impressions'] || 0, // impressions as views
-                                reach: insightsMap['reach'] || 0,
-                                saved: insightsMap['saved'] || 0,
-                                shares: insightsMap['shares'] || 0,
-                                comments: insightsMap['comments'] || foundPost.comments_count || 0,
-                                likes: insightsMap['likes'] || foundPost.like_count || 0,
-                                interactions: (insightsMap['likes'] || foundPost.like_count || 0) +
-                                    (insightsMap['comments'] || foundPost.comments_count || 0) +
-                                    (insightsMap['saved'] || 0) +
-                                    (insightsMap['shares'] || 0)
-                            };
-                        }
-                        console.log("Fetched detailed insights successfully:", detailedMetrics);
-                    }
-
-                } catch (insightError) {
-                    console.warn("Could not fetch detailed insights (likely Basic Display token):", insightError.message);
-                    // Fallback to basic metrics we already have
-                    // Fallback to basic metrics we already have
-                    detailedMetrics = {
-                        views: foundPost.video_view_count || foundPost.play_count || foundPost.view_count || 0,
-                        reach: 0,
-                        saved: 0,
-                        shares: 0,
-                        comments: foundPost.comments_count || 0,
-                        likes: foundPost.like_count || 0,
-                        interactions: (foundPost.like_count || 0) + (foundPost.comments_count || 0)
-                    };
-                }
-
-                // Combine with basic counts
-                const metrics = {
-                    likes: foundPost.like_count || 0,
-                    comments: foundPost.comments_count || 0,
-                    type: foundPost.media_type?.toLowerCase() || 'image',
-                    thumbnail: foundPost.thumbnail_url || foundPost.media_url || '',
-                    fetchedAt: new Date().toISOString(),
-                    ...detailedMetrics
+                const data = insightsResponse.data.data;
+                const getVal = (name) => {
+                    const m = data.find(x => x.name === name);
+                    return m ? m.values[0].value : 0;
                 };
 
-                return res.json({
-                    success: true,
-                    metrics: metrics
-                });
+                detailedMetrics = {
+                    views: getVal('plays') || getVal('impressions') || 0,
+                    reach: getVal('reach') || 0,
+                    saved: getVal('saved') || 0,
+                    // Si total_interactions viene de la API, úsalo. Si no, calcúlalo.
+                    interactions: getVal('total_interactions') ||
+                        ((foundPost.like_count || 0) + (foundPost.comments_count || 0))
+                };
 
-            } catch (apiError) {
-                console.error("Instagram API Error Details:", apiError.response?.data || apiError.message);
-                return res.status(500).json({
-                    error: "Failed to fetch media list from Instagram",
-                    details: apiError.response?.data?.error?.message || apiError.message
-                });
+            } catch (insightError) {
+                console.warn("Insights fetch failed (using basic stats):", insightError.message);
+                // Fallback seguro: Si falla la API de insights, al menos devolvemos likes/comments
+                detailedMetrics = {
+                    views: 0,
+                    reach: 0,
+                    saved: 0,
+                    interactions: (foundPost.like_count || 0) + (foundPost.comments_count || 0)
+                };
             }
 
+            // 4. Armar respuesta final
+            const metrics = {
+                likes: foundPost.like_count || 0,
+                comments: foundPost.comments_count || 0,
+                type: foundPost.media_type?.toLowerCase(),
+                thumbnail: foundPost.thumbnail_url || foundPost.media_url,
+                fetchedAt: new Date().toISOString(),
+                ...detailedMetrics
+            };
+
+            return res.json({ success: true, metrics: metrics });
+
         } catch (error) {
-            console.error("Error in getPostMetrics:", error.message);
-            return res.status(500).json({
-                error: "System Error",
-                details: error.message
-            });
+            console.error("System Error getPostMetrics:", error.message);
+            return res.status(500).json({ error: error.message });
         }
     });
 });
