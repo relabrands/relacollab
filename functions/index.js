@@ -445,6 +445,9 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
 
             } catch (insightError) {
                 console.warn("Insights fetch failed (using basic stats):", insightError.message);
+                if (insightError.response) {
+                    console.error("❌ Instagram API Error Body:", JSON.stringify(insightError.response.data, null, 2));
+                }
                 // Fallback seguro: Si falla la API de insights, al menos devolvemos likes/comments
                 detailedMetrics = {
                     views: 0,
