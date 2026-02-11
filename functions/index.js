@@ -202,11 +202,15 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
 
                     // LÓGICA CONDICIONAL EXACTA v19.0
                     if (item.media_type === 'VIDEO' || item.media_product_type === 'REELS') {
-                        // VIDEO/REEL: Tiene 'shares' y 'plays'
-                        metricParam = "plays,reach,saved,shares,total_interactions";
+                        // VIDEO/REEL: Valid: plays, reach, saved, shares
+                        // total_interactions does NOT exist for media insights
+                        metricParam = "plays,reach,saved,shares";
                     } else {
-                        // IMAGEN/CAROUSEL: Tiene 'impressions' pero NO 'shares' ni 'plays'
-                        metricParam = "impressions,reach,saved,total_interactions";
+                        // IMAGEN/CAROUSEL: Valid: reach, saved, shares
+                        // impressions: deprecated for new posts (will fail or return 0, better to omit if possible, or keep if we accept partial failure?)
+                        // shares: valid for images
+                        // total_interactions: invalid
+                        metricParam = "reach,saved,shares";
                     }
 
                     const insightRes = await axios.get(
@@ -408,9 +412,13 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 // (Quitamos 'shares' para evitar errores, ya que total_interactions lo incluye)
 
                 if (mediaType === 'VIDEO' || mediaProductType === 'REELS') {
-                    metricsParams = "plays,reach,saved,total_interactions";
+                    // REELS/VIDEO: plays, reach, saved, shares
+                    // Removed: total_interactions (Invalid)
+                    metricsParams = "plays,reach,saved,shares";
                 } else {
-                    metricsParams = "impressions,reach,saved,total_interactions";
+                    // IMAGE: reach, saved, shares
+                    // Removed: impressions (Deprecated/Invalid for new), total_interactions (Invalid)
+                    metricsParams = "reach,saved,shares";
                 }
 
                 console.log(`Fetching insights for ${foundPost.id} with: ${metricsParams}`);
@@ -429,6 +437,7 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                     views: getVal('plays') || getVal('impressions') || 0,
                     reach: getVal('reach') || 0,
                     saved: getVal('saved') || 0,
+                    shares: getVal('shares') || 0,
                     // Si total_interactions viene de la API, úsalo. Si no, calcúlalo.
                     interactions: getVal('total_interactions') ||
                         ((foundPost.like_count || 0) + (foundPost.comments_count || 0))
