@@ -481,6 +481,9 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                         const insightsMap = {};
                         insights.forEach(i => insightsMap[i.name] = i.values[0].value);
 
+                        console.log("📊 Raw Instagram insights data:", JSON.stringify(insights, null, 2));
+                        console.log("📊 Insights map:", insightsMap);
+
                         // Mapping - use media_product_type for accurate Reel detection
                         if (mediaProductType === 'REELS' || mediaType === 'VIDEO') {
                             detailedMetrics = {
@@ -488,17 +491,25 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                                 reach: insightsMap['reach'] || 0,
                                 saved: insightsMap['saved'] || 0,
                                 shares: insightsMap['shares'] || 0,
-                                interactions: insightsMap['total_interactions'] ||
-                                    ((foundPost.like_count || 0) + (foundPost.comments_count || 0) + (insightsMap['saved'] || 0))
+                                comments: insightsMap['comments'] || foundPost.comments_count || 0,
+                                likes: insightsMap['likes'] || foundPost.like_count || 0,
+                                interactions: (insightsMap['likes'] || foundPost.like_count || 0) +
+                                    (insightsMap['comments'] || foundPost.comments_count || 0) +
+                                    (insightsMap['saved'] || 0) +
+                                    (insightsMap['shares'] || 0)
                             };
                         } else {
                             detailedMetrics = {
                                 views: insightsMap['impressions'] || 0, // impressions as views
                                 reach: insightsMap['reach'] || 0,
                                 saved: insightsMap['saved'] || 0,
-                                shares: 0,
-                                interactions: insightsMap['engagement'] ||
-                                    ((foundPost.like_count || 0) + (foundPost.comments_count || 0) + (insightsMap['saved'] || 0))
+                                shares: insightsMap['shares'] || 0,
+                                comments: insightsMap['comments'] || foundPost.comments_count || 0,
+                                likes: insightsMap['likes'] || foundPost.like_count || 0,
+                                interactions: (insightsMap['likes'] || foundPost.like_count || 0) +
+                                    (insightsMap['comments'] || foundPost.comments_count || 0) +
+                                    (insightsMap['saved'] || 0) +
+                                    (insightsMap['shares'] || 0)
                             };
                         }
                         console.log("Fetched detailed insights successfully:", detailedMetrics);
