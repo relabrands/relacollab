@@ -156,8 +156,12 @@ exports.auth = functions.https.onRequest((req, res) => {
     });
 });
 
+// ==========================================
+// 2. GET MEDIA (CON MÉTRICAS COMPLETAS: Saved, Shares, Reach)
+// ==========================================
 exports.getInstagramMedia = functions.https.onRequest((req, res) => {
     return cors(req, res, async () => {
+        // Permitir POST y GET
         if (req.method !== 'POST' && req.method !== 'GET') return res.status(405).json({ error: "Method Not Allowed" });
 
         const userId = req.body.userId || req.query.userId;
@@ -174,31 +178,37 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
 
             if (!accessToken || !igUserId) return res.status(400).json({ error: "Instagram not connected" });
 
-            // 2. Obtener Lista Básica (Limitado a 18 para no saturar)
-            // Note: Added media_product_type to fields request
+            // 2. Obtener Lista Básica
+            // Pedimos media_product_type para saber si es Reel
             const response = await axios.get(
                 `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=18&access_token=${accessToken}`
             );
 
             const rawPosts = response.data.data || [];
 
-            // 3. ENRIQUECER CON VIEWS (INSIGHTS)
-            // Hacemos peticiones en paralelo para buscar los views de cada post
-            const postsWithViews = await Promise.all(rawPosts.map(async (item) => {
-                let views = 0;
-                let reach = 0;
+            // 3. ENRIQUECER CON INSIGHTS (EN PARALELO)
+            const postsWithMetrics = await Promise.all(rawPosts.map(async (item) => {
+                // Métricas Base (vienen directo del post)
+                let metrics = {
+                    views: 0,
+                    reach: 0,
+                    saved: 0,
+                    shares: 0,
+                    interactions: (item.like_count || 0) + (item.comments_count || 0)
+                };
 
                 try {
                     let metricParam = "";
-                    // Si es Video/Reel -> Pedimos 'plays' (deprecated pero funciona)
+
+                    // LÓGICA CONDICIONAL EXACTA v19.0
                     if (item.media_type === 'VIDEO' || item.media_product_type === 'REELS') {
-                        metricParam = "plays,reach";
+                        // VIDEO/REEL: Tiene 'shares' y 'plays'
+                        metricParam = "plays,reach,saved,shares,total_interactions";
                     } else {
-                        // Si es Foto -> Solo 'reach' (impressions deprecated para posts nuevos)
-                        metricParam = "reach";
+                        // IMAGEN/CAROUSEL: Tiene 'impressions' pero NO 'shares' ni 'plays'
+                        metricParam = "impressions,reach,saved,total_interactions";
                     }
 
-                    // Llamada a la API de Insights para este post específico
                     const insightRes = await axios.get(
                         `https://graph.facebook.com/v19.0/${item.id}/insights?metric=${metricParam}&access_token=${accessToken}`
                     );
@@ -209,30 +219,43 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
                         return m ? m.values[0].value : 0;
                     };
 
-                    views = getVal('plays') || getVal('impressions') || 0;
-                    reach = getVal('reach') || 0;
+                    // Asignar valores
+                    metrics.views = getVal('plays') || getVal('impressions') || 0;
+                    metrics.reach = getVal('reach') || 0;
+                    metrics.saved = getVal('saved') || 0;
+                    metrics.shares = getVal('shares') || 0; // Será 0 en imágenes
+
+                    // Total Interactions (API vs Cálculo manual)
+                    // A veces la API da un número más exacto que sumar likes+comments
+                    const apiInteractions = getVal('total_interactions');
+                    if (apiInteractions > 0) metrics.interactions = apiInteractions;
 
                 } catch (err) {
-                    // Si el post es muy viejo o da error, views se queda en 0
-                    // console.warn(`No insights for post ${item.id}`);
+                    // Si falla (post muy viejo o error de API), nos quedamos con likes/comments básicos
+                    // console.warn(`Error getting insights for ${item.id}: ${err.message}`);
                 }
 
                 return {
                     id: item.id,
                     caption: item.caption || "",
                     media_type: item.media_type,
+                    media_product_type: item.media_product_type, // Útil para frontend
                     thumbnail_url: item.media_type === 'VIDEO' ? item.thumbnail_url : item.media_url,
                     permalink: item.permalink,
                     timestamp: item.timestamp,
                     like_count: item.like_count || 0,
                     comments_count: item.comments_count || 0,
-                    // AQUÍ ESTÁN TUS MÉTRICAS REALES
-                    views: views,
-                    reach: reach
+
+                    // TUS MÉTRICAS NUEVAS
+                    views: metrics.views,
+                    reach: metrics.reach,
+                    saved: metrics.saved,
+                    shares: metrics.shares,
+                    total_interactions: metrics.interactions
                 };
             }));
 
-            return res.json({ success: true, data: postsWithViews });
+            return res.json({ success: true, data: postsWithMetrics });
 
         } catch (error) {
             console.error("Error fetching media:", error.message);
