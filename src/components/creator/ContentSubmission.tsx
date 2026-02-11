@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Upload, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Upload, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, Trash2, Play, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
@@ -318,13 +318,41 @@ export function ContentSubmission() {
                               }`}
                           >
                             <div className="flex items-center gap-3 flex-1">
-                              <span className="text-2xl">
-                                {deliverable.type === "Post" && "📸"}
-                                {deliverable.type === "Reel" && "🎬"}
-                                {deliverable.type === "Story" && "📱"}
-                                {deliverable.type === "Carousel" && "🖼️"}
-                                {deliverable.type === "Video" && "🎥"}
-                              </span>
+                              {/* Thumbnail Preview or Emoji */}
+                              {submission ? (
+                                <a
+                                  href={submission.contentUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="relative group flex-shrink-0"
+                                  title="View on Instagram"
+                                >
+                                  <img
+                                    src={submission.thumbnailUrl || submission.mediaUrl || "https://via.placeholder.com/80"}
+                                    alt={`${deliverable.type} #${deliverableNumber}`}
+                                    className="w-16 h-16 object-cover rounded-lg border-2 border-border group-hover:border-primary transition-colors"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = "https://via.placeholder.com/80";
+                                    }}
+                                  />
+                                  {(deliverable.type === "Reel" || deliverable.type === "Video") && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg group-hover:bg-black/40 transition-colors">
+                                      <Play className="w-6 h-6 text-white fill-white" />
+                                    </div>
+                                  )}
+                                  <div className="absolute -top-1 -right-1 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <ExternalLink className="w-3 h-3 text-white" />
+                                  </div>
+                                </a>
+                              ) : (
+                                <span className="text-3xl flex-shrink-0">
+                                  {deliverable.type === "Post" && "📸"}
+                                  {deliverable.type === "Reel" && "🎬"}
+                                  {deliverable.type === "Story" && "📱"}
+                                  {deliverable.type === "Carousel" && "🖼️"}
+                                  {deliverable.type === "Video" && "🎥"}
+                                </span>
+                              )}
                               <div className="flex-1">
                                 <div className="font-medium">
                                   {deliverable.type} #{deliverableNumber}
