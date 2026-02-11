@@ -326,14 +326,14 @@ export default function ContentLibrary() {
               status: sub.status || "pending",
               submittedAt: sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
               metrics: {
-                views: 0,
-                likes: 0,
-                comments: 0,
-                shares: 0,
-                reach: 0,
-                saved: 0,
-                interactions: 0,
-                ...(sub.metrics || {})
+                ...(sub.metrics || {}),
+                views: sub.metrics?.views || 0,
+                likes: sub.metrics?.likes || 0,
+                comments: sub.metrics?.comments || 0,
+                shares: sub.metrics?.shares || 0,
+                reach: sub.metrics?.reach || 0,
+                saved: sub.metrics?.saved || 0,
+                interactions: sub.metrics?.interactions || 0
               }
             } as ContentItem;
           })
