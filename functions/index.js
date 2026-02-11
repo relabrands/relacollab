@@ -381,7 +381,7 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
             let mediaItems = [];
             try {
                 const response = await axios.get(
-                    `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,like_count,comments_count,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,shortcode&limit=50&access_token=${accessToken}`
+                    `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,like_count,comments_count,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,shortcode,video_view_count&limit=50&access_token=${accessToken}`
                 );
                 mediaItems = response.data.data || [];
             } catch (e) {
