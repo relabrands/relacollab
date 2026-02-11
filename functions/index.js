@@ -518,9 +518,15 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 } catch (insightError) {
                     console.warn("Could not fetch detailed insights (likely Basic Display token):", insightError.message);
                     // Fallback to basic metrics we already have
+                    // Fallback to basic metrics we already have
                     detailedMetrics = {
                         views: foundPost.video_view_count || foundPost.play_count || foundPost.view_count || 0,
-                        // No reach/saved/shares in Basic Display
+                        reach: 0,
+                        saved: 0,
+                        shares: 0,
+                        comments: foundPost.comments_count || 0,
+                        likes: foundPost.like_count || 0,
+                        interactions: (foundPost.like_count || 0) + (foundPost.comments_count || 0)
                     };
                 }
 
