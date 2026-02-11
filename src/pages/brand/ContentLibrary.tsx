@@ -432,17 +432,16 @@ export default function ContentLibrary() {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.metrics) {
-          // Update in Firestore
+          // Update in Firestore - use dot notation for nested metrics
           await updateDoc(doc(db, "content_submissions", content.id), {
-            likes: data.metrics.likes,
-            comments: data.metrics.comments,
-            views: data.metrics.views || 0,
-            reach: data.metrics.reach || 0,
-            saved: data.metrics.saved || 0,
-            shares: data.metrics.shares || 0,
-            interactions: data.metrics.interactions || 0,
-            type: data.metrics.type,
-            thumbnail: data.metrics.thumbnail,
+            "metrics.likes": data.metrics.likes || 0,
+            "metrics.comments": data.metrics.comments || 0,
+            "metrics.views": data.metrics.views || 0,
+            "metrics.reach": data.metrics.reach || 0,
+            "metrics.saved": data.metrics.saved || 0,
+            "metrics.shares": data.metrics.shares || 0,
+            "metrics.interactions": data.metrics.interactions || 0,
+            "metrics.updatedAt": new Date().toISOString(),
             metricsLastFetched: new Date().toISOString()
           });
 
