@@ -800,90 +800,108 @@ export default function CreatorProfile() {
                 Social Connections
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl border bg-muted/30 space-y-3">
-                  <div className="flex items-center justify-between">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                {/* Instagram Connection */}
+                <div className="group p-4 rounded-xl border border-border/50 bg-background/50 hover:bg-background transition-colors space-y-3 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Instagram className="w-16 h-16 text-[#E1306C]" />
+                  </div>
+
+                  <div className="flex items-center justify-between relative z-10">
                     <div className="flex items-center gap-2">
-                      <Instagram className="w-5 h-5 text-[#E1306C]" />
-                      <span className="font-medium">Instagram</span>
+                      <div className="p-2 rounded-full bg-[#E1306C]/10 text-[#E1306C]">
+                        <Instagram className="w-5 h-5" />
+                      </div>
+                      <span className="font-semibold">Instagram</span>
                     </div>
                     {profile.instagramConnected && !(Date.now() > (profile.instagramTokenExpiresAt || 0)) ? (
-                      <span className="text-xs bg-success/20 text-success px-2 py-1 rounded-full flex items-center gap-1">
+                      <span className="text-xs bg-success/10 text-success border border-success/20 px-2 py-1 rounded-full flex items-center gap-1 font-medium">
                         <Check className="w-3 h-3" /> Connected
                       </span>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Not connected</span>
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">Not connected</span>
                     )}
                   </div>
 
                   {/* Instagram Connection Logic */}
-                  {(() => {
-                    const isConnected = profile.instagramConnected;
-                    const isExpired = isConnected && (Date.now() > (profile.instagramTokenExpiresAt || 0));
+                  <div className="relative z-10 pt-1">
+                    {(() => {
+                      const isConnected = profile.instagramConnected;
+                      const isExpired = isConnected && (Date.now() > (profile.instagramTokenExpiresAt || 0));
 
-                    if (isConnected && !isExpired) {
-                      return (
-                        <div className="text-sm">
-                          <p className="text-muted-foreground">Username: @{socialHandles.instagram}</p>
-                          <Button variant="outline" size="sm" className="w-full mt-2" onClick={handleInstagramDisconnect}>
-                            Disconnect
+                      if (isConnected && !isExpired) {
+                        return (
+                          <div className="text-sm">
+                            <p className="text-muted-foreground mb-3 text-xs">Username <span className="text-foreground font-medium">@{socialHandles.instagram}</span></p>
+                            <Button variant="outline" size="sm" className="w-full hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30" onClick={handleInstagramDisconnect}>
+                              Disconnect
+                            </Button>
+                          </div>
+                        );
+                      } else if (isExpired) {
+                        return (
+                          <div className="text-sm">
+                            <p className="text-warning font-medium mb-2 text-xs">Session Expired</p>
+                            <Button variant="outline" size="sm" className="w-full border-warning text-warning hover:bg-warning/10" onClick={handleInstagramConnect}>
+                              Reconnect Instagram
+                            </Button>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <Button variant="default" size="sm" className="w-full bg-[#E1306C] hover:bg-[#C13584] text-white border-0" onClick={handleInstagramConnect}>
+                            Connect Instagram
                           </Button>
-                        </div>
-                      );
-                    } else if (isExpired) {
-                      return (
-                        <div className="text-sm">
-                          <p className="text-warning font-medium mb-2">Session Expired</p>
-                          <Button variant="outline" size="sm" className="w-full border-warning text-warning hover:bg-warning/10" onClick={handleInstagramConnect}>
-                            Reconnect Instagram
-                          </Button>
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <Button variant="outline" size="sm" className="w-full" onClick={handleInstagramConnect}>
-                          Connect Instagram
-                        </Button>
-                      );
-                    }
-                  })()}
+                        );
+                      }
+                    })()}
+                  </div>
                 </div>
 
                 {/* TikTok Connection */}
-                <div className="p-4 rounded-xl border bg-muted/30 space-y-3">
-                  <div className="flex items-center justify-between">
+                {/* TikTok Connection */}
+                <div className="group p-4 rounded-xl border border-border/50 bg-background/50 hover:bg-background transition-colors space-y-3 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <svg className="w-16 h-16 text-black dark:text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg>
+                  </div>
+
+                  <div className="flex items-center justify-between relative z-10">
                     <div className="flex items-center gap-2">
-                      {/* Simple TikTok Icon or text */}
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg>
-                      <span className="font-medium">TikTok</span>
+                      <div className="p-2 rounded-full bg-black/5 dark:bg-white/10 text-black dark:text-white">
+                        {/* Simple TikTok Icon or text */}
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg>
+                      </div>
+                      <span className="font-semibold">TikTok</span>
                     </div>
                     {profile.tiktokConnected ? (
-                      <span className="text-xs bg-success/20 text-success px-2 py-1 rounded-full flex items-center gap-1">
+                      <span className="text-xs bg-success/10 text-success border border-success/20 px-2 py-1 rounded-full flex items-center gap-1 font-medium">
                         <Check className="w-3 h-3" /> Connected
                       </span>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Not connected</span>
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">Not connected</span>
                     )}
                   </div>
 
-                  {(() => {
-                    if (profile.tiktokConnected) {
-                      return (
-                        <div className="text-sm">
-                          <p className="text-muted-foreground">Username: @{socialHandles.tiktok}</p>
-                          <Button variant="outline" size="sm" className="w-full mt-2" onClick={handleTikTokDisconnect}>
-                            Disconnect
+                  <div className="relative z-10 pt-1">
+                    {(() => {
+                      if (profile.tiktokConnected) {
+                        return (
+                          <div className="text-sm">
+                            <p className="text-muted-foreground mb-3 text-xs">Username <span className="text-foreground font-medium">@{socialHandles.tiktok}</span></p>
+                            <Button variant="outline" size="sm" className="w-full hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30" onClick={handleTikTokDisconnect}>
+                              Disconnect
+                            </Button>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <Button variant="default" size="sm" className="w-full bg-black hover:bg-gray-800 text-white dark:bg-white dark:text-black dark:hover:bg-gray-200 border-0" onClick={handleTikTokConnect}>
+                            Connect TikTok
                           </Button>
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <Button variant="outline" size="sm" className="w-full" onClick={handleTikTokConnect}>
-                          Connect TikTok
-                        </Button>
-                      );
-                    }
-                  })()}
+                        );
+                      }
+                    })()}
+                  </div>
                 </div>
 
 
