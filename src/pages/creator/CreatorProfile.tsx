@@ -803,8 +803,8 @@ export default function CreatorProfile() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
                 {/* Instagram Connection */}
                 <div className="group p-4 rounded-xl border border-border/50 bg-background/50 hover:bg-background transition-colors space-y-3 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Instagram className="w-16 h-16 text-[#E1306C]" />
+                  <div className="absolute -bottom-4 -right-4 p-3 opacity-5 group-hover:opacity-10 transition-opacity transform -rotate-12">
+                    <Instagram className="w-24 h-24 text-[#E1306C]" />
                   </div>
 
                   <div className="flex items-center justify-between relative z-10">
@@ -861,8 +861,8 @@ export default function CreatorProfile() {
                 {/* TikTok Connection */}
                 {/* TikTok Connection */}
                 <div className="group p-4 rounded-xl border border-border/50 bg-background/50 hover:bg-background transition-colors space-y-3 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <svg className="w-16 h-16 text-black dark:text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg>
+                  <div className="absolute -bottom-4 -right-4 p-3 opacity-5 group-hover:opacity-10 transition-opacity transform -rotate-12">
+                    <svg className="w-24 h-24 text-black dark:text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg>
                   </div>
 
                   <div className="flex items-center justify-between relative z-10">
