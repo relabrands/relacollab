@@ -11,7 +11,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { addDoc, collection, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { MobileNav } from "@/components/dashboard/MobileNav";
+import { Badge } from "@/components/ui/badge";
+import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -46,6 +47,7 @@ const compensationOptions = [
 
 
 export default function CreateCampaign() {
+  const { config } = usePlatformConfig();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [step, setStep] = useState(1);
