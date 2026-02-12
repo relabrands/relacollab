@@ -26,7 +26,8 @@ export default function BrandAnalytics() {
     });
     const [creatorPerformance, setCreatorPerformance] = useState<any[]>([]);
     const [activePlatform, setActivePlatform] = useState<"all" | "instagram" | "tiktok">("all");
-    const [originalSubmissions, setOriginalSubmissions] = useState<any[]>([]);
+    const [rawSubmissions, setRawSubmissions] = useState<any[]>([]);
+    const [campMap, setCampMap] = useState<Map<string, string>>(new Map());
 
     useEffect(() => {
         const fetchData = async () => {
@@ -37,6 +38,7 @@ export default function BrandAnalytics() {
                 const campaignSnapshot = await getDocs(q);
                 const campaignIds = campaignSnapshot.docs.map(d => d.id);
                 const campaignMap = new Map(campaignSnapshot.docs.map(d => [d.id, d.data().name]));
+                setCampMap(campaignMap);
 
                 if (campaignIds.length === 0) {
                     setLoading(false);
@@ -59,8 +61,8 @@ export default function BrandAnalytics() {
                     allSubmissions = [...allSubmissions, ...snap.docs.map(d => ({ id: d.id, ...d.data() }))];
                 });
 
-                setOriginalSubmissions(allSubmissions);
-                processData(allSubmissions, "all");
+                setRawSubmissions(allSubmissions);
+
 
             } catch (error) {
                 console.error(error);
