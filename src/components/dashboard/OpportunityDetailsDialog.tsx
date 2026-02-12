@@ -95,16 +95,16 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                             <div className="space-y-3">
                                 <div className="space-y-2 pb-2 border-b border-border/50">
                                     <div className="flex justify-between text-sm text-muted-foreground">
-                                        <span>Pago Bruto de la Marca:</span>
+                                        <span>Presupuesto de la Campaña:</span>
                                         <span>${(opportunity.totalBudgetPerCreator || opportunity.creatorPayment || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-muted-foreground">
                                         <span className="flex items-center gap-1">
-                                            Fee de Servicio RELA ({opportunity.platformFeePercent || 0}%):
+                                            Fee de Servicio RELA ({opportunity.platformFeePercent || 0}%)
                                             <span className="group relative">
                                                 <div className="cursor-help w-4 h-4 rounded-full bg-muted flex items-center justify-center text-[10px] border border-border">?</div>
                                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                                                    Este fee cubre el uso de la plataforma, la gestión de la campaña y la garantía de pago seguro por parte de RELA Collab.
+                                                    Este fee se deduce del presupuesto total para cubrir el uso de la plataforma y garantía de pago seguro.
                                                 </div>
                                             </span>
                                         </span>
@@ -112,7 +112,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-end">
-                                    <span className="font-semibold text-lg">Pago Neto a Recibir:</span>
+                                    <span className="font-semibold text-lg">Tu Pago Neto:</span>
                                     <span className="text-2xl font-bold text-success">
                                         ${(opportunity.creatorPayment || 0).toLocaleString()}
                                     </span>
