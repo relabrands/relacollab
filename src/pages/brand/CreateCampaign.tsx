@@ -33,7 +33,7 @@ const vibeOptions = [
 
 const contentTypeOptions = [
   { id: "post", label: "Post", emoji: "📸" },
-  { id: "reels", label: "Reels", emoji: "🎬" },
+  { id: "video", label: "Video", emoji: "🎥" },
   { id: "stories", label: "Historias", emoji: "📱" },
   { id: "carousel", label: "Carretes", emoji: "🎠" },
 ];
@@ -577,6 +577,24 @@ export default function CreateCampaign() {
                             key={index}
                             className="flex items-center gap-3 p-4 border rounded-xl bg-muted/30"
                           >
+                            {/* Platform Selector */}
+                            <div className="w-32">
+                              <Select
+                                value={(deliverable as any).platform || "instagram"}
+                                onValueChange={(value) =>
+                                  handleUpdateDeliverable(index, "platform", value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Platform" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="instagram">Instagram</SelectItem>
+                                  <SelectItem value="tiktok">TikTok</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
                             {/* Type Selector */}
                             <div className="flex-1">
                               <Select
@@ -590,10 +608,9 @@ export default function CreateCampaign() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="Post">📸 Post</SelectItem>
-                                  <SelectItem value="Reel">🎬 Reel</SelectItem>
+                                  <SelectItem value="Video">🎥 Video</SelectItem>
                                   <SelectItem value="Story">📱 Story</SelectItem>
                                   <SelectItem value="Carousel">🖼️ Carousel</SelectItem>
-                                  <SelectItem value="Video">🎥 Video</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>

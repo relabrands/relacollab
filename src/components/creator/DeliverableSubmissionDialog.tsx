@@ -307,6 +307,7 @@ export function DeliverableSubmissionDialog({
                     thumbnailUrl: media.thumbnail_url || media.media_url || "",
                     caption: media.caption || "",
                     mediaType: media.media_type,
+                    platform: (media as any).platform || "instagram", // Save platform explicitly
                     status: "pending",
                     createdAt: new Date().toISOString(),
                     metrics: {
@@ -465,10 +466,9 @@ export function DeliverableSubmissionDialog({
                                                     ) : (
                                                         <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-2xl">
                                                             {slot.type === "Post" && "📸"}
-                                                            {slot.type === "Reel" && "🎬"}
+                                                            {(slot.type === "Reel" || slot.type === "Video") && "🎥"}
                                                             {slot.type === "Story" && "📱"}
                                                             {slot.type === "Carousel" && "🖼️"}
-                                                            {slot.type === "Video" && "🎥"}
                                                         </div>
                                                     )}
                                                 </div>

@@ -42,7 +42,7 @@ interface ContentItem {
   creatorName: string;
   creatorAvatar: string;
   campaignName: string;
-  type: "image" | "video" | "reel" | "story";
+  type: "image" | "video" | "story";
   platform: "instagram" | "tiktok";
   thumbnail: string;
   postUrl: string;
@@ -94,7 +94,7 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-4 bg-muted/50">
-            {content.type === 'video' || content.type === 'reel' ? (
+            {content.type === 'video' ? (
               <Video className="w-12 h-12 mb-2 opacity-50" />
             ) : (
               <Image className="w-12 h-12 mb-2 opacity-50" />
@@ -109,12 +109,12 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
         {/* Type Badge */}
         <div className="absolute top-3 left-3">
           <Badge variant="outline" className="bg-background/80 backdrop-blur-sm border-border/50">
-            {content.type === "video" || content.type === "reel" ? (
+            {content.type === "video" ? (
               <Video className="w-3 h-3 mr-1" />
             ) : (
               <Image className="w-3 h-3 mr-1" />
             )}
-            {content.type}
+            {content.type.charAt(0).toUpperCase() + content.type.slice(1)}
           </Badge>
         </div>
 
@@ -133,7 +133,7 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
         </div>
 
         {/* Play button for videos */}
-        {(content.type === "video" || content.type === "reel") && (
+        {(content.type === "video") && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
               <Play className="w-6 h-6 text-white fill-white" />
@@ -266,6 +266,7 @@ export default function ContentLibrary() {
   const [contentList, setContentList] = useState<ContentItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [activePlatform, setActivePlatform] = useState("all");
   const [contentToEdit, setContentToEdit] = useState<ContentItem | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -318,7 +319,7 @@ export default function ContentLibrary() {
               creatorAvatar: creatorData.photoURL || creatorData.avatar || "https://via.placeholder.com/150",
               campaignName: campaignMap.get(sub.campaignId) || sub.campaignName || "Unknown Campaign",
               // Determine type from mediaType or fallback
-              type: (sub.mediaType === "VIDEO" || sub.mediaType === "REELS") ? "reel" : "image",
+              type: (sub.mediaType === "VIDEO" || sub.mediaType === "REELS") ? "video" : "image",
               platform: sub.platform || "instagram",
               // Use thumbnailUrl or mediaUrl (for images)
               thumbnail: sub.thumbnailUrl || sub.mediaUrl || "https://via.placeholder.com/400x500",
@@ -354,17 +355,19 @@ export default function ContentLibrary() {
       content.creatorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       content.campaignName.toLowerCase().includes(searchQuery.toLowerCase());
 
-    if (activeTab === "all") return matchesSearch;
-    return matchesSearch && content.status === activeTab;
+    const matchesPlatform = activePlatform === "all" || content.platform === activePlatform;
+
+    if (activeTab === "all") return matchesSearch && matchesPlatform;
+    return matchesSearch && matchesPlatform && content.status === activeTab;
   });
 
   const stats = {
-    total: contentList.length,
-    live: contentList.filter(c => c.status === "live").length,
-    approved: contentList.filter(c => c.status === "approved").length,
-    pending: contentList.filter(c => c.status === "pending").length,
-    totalViews: contentList.reduce((acc, c) => acc + (c.metrics?.views || 0), 0),
-    totalEngagement: contentList.reduce((acc, c) =>
+    total: filteredContent.length,
+    live: filteredContent.filter(c => c.status === "live").length,
+    approved: filteredContent.filter(c => c.status === "approved").length,
+    pending: filteredContent.filter(c => c.status === "pending").length,
+    totalViews: filteredContent.reduce((acc, c) => acc + (c.metrics?.views || 0), 0),
+    totalEngagement: filteredContent.reduce((acc, c) =>
       acc + (c.metrics?.likes || 0) + (c.metrics?.comments || 0) + (c.metrics?.shares || 0), 0
     )
   };
@@ -524,20 +527,45 @@ export default function ContentLibrary() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by creator or campaign..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between">
+          <div className="flex flex-1 gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by creator or campaign..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
-          <Button variant="outline">
-            <Filter className="w-4 h-4" />
-            Filters
-          </Button>
+
+          {/* Platform Filter */}
+          <div className="flex gap-2">
+            <Button
+              variant={activePlatform === "all" ? "default" : "outline"}
+              onClick={() => setActivePlatform("all")}
+              size="sm"
+            >
+              All
+            </Button>
+            <Button
+              variant={activePlatform === "instagram" ? "default" : "outline"}
+              onClick={() => setActivePlatform("instagram")}
+              size="sm"
+              className="gap-2"
+            >
+              <Instagram className="w-4 h-4" /> Instagram
+            </Button>
+            <Button
+              variant={activePlatform === "tiktok" ? "default" : "outline"}
+              onClick={() => setActivePlatform("tiktok")}
+              size="sm"
+              className="gap-2"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg> TikTok
+            </Button>
+          </div>
         </div>
 
         {/* Tabs */}
