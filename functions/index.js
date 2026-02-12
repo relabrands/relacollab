@@ -476,3 +476,120 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
         }
     });
 });
+
+// ==========================================
+// 5. TIKTOK AUTHENTICATION (SANDBOX)
+// ==========================================
+exports.authTikTok = functions.https.onRequest((req, res) => {
+    return cors(req, res, async () => {
+        if (req.method !== 'POST') return res.status(405).json({ error: "Method Not Allowed" });
+
+        const { code, userId } = req.body;
+        if (!code) return res.status(400).json({ error: "Missing code" });
+
+        const CLIENT_KEY = "sbawc7z0a481hx7bx1";
+        const CLIENT_SECRET = "SmryCdX4L0SGrODyUuRJWgnpijrEp9IN";
+        const REDIRECT_URI = "https://www.relacollab.com/auth/tiktok/callback";
+
+        try {
+            // 1. Get Access Token
+            const tokenParams = new URLSearchParams();
+            tokenParams.append("client_key", CLIENT_KEY);
+            tokenParams.append("client_secret", CLIENT_SECRET);
+            tokenParams.append("code", code);
+            tokenParams.append("grant_type", "authorization_code");
+            tokenParams.append("redirect_uri", REDIRECT_URI);
+
+            const tokenResponse = await axios.post("https://open.tiktokapis.com/v2/oauth/token/", tokenParams, {
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            });
+
+            const { access_token, open_id, expires_in } = tokenResponse.data;
+
+            if (!access_token) {
+                console.error("TikTok Token Error:", tokenResponse.data);
+                return res.status(400).json({ error: "Failed to obtain access token", details: tokenResponse.data });
+            }
+
+            // 2. Get User Info
+            // Scopes required: user.info.basic, user.info.stats
+            const userFields = "display_name,avatar_url,follower_count,following_count,likes_count";
+            const userResponse = await axios.get(`https://open.tiktokapis.com/v2/user/info/?fields=${userFields}`, {
+                headers: { "Authorization": `Bearer ${access_token}` }
+            });
+
+            const userData = userResponse.data.data?.user || {};
+
+            // 3. Get Recent Videos (for Engagement Rate)
+            // Scope required: video.list
+            // Sandbox Note: functionality might be limited
+            let engagementRate = 0;
+            try {
+                const videoFields = "id,title,view_count,like_count,comment_count,share_count";
+                const videoResponse = await axios.post("https://open.tiktokapis.com/v2/video/list/?fields=" + videoFields, {
+                    max_count: 20
+                }, {
+                    headers: {
+                        "Authorization": `Bearer ${access_token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                const videos = videoResponse.data.data?.videos || [];
+
+                if (videos.length > 0) {
+                    let totalEngagement = 0;
+                    videos.forEach(v => {
+                        totalEngagement += (v.like_count || 0) + (v.comment_count || 0) + (v.share_count || 0);
+                    });
+                    const avgEngagement = totalEngagement / videos.length;
+                    const followers = userData.follower_count || 1;
+                    engagementRate = ((avgEngagement / followers) * 100).toFixed(2);
+                }
+            } catch (vidErr) {
+                console.warn("Error fetching TikTok videos:", vidErr.message);
+            }
+
+            // 4. Save to Firestore
+            if (userId) {
+                await db.collection("users").doc(userId).set({
+                    tiktokConnected: true,
+                    tiktokAccessToken: access_token,
+                    tiktokOpenId: open_id,
+                    tiktokTokenExpiresAt: Date.now() + (expires_in * 1000),
+                    socialHandles: { tiktok: userData.display_name }, // Update handle
+                    tiktokMetrics: {
+                        followers: userData.follower_count || 0,
+                        likes: userData.likes_count || 0,
+                        engagementRate: parseFloat(engagementRate),
+                        lastUpdated: new Date().toISOString()
+                    }
+                }, { merge: true });
+            }
+
+            return res.json({
+                success: true,
+                data: {
+                    displayName: userData.display_name,
+                    followers: userData.follower_count,
+                    engagementRate
+                }
+            });
+
+        } catch (error) {
+            console.error("TikTok Auth Error:", error.response?.data || error.message);
+            return res.status(500).json({ error: "TikTok Authentication Failed", details: error.message });
+        }
+    });
+});
+
+// ==========================================
+// 6. TIKTOK WEBHOOK (VERIFICATION)
+// ==========================================
+exports.tiktokWebhook = functions.https.onRequest((req, res) => {
+    // Log verification requests
+    console.log("TikTok Webhook Event:", JSON.stringify(req.body));
+
+    // Always return 200 OK for challenge/verification
+    res.status(200).send("OK");
+});

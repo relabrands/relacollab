@@ -15,6 +15,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataDeletion from "./pages/DataDeletion";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import InstagramCallback from "./pages/auth/InstagramCallback";
+import TikTokCallback from "./pages/auth/TikTokCallback";
 import Apply from "./pages/Apply";
 
 // Brand pages
@@ -68,6 +69,7 @@ const App = () => (
             <Route path="/eliminacion-de-datos" element={<DataDeletion />} />
             <Route path="/terminos-y-condiciones" element={<TermsAndConditions />} />
             <Route path="/auth/facebook/callback" element={<InstagramCallback />} />
+            <Route path="/auth/tiktok/callback" element={<TikTokCallback />} />
 
             {/* Onboarding Routes */}
             <Route path="/onboarding" element={<OnboardingLayout />}>

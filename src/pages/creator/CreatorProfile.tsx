@@ -99,7 +99,10 @@ export default function CreatorProfile() {
     photoURL: "", // Add photoURL to state
     instagramMetrics: null,
     instagramConnected: false,
-    instagramTokenExpiresAt: 0
+    instagramTokenExpiresAt: 0,
+    tiktokMetrics: null,
+    tiktokConnected: false,
+    tiktokTokenExpiresAt: 0
   });
 
   const [socialHandles, setSocialHandles] = useState<{ instagram: string; tiktok: string }>({
@@ -144,7 +147,10 @@ export default function CreatorProfile() {
             photoURL: data.photoURL || user.photoURL || "", // Fetch photoURL
             instagramMetrics: data.instagramMetrics || null,
             instagramConnected: data.instagramConnected || false,
-            instagramTokenExpiresAt: data.instagramTokenExpiresAt || 0
+            instagramTokenExpiresAt: data.instagramTokenExpiresAt || 0,
+            tiktokMetrics: data.tiktokMetrics || null,
+            tiktokConnected: data.tiktokConnected || false,
+            tiktokTokenExpiresAt: data.tiktokTokenExpiresAt || 0
           });
 
           if (data.categories) {
@@ -242,6 +248,51 @@ export default function CreatorProfile() {
   const handleInstagramConnect = () => {
     const authUrl = "https://www.facebook.com/v19.0/dialog/oauth?client_id=1253246110020541&redirect_uri=https://relacollab.com/auth/facebook/callback&response_type=code&scope=instagram_basic,instagram_manage_insights,pages_show_list,pages_read_engagement,business_management";
     window.location.href = authUrl;
+  };
+
+  const handleTikTokConnect = () => {
+    // Generar state aleatorio
+    const state = Math.random().toString(36).substring(7);
+    localStorage.setItem("tiktok_auth_state", state);
+
+    const clientKey = "sbawc7z0a481hx7bx1";
+    const redirectUri = "https://www.relacollab.com/auth/tiktok/callback";
+    const scopes = "user.info.basic,user.info.stats,video.list";
+
+    const authUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${clientKey}&response_type=code&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+
+    window.location.href = authUrl;
+  };
+
+  const handleTikTokDisconnect = async () => {
+    if (!user) return;
+
+    if (!confirm("Are you sure you want to disconnect TikTok?")) {
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        tiktokConnected: false,
+        tiktokAccessToken: deleteField(),
+        tiktokMetrics: deleteField(),
+        tiktokOpenId: deleteField(),
+        tiktokTokenExpiresAt: deleteField(),
+        "socialHandles.tiktok": deleteField()
+      });
+
+      setProfile((prev: any) => ({
+        ...prev,
+        tiktokConnected: false,
+        tiktokMetrics: null
+      }));
+      setSocialHandles(prev => ({ ...prev, tiktok: "" }));
+
+      toast.success("TikTok disconnected.");
+    } catch (error) {
+      console.error("Error disconnecting TikTok:", error);
+      toast.error("Failed to disconnect TikTok.");
+    }
   };
 
   const handleInstagramDisconnect = async () => {
@@ -792,6 +843,43 @@ export default function CreatorProfile() {
                       return (
                         <Button variant="outline" size="sm" className="w-full" onClick={handleInstagramConnect}>
                           Connect Instagram
+                        </Button>
+                      );
+                    }
+                  })()}
+                </div>
+
+                {/* TikTok Connection */}
+                <div className="p-4 rounded-xl border bg-muted/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {/* Simple TikTok Icon or text */}
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg>
+                      <span className="font-medium">TikTok</span>
+                    </div>
+                    {profile.tiktokConnected ? (
+                      <span className="text-xs bg-success/20 text-success px-2 py-1 rounded-full flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Connected
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Not connected</span>
+                    )}
+                  </div>
+
+                  {(() => {
+                    if (profile.tiktokConnected) {
+                      return (
+                        <div className="text-sm">
+                          <p className="text-muted-foreground">Username: @{socialHandles.tiktok}</p>
+                          <Button variant="outline" size="sm" className="w-full mt-2" onClick={handleTikTokDisconnect}>
+                            Disconnect
+                          </Button>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <Button variant="outline" size="sm" className="w-full" onClick={handleTikTokConnect}>
+                          Connect TikTok
                         </Button>
                       );
                     }
