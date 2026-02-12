@@ -354,3 +354,10 @@ export default function BrandAnalytics() {
             </div>
         );
     }
+                        </div >
+                    )
+}
+                </main >
+            </div >
+        );
+    }
