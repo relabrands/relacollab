@@ -593,3 +593,83 @@ exports.tiktokWebhook = functions.https.onRequest((req, res) => {
     // Always return 200 OK for challenge/verification
     res.status(200).send("OK");
 });
+
+// ==========================================
+// 7. GET TIKTOK MEDIA
+// ==========================================
+exports.getTikTokMedia = functions.https.onRequest((req, res) => {
+    return cors(req, res, async () => {
+        if (req.method !== 'POST') return res.status(405).json({ error: "Method Not Allowed" });
+
+        const { userId, cursor } = req.body;
+        if (!userId) return res.status(400).json({ error: "Missing userId" });
+
+        try {
+            const userDoc = await db.collection("users").doc(userId).get();
+            if (!userDoc.exists) {
+                return res.status(404).json({ error: "User not found" });
+            }
+
+            const userData = userDoc.data();
+            const accessToken = userData.tiktokAccessToken;
+
+            if (!accessToken) {
+                return res.status(401).json({ error: "TikTok not connected" });
+            }
+
+            // Check token expiration (optional but good practice)
+            if (userData.tiktokTokenExpiresAt && Date.now() > userData.tiktokTokenExpiresAt) {
+                return res.status(401).json({ error: "TikTok token expired" });
+            }
+
+            // Fetch Video List
+            // https://developers.tiktok.com/doc/tiktok-api-v2-video-list
+            const videoFields = "id,title,cover_image_url,share_url,video_description,view_count,like_count,comment_count,share_count,create_time";
+
+            const response = await axios.post("https://open.tiktokapis.com/v2/video/list/?fields=" + videoFields, {
+                max_count: 20,
+                cursor: cursor || 0
+            }, {
+                headers: {
+                    "Authorization": `Bearer ${accessToken}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const { data, error } = response.data;
+
+            if (error && error.code !== "ok") {
+                console.error("TikTok API Error:", error);
+                return res.status(400).json({ error: error.message, code: error.code });
+            }
+
+            const videos = data.videos || [];
+            const nextCursor = data.cursor; // Timestamp for next page
+
+            // Map to a standard format
+            const mappedVideos = videos.map(v => ({
+                id: v.id,
+                caption: v.title || v.video_description || "",
+                media_type: "VIDEO",
+                media_url: v.share_url, // TikTok API v2 might not give direct video file URL for privacy/hotlinking, check docs. usually share_url or embed_html
+                thumbnail_url: v.cover_image_url,
+                permalink: v.share_url,
+                timestamp: new Date(v.create_time * 1000).toISOString(),
+                like_count: v.like_count,
+                comments_count: v.comment_count,
+                view_count: v.view_count,
+                share_count: v.share_count
+            }));
+
+            return res.json({
+                success: true,
+                data: mappedVideos,
+                cursor: data.has_more ? nextCursor : null
+            });
+
+        } catch (error) {
+            console.error("Get TikTok Media Error:", error.response?.data || error.message);
+            return res.status(500).json({ error: "Failed to fetch TikTok media", details: error.message });
+        }
+    });
+});

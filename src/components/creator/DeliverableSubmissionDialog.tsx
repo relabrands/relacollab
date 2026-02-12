@@ -18,7 +18,10 @@ interface InstagramMedia {
     permalink: string;
     like_count?: number;
     comments_count?: number;
+    view_count?: number; // Added for TikTok compatibility
 }
+
+import { TikTokMediaPicker } from "./TikTokMediaPicker";
 
 interface DeliverableItem {
     type: string;
@@ -78,6 +81,7 @@ export function DeliverableSubmissionDialog({
     const [submittedContent, setSubmittedContent] = useState<SubmittedContent[]>([]);
     const [selectedDeliverables, setSelectedDeliverables] = useState<Map<string, InstagramMedia>>(new Map());
     const [showInstagramPicker, setShowInstagramPicker] = useState(false);
+    const [showTikTokPicker, setShowTikTokPicker] = useState(false);
     const [currentDeliverable, setCurrentDeliverable] = useState<{ key: string; type: string } | null>(null);
 
     // Fetch existing submissions when dialog opens
@@ -144,6 +148,11 @@ export function DeliverableSubmissionDialog({
         setShowInstagramPicker(true);
     };
 
+    const handleOpenTikTokPicker = (key: string, type: string) => {
+        setCurrentDeliverable({ key, type });
+        setShowTikTokPicker(true);
+    };
+
     const handleInstagramMediaSelected = (media: InstagramMedia) => {
         if (currentDeliverable) {
             setSelectedDeliverables(prev => {
@@ -151,9 +160,27 @@ export function DeliverableSubmissionDialog({
                 newMap.set(currentDeliverable.key, media);
                 return newMap;
             });
-            toast.success(`Selected ${currentDeliverable.type}`);
+            toast.success(`Selected ${currentDeliverable.type} from Instagram`);
         }
         setShowInstagramPicker(false);
+        setCurrentDeliverable(null);
+    };
+
+    const handleTikTokMediaSelected = (media: any) => {
+        if (currentDeliverable) {
+            setSelectedDeliverables(prev => {
+                const newMap = new Map(prev);
+                // Adapt TikTok media structure to minimal interface if needed, or just store as is
+                newMap.set(currentDeliverable.key, {
+                    ...media,
+                    media_type: "VIDEO", // Force standardized type
+                    platform: "tiktok"
+                });
+                return newMap;
+            });
+            toast.success(`Selected ${currentDeliverable.type} from TikTok`);
+        }
+        setShowTikTokPicker(false);
         setCurrentDeliverable(null);
     };
 
@@ -206,33 +233,50 @@ export function DeliverableSubmissionDialog({
 
                 // Auto-fetch metrics for resubmitted content
                 try {
-                    const match = media.permalink.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
-                    const postId = match ? match[2] : null;
+                    // Start metrics Logic
+                    if ((media as any).platform === 'tiktok') {
+                        // TikTok metrics are already in the media object from selection (approx),
+                        // but ideally we'd want to refresh them. For sandbox, we might not have a separate 'getSingleVideo' endpoint easily.
+                        // We will trust the selection values for now.
+                        console.log("TikTok submission - using fresh selection metrics");
+                        await updateDoc(submissionRef, {
+                            "metrics.views": media.view_count || 0,
+                            "metrics.likes": media.like_count || 0,
+                            "metrics.comments": media.comments_count || 0,
+                            "metrics.shares": (media as any).share_count || 0,
+                            "metrics.inputPlatform": "tiktok",
+                            "metrics.updatedAt": new Date().toISOString()
+                        });
+                    } else {
+                        // Instagram Logic
+                        const match = media.permalink.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
+                        const postId = match ? match[2] : null;
 
-                    if (postId) {
-                        console.log("📡 Fetching metrics for resubmitted content:", postId);
-                        fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ userId: user!.uid, postId })
-                        }).then(async (res) => {
-                            if (res.ok) {
-                                const data = await res.json();
-                                if (data.success && data.metrics) {
-                                    await updateDoc(submissionRef, {
-                                        "metrics.views": data.metrics.views || 0,
-                                        "metrics.reach": data.metrics.reach || 0,
-                                        "metrics.saved": data.metrics.saved || 0,
-                                        "metrics.shares": data.metrics.shares || 0,
-                                        "metrics.interactions": data.metrics.interactions || 0,
-                                        "metrics.likes": data.metrics.likes || 0,
-                                        "metrics.comments": data.metrics.comments || 0,
-                                        "metrics.updatedAt": new Date().toISOString()
-                                    });
-                                    console.log("✅ Fetched metrics for resubmitted content");
+                        if (postId) {
+                            console.log("📡 Fetching metrics for resubmitted content:", postId);
+                            fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ userId: user!.uid, postId })
+                            }).then(async (res) => {
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    if (data.success && data.metrics) {
+                                        await updateDoc(submissionRef, {
+                                            "metrics.views": data.metrics.views || 0,
+                                            "metrics.reach": data.metrics.reach || 0,
+                                            "metrics.saved": data.metrics.saved || 0,
+                                            "metrics.shares": data.metrics.shares || 0,
+                                            "metrics.interactions": data.metrics.interactions || 0,
+                                            "metrics.likes": data.metrics.likes || 0,
+                                            "metrics.comments": data.metrics.comments || 0,
+                                            "metrics.updatedAt": new Date().toISOString()
+                                        });
+                                        console.log("✅ Fetched metrics for resubmitted content");
+                                    }
                                 }
-                            }
-                        }).catch(err => console.error("Error fetching metrics for resubmission:", err));
+                            }).catch(err => console.error("Error fetching metrics for resubmission:", err));
+                        }
                     }
                 } catch (e) {
                     console.error("Error initiating metric fetch for resubmission:", e);
@@ -283,44 +327,58 @@ export function DeliverableSubmissionDialog({
 
                     console.log("🔍 Auto-fetch metrics:", { permalink: media.permalink, postId, hasMatch: !!match });
 
-                    if (postId) {
-                        // We use fetch here to call our cloud function
-                        console.log("📡 Calling getPostMetrics for postId:", postId);
-                        fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ userId: user!.uid, postId })
-                        }).then(async (res) => {
-                            console.log("📥 getPostMetrics response status:", res.status);
-
-                            if (res.ok) {
-                                const data = await res.json();
-                                console.log("📊 getPostMetrics data:", data);
-
-                                if (data.success && data.metrics) {
-                                    // Update the doc we just created with complete metrics
-                                    await updateDoc(docRef, {
-                                        "metrics.views": data.metrics.views || 0,
-                                        "metrics.reach": data.metrics.reach || 0,
-                                        "metrics.saved": data.metrics.saved || 0,
-                                        "metrics.shares": data.metrics.shares || 0,
-                                        "metrics.interactions": data.metrics.interactions || 0,
-                                        "metrics.likes": data.metrics.likes || 0,
-                                        "metrics.comments": data.metrics.comments || 0,
-                                        "metrics.updatedAt": new Date().toISOString(),
-                                        metricsLastFetched: new Date().toISOString()
-                                    });
-                                    console.log("✅ Automatically fetched detailed metrics for submission");
-                                } else {
-                                    console.warn("⚠️ getPostMetrics succeeded but no metrics:", data);
-                                }
-                            } else {
-                                const errorText = await res.text();
-                                console.error("❌ getPostMetrics HTTP error:", res.status, errorText);
-                            }
-                        }).catch(err => console.error("❌ Error auto-fetching metrics:", err));
+                    if ((media as any).platform === 'tiktok') {
+                        console.log("Using TikTok metrics from selection for new submission");
+                        await updateDoc(docRef, {
+                            "metrics.views": media.view_count || 0,
+                            "metrics.likes": media.like_count || 0,
+                            "metrics.comments": media.comments_count || 0,
+                            "metrics.shares": (media as any).share_count || 0,
+                            "metrics.inputPlatform": "tiktok",
+                            "metrics.updatedAt": new Date().toISOString(),
+                            metricsLastFetched: new Date().toISOString()
+                        });
                     } else {
-                        console.warn("⚠️ Could not extract postId from permalink:", media.permalink);
+                        // Instagram Logic
+                        if (postId) {
+                            // We use fetch here to call our cloud function
+                            console.log("📡 Calling getPostMetrics for postId:", postId);
+                            fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ userId: user!.uid, postId })
+                            }).then(async (res) => {
+                                console.log("📥 getPostMetrics response status:", res.status);
+
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    console.log("📊 getPostMetrics data:", data);
+
+                                    if (data.success && data.metrics) {
+                                        // Update the doc we just created with complete metrics
+                                        await updateDoc(docRef, {
+                                            "metrics.views": data.metrics.views || 0,
+                                            "metrics.reach": data.metrics.reach || 0,
+                                            "metrics.saved": data.metrics.saved || 0,
+                                            "metrics.shares": data.metrics.shares || 0,
+                                            "metrics.interactions": data.metrics.interactions || 0,
+                                            "metrics.likes": data.metrics.likes || 0,
+                                            "metrics.comments": data.metrics.comments || 0,
+                                            "metrics.updatedAt": new Date().toISOString(),
+                                            metricsLastFetched: new Date().toISOString()
+                                        });
+                                        console.log("✅ Automatically fetched detailed metrics for submission");
+                                    } else {
+                                        console.warn("⚠️ getPostMetrics succeeded but no metrics:", data);
+                                    }
+                                } else {
+                                    const errorText = await res.text();
+                                    console.error("❌ getPostMetrics HTTP error:", res.status, errorText);
+                                }
+                            }).catch(err => console.error("❌ Error auto-fetching metrics:", err));
+                        } else {
+                            console.warn("⚠️ Could not extract postId from permalink:", media.permalink);
+                        }
                     }
                 } catch (e) {
                     console.error("❌ Error initiating metric fetch", e);
@@ -478,25 +536,50 @@ export function DeliverableSubmissionDialog({
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <Button
-                                                        variant={selectedMedia ? "default" : "outline"}
-                                                        size="sm"
-                                                        onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
-                                                        disabled={loading}
-                                                        className={selectedMedia ? "bg-green-600 hover:bg-green-700 text-white" : ""}
-                                                    >
-                                                        {selectedMedia ? (
-                                                            <>
-                                                                <Check className="w-4 h-4 mr-2" />
-                                                                Change Selection
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Upload className="w-4 h-4 mr-2" />
-                                                                Select from Instagram
-                                                            </>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            variant={selectedMedia ? "default" : "outline"}
+                                                            size="sm"
+                                                            onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
+                                                            disabled={loading}
+                                                            className={selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                                                        >
+                                                            {selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? (
+                                                                <>
+                                                                    <Check className="w-4 h-4 mr-2" />
+                                                                    Change IG
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Upload className="w-4 h-4 mr-2" />
+                                                                    Select Instagram
+                                                                </>
+                                                            )}
+                                                        </Button>
+
+                                                        {/* Only show TikTok for video types */}
+                                                        {["Video", "Reel", "Post"].includes(slot.type) && (
+                                                            <Button
+                                                                variant={selectedMedia && (selectedMedia as any).platform === 'tiktok' ? "default" : "outline"}
+                                                                size="sm"
+                                                                onClick={() => handleOpenTikTokPicker(slot.key, slot.type)}
+                                                                disabled={loading}
+                                                                className={selectedMedia && (selectedMedia as any).platform === 'tiktok' ? "bg-black hover:bg-gray-800 text-white" : ""}
+                                                            >
+                                                                {selectedMedia && (selectedMedia as any).platform === 'tiktok' ? (
+                                                                    <>
+                                                                        <Check className="w-4 h-4 mr-2" />
+                                                                        Change TikTok
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg>
+                                                                        Select TikTok
+                                                                    </>
+                                                                )}
+                                                            </Button>
                                                         )}
-                                                    </Button>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -524,22 +607,39 @@ export function DeliverableSubmissionDialog({
                             </Button>
                         </div>
                     </div>
-                </DialogContent>
-            </Dialog>
+                </DialogContent >
+            </Dialog >
 
             {/* Instagram Media Picker */}
-            {showInstagramPicker && currentDeliverable && user && (
-                <InstagramMediaPicker
-                    open={showInstagramPicker}
-                    onClose={() => {
-                        setShowInstagramPicker(false);
-                        setCurrentDeliverable(null);
-                    }}
-                    onSelect={handleInstagramMediaSelected}
-                    userId={user.uid}
-                    filterType={currentDeliverable.type as any}
-                />
-            )}
+            {
+                showInstagramPicker && currentDeliverable && user && (
+                    <InstagramMediaPicker
+                        open={showInstagramPicker}
+                        onClose={() => {
+                            setShowInstagramPicker(false);
+                            setCurrentDeliverable(null);
+                        }}
+                        onSelect={handleInstagramMediaSelected}
+                        userId={user.uid}
+                        filterType={currentDeliverable.type as any}
+                    />
+                )
+            }
+
+            {/* TikTok Media Picker */}
+            {
+                showTikTokPicker && currentDeliverable && user && (
+                    <TikTokMediaPicker
+                        open={showTikTokPicker}
+                        onClose={() => {
+                            setShowTikTokPicker(false);
+                            setCurrentDeliverable(null);
+                        }}
+                        onSelect={handleTikTokMediaSelected}
+                        userId={user.uid}
+                    />
+                )
+            }
         </>
     );
 }
