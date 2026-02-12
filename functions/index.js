@@ -95,7 +95,7 @@ exports.auth = functions.https.onRequest((req, res) => {
 
                 // Fetch extra details if needed (followers, media count) from the IG User node
                 const userDetailsResponse = await axios.get(
-                    `https://graph.facebook.com/v19.0/${igUserId}?fields=biography,followers_count,media_count,profile_picture_url,username&access_token=${longLivedAccessToken}`
+                    `https://graph.facebook.com/v19.0/${igUserId}?fields=biography,followers_count,media_count,profile_picture_url,username,name&access_token=${longLivedAccessToken}`
                 );
                 const userData = userDetailsResponse.data;
 
@@ -122,6 +122,8 @@ exports.auth = functions.https.onRequest((req, res) => {
                         instagramConnected: true,
                         instagramId: igUserId,
                         instagramUsername: userData.username,
+                        instagramName: userData.name || userData.username, // New
+                        instagramProfilePicture: userData.profile_picture_url, // New
                         instagramAccessToken: longLivedAccessToken,
                         instagramTokenExpiresAt: expiresAt,
                         instagramMetrics: {
@@ -558,6 +560,8 @@ exports.authTikTok = functions.https.onRequest((req, res) => {
                     tiktokOpenId: open_id,
                     tiktokTokenExpiresAt: Date.now() + (expires_in * 1000),
                     socialHandles: { tiktok: userData.display_name }, // Update handle
+                    tiktokName: userData.display_name, // New
+                    tiktokAvatar: userData.avatar_url, // New
                     tiktokMetrics: {
                         followers: userData.follower_count || 0,
                         likes: userData.likes_count || 0,
