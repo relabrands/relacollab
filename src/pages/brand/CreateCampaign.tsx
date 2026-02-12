@@ -256,12 +256,26 @@ export default function CreateCampaign() {
         console.warn("Could not fetch brand name:", e);
       }
 
+      // Calculate final amounts (Model: Gross - Fee = Net)
+      const grossAmount = Number(formData.creatorPayment) || 0; // The input is now the Gross Amount
+      const feePercent = config.serviceFeePercent || 10;
+      const feeAmount = grossAmount * (feePercent / 100);
+      const netAmount = grossAmount - feeAmount;
+
       const campaignData = {
         ...formData,
         brandId: user.uid,
-        brandName: brandName, // Add brand name for creator opportunity display
+        brandName: brandName,
         status: "active",
         createdAt: new Date().toISOString(),
+
+        // Fee & Payment Data
+        creatorPayment: netAmount, // Net amount creator receives
+        platformFeePercent: feePercent,
+        platformFeeAmount: feeAmount,
+        totalBudgetPerCreator: grossAmount, // Gross amount brand pays
+
+        // Legacy fields for backward compatibility or other logic
         budget: parseFloat(formData.budget) || 0,
         creatorCount: parseInt(formData.creatorCount) || 1,
         approvedCount: 0,
@@ -742,28 +756,32 @@ export default function CreateCampaign() {
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                           Cantidad que recibirá cada creator aprobado.
+                          Cantidad bruta que se pagará por cada creator aprobado.
                         </p>
 
                         {/* Fee Calculation Display */}
                         {formData.creatorPayment && (
                           <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border/50 space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Pago al Creator (Neto):</span>
-                              <span className="font-medium">${Number(formData.creatorPayment).toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground flex items-center gap-1">
-                                Platform Fee ({config.serviceFeePercent}%)
-                                <span className="text-[10px] bg-primary/10 text-primary px-1 rounded">Service</span>
-                              </span>
-                              <span className="font-medium">${(Number(formData.creatorPayment) * (config.serviceFeePercent / 100)).toLocaleString()}</span>
-                            </div>
-                            <div className="pt-2 border-t border-border/50 flex justify-between font-bold">
+                            <div className="flex justify-between font-bold text-base">
                               <span>Total a Pagar (Billing):</span>
-                              <span className="text-primary">${(Number(formData.creatorPayment) * (1 + config.serviceFeePercent / 100)).toLocaleString()}</span>
+                              <span className="text-primary">${Number(formData.creatorPayment).toLocaleString()}</span>
                             </div>
+
+                            <div className="flex justify-between text-sm text-muted-foreground pt-2 border-t border-border/50">
+                              <span className="flex items-center gap-1">
+                                Platform Fee ({config.serviceFeePercent}%)
+                                <span className="text-[10px] bg-primary/10 text-primary px-1 rounded">Deducted</span>
+                              </span>
+                              <span className="text-destructive">-${(Number(formData.creatorPayment) * (config.serviceFeePercent / 100)).toLocaleString()}</span>
+                            </div>
+
+                            <div className="flex justify-between text-sm font-medium pt-1">
+                              <span>Pago Neto al Creator:</span>
+                              <span className="text-success">${(Number(formData.creatorPayment) * (1 - config.serviceFeePercent / 100)).toLocaleString()}</span>
+                            </div>
+
                             <p className="text-[10px] text-muted-foreground mt-1">
-                              * El fee cubre costos de transacción y garantía de pago seguro.
+                              * El fee se deduce del presupuesto total para cubrir costos de transacción y garantía.
                             </p>
                           </div>
                         )}
