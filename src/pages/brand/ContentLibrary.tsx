@@ -46,7 +46,7 @@ interface ContentItem {
   platform: "instagram" | "tiktok";
   thumbnail: string;
   postUrl: string;
-  status: "pending" | "approved" | "live" | "rejected";
+  status: "pending" | "approved" | "live" | "rejected" | "revision_requested";
   submittedAt: string;
   metrics?: {
     views: number;
@@ -71,7 +71,9 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
   const statusColors = {
     pending: "bg-warning/20 text-warning border-warning/30",
     approved: "bg-primary/20 text-primary border-primary/30",
-    live: "bg-success/20 text-success border-success/30"
+    live: "bg-success/20 text-success border-success/30",
+    rejected: "bg-destructive/20 text-destructive border-destructive/30",
+    revision_requested: "bg-orange-500/20 text-orange-600 border-orange-500/30"
   };
 
   const formatNumber = (num: number) => {
@@ -205,58 +207,59 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
             <p className="font-medium text-sm truncate">{content.creatorName}</p>
             <p className="text-xs text-muted-foreground truncate">{content.campaignName}</p>
           </div>
-          <Badge className={statusColors[content.status]}>
-            {content.status === "rejected" ? "changes requested" : content.status}
-          </Badge>
-        </div>
+          {content.status === "rejected" ? "rejected" :
+            content.status === "revision_requested" ? "revision requested" :
+              content.status}
+        </Badge>
+      </div>
 
-        {/* Metrics */}
-        {content.metrics && (
-          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/50">
-            {/* Row 1 */}
-            <div className="text-center group-hover:scale-105 transition-transform" title="Views">
-              <Eye className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-              <p className="text-xs font-medium">{formatNumber(content.metrics.views)}</p>
-            </div>
-            <div className="text-center group-hover:scale-105 transition-transform" title="Reach">
-              <BarChart2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-              <p className="text-xs font-medium">{formatNumber(content.metrics.reach)}</p>
-            </div>
-            <div className="text-center group-hover:scale-105 transition-transform" title="Saved">
-              <Bookmark className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-              <p className="text-xs font-medium">{formatNumber(content.metrics.saved)}</p>
-            </div>
-
-            {/* Row 2 */}
-            <div className="text-center group-hover:scale-105 transition-transform" title="Likes">
-              <Heart className={`w-4 h-4 mx-auto mb-1 ${content.metrics.likes > 0 ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
-              <p className="text-xs font-medium">{formatNumber(content.metrics.likes)}</p>
-            </div>
-            <div className="text-center group-hover:scale-105 transition-transform" title="Comments">
-              <MessageCircle className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-              <p className="text-xs font-medium">{formatNumber(content.metrics.comments)}</p>
-            </div>
-            <div className="text-center group-hover:scale-105 transition-transform" title="Shares">
-              <Share2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-              <p className="text-xs font-medium">{formatNumber(content.metrics.shares)}</p>
-            </div>
+      {/* Metrics */}
+      {content.metrics && (
+        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/50">
+          {/* Row 1 */}
+          <div className="text-center group-hover:scale-105 transition-transform" title="Views">
+            <Eye className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+            <p className="text-xs font-medium">{formatNumber(content.metrics.views)}</p>
           </div>
+          <div className="text-center group-hover:scale-105 transition-transform" title="Reach">
+            <BarChart2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+            <p className="text-xs font-medium">{formatNumber(content.metrics.reach)}</p>
+          </div>
+          <div className="text-center group-hover:scale-105 transition-transform" title="Saved">
+            <Bookmark className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+            <p className="text-xs font-medium">{formatNumber(content.metrics.saved)}</p>
+          </div>
+
+          {/* Row 2 */}
+          <div className="text-center group-hover:scale-105 transition-transform" title="Likes">
+            <Heart className={`w-4 h-4 mx-auto mb-1 ${content.metrics.likes > 0 ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
+            <p className="text-xs font-medium">{formatNumber(content.metrics.likes)}</p>
+          </div>
+          <div className="text-center group-hover:scale-105 transition-transform" title="Comments">
+            <MessageCircle className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+            <p className="text-xs font-medium">{formatNumber(content.metrics.comments)}</p>
+          </div>
+          <div className="text-center group-hover:scale-105 transition-transform" title="Shares">
+            <Share2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+            <p className="text-xs font-medium">{formatNumber(content.metrics.shares)}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Submitted Date */}
+      <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1">
+          <Calendar className="w-3 h-3" />
+          {content.submittedAt}
+        </div>
+        {content.metrics?.updatedAt && (
+          <span className="text-[10px] opacity-70">
+            Updated {new Date(content.metrics.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
         )}
-
-        {/* Submitted Date */}
-        <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
-            {content.submittedAt}
-          </div>
-          {content.metrics?.updatedAt && (
-            <span className="text-[10px] opacity-70">
-              Updated {new Date(content.metrics.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </CardContent>
+    </Card >
   );
 }
 
@@ -358,6 +361,7 @@ export default function ContentLibrary() {
     const matchesPlatform = activePlatform === "all" || content.platform === activePlatform;
 
     if (activeTab === "all") return matchesSearch && matchesPlatform;
+    if (activeTab === "revision_requested") return matchesSearch && matchesPlatform && (content.status === "revision_requested" || content.status === "rejected");
     return matchesSearch && matchesPlatform && content.status === activeTab;
   });
 
@@ -366,6 +370,7 @@ export default function ContentLibrary() {
     live: filteredContent.filter(c => c.status === "live").length,
     approved: filteredContent.filter(c => c.status === "approved").length,
     pending: filteredContent.filter(c => c.status === "pending").length,
+    revisions: filteredContent.filter(c => c.status === "revision_requested" || c.status === "rejected").length,
     totalViews: filteredContent.reduce((acc, c) => acc + (c.metrics?.views || 0), 0),
     totalEngagement: filteredContent.reduce((acc, c) =>
       acc + (c.metrics?.likes || 0) + (c.metrics?.comments || 0) + (c.metrics?.shares || 0), 0
@@ -572,9 +577,10 @@ export default function ContentLibrary() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
           <TabsList>
             <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
-            <TabsTrigger value="live">Live ({stats.live})</TabsTrigger>
-            <TabsTrigger value="approved">Approved ({stats.approved})</TabsTrigger>
             <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>
+            <TabsTrigger value="revision_requested">Revisions ({stats.revisions})</TabsTrigger>
+            <TabsTrigger value="approved">Approved ({stats.approved})</TabsTrigger>
+            <TabsTrigger value="live">Live ({stats.live})</TabsTrigger>
           </TabsList>
         </Tabs>
 

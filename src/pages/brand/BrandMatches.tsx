@@ -152,7 +152,12 @@ export default function BrandMatches() {
 
         // Filter into buckets
         setApplicants(allApplications.filter((a: any) => a.status === 'pending'));
-        setCollaborators(allApplications.filter((a: any) => a.status === 'approved'));
+        setCollaborators(allApplications.filter((a: any) => a.status === 'approved' || a.status === 'accepted')); // Accepted invitations should be here
+
+        // DEBUG LOGS
+        console.log("All Applications/Invites Fetched:", allApplications);
+        console.log("Collaborators Filtered:", allApplications.filter((a: any) => a.status === 'approved' || a.status === 'accepted'));
+
 
 
         // 2. Fetch All Creators (for Matches view)
