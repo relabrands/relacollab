@@ -37,8 +37,8 @@ export default function TermsAndConditions() {
                         Para proporcionar nuestras funciones principales, RELA Collab utiliza las API oficiales de TikTok e Instagram. Al utilizar estas integraciones, usted acepta lo siguiente:
                     </p>
                     <ul className="list-disc pl-6 mb-4 space-y-1">
-                        <li><strong>TikTok:</strong> Al conectar su cuenta, usted acepta cumplir con los Términos de Servicio de TikTok y reconoce que RELA Collab utiliza el TikTok Login Kit para acceder a su perfil básico y lista de videos.</li>
-                        <li><strong>Instagram:</strong> Al conectar su cuenta de Instagram, usted acepta cumplir con las Condiciones de uso de Instagram y las políticas de Meta.</li>
+                        <li><strong>TikTok:</strong> Al conectar su cuenta, usted acepta cumplir con los <a href="https://www.tiktok.com/legal/page/row/terms-of-service/es" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Términos de Servicio de TikTok</a> y reconoce que RELA Collab utiliza el TikTok Login Kit para acceder a su perfil básico y lista de videos.</li>
+                        <li><strong>Instagram:</strong> Al conectar su cuenta de Instagram, usted acepta cumplir con las <a href="https://help.instagram.com/581066165581870" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Condiciones de uso de Instagram</a> y las políticas de Meta.</li>
                         <li><strong>Uso de Datos:</strong> Usted otorga permiso a RELA Collab para leer y mostrar sus métricas públicas (seguidores, likes, engagement) y su contenido multimedia con el único fin de gestionar campañas dentro de la plataforma.</li>
                         <li><strong>Revocación:</strong> Usted puede desconectar sus cuentas en cualquier momento desde la sección "My Profile" o directamente desde los ajustes de seguridad de TikTok o Instagram.</li>
                     </ul>
