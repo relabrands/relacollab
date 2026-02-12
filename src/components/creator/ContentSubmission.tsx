@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Upload, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, Trash2, Play, ExternalLink } from "lucide-react";
+import { Upload, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, Trash2, Play, ExternalLink, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
@@ -20,6 +20,7 @@ interface CampaignWithDeliverables {
     quantity: number;
     required: boolean;
   }>;
+  netPayment?: number;
 }
 
 interface SubmittedContent {
@@ -116,12 +117,16 @@ export function ContentSubmission() {
         const totalApproved = submissions.filter(s => s.status === "approved").length;
         const needsRevision = submissions.filter(s => s.status === "needs_revision").length;
 
+        // Fetch Net Payment
+        const netPayment = campaignData.creatorPayment || 0;
+
         return {
           campaign: {
             id: campaignId,
             name: campaignData.name,
             brandName: campaignData.brandName,
             deliverables,
+            netPayment, // Add net payment
           },
           submissions,
           totalRequired,
@@ -238,7 +243,7 @@ export function ContentSubmission() {
                   <div className="flex items-center gap-3 mb-2">
                     <CardTitle>{campaign.name}</CardTitle>
                     {allRequiredComplete && (
-                      <Badge variant="success">
+                      <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
                         <CheckCircle className="w-3 h-3 mr-1" />
                         Complete
                       </Badge>
@@ -247,6 +252,13 @@ export function ContentSubmission() {
                       <Badge variant="destructive">
                         <AlertCircle className="w-3 h-3 mr-1" />
                         {needsRevision} Needs Revision
+                      </Badge>
+                    )}
+                    {/* Display Net Payment */}
+                    {campaign.netPayment && (
+                      <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                        <DollarSign className="w-3 h-3 mr-1" />
+                        Earn: ${campaign.netPayment.toLocaleString()}
                       </Badge>
                     )}
                   </div>
@@ -328,7 +340,7 @@ export function ContentSubmission() {
                                   title="View on Instagram"
                                 >
                                   <img
-                                    src={submission.thumbnailUrl || submission.mediaUrl || "https://via.placeholder.com/80"}
+                                    src={submission.thumbnailUrl || submission.contentUrl || "https://via.placeholder.com/80"}
                                     alt={`${deliverable.type} #${deliverableNumber}`}
                                     className="w-16 h-16 object-cover rounded-lg border-2 border-border group-hover:border-primary transition-colors"
                                     onError={(e) => {
@@ -365,16 +377,18 @@ export function ContentSubmission() {
                                     <Badge
                                       variant={
                                         submission.status === "approved"
-                                          ? "success"
+                                          ? "default"
                                           : submission.status === "needs_revision"
                                             ? "destructive"
                                             : submission.status === "revision_requested"
                                               ? "destructive"
-                                              : submission.status === "resubmitted"
-                                                ? "secondary"
-                                                : "secondary"
+                                              : "secondary"
                                       }
-                                      className="text-xs"
+                                      className={
+                                        submission.status === "approved"
+                                          ? "bg-green-100 text-green-700 hover:bg-green-100 border-green-200"
+                                          : "text-xs"
+                                      }
                                     >
                                       {submission.status === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
                                       {(submission.status === "needs_revision" || submission.status === "revision_requested") && <AlertCircle className="w-3 h-3 mr-1" />}

@@ -90,30 +90,57 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                             <Gift className="w-4 h-4 text-primary" />
                             Compensation & Perks
                         </h4>
-                        <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                                <p className="font-medium text-lg">
-                                    {opportunity.compensationType === 'monetary'
-                                        ? `$${opportunity.creatorPayment}`
-                                        : (opportunity.compensationType === 'exchange'
-                                            ? opportunity.exchangeDetails
-                                            : (opportunity.reward || opportunity.budget || "Negotiable"))}
-                                </p>
+
+                        {(opportunity.compensationType === 'monetary' || opportunity.rewardType === 'paid') ? (
+                            <div className="space-y-3">
+                                <div className="space-y-2 pb-2 border-b border-border/50">
+                                    <div className="flex justify-between text-sm text-muted-foreground">
+                                        <span>Pago Bruto de la Marca:</span>
+                                        <span>${(opportunity.totalBudgetPerCreator || opportunity.creatorPayment || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm text-muted-foreground">
+                                        <span className="flex items-center gap-1">
+                                            Fee de Servicio RELA ({opportunity.platformFeePercent || 0}%):
+                                            <span className="group relative">
+                                                <div className="cursor-help w-4 h-4 rounded-full bg-muted flex items-center justify-center text-[10px] border border-border">?</div>
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                                    Este fee cubre el uso de la plataforma, la gestión de la campaña y la garantía de pago seguro por parte de RELA Collab.
+                                                </div>
+                                            </span>
+                                        </span>
+                                        <span className="text-destructive">-${(opportunity.platformFeeAmount || 0).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-end">
+                                    <span className="font-semibold text-lg">Pago Neto a Recibir:</span>
+                                    <span className="text-2xl font-bold text-success">
+                                        ${(opportunity.creatorPayment || 0).toLocaleString()}
+                                    </span>
+                                </div>
                                 <div className="flex gap-2">
-                                    <Badge variant="secondary">
-                                        {opportunity.compensationType === 'monetary' || opportunity.rewardType === 'paid'
-                                            ? 'Paid Project'
-                                            : 'Product Exchange'}
-                                    </Badge>
+                                    <Badge variant="secondary">Paid Project</Badge>
                                 </div>
                             </div>
-                            {opportunity.matchScore && (
-                                <div className="text-right">
-                                    <div className="text-2xl font-bold text-success">{opportunity.matchScore}%</div>
-                                    <div className="text-xs text-muted-foreground">Match Score</div>
+                        ) : (
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <p className="font-medium text-lg">
+                                        {opportunity.compensationType === 'exchange'
+                                            ? opportunity.exchangeDetails
+                                            : (opportunity.reward || opportunity.budget || "Negotiable")}
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Badge variant="secondary">Product Exchange</Badge>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
+
+                        {opportunity.matchScore && (
+                            <div className="text-right mt-2 pt-2 border-t border-dashed border-border/50">
+                                <div className="text-sm font-medium text-success">{opportunity.matchScore}% Match Score</div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Brand & Campaign Description */}

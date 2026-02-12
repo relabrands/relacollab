@@ -485,12 +485,16 @@ export function DeliverableSubmissionDialog({
                                                             <Badge
                                                                 variant={
                                                                     slot.submitted.status === "approved"
-                                                                        ? "success"
+                                                                        ? "default"
                                                                         : slot.submitted.status === "needs_revision"
                                                                             ? "destructive"
                                                                             : "secondary"
                                                                 }
-                                                                className="text-xs"
+                                                                className={
+                                                                    slot.submitted.status === "approved"
+                                                                        ? "bg-green-100 text-green-700 hover:bg-green-100 border-green-200"
+                                                                        : "text-xs"
+                                                                }
                                                             >
                                                                 {slot.submitted.status === "approved" && <Check className="w-3 h-3 mr-1" />}
                                                                 {slot.submitted.status === "needs_revision" && <AlertCircle className="w-3 h-3 mr-1" />}

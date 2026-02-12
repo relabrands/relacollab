@@ -740,6 +740,30 @@ export default function CreateCampaign() {
                         <p className="text-xs text-muted-foreground mt-1">
                           Cantidad que recibirá cada creator aprobado.
                         </p>
+
+                        {/* Fee Calculation Display */}
+                        {formData.creatorPayment && (
+                          <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border/50 space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Pago al Creator (Neto):</span>
+                              <span className="font-medium">${Number(formData.creatorPayment).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground flex items-center gap-1">
+                                Platform Fee ({config.serviceFeePercent}%)
+                                <span className="text-[10px] bg-primary/10 text-primary px-1 rounded">Service</span>
+                              </span>
+                              <span className="font-medium">${(Number(formData.creatorPayment) * (config.serviceFeePercent / 100)).toLocaleString()}</span>
+                            </div>
+                            <div className="pt-2 border-t border-border/50 flex justify-between font-bold">
+                              <span>Total a Pagar (Billing):</span>
+                              <span className="text-primary">${(Number(formData.creatorPayment) * (1 + config.serviceFeePercent / 100)).toLocaleString()}</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                              * El fee cubre costos de transacción y garantía de pago seguro.
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <div>

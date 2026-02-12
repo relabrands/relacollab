@@ -3,6 +3,10 @@ import { AdminSidebar } from "@/components/dashboard/AdminSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import {
   Building2,
@@ -12,9 +16,12 @@ import {
   ArrowRight,
   Loader2,
   Trash2,
+  Settings,
+  CreditCard,
+  CheckCircle2
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { collection, getDocs, limit, orderBy, query, where, writeBatch } from "firebase/firestore";
+import { collection, getDocs, limit, orderBy, query, where, writeBatch, doc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
 import {
@@ -27,11 +34,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
 export default function AdminDashboard() {
+  const { config, loading: configLoading } = usePlatformConfig();
   const [loading, setLoading] = useState(true);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+
+  // Payout Management State
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [selectedPayout, setSelectedPayout] = useState<any>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentReceiptUrl, setPaymentReceiptUrl] = useState("");
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  // Settings State
+  const [feePercent, setFeePercent] = useState(10);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
   const [stats, setStats] = useState<{
     title: string;
     value: string | number;
@@ -76,6 +97,12 @@ export default function AdminDashboard() {
   const [recentBrands, setRecentBrands] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!configLoading) {
+      setFeePercent(config.serviceFeePercent);
+    }
+  }, [config, configLoading]);
+
+  useEffect(() => {
     const fetchAdminData = async () => {
       try {
         // Fetch Users count
@@ -90,14 +117,11 @@ export default function AdminDashboard() {
         const campaignsSnapshot = await getDocs(collection(db, "campaigns"));
         const campaignCount = campaignsSnapshot.size;
 
-        // Calculate Revenue (Mock for now, or sum budgets if available)
-        // For now we keep it as placeholder or sum paid campaigns budget
-
         setStats(prev => [
           { ...prev[0], value: brandCount, change: `Total registered` },
           { ...prev[1], value: creatorCount, change: `Total registered` },
           { ...prev[2], value: campaignCount, change: `Total active` },
-          { ...prev[3], value: "$0" } // Keep as placeholder until payments are real
+          { ...prev[3], value: "$0" } // Placeholder
         ]);
 
         // Recent Brands
@@ -117,6 +141,14 @@ export default function AdminDashboard() {
           joined: new Date(doc.data().createdAt).toLocaleDateString()
         })));
 
+        // Fetch Payouts (Requested & Verifying)
+        const payoutQuery = query(
+          collection(db, "payouts"),
+          where("status", "in", ["requested", "verifying_brand_payment"])
+        );
+        const payoutSnap = await getDocs(payoutQuery);
+        setPayouts(payoutSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
       } catch (error) {
         console.error("Error fetching admin data:", error);
       } finally {
@@ -125,6 +157,60 @@ export default function AdminDashboard() {
     };
     fetchAdminData();
   }, []);
+
+  const handleSaveSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      await setDoc(doc(db, "settings", "platform_config"), {
+        serviceFeePercent: Number(feePercent),
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      toast.success("Settings updated successfully");
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast.error("Failed to update settings");
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleProcessPayout = async () => {
+    if (!selectedPayout || !paymentReceiptUrl) return;
+    setIsProcessingPayment(true);
+    try {
+      await updateDoc(doc(db, "payouts", selectedPayout.id), {
+        status: 'paid',
+        creatorPaymentReceipt: paymentReceiptUrl,
+        paidAt: new Date().toISOString()
+      });
+
+      // Update local state
+      setPayouts(prev => prev.filter(p => p.id !== selectedPayout.id));
+      setIsPaymentModalOpen(false);
+      setSelectedPayout(null);
+      setPaymentReceiptUrl("");
+      toast.success("Payout marked as paid!");
+    } catch (error) {
+      console.error("Error processing payout:", error);
+      toast.error("Failed to process payout");
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleVerifyBrandPayment = async (payoutId: string) => {
+    try {
+      await updateDoc(doc(db, "payouts", payoutId), {
+        status: 'ready_to_withdraw',
+        verifiedAt: new Date().toISOString()
+      });
+      setPayouts(prev => prev.filter(p => p.id !== payoutId));
+      toast.success("Brand payment verified!");
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      toast.error("Failed to verify payment");
+    }
+  };
 
   const handleResetDatabase = async () => {
     setIsResetting(true);
@@ -206,14 +292,24 @@ export default function AdminDashboard() {
             subtitle="Platform overview and management"
           />
 
-          <Button
-            variant="destructive"
-            onClick={() => setIsResetDialogOpen(true)}
-            className="gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            Reset Database
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => document.getElementById("settings-section")?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              <Settings className="w-4 h-4" />
+              Settings
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => setIsResetDialogOpen(true)}
+              className="gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Reset Database
+            </Button>
+          </div>
         </div>
 
         {/* Reset Confirmation Dialog */}
@@ -308,7 +404,7 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        <div className="glass-card overflow-hidden">
+        <div className="glass-card overflow-hidden mb-8">
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
@@ -350,7 +446,140 @@ export default function AdminDashboard() {
             </tbody>
           </table>
         </div>
+
+        {/* Payout Management */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-6">Payout Management</h2>
+          <div className="bg-card border border-border rounded-xl p-6">
+            <Tabs defaultValue="requests">
+              <TabsList className="mb-6">
+                <TabsTrigger value="requests">Withdrawal Requests</TabsTrigger>
+                <TabsTrigger value="verifications">Brand Payments</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="requests">
+                <div className="space-y-4">
+                  {payouts.filter(p => p.status === 'requested').length > 0 ? (
+                    payouts.filter(p => p.status === 'requested').map(payout => (
+                      <div key={payout.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
+                        <div>
+                          <p className="font-semibold">{payout.campaignName}</p>
+                          <p className="text-sm text-muted-foreground">Creator ID: {payout.creatorId}</p>
+                          <p className="text-xs text-primary mt-1 font-medium">Net Amount: ${payout.netAmount?.toLocaleString()}</p>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            setSelectedPayout(payout);
+                            setIsPaymentModalOpen(true);
+                          }}
+                        >
+                          Mark as Paid
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground text-center py-8">No active withdrawal requests.</p>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="verifications">
+                <div className="space-y-4">
+                  {payouts.filter(p => p.status === 'verifying_brand_payment').length > 0 ? (
+                    payouts.filter(p => p.status === 'verifying_brand_payment').map(payout => (
+                      <div key={payout.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
+                        <div>
+                          <p className="font-semibold">{payout.campaignName}</p>
+                          <p className="text-sm text-muted-foreground">From Brand</p>
+                          <p className="text-xs text-primary mt-1 font-medium">Total: ${payout.grossAmount?.toLocaleString()}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={payout.brandPaymentReceipt} target="_blank" rel="noreferrer">View Receipt</a>
+                          </Button>
+                          <Button
+                            className="bg-success hover:bg-success/90"
+                            onClick={() => handleVerifyBrandPayment(payout.id)}
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            Confirm
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground text-center py-8">No payments pending verification.</p>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* Platform Settings */}
+        <div id="settings-section" className="glass-card p-6 max-w-lg">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Settings className="w-5 h-5 text-primary" />
+            </div>
+            <h3 className="font-semibold text-lg">Platform Configuration</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Service Fee Percentage (%)</Label>
+              <Input
+                type="number"
+                value={feePercent}
+                onChange={(e) => setFeePercent(Number(e.target.value))}
+                min={0}
+                max={100}
+              />
+              <p className="text-xs text-muted-foreground">
+                This fee is automatically deducted from creator payments and displayed to brands.
+              </p>
+            </div>
+
+            <Button
+              onClick={handleSaveSettings}
+              disabled={isSavingSettings}
+              className="w-full"
+            >
+              {isSavingSettings && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save Configuration
+            </Button>
+          </div>
+        </div>
       </main>
+
+      {/* Payment Confirmation Modal */}
+      <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Payout execution</DialogTitle>
+            <DialogDescription>
+              Marking this payout as complete. Please upload or paste the receipt URL.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 py-4">
+            <Label>Receipt URL / Transaction ID</Label>
+            <Input
+              placeholder="https://..."
+              value={paymentReceiptUrl}
+              onChange={(e) => setPaymentReceiptUrl(e.target.value)}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPaymentModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleProcessPayout} disabled={isProcessingPayment || !paymentReceiptUrl}>
+              {isProcessingPayment && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Confirm Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
