@@ -207,7 +207,8 @@ export default function CreateCampaign() {
             toast.error("Creator payment amount is required");
             return false;
           }
-          const totalCost = (parseInt(formData.creditCost) || 1) * (parseInt(formData.creatorCount) || 1);
+          // Credit cost fixed at 1 per creator
+          const totalCost = 1 * (parseInt(formData.creatorCount) || 1);
           if (credits < totalCost) {
             toast.error(`Insufficient credits. You need ${totalCost} credits but have ${credits}`);
             return false;
@@ -278,6 +279,7 @@ export default function CreateCampaign() {
         // Legacy fields for backward compatibility or other logic
         budget: parseFloat(formData.budget) || 0,
         creatorCount: parseInt(formData.creatorCount) || 1,
+        creditCost: 1, // Fixed 1 credit per creator
         approvedCount: 0,
         applicationCount: 0,
       };
@@ -787,57 +789,52 @@ export default function CreateCampaign() {
                         )}
                       </div>
 
-                      <div>
-                        <Label htmlFor="creditCost">Costo en Créditos</Label>
+                      {/* Creator Count (Moved Up) */}
+                      <div className="mt-4">
+                        <Label htmlFor="creatorCount">¿Cuántos creators necesitas?</Label>
                         <Input
-                          id="creditCost"
+                          id="creatorCount"
                           type="number"
                           min="1"
-                          placeholder="1"
-                          value={formData.creditCost}
+                          placeholder="e.g. 5"
+                          value={formData.creatorCount}
                           onChange={(e) =>
                             setFormData((prev) => ({
                               ...prev,
-                              creditCost: e.target.value,
+                              creatorCount: e.target.value,
                             }))
                           }
                           className="mt-2"
                         />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Créditos que te costará esta campaña por creator.
-                        </p>
+                      </div>
+
+                      {/* Credit Cost Display (Read Only) */}
+                      <div className="mt-4 p-4 bg-secondary/20 rounded-xl border border-secondary/20">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <Label className="text-secondary-foreground font-semibold">Costo Total en Créditos</Label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Calculado basado en {formData.creatorCount || 0} creators (1 crédito por creator)
+                            </p>
+                          </div>
+                          <div className="text-2xl font-bold text-primary">
+                            {(parseInt(formData.creatorCount) || 0) * 1} Créditos
+                          </div>
+                        </div>
+
+                        {formData.compensationType === "monetary" && (
+                          <div className={`text-xs mt-2 pt-2 border-t border-border/50 flex justify-between ${credits < ((parseInt(formData.creatorCount) || 0) * 1)
+                            ? "text-destructive font-medium"
+                            : "text-muted-foreground"
+                            }`}>
+                            <span>Créditos disponibles: {credits}</span>
+                            {credits < ((parseInt(formData.creatorCount) || 0) * 1) && (
+                              <span>Insuficientes créditos</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  )}
-
-                  {/* Creator Count */}
-                  <div>
-                    <Label htmlFor="creatorCount">¿Cuántos creators necesitas?</Label>
-                    <Input
-                      id="creatorCount"
-                      type="number"
-                      min="1"
-                      placeholder="e.g. 5"
-                      value={formData.creatorCount}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          creatorCount: e.target.value,
-                        }))
-                      }
-                      className="mt-2"
-                    />
-                    {formData.compensationType === "monetary" && (
-                      <p className={`text-xs mt-2 ${credits < (parseInt(formData.creditCost) || 1) * (parseInt(formData.creatorCount) || 1)
-                        ? "text-destructive"
-                        : "text-muted-foreground"
-                        }`}>
-                        Créditos disponibles: {credits} |
-                        Costo total: {(parseInt(formData.creditCost) || 1) * (parseInt(formData.creatorCount) || 1)} créditos
-                      </p>
-                    )}
-                  </div>
-                </div>
               </motion.div>
             )}
 
