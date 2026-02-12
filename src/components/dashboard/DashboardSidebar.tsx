@@ -31,15 +31,20 @@ interface DashboardSidebarProps {
   type: "brand" | "creator";
 }
 
-const brandNavItems = [
+// Main visible items for Brand
+const brandMainItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/brand" },
   { icon: FileText, label: "Campaigns", path: "/brand/campaigns" },
-  { icon: Calendar, label: "Schedule", path: "/brand/schedule" },
   { icon: Users, label: "Matches", path: "/brand/matches" },
+  { icon: CreditCard, label: "Payments", path: "/brand/payments" },
+];
+
+// Secondary items for Brand (in "More" dropdown)
+const brandMoreItems = [
   { icon: Image, label: "Content Library", path: "/brand/content" },
   { icon: MessageSquare, label: "Messages", path: "/brand/messages" },
+  { icon: Calendar, label: "Schedule", path: "/brand/schedule" },
   { icon: BarChart3, label: "Analytics", path: "/brand/analytics" },
-  { icon: CreditCard, label: "Payments", path: "/brand/payments" },
   { icon: Settings, label: "Settings", path: "/brand/settings" },
 ];
 
@@ -65,8 +70,8 @@ export function DashboardSidebar({ type }: DashboardSidebarProps) {
   const location = useLocation();
   const { logout } = useAuth();
 
-  // For Brand, use the flat list. For Creator, we handle differently in render.
-  const navItems = type === "brand" ? brandNavItems : creatorMainItems;
+  const navItems = type === "brand" ? brandMainItems : creatorMainItems;
+  const moreItems = type === "brand" ? brandMoreItems : creatorMoreItems;
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar text-sidebar-foreground hidden md:flex flex-col">
@@ -104,49 +109,34 @@ export function DashboardSidebar({ type }: DashboardSidebarProps) {
           );
         })}
 
-        {/* Creator "More" Dropdown */}
-        {type === "creator" && (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="sidebar-item w-full justify-start group data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground outline-none">
-              <Menu className="w-5 h-5" />
-              <span>More</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="start" className="w-56 ml-2">
-              <DropdownMenuLabel>More Options</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {creatorMoreItems.map((item) => (
-                <DropdownMenuItem key={item.path} asChild>
-                  <Link to={item.path} className="cursor-pointer flex items-center gap-2 w-full">
-                    <item.icon className="w-4 h-4" />
-                    {item.label}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive cursor-pointer flex items-center gap-2"
-                onClick={() => logout()}
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
+        {/* "More" Dropdown for Both Roles */}
+        <DropdownMenu>
+          <DropdownMenuTrigger className="sidebar-item w-full justify-start group data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground outline-none">
+            <Menu className="w-5 h-5" />
+            <span>More</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" align="start" className="w-56 ml-2">
+            <DropdownMenuLabel>More Options</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {moreItems.map((item) => (
+              <DropdownMenuItem key={item.path} asChild>
+                <Link to={item.path} className="cursor-pointer flex items-center gap-2 w-full">
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Link>
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive cursor-pointer flex items-center gap-2"
+              onClick={() => logout()}
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </nav>
-
-      {/* Footer (Only for Brand now, or separate) */}
-      {type === "brand" && (
-        <div className="p-4 border-t border-sidebar-border">
-          <button
-            onClick={() => logout()}
-            className="sidebar-item w-full text-sidebar-foreground/50 hover:text-sidebar-foreground text-left"
-          >
-            <LogOut className="w-5 h-5" />
-            Sign Out
-          </button>
-        </div>
-      )}
     </aside>
   );
 }
