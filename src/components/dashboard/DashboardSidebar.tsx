@@ -16,7 +16,16 @@ import {
   Image,
   MessageSquare,
   Calendar,
+  Menu,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DashboardSidebarProps {
   type: "brand" | "creator";
@@ -34,23 +43,30 @@ const brandNavItems = [
   { icon: Settings, label: "Settings", path: "/brand/settings" },
 ];
 
-const creatorNavItems = [
+// Main visible items for Creator
+const creatorMainItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/creator" },
   { icon: Inbox, label: "Opportunities", path: "/creator/opportunities" },
-  { icon: Zap, label: "Active Campaigns", path: "/creator/active" },
-  { icon: Calendar, label: "Schedule", path: "/creator/schedule" },
-  { icon: MessageSquare, label: "Messages", path: "/creator/messages" },
   { icon: Image, label: "My Content", path: "/creator/content" },
-  { icon: User, label: "My Profile", path: "/creator/profile" },
-  { icon: Sparkles, label: "AI Insights", path: "/creator/analytics" },
   { icon: CreditCard, label: "Earnings", path: "/creator/earnings" },
+];
+
+// Secondary items for Creator (in "More" dropdown)
+const creatorMoreItems = [
+  { icon: User, label: "My Profile", path: "/creator/profile" },
+  { icon: MessageSquare, label: "Messages", path: "/creator/messages" },
+  { icon: Calendar, label: "Schedule", path: "/creator/schedule" },
+  { icon: Sparkles, label: "AI Insights", path: "/creator/analytics" },
+  { icon: Zap, label: "Active Campaigns", path: "/creator/active" }, // Kept for safety
   { icon: Settings, label: "Settings", path: "/creator/settings" },
 ];
 
 export function DashboardSidebar({ type }: DashboardSidebarProps) {
   const location = useLocation();
   const { logout } = useAuth();
-  const navItems = type === "brand" ? brandNavItems : creatorNavItems;
+
+  // For Brand, use the flat list. For Creator, we handle differently in render.
+  const navItems = type === "brand" ? brandNavItems : creatorMainItems;
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar text-sidebar-foreground hidden md:flex flex-col">
@@ -87,18 +103,50 @@ export function DashboardSidebar({ type }: DashboardSidebarProps) {
             </Link>
           );
         })}
+
+        {/* Creator "More" Dropdown */}
+        {type === "creator" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="sidebar-item w-full justify-start group data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground outline-none">
+              <Menu className="w-5 h-5" />
+              <span>More</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" className="w-56 ml-2">
+              <DropdownMenuLabel>More Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {creatorMoreItems.map((item) => (
+                <DropdownMenuItem key={item.path} asChild>
+                  <Link to={item.path} className="cursor-pointer flex items-center gap-2 w-full">
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive cursor-pointer flex items-center gap-2"
+                onClick={() => logout()}
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
-        <button
-          onClick={() => logout()}
-          className="sidebar-item w-full text-sidebar-foreground/50 hover:text-sidebar-foreground text-left"
-        >
-          <LogOut className="w-5 h-5" />
-          Sign Out
-        </button>
-      </div>
+      {/* Footer (Only for Brand now, or separate) */}
+      {type === "brand" && (
+        <div className="p-4 border-t border-sidebar-border">
+          <button
+            onClick={() => logout()}
+            className="sidebar-item w-full text-sidebar-foreground/50 hover:text-sidebar-foreground text-left"
+          >
+            <LogOut className="w-5 h-5" />
+            Sign Out
+          </button>
+        </div>
+      )}
     </aside>
   );
 }
