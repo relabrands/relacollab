@@ -886,24 +886,7 @@ export default function CreatorProfile() {
                   })()}
                 </div>
 
-                <div className="p-4 rounded-xl border bg-muted/30 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center">
-                        <span className="text-white text-[10px] font-bold">Tk</span>
-                      </div>
-                      <span className="font-medium">TikTok</span>
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={() => openConnectDialog('tiktok')}>
-                      <Edit2 className="w-4 h-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                  {socialHandles.tiktok ? (
-                    <p className="text-sm text-muted-foreground">@{socialHandles.tiktok}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">Add manual handle</p>
-                  )}
-                </div>
+
               </div>
             </div>
 

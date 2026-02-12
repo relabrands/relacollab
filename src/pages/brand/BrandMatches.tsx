@@ -112,14 +112,11 @@ export default function BrandMatches() {
         const submissions = submissionsSnapshot.docs.map(d => d.data());
 
         // Applications (Inbound & Collaborating)
-        console.log("Fetching applications for Campaign ID:", activeCampaign.id);
         const applicationsQuery = query(
           collection(db, "applications"),
           where("campaignId", "==", activeCampaign.id)
         );
         const appsSnapshot = await getDocs(applicationsQuery);
-        console.log("Raw Applications Snapshot Size:", appsSnapshot.size);
-        appsSnapshot.docs.forEach(d => console.log("App Doc:", d.id, d.data()));
 
         // Check invitations too
         const invQuery = query(
@@ -127,8 +124,6 @@ export default function BrandMatches() {
           where("campaignId", "==", activeCampaign.id)
         );
         const invSnap = await getDocs(invQuery);
-        console.log("Raw Invitations Snapshot Size:", invSnap.size);
-        invSnap.docs.forEach(d => console.log("Inv Doc:", d.id, d.data()));
 
 
         // Enrich Application Data with Creator Profile
@@ -529,27 +524,6 @@ export default function BrandMatches() {
                     ? "Once you approve applicants or creators accept invitations, they'll appear here."
                     : "Creators you invite will show here. Browse the Matches tab to find and invite creators."}
             </p>
-
-            {viewMode === 'collaborating' && collaborators.length === 0 && allApplications.length > 0 && (
-              <>
-                <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
-                  Once you approve applicants or creators accept invitations, they'll appear here.
-                </p>
-                {/* DEBUG SECTION - REMOVE BEFORE PRODUCTION */}
-                <div className="mt-8 p-4 bg-gray-100 rounded text-left text-xs font-mono overflow-auto max-w-lg mx-auto max-h-40">
-                  <p className="font-bold">DEBUG INFO:</p>
-                  <p>Campaign ID: {activeCampaign?.id}</p>
-                  <p>Total Apps Fetched: {allApplications.length}</p>
-                  <p>Collaborators Count: {collaborators.length}</p>
-                  <p>Statuses found:</p>
-                  <ul className="list-disc pl-4">
-                    {allApplications.map((app: any, i) => (
-                      <li key={i}>{app.name} - Status: {app.status} (ID: {app.id})</li>
-                    ))}
-                  </ul>
-                </div>
-              </>
-            )}
 
             {viewMode === 'matches' && (
               <div className="bg-muted/30 rounded-lg p-4 text-sm text-left">
