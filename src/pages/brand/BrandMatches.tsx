@@ -112,11 +112,24 @@ export default function BrandMatches() {
         const submissions = submissionsSnapshot.docs.map(d => d.data());
 
         // Applications (Inbound & Collaborating)
+        console.log("Fetching applications for Campaign ID:", activeCampaign.id);
         const applicationsQuery = query(
           collection(db, "applications"),
           where("campaignId", "==", activeCampaign.id)
         );
         const appsSnapshot = await getDocs(applicationsQuery);
+        console.log("Raw Applications Snapshot Size:", appsSnapshot.size);
+        appsSnapshot.docs.forEach(d => console.log("App Doc:", d.id, d.data()));
+
+        // Check invitations too
+        const invQuery = query(
+          collection(db, "invitations"),
+          where("campaignId", "==", activeCampaign.id)
+        );
+        const invSnap = await getDocs(invQuery);
+        console.log("Raw Invitations Snapshot Size:", invSnap.size);
+        invSnap.docs.forEach(d => console.log("Inv Doc:", d.id, d.data()));
+
 
         // Enrich Application Data with Creator Profile
         const applicationPromises = appsSnapshot.docs.map(async (appDoc) => {
@@ -525,6 +538,7 @@ export default function BrandMatches() {
                 {/* DEBUG SECTION - REMOVE BEFORE PRODUCTION */}
                 <div className="mt-8 p-4 bg-gray-100 rounded text-left text-xs font-mono overflow-auto max-w-lg mx-auto max-h-40">
                   <p className="font-bold">DEBUG INFO:</p>
+                  <p>Campaign ID: {activeCampaign?.id}</p>
                   <p>Total Apps Fetched: {allApplications.length}</p>
                   <p>Collaborators Count: {collaborators.length}</p>
                   <p>Statuses found:</p>
