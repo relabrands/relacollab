@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, ReactNode } from "react";
 import { Bell, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,10 @@ import { toast } from "sonner";
 interface DashboardHeaderProps {
   title: string;
   subtitle?: string;
+  children?: ReactNode;
 }
 
-export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
+export function DashboardHeader({ title, subtitle, children }: DashboardHeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   const notifications = [
@@ -33,62 +34,68 @@ export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
         {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
       </div>
 
-      <div className="flex items-center gap-4 w-full md:w-auto">
-        <div className="relative flex-1 md:flex-none">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search..."
-            className="pl-10 w-full md:w-64 bg-card border-border/50"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                toast.info("Search functionality coming soon!");
-              }
-            }}
-          />
+      <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+        <div className="w-full md:w-auto flex items-center justify-end gap-2 order-2 md:order-1">
+          {children}
         </div>
 
-        <div className="relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative"
-            onClick={handleNotificationClick}
-            title="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
-          </Button>
+        <div className="flex items-center gap-4 w-full md:w-auto order-1 md:order-2">
+          <div className="relative flex-1 md:flex-none">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              className="pl-10 w-full md:w-64 bg-card border-border/50"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  toast.info("Search functionality coming soon!");
+                }
+              }}
+            />
+          </div>
 
-          {showNotifications && (
-            <div className="absolute right-0 top-12 w-80 glass-card p-4 z-50 shadow-elevated">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">Notifications</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowNotifications(false)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className="p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-                    onClick={() => handleDismissNotification(notif.id)}
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={handleNotificationClick}
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
+            </Button>
+
+            {showNotifications && (
+              <div className="absolute right-0 top-12 w-80 glass-card p-4 z-50 shadow-elevated">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold">Notifications</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowNotifications(false)}
                   >
-                    <p className="text-sm">{notif.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{notif.time}</p>
-                  </div>
-                ))}
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {notifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      className="p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+                      onClick={() => handleDismissNotification(notif.id)}
+                    >
+                      <p className="text-sm">{notif.message}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{notif.time}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0">
-          JD
+          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0">
+            JD
+          </div>
         </div>
       </div>
     </header>
