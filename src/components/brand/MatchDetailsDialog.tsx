@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Badge } from "@/components/ui/badge";
+
 import { MatchScore } from "@/components/dashboard/MatchScore";
 import { Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2, ExternalLink, Check, Eye, Music2 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -194,6 +194,8 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                             <DialogDescription className="text-base mt-1">
                                 {creator.bio || "No bio available"}
                             </DialogDescription>
+                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
                                     <MapPin className="w-4 h-4" />
                                     {creator.location}
                                 </span>
@@ -322,7 +324,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                                         Audience
                                     </div>
                                     <div className="text-xl sm:text-2xl font-bold">
-                                        {activePlatform === 'instagram' 
+                                        {activePlatform === 'instagram'
                                             ? (creator.instagramMetrics?.followers?.toLocaleString() || "N/A")
                                             : (creator.tiktokMetrics?.followers?.toLocaleString() || "N/A")
                                         }
