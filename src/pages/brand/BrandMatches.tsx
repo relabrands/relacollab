@@ -40,6 +40,8 @@ export default function BrandMatches() {
 
   const [applicants, setApplicants] = useState<any[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [activePlatform, setActivePlatform] = useState<string>("instagram");
+  const [allApplications, setAllApplications] = useState<any[]>([]); // Debugging stateatches' | 'invited' | 'applicants' | 'collaborating'>('matches');
   const [viewMode, setViewMode] = useState<'matches' | 'invited' | 'applicants' | 'collaborating'>('matches');
 
   // Dialog State
@@ -149,6 +151,7 @@ export default function BrandMatches() {
         });
 
         const allApplications = (await Promise.all(applicationPromises)).filter(Boolean);
+        setAllApplications(allApplications);
 
         // Filter into buckets
         setApplicants(allApplications.filter((a: any) => a.status === 'pending'));
@@ -513,6 +516,26 @@ export default function BrandMatches() {
                     ? "Once you approve applicants or creators accept invitations, they'll appear here."
                     : "Creators you invite will show here. Browse the Matches tab to find and invite creators."}
             </p>
+
+            {viewMode === 'collaborating' && collaborators.length === 0 && allApplications.length > 0 && (
+              <>
+                <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
+                  Once you approve applicants or creators accept invitations, they'll appear here.
+                </p>
+                {/* DEBUG SECTION - REMOVE BEFORE PRODUCTION */}
+                <div className="mt-8 p-4 bg-gray-100 rounded text-left text-xs font-mono overflow-auto max-w-lg mx-auto max-h-40">
+                  <p className="font-bold">DEBUG INFO:</p>
+                  <p>Total Apps Fetched: {allApplications.length}</p>
+                  <p>Collaborators Count: {collaborators.length}</p>
+                  <p>Statuses found:</p>
+                  <ul className="list-disc pl-4">
+                    {allApplications.map((app: any, i) => (
+                      <li key={i}>{app.name} - Status: {app.status} (ID: {app.id})</li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
 
             {viewMode === 'matches' && (
               <div className="bg-muted/30 rounded-lg p-4 text-sm text-left">

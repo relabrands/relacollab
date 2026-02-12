@@ -367,13 +367,13 @@ export default function ContentLibrary() {
   });
 
   const stats = {
-    total: filteredContent.length,
-    live: filteredContent.filter(c => c.status === "live").length,
-    approved: filteredContent.filter(c => c.status === "approved").length,
-    pending: filteredContent.filter(c => c.status === "pending").length,
-    revisions: filteredContent.filter(c => c.status === "revision_requested" || c.status === "rejected").length,
-    totalViews: filteredContent.reduce((acc, c) => acc + (c.metrics?.views || 0), 0),
-    totalEngagement: filteredContent.reduce((acc, c) =>
+    total: contentList.length,
+    live: contentList.filter(c => c.status === "live").length,
+    approved: contentList.filter(c => c.status === "approved").length,
+    pending: contentList.filter(c => c.status === "pending").length,
+    revisions: contentList.filter(c => c.status === "revision_requested" || c.status === "rejected").length,
+    totalViews: contentList.reduce((acc, c) => acc + (c.metrics?.views || 0), 0),
+    totalEngagement: contentList.reduce((acc, c) =>
       acc + (c.metrics?.likes || 0) + (c.metrics?.comments || 0) + (c.metrics?.shares || 0), 0
     )
   };
