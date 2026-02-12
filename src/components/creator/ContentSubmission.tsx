@@ -238,10 +238,10 @@ export function ContentSubmission() {
         return (
           <Card key={campaign.id} className={allRequiredComplete ? "border-green-500" : ""}>
             <CardHeader>
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <CardTitle>{campaign.name}</CardTitle>
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <CardTitle className="text-xl">{campaign.name}</CardTitle>
                     {allRequiredComplete && (
                       <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
                         <CheckCircle className="w-3 h-3 mr-1" />
@@ -280,6 +280,7 @@ export function ContentSubmission() {
                   size="sm"
                   onClick={() => handleOpenDialog(campaign)}
                   disabled={allRequiredComplete && needsRevision === 0}
+                  className="w-full md:w-auto shrink-0"
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   {needsRevision > 0 ? "Resubmit Content" : "Submit Content"}

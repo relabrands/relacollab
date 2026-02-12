@@ -404,28 +404,28 @@ export function DeliverableSubmissionDialog({
     return (
         <>
             <Dialog open={open} onOpenChange={onClose}>
-                <DialogContent className="max-w-3xl max-h-[80vh]">
-                    <DialogHeader>
+                <DialogContent className="w-[95vw] md:max-w-3xl max-h-[85vh] p-4 md:p-6 overflow-hidden flex flex-col">
+                    <DialogHeader className="flex-shrink-0">
                         <DialogTitle>Submit Campaign Deliverables</DialogTitle>
                         <DialogDescription>
                             Campaign: <span className="font-medium">{campaign.name}</span>
                             {missingRequired > 0 && (
-                                <span className="text-orange-600 ml-2">
+                                <span className="block md:inline text-orange-600 md:ml-2 mt-1 md:mt-0">
                                     • {missingRequired} required deliverable(s) remaining
                                 </span>
                             )}
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="max-h-[50vh] overflow-y-auto pr-4">
-                        <div className="space-y-3">
+                    <div className="flex-1 overflow-y-auto pr-2 -mr-2">
+                        <div className="space-y-3 pb-4">
                             {deliverableSlots.map(slot => {
                                 const selectedMedia = selectedDeliverables.get(slot.key);
 
                                 return (
                                     <div
                                         key={slot.key}
-                                        className={`p-4 border-2 rounded-lg ${slot.submitted
+                                        className={`p-3 md:p-4 border-2 rounded-lg ${slot.submitted
                                             ? slot.submitted.status === "approved"
                                                 ? "border-green-500 bg-green-50 dark:bg-green-950/20"
                                                 : slot.submitted.status === "needs_revision"
@@ -436,7 +436,7 @@ export function DeliverableSubmissionDialog({
                                                 : "border-border"
                                             }`}
                                     >
-                                        <div className="flex items-start justify-between gap-3">
+                                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                                             <div className="flex items-start gap-3 flex-1">
                                                 {/* Icon or Thumbnail */}
                                                 <div className="flex-shrink-0">
@@ -444,27 +444,27 @@ export function DeliverableSubmissionDialog({
                                                         <img
                                                             src={slot.submitted.thumbnailUrl}
                                                             alt={`${slot.type} #${slot.number}`}
-                                                            className="w-16 h-16 rounded-lg object-cover"
+                                                            className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-cover"
                                                         />
                                                     ) : selectedMedia ? (
                                                         (selectedMedia.media_type === 'VIDEO' || selectedMedia.media_type === 'REELS') && !selectedMedia.thumbnail_url ? (
                                                             <video
                                                                 src={selectedMedia.media_url}
-                                                                className="w-16 h-16 rounded-lg object-cover"
+                                                                className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-cover"
                                                                 muted
                                                             />
                                                         ) : (
                                                             <img
                                                                 src={selectedMedia.thumbnail_url || selectedMedia.media_url}
                                                                 alt="Selected"
-                                                                className="w-16 h-16 rounded-lg object-cover"
+                                                                className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-cover"
                                                                 onError={(e) => {
                                                                     e.currentTarget.src = "https://placehold.co/400x400?text=No+Image";
                                                                 }}
                                                             />
                                                         )
                                                     ) : (
-                                                        <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-2xl">
+                                                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-lg bg-muted flex items-center justify-center text-2xl">
                                                             {slot.type === "Post" && "📸"}
                                                             {(slot.type === "Reel" || slot.type === "Video") && "🎥"}
                                                             {slot.type === "Story" && "📱"}
@@ -474,11 +474,11 @@ export function DeliverableSubmissionDialog({
                                                 </div>
 
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="font-medium">
+                                                    <div className="font-medium text-sm md:text-base">
                                                         {slot.type} #{slot.number}
                                                     </div>
                                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                                        <Badge variant={slot.required ? "default" : "outline"} className="text-xs">
+                                                        <Badge variant={slot.required ? "default" : "outline"} className="text-[10px] md:text-xs">
                                                             {slot.required ? "Required" : "Optional"}
                                                         </Badge>
                                                         {slot.submitted && (
@@ -492,8 +492,8 @@ export function DeliverableSubmissionDialog({
                                                                 }
                                                                 className={
                                                                     slot.submitted.status === "approved"
-                                                                        ? "bg-green-100 text-green-700 hover:bg-green-100 border-green-200"
-                                                                        : "text-xs"
+                                                                        ? "bg-green-100 text-green-700 hover:bg-green-100 border-green-200 text-[10px] md:text-xs"
+                                                                        : "text-[10px] md:text-xs"
                                                                 }
                                                             >
                                                                 {slot.submitted.status === "approved" && <Check className="w-3 h-3 mr-1" />}
@@ -526,7 +526,7 @@ export function DeliverableSubmissionDialog({
                                                 </div>
                                             </div>
 
-                                            <div className="flex-shrink-0">
+                                            <div className="flex-shrink-0 mt-2 md:mt-0 w-full md:w-auto">
                                                 {slot.submitted ? (
                                                     <div className="text-sm text-muted-foreground">
                                                         {slot.submitted.status === "needs_revision" && (
@@ -534,19 +534,20 @@ export function DeliverableSubmissionDialog({
                                                                 variant="outline"
                                                                 size="sm"
                                                                 onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
+                                                                className="w-full md:w-auto"
                                                             >
                                                                 Resubmit
                                                             </Button>
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <div className="flex gap-2">
+                                                    <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                                                         <Button
                                                             variant={selectedMedia ? "default" : "outline"}
                                                             size="sm"
                                                             onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
                                                             disabled={loading}
-                                                            className={selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                                                            className={`${selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? "bg-green-600 hover:bg-green-700 text-white" : ""} w-full md:w-auto justify-center`}
                                                         >
                                                             {selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? (
                                                                 <>
@@ -568,7 +569,7 @@ export function DeliverableSubmissionDialog({
                                                                 size="sm"
                                                                 onClick={() => handleOpenTikTokPicker(slot.key, slot.type)}
                                                                 disabled={loading}
-                                                                className={selectedMedia && (selectedMedia as any).platform === 'tiktok' ? "bg-black hover:bg-gray-800 text-white" : ""}
+                                                                className={`${selectedMedia && (selectedMedia as any).platform === 'tiktok' ? "bg-black hover:bg-gray-800 text-white" : ""} w-full md:w-auto justify-center`}
                                                             >
                                                                 {selectedMedia && (selectedMedia as any).platform === 'tiktok' ? (
                                                                     <>
@@ -593,18 +594,19 @@ export function DeliverableSubmissionDialog({
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t">
-                        <div className="text-sm text-muted-foreground">
+                    <div className="flex flex-col-reverse md:flex-row items-center justify-between gap-4 pt-4 border-t flex-shrink-0">
+                        <div className="text-sm text-muted-foreground text-center md:text-left">
                             {selectedDeliverables.size} deliverable(s) selected
                         </div>
-                        <div className="flex gap-2">
-                            <Button variant="ghost" onClick={onClose} disabled={loading}>
+                        <div className="flex flex-col-reverse md:flex-row gap-2 w-full md:w-auto">
+                            <Button variant="ghost" onClick={onClose} disabled={loading} className="w-full md:w-auto">
                                 Close
                             </Button>
                             <Button
                                 variant="hero"
                                 onClick={handleSubmitSelected}
                                 disabled={loading || selectedDeliverables.size === 0}
+                                className="w-full md:w-auto"
                             >
                                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                                 Submit Selected
