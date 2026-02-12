@@ -1,8 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { MatchScore } from "@/components/dashboard/MatchScore";
-import { Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2, ExternalLink, Check, Eye } from "lucide-react";
+import { Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2, ExternalLink, Check, Eye, Music2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -18,11 +19,18 @@ interface CreatorDetails {
     matchReason: string;
     bio: string;
     instagramUsername?: string;
+    tiktokUsername?: string;
     instagramMetrics?: {
         followers: number;
         engagementRate: number;
         avgLikes?: number;
         avgComments?: number;
+        avgViews?: number;
+    };
+    tiktokMetrics?: {
+        followers: number;
+        likes: number; // Total likes usually
+        engagementRate?: number;
         avgViews?: number;
     };
     matchBreakdown?: {
@@ -64,12 +72,23 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
     const [error, setError] = useState<string | null>(null);
     const [aiAnalysis, setAiAnalysis] = useState("");
 
+    const [activePlatform, setActivePlatform] = useState<"instagram" | "tiktok">("instagram");
+
     useEffect(() => {
         if (isOpen && creator.id) {
-            fetchCreatorPosts();
+            // Reset to Instagram or preferred platform
+            setActivePlatform("instagram");
+            fetchCreatorPosts("instagram"); // Initial load
             generateAnalysis();
         }
     }, [isOpen, creator.id, campaign]);
+
+    // Handle platform change
+    useEffect(() => {
+        if (isOpen && creator.id) {
+            fetchCreatorPosts(activePlatform);
+        }
+    }, [activePlatform]);
 
     const generateAnalysis = () => {
         const vibes = campaign?.vibes?.join(", ") || "brand";
@@ -85,14 +104,14 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
 
         // 2. Metrics Context
         let metricsAnalysis = "";
-        const followers = creator.instagramMetrics?.followers || 0;
+        const igFollowers = creator.instagramMetrics?.followers || 0;
+        const ttFollowers = creator.tiktokMetrics?.followers || 0;
+        const totalReach = igFollowers + ttFollowers;
 
         if (er > 4) {
-            metricsAnalysis = `With an engagement rate of ${er}%, their audience is highly responsive—significantly above the platform average.`;
-        } else if (er > 2) {
-            metricsAnalysis = `They maintain a healthy engagement rate of ${er}%, indicating a loyal community.`;
+            metricsAnalysis = `With an engagement rate of ${er}% on Instagram, their audience is highly responsive.`;
         } else {
-            metricsAnalysis = `They have a scale of ${(followers / 1000).toFixed(1)}K followers, offering broad reach potential.`;
+            metricsAnalysis = `They have a combined reach of ${(totalReach / 1000).toFixed(1)}K followers across platforms.`;
         }
 
         // 3. Vibe/Content Match
@@ -106,23 +125,29 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
         setAiAnalysis(`${intro} ${metricsAnalysis} ${vibeCheck}`);
     };
 
-    const fetchCreatorPosts = async () => {
+    const fetchCreatorPosts = async (platform: "instagram" | "tiktok") => {
         setLoadingPosts(true);
         setError(null);
+        setPosts([]); // Clear previous posts
+
         try {
-            const response = await axios.post("https://us-central1-rella-collab.cloudfunctions.net/getInstagramMedia", {
+            const endpoint = platform === "instagram"
+                ? "https://us-central1-rella-collab.cloudfunctions.net/getInstagramMedia"
+                : "https://us-central1-rella-collab.cloudfunctions.net/getTikTokMedia";
+
+            const response = await axios.post(endpoint, {
                 userId: creator.id
             });
 
             if (response.data.success) {
                 setPosts(response.data.data.slice(0, 6));
             } else {
-                console.error("Failed to load posts:", response.data.error);
-                setError(response.data.error || "Failed to load posts");
+                console.error(`Failed to load ${platform} posts:`, response.data.error);
+                setError(response.data.error || `Failed to load ${platform} content`);
             }
         } catch (error) {
-            console.error("Error fetching creator posts:", error);
-            setError("Could not load posts. Instagram token might be expired.");
+            console.error(`Error fetching ${platform} posts:`, error);
+            setError(`Could not load content.`);
         } finally {
             setLoadingPosts(false);
         }
@@ -141,28 +166,36 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                         <div className="flex-1">
                             <DialogTitle className="text-2xl font-bold flex items-center gap-2">
                                 {creator.name}
-                                {creator.instagramUsername && (
-                                    <a
-                                        href={`https://instagram.com/${creator.instagramUsername}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-muted-foreground hover:text-[#E1306C] transition-colors"
-                                    >
-                                        <ExternalLink className="w-4 h-4" />
-                                    </a>
-                                )}
+                                <div className="flex gap-1 ml-2">
+                                    {creator.instagramUsername && (
+                                        <a
+                                            href={`https://instagram.com/${creator.instagramUsername}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-muted-foreground hover:text-[#E1306C] transition-colors p-1"
+                                            title="View Instagram"
+                                        >
+                                            <Instagram className="w-4 h-4" />
+                                        </a>
+                                    )}
+                                    {creator.tiktokUsername && (
+                                        <a
+                                            href={`https://tiktok.com/@${creator.tiktokUsername}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-muted-foreground hover:text-black transition-colors p-1"
+                                            title="View TikTok"
+                                        >
+                                            <Music2 className="w-4 h-4" />
+                                        </a>
+                                    )}
+                                </div>
                             </DialogTitle>
                             <DialogDescription className="text-base mt-1">
                                 {creator.bio || "No bio available"}
                             </DialogDescription>
-                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1">
                                     <MapPin className="w-4 h-4" />
                                     {creator.location}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                    <Instagram className="w-4 h-4" />
-                                    @{creator.instagramUsername || "unknown"}
                                 </span>
                             </div>
                         </div>
@@ -265,30 +298,63 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                            <div className="p-3 sm:p-4 rounded-xl bg-muted/50">
-                                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-                                    <Users className="w-4 h-4" />
-                                    Audience
-                                </div>
-                                <div className="text-xl sm:text-2xl font-bold">{creator.followers}</div>
-                                <div className="text-xs text-muted-foreground mt-1">Authentic</div>
+                        <div className="space-y-4">
+                            {/* Platform Toggle */}
+                            <div className="flex p-1 bg-muted rounded-lg w-full">
+                                <button
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${activePlatform === 'instagram' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                    onClick={() => setActivePlatform("instagram")}
+                                >
+                                    <Instagram className="w-4 h-4" /> Instagram
+                                </button>
+                                <button
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${activePlatform === 'tiktok' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                    onClick={() => setActivePlatform("tiktok")}
+                                >
+                                    <Music2 className="w-4 h-4" /> TikTok
+                                </button>
                             </div>
-                            <div className="p-3 sm:p-4 rounded-xl bg-muted/50">
-                                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-                                    <TrendingUp className="w-4 h-4" />
-                                    Engagement
+
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                <div className="p-3 sm:p-4 rounded-xl bg-muted/50">
+                                    <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+                                        <Users className="w-4 h-4" />
+                                        Audience
+                                    </div>
+                                    <div className="text-xl sm:text-2xl font-bold">
+                                        {activePlatform === 'instagram' 
+                                            ? (creator.instagramMetrics?.followers?.toLocaleString() || "N/A")
+                                            : (creator.tiktokMetrics?.followers?.toLocaleString() || "N/A")
+                                        }
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                        {activePlatform === 'instagram' ? "Followers" : "Followers"}
+                                    </div>
                                 </div>
-                                <div className="text-xl sm:text-2xl font-bold text-success">{creator.engagement}</div>
-                                <div className="text-xs text-muted-foreground mt-1">Above Avg</div>
-                            </div>
-                            <div className="p-3 sm:p-4 rounded-xl bg-muted/50 col-span-2">
-                                <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-                                    <TrendingUp className="w-4 h-4" />
-                                    Avg. Likes per Post
+                                <div className="p-3 sm:p-4 rounded-xl bg-muted/50">
+                                    <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+                                        <TrendingUp className="w-4 h-4" />
+                                        Engagement
+                                    </div>
+                                    <div className="text-xl sm:text-2xl font-bold text-success">
+                                        {activePlatform === 'instagram'
+                                            ? (creator.instagramMetrics?.engagementRate ? creator.instagramMetrics.engagementRate + "%" : "N/A")
+                                            : "N/A" // TikTok API doesn't always give ER directly, or we calculate it. For now N/A or calculate.
+                                        }
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mt-1">Rate</div>
                                 </div>
-                                <div className="text-xl sm:text-2xl font-bold text-primary">
-                                    {creator.instagramMetrics?.avgLikes?.toLocaleString() || "N/A"}
+                                <div className="p-3 sm:p-4 rounded-xl bg-muted/50 col-span-2">
+                                    <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+                                        {activePlatform === 'instagram' ? <Instagram className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}
+                                        {activePlatform === 'instagram' ? "Avg. Likes per Post" : "Total Likes"}
+                                    </div>
+                                    <div className="text-xl sm:text-2xl font-bold text-primary">
+                                        {activePlatform === 'instagram'
+                                            ? (creator.instagramMetrics?.avgLikes?.toLocaleString() || "N/A")
+                                            : (creator.tiktokMetrics?.likes?.toLocaleString() || "N/A")
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -297,8 +363,8 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                     {/* Recent Content */}
                     <div>
                         <h3 className="font-semibold flex items-center gap-2 mb-4">
-                            <Instagram className="w-4 h-4" />
-                            Recent Content
+                            {activePlatform === 'instagram' ? <Instagram className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}
+                            Recent Content ({activePlatform === 'instagram' ? 'Instagram' : 'TikTok'})
                         </h3>
 
                         {loadingPosts ? (
@@ -384,7 +450,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                         </Button>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </DialogContent >
+        </Dialog >
     );
 }

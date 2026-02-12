@@ -186,6 +186,8 @@ export default function BrandMatches() {
             followers: formatNumber(creator.instagramMetrics?.followers || 0),
             engagement: (creator.instagramMetrics?.engagementRate || 0) + "%",
             instagramMetrics: creator.instagramMetrics,
+            tiktokMetrics: creator.tiktokMetrics,
+            tiktokUsername: creator.socialHandles?.tiktok,
             location: creator.location || "Unknown"
           };
         })
