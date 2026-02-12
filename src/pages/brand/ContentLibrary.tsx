@@ -207,58 +207,59 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
             <p className="font-medium text-sm truncate">{content.creatorName}</p>
             <p className="text-xs text-muted-foreground truncate">{content.campaignName}</p>
           </div>
-          {content.status === "rejected" ? "rejected" :
-            content.status === "revision_requested" ? "revision requested" :
-              content.status}
-        </Badge>
-      </div>
-
-      {/* Metrics */}
-      {content.metrics && (
-        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/50">
-          {/* Row 1 */}
-          <div className="text-center group-hover:scale-105 transition-transform" title="Views">
-            <Eye className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-            <p className="text-xs font-medium">{formatNumber(content.metrics.views)}</p>
-          </div>
-          <div className="text-center group-hover:scale-105 transition-transform" title="Reach">
-            <BarChart2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-            <p className="text-xs font-medium">{formatNumber(content.metrics.reach)}</p>
-          </div>
-          <div className="text-center group-hover:scale-105 transition-transform" title="Saved">
-            <Bookmark className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-            <p className="text-xs font-medium">{formatNumber(content.metrics.saved)}</p>
-          </div>
-
-          {/* Row 2 */}
-          <div className="text-center group-hover:scale-105 transition-transform" title="Likes">
-            <Heart className={`w-4 h-4 mx-auto mb-1 ${content.metrics.likes > 0 ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
-            <p className="text-xs font-medium">{formatNumber(content.metrics.likes)}</p>
-          </div>
-          <div className="text-center group-hover:scale-105 transition-transform" title="Comments">
-            <MessageCircle className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-            <p className="text-xs font-medium">{formatNumber(content.metrics.comments)}</p>
-          </div>
-          <div className="text-center group-hover:scale-105 transition-transform" title="Shares">
-            <Share2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-            <p className="text-xs font-medium">{formatNumber(content.metrics.shares)}</p>
-          </div>
+          <Badge className={statusColors[content.status]}>
+            {content.status === "rejected" ? "rejected" :
+              content.status === "revision_requested" ? "revision requested" :
+                content.status}
+          </Badge>
         </div>
-      )}
 
-      {/* Submitted Date */}
-      <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <Calendar className="w-3 h-3" />
-          {content.submittedAt}
-        </div>
-        {content.metrics?.updatedAt && (
-          <span className="text-[10px] opacity-70">
-            Updated {new Date(content.metrics.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
+        {/* Metrics */}
+        {content.metrics && (
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/50">
+            {/* Row 1 */}
+            <div className="text-center group-hover:scale-105 transition-transform" title="Views">
+              <Eye className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+              <p className="text-xs font-medium">{formatNumber(content.metrics.views)}</p>
+            </div>
+            <div className="text-center group-hover:scale-105 transition-transform" title="Reach">
+              <BarChart2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+              <p className="text-xs font-medium">{formatNumber(content.metrics.reach)}</p>
+            </div>
+            <div className="text-center group-hover:scale-105 transition-transform" title="Saved">
+              <Bookmark className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+              <p className="text-xs font-medium">{formatNumber(content.metrics.saved)}</p>
+            </div>
+
+            {/* Row 2 */}
+            <div className="text-center group-hover:scale-105 transition-transform" title="Likes">
+              <Heart className={`w-4 h-4 mx-auto mb-1 ${content.metrics.likes > 0 ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
+              <p className="text-xs font-medium">{formatNumber(content.metrics.likes)}</p>
+            </div>
+            <div className="text-center group-hover:scale-105 transition-transform" title="Comments">
+              <MessageCircle className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+              <p className="text-xs font-medium">{formatNumber(content.metrics.comments)}</p>
+            </div>
+            <div className="text-center group-hover:scale-105 transition-transform" title="Shares">
+              <Share2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+              <p className="text-xs font-medium">{formatNumber(content.metrics.shares)}</p>
+            </div>
+          </div>
         )}
-      </div>
-    </CardContent>
+
+        {/* Submitted Date */}
+        <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
+            {content.submittedAt}
+          </div>
+          {content.metrics?.updatedAt && (
+            <span className="text-[10px] opacity-70">
+              Updated {new Date(content.metrics.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+        </div>
+      </CardContent>
     </Card >
   );
 }
