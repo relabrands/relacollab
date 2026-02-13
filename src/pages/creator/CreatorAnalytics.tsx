@@ -17,6 +17,11 @@ interface InstagramMedia {
     media_url: string;
     permalink: string;
     timestamp: string;
+    // Metrics
+    view_count?: number;
+    reach?: number;
+    like_count?: number;
+    comments_count?: number;
 }
 
 export default function CreatorAnalytics() {
@@ -272,10 +277,13 @@ export default function CreatorAnalytics() {
                                                 />
                                             )}
 
-                                            {/* Top Overlay (Views/Plays) */}
+                                            {/* Top Overlay (Views/Reach) */}
                                             <div className="absolute top-2 right-2 bg-black/60 px-2 py-1 rounded-full text-xs text-white backdrop-blur-sm flex items-center gap-1">
                                                 <Users className="w-3 h-3" />
-                                                {(post.view_count || 0).toLocaleString()}
+                                                {(selectedPlatform === 'instagram'
+                                                    ? (post.reach || post.view_count || 0)
+                                                    : (post.view_count || 0)
+                                                ).toLocaleString()}
                                             </div>
 
                                             {/* Bottom Overlay (Likes/Comments) */}

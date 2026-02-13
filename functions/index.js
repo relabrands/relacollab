@@ -106,11 +106,17 @@ exports.auth = functions.https.onRequest((req, res) => {
                 );
                 const mediaItems = mediaResponse.data.data || [];
                 let totalEngagement = 0;
+                let totalLikes = 0;
+                let totalComments = 0;
                 mediaItems.forEach(item => {
                     totalEngagement += (item.like_count || 0) + (item.comments_count || 0);
+                    totalLikes += (item.like_count || 0);
+                    totalComments += (item.comments_count || 0);
                 });
                 const followers = userData.followers_count || 1;
                 const avgEngagement = mediaItems.length > 0 ? totalEngagement / mediaItems.length : 0;
+                const avgLikes = mediaItems.length > 0 ? Math.round(totalLikes / mediaItems.length) : 0;
+                const avgComments = mediaItems.length > 0 ? Math.round(totalComments / mediaItems.length) : 0;
                 const engagementRate = ((avgEngagement / followers) * 100).toFixed(2);
 
                 const expiresAt = Date.now() + (60 * 24 * 60 * 60 * 1000); // approx 60 days
@@ -129,6 +135,8 @@ exports.auth = functions.https.onRequest((req, res) => {
                         instagramMetrics: {
                             followers: parseInt(userData.followers_count || "0"),
                             engagementRate: parseFloat(engagementRate || "0"),
+                            avgLikes: avgLikes,
+                            avgComments: avgComments,
                             lastUpdated: new Date().toISOString()
                         }
                     }, { merge: true });
@@ -253,7 +261,8 @@ exports.getInstagramMedia = functions.https.onRequest((req, res) => {
                     comments_count: item.comments_count || 0,
 
                     // TUS MÉTRICAS NUEVAS
-                    views: metrics.views,
+                    // TUS MÉTRICAS NUEVAS
+                    view_count: metrics.views, // Standardized to view_count for frontend compatibility
                     reach: metrics.reach,
                     saved: metrics.saved,
                     shares: metrics.shares,
