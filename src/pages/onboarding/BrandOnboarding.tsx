@@ -78,16 +78,14 @@ export default function BrandOnboarding() {
                 location: formData.location,
                 description: formData.description,
                 plan: formData.selectedPlan,
+                status: "pending", // Set to pending for approval
                 onboardingCompleted: true,
                 updatedAt: new Date().toISOString()
             });
 
             toast.success("Welcome aboard!");
-            // Force a reload or update context to reflect onboarding status change if needed, 
-            // but simpler to just navigate and let the protected route check handle it on next load 
-            // or we update the local state in context (ideal).
-            // For now, simple navigation:
-            window.location.href = "/brand";
+            // Redirect to pending approval
+            window.location.href = "/pending-approval";
         } catch (error) {
             console.error(error);
             toast.error("Something went wrong");

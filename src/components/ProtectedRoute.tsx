@@ -17,7 +17,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     // ProtectedRoute is wrapping Dashboard routes. 
     // So if user tries to access Dashboard and onboarding is NOT complete, redirect to onboarding.
 
-    const { user, role, loading, onboardingCompleted } = useAuth();
+    const { user, role, loading, onboardingCompleted, status } = useAuth();
     // ... loading check ...
 
     // We assume ProtectedRoute is ONLY used for post-login content (Dashboards)
@@ -43,6 +43,12 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
         // Admin might skip onboarding or have different flow, for now let's assume brand/creator need it
         if (role === 'brand') return <Navigate to="/onboarding/brand" replace />;
         if (role === 'creator') return <Navigate to="/onboarding/creator" replace />;
+    }
+
+    // Check for pending approval status
+    // Redirect to pending approval page if status is pending AND we are not already there (handled by route itself usually, but good to be safe)
+    if (status === 'pending' && role !== 'admin') {
+        return <Navigate to="/pending-approval" replace />;
     }
 
     if (allowedRoles) {

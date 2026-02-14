@@ -74,11 +74,25 @@ export default function CreatorDashboard() {
         const userData = userDoc.data();
 
         // Calculate Profile Completion
-        let completion = 20; // Base for being registered
-        if (userData.niche || userData.categories?.length > 0) completion += 20;
-        if (userData.bio) completion += 20;
-        if (userData.socialHandles?.instagram) completion += 20;
-        if (userData.photoURL) completion += 20;
+        let completion = 0;
+
+        // Basic Info (25%)
+        if (userData.displayName || userData.name) completion += 5;
+        if (userData.bio) completion += 10;
+        if (userData.location) completion += 5;
+        if (userData.phone) completion += 5;
+
+        // Visuals (15%)
+        if (userData.photoURL) completion += 15;
+
+        // Professional Details (60%)
+        if (userData.categories?.length > 0) completion += 10;
+        if (userData.contentFormats?.length > 0) completion += 10;
+        if (userData.vibes?.length > 0) completion += 10;
+        if (userData.whoAppearsInContent?.length > 0) completion += 10;
+        if (userData.experienceTime) completion += 10;
+        if (userData.collaborationPreference) completion += 10;
+
         setProfileCompletion(completion);
 
         // 2. Fetch all creator's applications to filter them out

@@ -243,8 +243,8 @@ export default function CreatorOnboarding() {
             toast.success("¡Perfil enviado para revisión!");
             toast.info("Serás notificado una vez que tu perfil sea aprobado");
 
-            // Redirect to a "pending approval" page or login
-            window.location.href = "/login";
+            // Redirect to a "pending approval" page
+            window.location.href = "/pending-approval";
         } catch (error) {
             console.error(error);
             toast.error("Algo salió mal");
