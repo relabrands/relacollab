@@ -963,6 +963,12 @@ export default function CreatorProfile() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <InstagramConnectModal
+          isOpen={isInstagramModalOpen}
+          onClose={() => setIsInstagramModalOpen(false)}
+          onConfirm={proceedWithInstagramConnect}
+        />
       </main>
     </div>
   );
