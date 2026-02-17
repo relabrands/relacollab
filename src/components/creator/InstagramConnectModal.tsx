@@ -22,8 +22,8 @@ export const InstagramConnectModal: React.FC<InstagramConnectModalProps> = ({
                     <div className="bg-gradient-to-tr from-[#f09433] via-[#bc1888] to-[#2458f2] p-3 rounded-2xl shadow-lg">
                         <Instagram className="h-8 w-8 text-white" />
                     </div>
-                    <div className="space-y-2">
-                        <DialogTitle className="text-2xl font-bold">Conectar con Instagram</DialogTitle>
+                    <div className="space-y-2 w-full">
+                        <DialogTitle className="text-2xl font-bold text-center">Conectar con Instagram</DialogTitle>
                         <DialogDescription className="text-center text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto">
                             Conecta tu cuenta de Instagram con RELA Collab en unos pocos pasos para desbloquear tu AI Profile Analysis.
                         </DialogDescription>
@@ -49,9 +49,9 @@ export const InstagramConnectModal: React.FC<InstagramConnectModalProps> = ({
                                 <Layout className="h-5 w-5 text-purple-500" />
                             </div>
                             <div className="space-y-1">
-                                <h4 className="font-semibold text-sm">Paso 2: Selecciona tu Negocio y Fan Page</h4>
+                                <h4 className="font-semibold text-sm">Paso 2: Selecciona tu Negocio y Página de Facebook</h4>
                                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                    La API de Meta requiere vincular la Fan Page y el Negocio de Facebook que están conectados a tu cuenta de Instagram.
+                                    La API de Meta requiere vincular la Fan Page de Facebook conectada a tu Instagram para obtener métricas profesionales.
                                 </p>
                             </div>
                         </div>
