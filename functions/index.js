@@ -489,7 +489,7 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
 });
 
 // ==========================================
-// 5. TIKTOK AUTHENTICATION (SANDBOX)
+// 5. TIKTOK AUTHENTICATION (LIVE)
 // ==========================================
 exports.authTikTok = functions.https.onRequest((req, res) => {
     return cors(req, res, async () => {
@@ -498,8 +498,8 @@ exports.authTikTok = functions.https.onRequest((req, res) => {
         const { code, userId } = req.body;
         if (!code) return res.status(400).json({ error: "Missing code" });
 
-        const CLIENT_KEY = "sbawc7z0a481hx7bx1";
-        const CLIENT_SECRET = "SmryCdX4L0SGrODyUuRJWgnpijrEp9IN";
+        const CLIENT_KEY = "awq1es91fwbixh6h";
+        const CLIENT_SECRET = "3nsZQM3umPGn4AQkmrQoQeviFzMv5SNh";
         const REDIRECT_URI = "https://www.relacollab.com/auth/tiktok/callback";
 
         try {

@@ -255,7 +255,7 @@ export default function CreatorProfile() {
     const state = Math.random().toString(36).substring(7);
     localStorage.setItem("tiktok_auth_state", state);
 
-    const clientKey = "sbawc7z0a481hx7bx1";
+    const clientKey = "awq1es91fwbixh6h";
     const redirectUri = "https://www.relacollab.com/auth/tiktok/callback";
     const scopes = "user.info.basic,user.info.stats,video.list";
 
