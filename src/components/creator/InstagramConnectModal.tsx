@@ -49,9 +49,9 @@ export const InstagramConnectModal: React.FC<InstagramConnectModalProps> = ({
                                 <Layout className="h-5 w-5 text-purple-500" />
                             </div>
                             <div className="space-y-1">
-                                <h4 className="font-semibold text-sm">Paso 2: Selecciona tu Negocio</h4>
+                                <h4 className="font-semibold text-sm">Paso 2: Selecciona tu Negocio y Fan Page</h4>
                                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                    La API de Meta requiere vincular la Fan Page de Facebook conectada a tu Instagram.
+                                    La API de Meta requiere vincular la Fan Page y el Negocio de Facebook que están conectados a tu cuenta de Instagram.
                                 </p>
                             </div>
                         </div>
@@ -71,7 +71,7 @@ export const InstagramConnectModal: React.FC<InstagramConnectModalProps> = ({
 
                     <div className="flex items-center gap-2 justify-center text-xs text-zinc-400 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-100 dark:border-zinc-800">
                         <Lock className="h-3 w-3" />
-                        <span>Asegúrate de tener tu nombre de usuario y contraseña de Instagram a mano.</span>
+                        <span>Es posible que debas iniciar sesión en Facebook para continuar.</span>
                     </div>
                 </div>
 
