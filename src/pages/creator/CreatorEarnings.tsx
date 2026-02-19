@@ -3,7 +3,7 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DollarSign, ArrowUpRight, ArrowDownLeft, Clock, Search, Download, Loader2, Settings, Wallet } from "lucide-react";
+import { DollarSign, ArrowDownLeft, Clock, Search, Download, Loader2, Settings, Wallet, Gift } from "lucide-react";
 import { collection, query, where, getDocs, orderBy, doc, getDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
@@ -28,18 +28,20 @@ export default function CreatorEarnings() {
         requested: 0
     });
 
-    const statusColors = {
-        pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+    const statusColors: Record<string, string> = {
+        pending: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
         ready_to_withdraw: "bg-blue-500/10 text-blue-500 border-blue-500/20",
         requested: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-        paid: "bg-green-500/10 text-green-500 border-green-500/20",
+        paid: "bg-green-500/10 text-green-600 border-green-500/20",
+        completed: "bg-purple-500/10 text-purple-600 border-purple-500/20",
     };
 
-    const statusLabels = {
-        pending: "Pending",
-        ready_to_withdraw: "Ready to Withdraw",
-        requested: "Processing",
-        paid: "Paid"
+    const statusLabels: Record<string, string> = {
+        pending: "Pendiente",
+        ready_to_withdraw: "Listo para retirar",
+        requested: "Procesando",
+        paid: "Pagado",
+        completed: "Completado",
     };
 
     useEffect(() => {
@@ -242,33 +244,53 @@ export default function CreatorEarnings() {
                             </CardHeader>
                             <CardContent>
                                 {payments.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {payments.map((payment) => (
-                                            <div key={payment.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border/50">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`p-2 rounded-full ${payment.status === 'paid' ? 'bg-success/10' : 'bg-muted'}`}>
-                                                        {payment.status === 'paid' ? (
-                                                            <ArrowDownLeft className="h-4 w-4 text-success" />
+                                    <div className="space-y-3">
+                                        {payments.map((payment) => {
+                                            const isExchange = payment.type === 'exchange';
+                                            return (
+                                                <div key={payment.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border/50 hover:bg-muted/70 transition-colors">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`p-2 rounded-full ${isExchange ? 'bg-purple-500/10' :
+                                                                payment.status === 'paid' ? 'bg-green-500/10' : 'bg-muted'
+                                                            }`}>
+                                                            {isExchange ? (
+                                                                <Gift className="h-4 w-4 text-purple-500" />
+                                                            ) : payment.status === 'paid' ? (
+                                                                <ArrowDownLeft className="h-4 w-4 text-green-500" />
+                                                            ) : (
+                                                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium">{payment.campaignName || "Campaign Payment"}</p>
+                                                            {isExchange ? (
+                                                                <p className="text-sm text-purple-600 font-medium">
+                                                                    🎁 {payment.exchangeDetails || "Intercambio"}
+                                                                </p>
+                                                            ) : (
+                                                                <p className="text-sm text-muted-foreground">
+                                                                    {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString("es-DO") : "N/A"}
+                                                                    {payment.feeAmount > 0 && ` • Fee: $${payment.feeAmount}`}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        {isExchange ? (
+                                                            <p className="font-medium text-purple-600">Intercambio</p>
                                                         ) : (
-                                                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                                            <p className="font-bold text-foreground">+${(payment.netAmount || 0).toLocaleString()}</p>
                                                         )}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium">{payment.campaignName || "Campaign Payment"}</p>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : "N/A"}
-                                                            {payment.feeAmount > 0 && ` • Fee: $${payment.feeAmount}`}
-                                                        </p>
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={`mt-1 capitalize text-[10px] ${statusColors[payment.status] || ''}`}
+                                                        >
+                                                            {statusLabels[payment.status] || payment.status}
+                                                        </Badge>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="font-bold">+${(payment.netAmount || 0).toLocaleString()}</p>
-                                                    <Badge variant="outline" className={`mt-1 capitalize ${statusColors[payment.status as keyof typeof statusColors] || ''}`}>
-                                                        {statusLabels[payment.status as keyof typeof statusLabels] || payment.status}
-                                                    </Badge>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">

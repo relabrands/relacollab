@@ -141,10 +141,10 @@ export default function AdminDashboard() {
           joined: new Date(doc.data().createdAt).toLocaleDateString()
         })));
 
-        // Fetch Payouts (Requested & Verifying)
+        // Fetch Payouts (admin pays creators directly — status: pending or requested)
         const payoutQuery = query(
           collection(db, "payouts"),
-          where("status", "in", ["requested", "verifying_brand_payment"])
+          where("status", "in", ["pending", "requested"])
         );
         const payoutSnap = await getDocs(payoutQuery);
         setPayouts(payoutSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -183,13 +183,11 @@ export default function AdminDashboard() {
         creatorPaymentReceipt: paymentReceiptUrl,
         paidAt: new Date().toISOString()
       });
-
-      // Update local state
       setPayouts(prev => prev.filter(p => p.id !== selectedPayout.id));
       setIsPaymentModalOpen(false);
       setSelectedPayout(null);
       setPaymentReceiptUrl("");
-      toast.success("Payout marked as paid!");
+      toast.success("✅ Payout marked as paid! Creator will see it in Earnings.");
     } catch (error) {
       console.error("Error processing payout:", error);
       toast.error("Failed to process payout");
@@ -198,17 +196,17 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleVerifyBrandPayment = async (payoutId: string) => {
+  // Mark payout as ready (skip the old brand-payment verification flow)
+  const handleMarkReadyToWithdraw = async (payoutId: string) => {
     try {
       await updateDoc(doc(db, "payouts", payoutId), {
         status: 'ready_to_withdraw',
-        verifiedAt: new Date().toISOString()
+        readyAt: new Date().toISOString()
       });
       setPayouts(prev => prev.filter(p => p.id !== payoutId));
-      toast.success("Brand payment verified!");
+      toast.success("Creator can now request withdrawal!");
     } catch (error) {
-      console.error("Error verifying payment:", error);
-      toast.error("Failed to verify payment");
+      toast.error("Failed to update payout");
     }
   };
 
@@ -451,21 +449,105 @@ export default function AdminDashboard() {
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-6">Payout Management</h2>
           <div className="bg-card border border-border rounded-xl p-6">
-            <Tabs defaultValue="requests">
+            <Tabs defaultValue="pending">
               <TabsList className="mb-6">
-                <TabsTrigger value="requests">Withdrawal Requests</TabsTrigger>
-                <TabsTrigger value="verifications">Brand Payments</TabsTrigger>
+                <TabsTrigger value="pending">
+                  Por Pagar
+                  {payouts.filter(p => p.status === 'pending').length > 0 && (
+                    <span className="ml-1.5 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                      {payouts.filter(p => p.status === 'pending').length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="requests">
+                  Retiros Solicitados
+                  {payouts.filter(p => p.status === 'requested').length > 0 && (
+                    <span className="ml-1.5 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                      {payouts.filter(p => p.status === 'requested').length}
+                    </span>
+                  )}
+                </TabsTrigger>
               </TabsList>
 
+              {/* Pending (content approved, awaiting admin payment) */}
+              <TabsContent value="pending">
+                <div className="space-y-4">
+                  {payouts.filter(p => p.status === 'pending').length > 0 ? (
+                    payouts.filter(p => p.status === 'pending').map(payout => (
+                      <div key={payout.id} className="p-4 bg-muted/30 rounded-xl border border-border space-y-3">
+                        <div className="flex items-start justify-between gap-4">
+                          {/* Creator info */}
+                          <div className="flex items-center gap-3">
+                            {payout.creatorAvatar ? (
+                              <img src={payout.creatorAvatar} className="w-10 h-10 rounded-full object-cover ring-2 ring-border" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                {(payout.creatorName || "C").charAt(0)}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-semibold">{payout.creatorName || payout.creatorId}</p>
+                              <p className="text-xs text-muted-foreground">{payout.campaignName}</p>
+                            </div>
+                          </div>
+                          {/* Amount */}
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-bold text-lg text-primary">${payout.netAmount?.toLocaleString()}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              Bruto: ${payout.grossAmount?.toLocaleString()} • Fee: ${payout.feeAmount?.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Bank account details */}
+                        {payout.creatorBankAccount && (
+                          <div className="bg-background border border-border rounded-lg px-4 py-3 text-sm space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Cuenta del Creator</p>
+                            <p><span className="text-muted-foreground">Banco:</span> <strong>{payout.creatorBankAccount.bankName}</strong></p>
+                            <p><span className="text-muted-foreground">Cuenta:</span> <strong>{payout.creatorBankAccount.accountNumber}</strong></p>
+                            {payout.creatorBankAccount.accountHolder && (
+                              <p><span className="text-muted-foreground">Titular:</span> {payout.creatorBankAccount.accountHolder}</p>
+                            )}
+                          </div>
+                        )}
+
+                        <Button
+                          className="w-full bg-success hover:bg-success/90"
+                          onClick={() => {
+                            setSelectedPayout(payout);
+                            setIsPaymentModalOpen(true);
+                          }}
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          Marcar como Pagado al Creator
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground text-center py-8">No hay pagos pendientes.</p>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Requested (creator pressed "Request Payout") */}
               <TabsContent value="requests">
                 <div className="space-y-4">
                   {payouts.filter(p => p.status === 'requested').length > 0 ? (
                     payouts.filter(p => p.status === 'requested').map(payout => (
-                      <div key={payout.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
-                        <div>
-                          <p className="font-semibold">{payout.campaignName}</p>
-                          <p className="text-sm text-muted-foreground">Creator ID: {payout.creatorId}</p>
-                          <p className="text-xs text-primary mt-1 font-medium">Net Amount: ${payout.netAmount?.toLocaleString()}</p>
+                      <div key={payout.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border gap-4">
+                        <div className="flex items-center gap-3">
+                          {payout.creatorAvatar ? (
+                            <img src={payout.creatorAvatar} className="w-9 h-9 rounded-full object-cover ring-2 ring-border" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                              {(payout.creatorName || "C").charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-semibold">{payout.creatorName || payout.creatorId}</p>
+                            <p className="text-xs text-muted-foreground">{payout.campaignName}</p>
+                            <p className="text-xs text-primary font-medium mt-0.5">${payout.netAmount?.toLocaleString()} neto</p>
+                          </div>
                         </div>
                         <Button
                           onClick={() => {
@@ -473,48 +555,20 @@ export default function AdminDashboard() {
                             setIsPaymentModalOpen(true);
                           }}
                         >
-                          Mark as Paid
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Pagar
                         </Button>
                       </div>
                     ))
                   ) : (
-                    <p className="text-muted-foreground text-center py-8">No active withdrawal requests.</p>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="verifications">
-                <div className="space-y-4">
-                  {payouts.filter(p => p.status === 'verifying_brand_payment').length > 0 ? (
-                    payouts.filter(p => p.status === 'verifying_brand_payment').map(payout => (
-                      <div key={payout.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
-                        <div>
-                          <p className="font-semibold">{payout.campaignName}</p>
-                          <p className="text-sm text-muted-foreground">From Brand</p>
-                          <p className="text-xs text-primary mt-1 font-medium">Total: ${payout.grossAmount?.toLocaleString()}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" asChild>
-                            <a href={payout.brandPaymentReceipt} target="_blank" rel="noreferrer">View Receipt</a>
-                          </Button>
-                          <Button
-                            className="bg-success hover:bg-success/90"
-                            onClick={() => handleVerifyBrandPayment(payout.id)}
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                            Confirm
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground text-center py-8">No payments pending verification.</p>
+                    <p className="text-muted-foreground text-center py-8">No hay retiros solicitados.</p>
                   )}
                 </div>
               </TabsContent>
             </Tabs>
           </div>
         </div>
+
 
         {/* Platform Settings */}
         <div id="settings-section" className="glass-card p-6 max-w-lg">

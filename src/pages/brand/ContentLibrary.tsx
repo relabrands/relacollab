@@ -28,10 +28,10 @@ import {
   Edit
 } from "lucide-react";
 import { toast } from "sonner";
-import { updateDoc } from "firebase/firestore";
+import { addDoc, updateDoc, getDocs } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { RequestEditsDialog } from "@/components/brand/RequestEditsDialog";
@@ -390,21 +390,96 @@ export default function ContentLibrary() {
   // Handler for status updates
   const handleStatusChange = async (id: string, newStatus: "approved" | "rejected") => {
     try {
+      const submission = contentList.find(c => c.id === id);
+
       await updateDoc(doc(db, "content_submissions", id), {
         status: newStatus,
         reviewedAt: new Date().toISOString()
       });
 
+      // ✅ Auto-create creator earning/payout record when content is APPROVED
+      if (newStatus === "approved" && submission?.creatorId) {
+        try {
+          const subDoc = await getDoc(doc(db, "content_submissions", id));
+          const subData = subDoc.data();
+          const campaignId = subData?.campaignId;
+
+          if (campaignId) {
+            const campaignDoc = await getDoc(doc(db, "campaigns", campaignId));
+            const campaign = campaignDoc.data();
+
+            if (campaign) {
+              // Duplicate guard: only create one record per creator per campaign
+              const existingQ = query(
+                collection(db, "payouts"),
+                where("creatorId", "==", submission.creatorId),
+                where("campaignId", "==", campaignId)
+              );
+              const existing = await getDocs(existingQ);
+
+              if (existing.empty) {
+                const creatorDoc = await getDoc(doc(db, "users", submission.creatorId));
+                const creator = creatorDoc.data();
+
+                if (campaign.compensationType === "monetary" && campaign.totalBudgetPerCreator > 0) {
+                  // 💵 MONETARY — real cash payout
+                  await addDoc(collection(db, "payouts"), {
+                    type: "monetary",
+                    brandId: campaign.brandId,
+                    creatorId: submission.creatorId,
+                    creatorName: creator?.displayName || "Creator",
+                    creatorAvatar: creator?.photoURL || "",
+                    creatorBankAccount: creator?.bankAccount || null,
+                    campaignId,
+                    campaignName: campaign.name || submission.campaignName,
+                    contentSubmissionId: id,
+                    grossAmount: campaign.totalBudgetPerCreator,
+                    feeAmount: campaign.platformFeeAmount || 0,
+                    netAmount: campaign.creatorPayment || campaign.totalBudgetPerCreator,
+                    feePercent: campaign.platformFeePercent || 0,
+                    status: "pending",  // pending → paid (admin pays directly)
+                    createdAt: new Date().toISOString(),
+                  });
+                } else if (campaign.compensationType === "exchange") {
+                  // 🎁 EXCHANGE — product/food/experience record (no cash, just a completion entry)
+                  await addDoc(collection(db, "payouts"), {
+                    type: "exchange",
+                    brandId: campaign.brandId,
+                    creatorId: submission.creatorId,
+                    creatorName: creator?.displayName || "Creator",
+                    creatorAvatar: creator?.photoURL || "",
+                    campaignId,
+                    campaignName: campaign.name || submission.campaignName,
+                    contentSubmissionId: id,
+                    grossAmount: 0,
+                    feeAmount: 0,
+                    netAmount: 0,
+                    exchangeDetails: campaign.exchangeDetails || "Intercambio",
+                    status: "completed",  // Exchange is instantly "completed" — no cash transfer needed
+                    createdAt: new Date().toISOString(),
+                  });
+                }
+                console.log("✅ Payout/earning record created for", submission.creatorId);
+              }
+            }
+          }
+        } catch (payoutErr) {
+          // Non-blocking — log but don't block the UI
+          console.error("Error creating payout:", payoutErr);
+        }
+      }
+
       setContentList(prev => prev.map(item =>
         item.id === id ? { ...item, status: newStatus } : item
       ));
 
-      toast.success(newStatus === "approved" ? "Content approved!" : "Changes requested");
+      toast.success(newStatus === "approved" ? "Content approved! Earning record created for creator." : "Changes requested");
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Failed to update status");
     }
   };
+
 
   // Handler for requesting edits
   const handleRequestEdit = (content: ContentItem) => {

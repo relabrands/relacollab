@@ -258,10 +258,11 @@ export default function CreateCampaign() {
       }
 
       // Calculate final amounts (Model: Gross - Fee = Net)
-      const grossAmount = Number(formData.creatorPayment) || 0; // The input is now the Gross Amount
+      const grossAmount = Number(formData.creatorPayment) || 0;
+      const creatorCount = parseInt(formData.creatorCount) || 1;
       const feePercent = config.serviceFeePercent || 10;
-      const feeAmount = grossAmount * (feePercent / 100);
-      const netAmount = grossAmount - feeAmount;
+      const perCreatorFee = grossAmount * (feePercent / 100);
+      const perCreatorNet = grossAmount - perCreatorFee;
 
       const campaignData = {
         ...formData,
@@ -271,20 +272,46 @@ export default function CreateCampaign() {
         createdAt: new Date().toISOString(),
 
         // Fee & Payment Data
-        creatorPayment: netAmount, // Net amount creator receives
+        creatorPayment: perCreatorNet,    // Net amount creator receives per person
         platformFeePercent: feePercent,
-        platformFeeAmount: feeAmount,
-        totalBudgetPerCreator: grossAmount, // Gross amount brand pays
+        platformFeeAmount: perCreatorFee, // Fee per creator
+        totalBudgetPerCreator: grossAmount, // Gross per creator
 
-        // Legacy fields for backward compatibility or other logic
+        // Legacy fields
         budget: parseFloat(formData.budget) || 0,
-        creatorCount: parseInt(formData.creatorCount) || 1,
-        creditCost: 1, // Fixed 1 credit per creator
+        creatorCount: creatorCount,
+        creditCost: 1,
         approvedCount: 0,
         applicationCount: 0,
       };
 
-      await addDoc(collection(db, "campaigns"), campaignData);
+      const campaignRef = await addDoc(collection(db, "campaigns"), campaignData);
+
+      // ✅ Auto-generate brand invoice for monetary campaigns
+      if (formData.compensationType === "monetary" && grossAmount > 0) {
+        const totalGross = grossAmount * creatorCount;
+        const totalFee = perCreatorFee * creatorCount;
+        const totalNet = perCreatorNet * creatorCount;
+
+        await addDoc(collection(db, "invoices"), {
+          type: "campaign_budget",
+          brandId: user.uid,
+          brandName: brandName,
+          campaignId: campaignRef.id,
+          campaignName: formData.name,
+          creatorCount: creatorCount,
+          perCreatorGross: grossAmount,
+          perCreatorFee: perCreatorFee,
+          perCreatorNet: perCreatorNet,
+          totalGross: totalGross,    // Total brand must pay RELA
+          totalFee: totalFee,        // RELA platform revenue
+          totalNet: totalNet,        // Total that will go to creators
+          feePercent: feePercent,
+          status: "pending",         // pending_payment → verifying → paid
+          createdAt: new Date().toISOString(),
+        });
+      }
+
       toast.success("Campaign created successfully!");
       navigate("/brand/matches");
     } catch (error) {
@@ -294,6 +321,7 @@ export default function CreateCampaign() {
       setIsSubmitting(false);
     }
   };
+
 
   const totalSteps = 5;
 
