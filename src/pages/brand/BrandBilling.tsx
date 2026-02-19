@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MobileNav } from "@/components/dashboard/MobileNav";
+import { Link } from "react-router-dom";
 
 interface CampaignInvoice {
     id: string;
@@ -128,7 +129,20 @@ export default function BrandBilling() {
                     subtitle="Facturas de campañas y pagos a RELA"
                 />
 
-                {/* Summary stats */}
+                {/* Quick link to subscription plans */}
+                <div className="mb-6 flex items-center justify-between p-4 rounded-xl border bg-muted/30">
+                    <div className="flex items-center gap-3">
+                        <DollarSign className="w-5 h-5 text-primary" />
+                        <div>
+                            <p className="font-medium text-sm">Plan de Suscripción</p>
+                            <p className="text-xs text-muted-foreground">Administra tu plan RELA y créditos</p>
+                        </div>
+                    </div>
+                    <Link to="/brand/subscription">
+                        <Button variant="outline" size="sm">Ver Planes →</Button>
+                    </Link>
+                </div>
+
                 {!isLoading && (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                         <Card className="glass-card">
