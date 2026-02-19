@@ -744,29 +744,28 @@ const { VertexAI } = require('@google-cloud/vertexai');
 // ==========================================
 // 8. AI CREATOR MATCH ANALYSIS
 // ==========================================
-exports.analyzeCreatorMatch = functions.https.onRequest((req, res) => {
-    return cors(req, res, async () => {
-        if (req.method !== 'POST') return res.status(405).json({ error: "Method Not Allowed" });
 
-        const { creatorId, brandCategory, campaignGoal, campaignId } = req.body;
-        if (!creatorId || !brandCategory) return res.status(400).json({ error: "Missing required fields" });
+// ==========================================
+// 8. AI CREATOR MATCH ANALYSIS (TRIGGER)
+// ==========================================
+exports.analyzeCreatorMatch = functions.firestore
+    .document('campaigns/{campaignId}/matches/{creatorId}')
+    .onCreate(async (snap, context) => {
+        const { campaignId, creatorId } = context.params;
+        const matchData = snap.data();
+        
+        // If analysis already exists (e.g. manually added), skip
+        if (matchData.aiAnalysis) {
+            console.log(`Analysis already exists for ${creatorId} in ${campaignId}. Skipping.`);
+            return;
+        }
+
+        const brandCategory = matchData.brandCategory || "General";
+        const campaignGoal = matchData.campaignGoal || "Brand Awareness";
+
+        console.log(`Starting AI analysis for creator ${creatorId} in campaign ${campaignId}`);
 
         try {
-            // 0. Check for cached analysis (Persistence Layer)
-            if (campaignId) {
-                const matchRef = db.collection('campaigns').doc(campaignId).collection('matches').doc(creatorId);
-                const matchDoc = await matchRef.get();
-
-                if (matchDoc.exists && matchDoc.data().aiAnalysis) {
-                    console.log(`Returning cached analysis for creator ${creatorId} in campaign ${campaignId}`);
-                    return res.json({
-                        success: true,
-                        analysis: matchDoc.data().aiAnalysis,
-                        cached: true
-                    });
-                }
-            }
-
             // 1. Fetch Media from both platforms
             const [igMedia, tiktokMedia] = await Promise.allSettled([
                 getInstagramMediaInternal(creatorId).catch(e => []),
@@ -775,7 +774,7 @@ exports.analyzeCreatorMatch = functions.https.onRequest((req, res) => {
 
             const igPosts = igMedia.status === 'fulfilled' ? igMedia.value : [];
             const tiktokPosts = tiktokMedia.status === 'fulfilled' ? (tiktokMedia.value.data || []) : [];
-
+            
             const hasIg = igPosts.length > 0;
             const hasTiktok = tiktokPosts.length > 0;
 
@@ -795,10 +794,9 @@ exports.analyzeCreatorMatch = functions.https.onRequest((req, res) => {
             }));
 
             // 3. Call Vertex AI
-            // Initialize Vertex with project and location
             const vertex_ai = new VertexAI({ project: process.env.GCLOUD_PROJECT || 'rela-collab', location: 'us-central1' });
-
-            // Use gemini-2.5-flash as requested by user
+            
+            // Use gemini-2.5-flash for speed/cost
             const model = vertex_ai.preview.getGenerativeModel({
                 model: 'gemini-2.5-flash',
                 generationConfig: {
@@ -817,7 +815,7 @@ Posts recientes para contexto: ${JSON.stringify(postsData)}
 
 Campaña de la Marca:
 - Categoría: ${brandCategory}
-- Objetivo: ${campaignGoal || 'General'}
+- Objetivo: ${campaignGoal}
 
 Tarea:
 1. Genera una predicción para CADA plataforma marcada como "SÍ" arriba.
@@ -825,7 +823,7 @@ Tarea:
 3. Calcula la probabilidad de éxito y genera una frase de venta persuasiva.
 
 Formato de Respuesta (JSON ÚNICAMENTE):
-Responde SOLO con un objeto JSON válido. NO incluyas ninguna explicación, ni markdown, ni backticks.
+Responde SOLO con un objeto JSON válido.
 Ejemplo de formato esperado:
 {
   "instagram": "texto...",
@@ -842,47 +840,42 @@ Estructura:
   "instagram": "Frase para Instagram (si hay datos, si no null)",
   "tiktok": "Frase para TikTok (si hay datos, si no null)"
 }
-
-Plantilla de Frase:
-"Para esta campaña de [Categoría], el creador [Nombre] tiene un [Probabilidad]% de probabilidad de superar las [Promedio de vistas] vistas en Instagram, basado en sus últimos [N] posts de contenido similar."
-(Ajusta "Instagram" a "TikTok" según corresponda).
-
-Contexto adicional:
-- Sé realista pero optimista con el ROI.
 `;
 
             const result = await model.generateContent(prompt);
             const response = result.response;
             let text = response.candidates[0].content.parts[0].text;
-            console.log("Raw AI Response:", text); // Log the raw response for debugging
-
-            // Clean up markdown code blocks if present (despite instructions)
+            console.log("Raw AI Response:", text); 
+            
             text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
-            // Extract JSON using regex - look for the first { and the last }
             const jsonMatch = text.match(/\{[\s\S]*\}/);
+            
             if (!jsonMatch) {
                 console.error("No JSON found in response:", text);
-                throw new Error("No JSON found in AI response");
-            }
-
-            const analysisJson = JSON.parse(jsonMatch[0]);
-
-            // 4. Cache Result (Persistence)
-            if (campaignId) {
-                await db.collection('campaigns').doc(campaignId).collection('matches').doc(creatorId).set({
-                    aiAnalysis: analysisJson,
-                    aiAnalysisDate: new Date()
+                await snap.ref.set({
+                    aiStatus: 'error',
+                    aiError: "No JSON found in AI response"
                 }, { merge: true });
+                return;
             }
+            
+            const analysisJson = JSON.parse(jsonMatch[0]);
+            
+            // 4. Update the match document with the analysis
+            await snap.ref.set({
+                 aiAnalysis: analysisJson,
+                 aiAnalysisDate: new Date(),
+                 aiStatus: 'completed'
+            }, { merge: true });
 
-            return res.json({ success: true, analysis: analysisJson, postsAnalyzed: postsData.length });
+            console.log(`Analysis completed for ${creatorId}`);
+
         } catch (error) {
             console.error("AI Analysis Error:", error);
-            // Fallback for error to avoid 500 on client
-            return res.json({ success: false, error: error.message });
+            // We don't throw error to avoid infinite retry loops on fatal errors
+            await snap.ref.set({
+                aiStatus: 'error',
+                aiError: error.message
+            }, { merge: true });
         }
     });
-});
-
-

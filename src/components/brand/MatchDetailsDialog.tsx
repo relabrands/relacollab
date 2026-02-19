@@ -6,6 +6,8 @@ import { MatchScore } from "@/components/dashboard/MatchScore";
 import { Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2, ExternalLink, Check, Eye, Music2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface CreatorDetails {
     id: string;
@@ -76,11 +78,29 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
     const [activePlatform, setActivePlatform] = useState<"instagram" | "tiktok">("instagram");
 
     useEffect(() => {
-        if (isOpen && creator.id) {
+        if (isOpen && creator.id && campaign?.id) {
             // Reset to Instagram or preferred platform
             setActivePlatform("instagram");
             fetchCreatorPosts("instagram"); // Initial load
-            generateAnalysis();
+
+            // Listen for AI Analysis updates
+            setLoadingAnalysis(true);
+            const unsubscribe = onSnapshot(doc(db, "campaigns", campaign.id, "matches", creator.id), (doc) => {
+                if (doc.exists()) {
+                    const data = doc.data();
+                    if (data.aiAnalysis) {
+                        setAiAnalysis(data.aiAnalysis);
+                        setLoadingAnalysis(false);
+                    } else if (data.aiStatus === 'error') {
+                        console.error("AI Analysis failed:", data.aiError);
+                        setLoadingAnalysis(false);
+                    }
+                } else {
+                    setLoadingAnalysis(false);
+                }
+            });
+
+            return () => unsubscribe();
         }
     }, [isOpen, creator.id, campaign]);
 
@@ -90,28 +110,6 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
             fetchCreatorPosts(activePlatform);
         }
     }, [activePlatform]);
-
-    const generateAnalysis = async () => {
-        setLoadingAnalysis(true);
-        setAiAnalysis(null);
-        try {
-            // Call AI Endpoint
-            const response = await axios.post("https://us-central1-rella-collab.cloudfunctions.net/analyzeCreatorMatch", {
-                creatorId: creator.id,
-                brandCategory: campaign?.category || "General",
-                campaignGoal: campaign?.goal || "Brand Awareness",
-                campaignId: campaign?.id
-            });
-
-            if (response.data.success) {
-                setAiAnalysis(response.data.analysis); // Expecting { instagram: "...", tiktok: "..." }
-            }
-        } catch (error) {
-            console.error("Failed to generate AI analysis:", error);
-        } finally {
-            setLoadingAnalysis(false);
-        }
-    };
 
     const fetchCreatorPosts = async (platform: "instagram" | "tiktok") => {
         setLoadingPosts(true);
