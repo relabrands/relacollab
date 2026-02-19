@@ -26,6 +26,7 @@ import BrandMatches from "./pages/brand/BrandMatches";
 import ContentLibrary from "./pages/brand/ContentLibrary";
 import BrandAnalytics from "./pages/brand/BrandAnalytics";
 import BrandPayments from "./pages/brand/BrandPayments";
+import BrandBilling from "./pages/brand/BrandBilling";
 import BrandSettings from "./pages/brand/BrandSettings";
 import CampaignDetails from "./pages/brand/CampaignDetails";
 import BrandCampaigns from "./pages/brand/BrandCampaigns";
@@ -122,6 +123,11 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/brand/payments" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <BrandBilling />
+              </ProtectedRoute>
+            } />
+            <Route path="/brand/subscription" element={
               <ProtectedRoute allowedRoles={['brand']}>
                 <BrandPayments />
               </ProtectedRoute>
