@@ -111,9 +111,15 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                         setLoadingAnalysis(false);
                     } else if (data.aiStatus === 'pending') {
                         setLoadingAnalysis(true);
-                    } else if (!data.aiAnalysis && data.aiStatus !== 'completed') {
-                        // Document exists but no analysis - Trigger it
-                        setDoc(matchRef, { aiStatus: 'pending' }, { merge: true });
+                    } else if (
+                        (!data.aiAnalysis && data.aiStatus !== 'completed') ||
+                        (data.aiAnalysis && typeof data.aiAnalysis.matchPercentage === 'undefined' && data.aiStatus !== 'pending')
+                    ) {
+                        // Trigger if:
+                        // 1. No analysis exists AND not completed (legacy/error state)
+                        // 2. Analysis exists but is OLD format (no matchPercentage) AND not currently pending
+                        console.log("Triggering re-analysis for improved AI...");
+                        setDoc(matchRef, { aiStatus: 'pending', forceRetry: true }, { merge: true });
                         setLoadingAnalysis(true);
                     }
                 } else {
