@@ -136,9 +136,27 @@ export default function Opportunities() {
         // Filter invitations that might have corresponding applications (redundancy check)
         const filteredInvitations = resolvedInvitations.filter((op: any) => !appliedIds.has(op.id));
 
-        const filteredGeneral = generalOpportunities
-          .filter(op => !invitedCampaignIds.has(op.id))
-          .filter(op => !appliedIds.has(op.id)); // Hide already applied campaigns
+        // For general opportunities: also check Firestore for existing AI score
+        const generalWithAiScore = await Promise.all(
+          generalOpportunities
+            .filter(op => !invitedCampaignIds.has(op.id))
+            .filter(op => !appliedIds.has(op.id))
+            .map(async (op: any) => {
+              let effectiveScore = op.matchScore; // start with rule-based
+              try {
+                const matchRef = doc(db, "campaigns", op.id, "matches", user.uid);
+                const matchSnap = await getDoc(matchRef);
+                if (matchSnap.exists()) {
+                  const aiPct = matchSnap.data()?.aiAnalysis?.matchPercentage;
+                  if (typeof aiPct === "number") effectiveScore = aiPct;
+                }
+              } catch (_) { /* fallback to rule-based */ }
+              return { ...op, effectiveScore };
+            })
+        );
+
+        // ✅ Gate: use best available score (AI first, rule-based fallback) — must be ≥50%
+        const filteredGeneral = generalWithAiScore.filter(op => op.effectiveScore >= 50);
 
         setOpportunities([...filteredInvitations, ...filteredGeneral]);
 

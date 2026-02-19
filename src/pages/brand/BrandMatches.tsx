@@ -177,9 +177,12 @@ export default function BrandMatches() {
 
         const validCreators = creatorsSnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter((c: any) => c.displayName);
+          // Must have a display name
+          .filter((c: any) => c.displayName)
+          // Must have at least 1 connected social account
+          .filter((c: any) => c.instagramConnected === true || c.tiktokConnected === true);
 
-        console.log("Valid Creators:", validCreators.length);
+        console.log("Valid Creators (with social accounts):", validCreators.length);
 
         // 3. Match Logic
         let matchedCreators = validCreators.map((creator: any) => {
@@ -206,7 +209,7 @@ export default function BrandMatches() {
             aiAnalysis: null as any,
           };
         })
-          .filter(c => c.matchScore >= 20)
+          .filter(c => c.matchScore >= 20) // Broad pre-filter to limit AI fetches
           .sort((a, b) => b.matchScore - a.matchScore);
 
         // 4. Pre-fetch existing AI analysis from Firestore matches subcollection
@@ -228,13 +231,16 @@ export default function BrandMatches() {
         const aiMap: Record<string, any> = {};
         aiResults.forEach(r => { if (r.aiAnalysis) aiMap[r.id] = r.aiAnalysis; });
 
-        // Merge AI data and re-sort by AI score if available
+        // Merge AI data, re-sort by AI score, and apply final 50% filter using best available score
         matchedCreators = matchedCreators.map((c: any) => ({
           ...c,
           aiAnalysis: aiMap[c.id] || null,
-          // If we have an AI score, use it as the display score
+          // displayScore = AI % if available, otherwise rule-based score
           displayScore: aiMap[c.id]?.matchPercentage ?? c.matchScore,
-        })).sort((a: any, b: any) => b.displayScore - a.displayScore);
+        }))
+          // ✅ Final gate: use AI score when available, fallback to rule-based — both must be ≥50%
+          .filter((c: any) => c.displayScore >= 50)
+          .sort((a: any, b: any) => b.displayScore - a.displayScore);
 
         console.log("Final Matched Creators:", matchedCreators.length, "with AI preloaded:", Object.keys(aiMap).length);
 
