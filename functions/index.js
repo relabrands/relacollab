@@ -488,6 +488,48 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
     });
 });
 
+// Helper to refresh TikTok Access Token
+async function refreshTikTokAccessToken(userId, refreshToken) {
+    const CLIENT_KEY = "awq1es91fwbixh6h";
+    const CLIENT_SECRET = "3nsZQM3umPGn4AQkmrQoQeviFzMv5SNh";
+
+    try {
+        const params = new URLSearchParams();
+        params.append("client_key", CLIENT_KEY);
+        params.append("client_secret", CLIENT_SECRET);
+        params.append("grant_type", "refresh_token");
+        params.append("refresh_token", refreshToken);
+
+        const response = await axios.post("https://open.tiktokapis.com/v2/oauth/token/", params, {
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        });
+
+        const { access_token, expires_in, refresh_token: new_refresh_token, refresh_expires_in } = response.data;
+
+        if (!access_token) {
+            throw new Error("Failed to refresh token: " + JSON.stringify(response.data));
+        }
+
+        // Update Firestore
+        const updateData = {
+            tiktokAccessToken: access_token,
+            tiktokTokenExpiresAt: Date.now() + (expires_in * 1000),
+            // Update refresh token if a new one is returned (it usually rotates)
+            ...(new_refresh_token && {
+                tiktokRefreshToken: new_refresh_token,
+                tiktokRefreshTokenExpiresAt: Date.now() + (refresh_expires_in * 1000)
+            })
+        };
+
+        await db.collection("users").doc(userId).set(updateData, { merge: true });
+
+        return access_token;
+    } catch (error) {
+        console.error("Error refreshing TikTok token:", error.message);
+        throw error;
+    }
+}
+
 // ==========================================
 // 5. TIKTOK AUTHENTICATION (LIVE)
 // ==========================================
@@ -515,7 +557,7 @@ exports.authTikTok = functions.https.onRequest((req, res) => {
                 headers: { "Content-Type": "application/x-www-form-urlencoded" }
             });
 
-            const { access_token, open_id, expires_in } = tokenResponse.data;
+            const { access_token, open_id, expires_in, refresh_token, refresh_expires_in } = tokenResponse.data;
 
             if (!access_token) {
                 console.error("TikTok Token Error:", tokenResponse.data);
@@ -566,8 +608,10 @@ exports.authTikTok = functions.https.onRequest((req, res) => {
                 await db.collection("users").doc(userId).set({
                     tiktokConnected: true,
                     tiktokAccessToken: access_token,
+                    tiktokRefreshToken: refresh_token,
                     tiktokOpenId: open_id,
                     tiktokTokenExpiresAt: Date.now() + (expires_in * 1000),
+                    tiktokRefreshTokenExpiresAt: Date.now() + (refresh_expires_in * 1000),
                     socialHandles: { tiktok: userData.display_name }, // Update handle
                     tiktokName: userData.display_name, // New
                     tiktokAvatar: userData.avatar_url, // New
@@ -630,9 +674,27 @@ exports.getTikTokMedia = functions.https.onRequest((req, res) => {
                 return res.status(401).json({ error: "TikTok not connected" });
             }
 
-            // Check token expiration (optional but good practice)
-            if (userData.tiktokTokenExpiresAt && Date.now() > userData.tiktokTokenExpiresAt) {
-                return res.status(401).json({ error: "TikTok token expired" });
+            // Check token expiration (refresh if < 5 mins left)
+            const refreshToken = userData.tiktokRefreshToken;
+            const tokenExpiresAt = userData.tiktokTokenExpiresAt || 0;
+
+            if (Date.now() > tokenExpiresAt - (5 * 60 * 1000)) {
+                console.log("TikTok token expired or expiring soon, refreshing...");
+                try {
+                    if (refreshToken) {
+                        // This helper updates Firestore too
+                        accessToken = await refreshTikTokAccessToken(userId, refreshToken);
+                    } else {
+                        console.warn("No refresh token found for user", userId);
+                        // If really expired, block
+                        if (Date.now() > tokenExpiresAt) {
+                            return res.status(401).json({ error: "TikTok token expired" });
+                        }
+                    }
+                } catch (refreshErr) {
+                    console.error("Failed to refresh token:", refreshErr.message);
+                    return res.status(401).json({ error: "TikTok token expired and refresh failed" });
+                }
             }
 
             // Fetch Video List
