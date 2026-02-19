@@ -780,7 +780,7 @@ exports.analyzeCreatorMatch = functions.https.onRequest((req, res) => {
             // Initialize Vertex with project and location
             const vertex_ai = new VertexAI({ project: process.env.GCLOUD_PROJECT || 'rela-collab', location: 'us-central1' });
             const model = vertex_ai.preview.getGenerativeModel({
-                model: 'gemini-1.0-pro',
+                model: 'gemini-2.5-pro',
                 generationConfig: {
                     'maxOutputTokens': 256,
                     'temperature': 0.7,
