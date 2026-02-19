@@ -833,7 +833,7 @@ exports.analyzeCreatorMatch = onDocumentWritten("campaigns/{campaignId}/matches/
         const model = vertex_ai.preview.getGenerativeModel({
             model: 'gemini-2.5-flash',
             generationConfig: {
-                'maxOutputTokens': 2048,
+                'maxOutputTokens': 8192,
                 'temperature': 0.7,
             }
         });
@@ -866,7 +866,7 @@ TAREA:
    "Match del [X]% - [Perfil/Nicho]: [Nota sobre compensación]. Basado en sus últimos [N] videos de [temática detectada], se predice un impacto de [V] vistas, [L] likes y [C] comentarios para tu campaña. Su audiencia [describe audiencia inferida] y tono [describe tono] encajan [bien/mal] con el Brand Vibe de tu marca."
 
 FORMATO EXCLUSIVO JSON:
-Responde SOLO con este objeto JSON:
+Responde SOLO con este objeto JSON raw, sin markdown formatting si es posible:
 {
   "matchPercentage": 92,
   "matchSummary": "Match del 92% - Perfil Fitness...",
@@ -885,14 +885,24 @@ Responde SOLO con este objeto JSON:
         let text = response.candidates[0].content.parts[0].text;
         console.log("Raw AI Response:", text);
 
-        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        // Robust JSON cleanup
+        let cleanText = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
 
-        if (!jsonMatch) {
-            throw new Error("No JSON found in AI response");
+        // Sometimes Gemini adds comments or extra text, try to find the JSON object
+        const jsonStartIndex = cleanText.indexOf('{');
+        const jsonEndIndex = cleanText.lastIndexOf('}');
+
+        if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+            cleanText = cleanText.substring(jsonStartIndex, jsonEndIndex + 1);
         }
 
-        const analysisJson = JSON.parse(jsonMatch[0]);
+        let analysisJson;
+        try {
+            analysisJson = JSON.parse(cleanText);
+        } catch (e) {
+            console.error("JSON Parse Error:", e);
+            throw new Error("Failed to parse JSON from AI response");
+        }
 
         // 5. Update the match document
         await snap.ref.set({
