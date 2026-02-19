@@ -782,7 +782,7 @@ exports.analyzeCreatorMatch = functions.https.onRequest((req, res) => {
             const model = vertex_ai.preview.getGenerativeModel({
                 model: 'gemini-2.5-pro',
                 generationConfig: {
-                    'maxOutputTokens': 256,
+                    'maxOutputTokens': 1024,
                     'temperature': 0.7,
                 }
             });
@@ -831,6 +831,9 @@ Contexto adicional:
             const response = result.response;
             let text = response.candidates[0].content.parts[0].text;
             console.log("Raw AI Response:", text); // Log the raw response for debugging
+
+            // Clean up markdown code blocks if present (despite instructions)
+            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
             // Extract JSON using regex - look for the first { and the last }
             const jsonMatch = text.match(/\{[\s\S]*\}/);
