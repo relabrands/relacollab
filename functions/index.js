@@ -799,10 +799,18 @@ Tarea:
 1. Separa mentalmente los posts por plataforma (Instagram vs TikTok).
 2. Para CADA plataforma con datos, calcula la probabilidad de éxito y genera una frase de venta.
 
-Formato de Respuesta (JSON ESTRICTO):
-Debes responder ÚNICAMENTE con un objeto JSON válido. No incluyas markdown (backticks) ni texto extra.
-Asegúrate de escapar correctamente cualquier comilla doble dentro del texto.
-NO uses saltos de línea reales dentro de los valores de las cadenas; usa \\n si es necesario.
+Formato de Respuesta (JSON ÚNICAMENTE):
+Responde SOLO con un objeto JSON válido. NO incluyas ninguna explicación, ni markdown, ni backticks.
+Ejemplo de formato esperado:
+{
+  "instagram": "texto...",
+  "tiktok": "texto..."
+}
+
+Reglas:
+1. Escapa comillas dobles dentro de los textos (e.g. \\").
+2. No uses saltos de línea reales en los valores.
+3. Si no hay datos, usa null.
 
 Estructura:
 {
@@ -822,10 +830,12 @@ Contexto adicional:
             const result = await model.generateContent(prompt);
             const response = result.response;
             let text = response.candidates[0].content.parts[0].text;
+            console.log("Raw AI Response:", text); // Log the raw response for debugging
 
-            // Extract JSON using regex
+            // Extract JSON using regex - look for the first { and the last }
             const jsonMatch = text.match(/\{[\s\S]*\}/);
             if (!jsonMatch) {
+                console.error("No JSON found in response:", text);
                 throw new Error("No JSON found in AI response");
             }
 
