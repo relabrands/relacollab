@@ -6,7 +6,7 @@ import { MatchDetailsDialog } from "@/components/brand/MatchDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Sparkles, Filter, SlidersHorizontal, Loader2, Plus, Users, UserCheck } from "lucide-react";
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, addDoc, updateDoc, increment } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, doc, getDoc, addDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchParams, Link } from "react-router-dom";
@@ -177,16 +177,13 @@ export default function BrandMatches() {
 
         const validCreators = creatorsSnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter((c: any) => c.displayName); // Removed c.instagramConnected check for broader visibility
+          .filter((c: any) => c.displayName);
 
-        console.log("Valid Creators:", validCreators.length, validCreators);
+        console.log("Valid Creators:", validCreators.length);
 
         // 3. Match Logic
         let matchedCreators = validCreators.map((creator: any) => {
           const { score, reasons, breakdown } = calculateMatchScore(activeCampaign, creator);
-
-          // DEBUG LOGS
-          console.log(`Matching ${creator.displayName}:`, { score, breakdown, reasons });
 
           let matchReason = reasons.join(" • ");
           if (!matchReason) matchReason = "Matched based on availability";
@@ -204,13 +201,42 @@ export default function BrandMatches() {
             instagramMetrics: creator.instagramMetrics,
             tiktokMetrics: creator.tiktokMetrics,
             tiktokUsername: creator.socialHandles?.tiktok,
-            location: creator.location || "Unknown"
+            instagramUsername: creator.instagramUsername || creator.socialHandles?.instagram,
+            location: creator.location || "Unknown",
+            aiAnalysis: null as any,
           };
         })
-          .filter(c => c.matchScore >= 20) // Lowered threshold from 40 to 20
+          .filter(c => c.matchScore >= 20)
           .sort((a, b) => b.matchScore - a.matchScore);
 
-        console.log("Final Matched Creators:", matchedCreators.length);
+        // 4. Pre-fetch existing AI analysis from Firestore matches subcollection
+        const aiPromises = matchedCreators.map(async (creator: any) => {
+          try {
+            const matchRef = doc(db, "campaigns", activeCampaign.id, "matches", creator.id);
+            const matchSnap = await getDoc(matchRef);
+            if (matchSnap.exists()) {
+              const matchData = matchSnap.data();
+              if (matchData.aiAnalysis?.matchPercentage !== undefined) {
+                return { id: creator.id, aiAnalysis: matchData.aiAnalysis };
+              }
+            }
+          } catch (_) { /* Ignore individual fetch errors */ }
+          return { id: creator.id, aiAnalysis: null };
+        });
+
+        const aiResults = await Promise.all(aiPromises);
+        const aiMap: Record<string, any> = {};
+        aiResults.forEach(r => { if (r.aiAnalysis) aiMap[r.id] = r.aiAnalysis; });
+
+        // Merge AI data and re-sort by AI score if available
+        matchedCreators = matchedCreators.map((c: any) => ({
+          ...c,
+          aiAnalysis: aiMap[c.id] || null,
+          // If we have an AI score, use it as the display score
+          displayScore: aiMap[c.id]?.matchPercentage ?? c.matchScore,
+        })).sort((a: any, b: any) => b.displayScore - a.displayScore);
+
+        console.log("Final Matched Creators:", matchedCreators.length, "with AI preloaded:", Object.keys(aiMap).length);
 
         setCreators(matchedCreators);
       } catch (error) {

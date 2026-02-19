@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { MatchScore } from "./MatchScore";
-import { MapPin, TrendingUp, Check, X, Eye } from "lucide-react";
+import { MapPin, TrendingUp, Check, X, Eye, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -13,6 +13,8 @@ interface CreatorCardProps {
     followers: string;
     engagement: string;
     matchScore: number;
+    displayScore?: number;    // AI score if available
+    aiAnalysis?: any | null;  // Pre-loaded AI analysis
     matchBreakdown?: {
       compensation?: boolean;
       contentType?: number;
@@ -71,7 +73,14 @@ export function CreatorCard({ creator, onApprove, onReject, isInvite = false, is
             </div>
           </div>
         </div>
-        <MatchScore score={creator.matchScore} breakdown={creator.matchBreakdown} />
+        <div className="flex flex-col items-end gap-1">
+          <MatchScore score={creator.displayScore ?? creator.matchScore} breakdown={creator.matchBreakdown} />
+          {creator.aiAnalysis?.matchPercentage !== undefined && (
+            <span className="flex items-center gap-0.5 text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+              <Sparkles className="w-2.5 h-2.5" /> AI
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-4">
