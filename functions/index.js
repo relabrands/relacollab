@@ -922,3 +922,120 @@ Responde SOLO con este objeto JSON raw, sin markdown formatting si es posible:
         }, { merge: true });
     }
 });
+
+// ─── analyzeCreatorProfile ──────────────────────────────────────────
+exports.analyzeCreatorProfile = onDocumentWritten("users/{userId}/profileAnalysis/{platform}", async (event) => {
+    if (!event.data.after.exists) return;
+
+    const snapP = event.data.after;
+    const { userId, platform } = event.params;
+    const dataP = snapP.data();
+
+    if (dataP.aiStatus === 'completed' && !dataP.forceRetry) return;
+
+    console.log(`Starting profile AI analysis for creator ${userId} on ${platform}`);
+
+    try {
+
+        // 1. Fetch creator doc
+        const creatorDoc = await db.collection('users').doc(userId).get();
+        if (!creatorDoc.exists) throw new Error("Creator not found");
+        const creator = creatorDoc.data();
+
+        // 2. Fetch recent posts
+        let posts = [];
+        try {
+            if (platform === 'instagram') {
+                posts = await getInstagramMediaInternal(userId);
+            } else {
+                const result = await getTikTokMediaInternal(userId);
+                posts = result.data || [];
+            }
+        } catch (e) {
+            console.warn("Could not fetch posts:", e.message);
+        }
+
+        const postsData = posts.slice(0, 12).map(p => ({
+            caption: p.caption ? p.caption.substring(0, 200) : "",
+            views: p.view_count || p.views || 0,
+            likes: p.like_count || 0,
+            comments: p.comments_count || 0,
+            date: p.timestamp
+        }));
+
+        const metrics = platform === 'instagram'
+            ? creator.instagramMetrics || {}
+            : creator.tiktokMetrics || {};
+
+        // 3. Build prompt
+        const platformLabel = platform === 'instagram' ? 'Instagram' : 'TikTok';
+        const prompt = `
+Actúa como un experto en Marketing de Influencers. Analiza el perfil de ${platformLabel} de este creador y genera un informe completo en español.
+
+DATOS DEL CREADOR:
+- Nombre: ${creator.displayName || creator.name || "Desconocido"}
+- Bio: ${creator.bio || "No disponible"}
+- Nicho/Vibes: ${creator.vibes ? creator.vibes.join(', ') : 'General'}
+- Preferencia de colaboración: ${creator.collaborationPreference || "No especificada"}
+
+MÉTRICAS DE ${platformLabel.toUpperCase()}:
+- Seguidores: ${metrics.followers || 0}
+- Engagement Rate: ${metrics.engagementRate || 0}%
+- ${platform === 'instagram' ? `Avg Likes: ${metrics.avgLikes || 0}, Avg Comments: ${metrics.avgComments || 0}` : `Total Likes: ${metrics.likes || 0}, Videos: ${metrics.videoCount || posts.length}`}
+
+CONTENIDO RECIENTE (${postsData.length} posts):
+${JSON.stringify(postsData)}
+
+TAREA:
+1. Da un score al perfil del 0-100 (considera engagement, consistencia de contenido, calidad de bio, variedad).
+2. Determina su tier: "Nano Creator" (<1K), "Micro Creator" (1K-10K), "Rising Creator" (10K-100K), "Power Creator" (100K-500K), "Top Creator" (>500K). Para TikTok: "Viral Creator" si su engagement supera el 20%.
+3. Redacta un resumen de 2-3 frases sobre el perfil del creador basado en sus publicaciones reales.
+4. Lista 3 puntos fuertes del perfil basados en datos reales.
+5. Lista 3 áreas de mejora concretas y accionables.
+6. Redacta 1-2 frases sobre su potencial con marcas (qué tipo de marcas encajarían y por qué).
+
+RESPONDE SOLO con este JSON raw (sin markdown):
+{
+  "score": 72,
+  "tier": "Rising Creator",
+  "summary": "Resumen del perfil...",
+  "strengths": ["punto 1", "punto 2", "punto 3"],
+  "improvements": ["mejora 1", "mejora 2", "mejora 3"],
+  "brandAppeal": "Este creador encaja bien con marcas de..."
+}
+`;
+
+        // 4. Call Gemini
+        const vertex_ai = new VertexAI({ project: process.env.GCLOUD_PROJECT || 'rela-collab', location: 'us-central1' });
+        const model = vertex_ai.preview.getGenerativeModel({
+            model: 'gemini-2.5-flash',
+            generationConfig: { maxOutputTokens: 4096, temperature: 0.7 }
+        });
+
+        const result = await model.generateContent(prompt);
+        let text = result.response.candidates[0].content.parts[0].text;
+        console.log("Raw AI Response:", text);
+
+        // Clean JSON
+        let cleanText = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        const start = cleanText.indexOf('{');
+        const end = cleanText.lastIndexOf('}');
+        if (start !== -1 && end !== -1) cleanText = cleanText.substring(start, end + 1);
+
+        const analysisJson = JSON.parse(cleanText);
+
+        // 5. Write back
+        await snapP.ref.set({
+            aiAnalysis: analysisJson,
+            aiStatus: 'completed',
+            analyzedAt: new Date(),
+            forceRetry: admin.firestore.FieldValue.delete()
+        }, { merge: true });
+
+        console.log(`Profile analysis completed for ${userId} on ${platform}`);
+    } catch (error) {
+        console.error("Profile AI Analysis Error:", error);
+        await snapP.ref.set({ aiStatus: 'error', aiError: error.message }, { merge: true });
+    }
+});
+
