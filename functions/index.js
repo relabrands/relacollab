@@ -754,30 +754,39 @@ exports.analyzeCreatorMatch = onDocumentWritten("campaigns/{campaignId}/matches/
         console.log("Document deleted. Skipping.");
         return;
     }
-    
+
     // Get the current data (after the write)
-    const snap = event.data.after; 
+    const snap = event.data.after;
     const { campaignId, creatorId } = event.params;
     const matchData = snap.data();
-    
-    // If analysis already exists, skip unless explicitly requested (e.g., forceRetry)
+
+    // If analysis already exists, skip unless explicitly requested
     if (matchData.aiAnalysis && !matchData.forceRetry) {
-        // console.log(`Analysis already exists for ${creatorId}. Skipping.`);
         return;
     }
 
     // Skip if already completed (unless retry forced)
     if (matchData.aiStatus === 'completed' && !matchData.forceRetry) {
-         return;
+        return;
     }
-    
-    const brandCategory = matchData.brandCategory || "General";
-    const campaignGoal = matchData.campaignGoal || "Brand Awareness";
 
-    console.log(`Starting AI analysis for creator ${creatorId} in campaign ${campaignId}`);
+    console.log(`Starting Enhanced AI analysis for creator ${creatorId} in campaign ${campaignId}`);
 
     try {
-        // 1. Fetch Media from both platforms
+        // 1. Fetch Full Context (Campaign & Creator)
+        const [campaignDoc, creatorDoc] = await Promise.all([
+            db.collection('campaigns').doc(campaignId).get(),
+            db.collection('users').doc(creatorId).get()
+        ]);
+
+        if (!campaignDoc.exists || !creatorDoc.exists) {
+            throw new Error("Campaign or Creator document not found");
+        }
+
+        const campaign = campaignDoc.data();
+        const creator = creatorDoc.data();
+
+        // 2. Fetch Media from both platforms
         const [igMedia, tiktokMedia] = await Promise.allSettled([
             getInstagramMediaInternal(creatorId).catch(e => []),
             getTikTokMediaInternal(creatorId).catch(e => ({ data: [] }))
@@ -785,7 +794,7 @@ exports.analyzeCreatorMatch = onDocumentWritten("campaigns/{campaignId}/matches/
 
         const igPosts = igMedia.status === 'fulfilled' ? igMedia.value : [];
         const tiktokPosts = tiktokMedia.status === 'fulfilled' ? (tiktokMedia.value.data || []) : [];
-        
+
         const hasIg = igPosts.length > 0;
         const hasTiktok = tiktokPosts.length > 0;
 
@@ -794,20 +803,33 @@ exports.analyzeCreatorMatch = onDocumentWritten("campaigns/{campaignId}/matches/
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
             .slice(0, 15); // Analyze last 15 posts total
 
-        // 2. Format for AI
+        // 3. Prepare Data for AI
         const postsData = allPosts.map(p => ({
             platform: p.media_type === 'VIDEO' ? (p.view_count ? 'TikTok' : 'Instagram Reel') : 'Instagram Post',
-            caption: p.caption,
+            caption: p.caption ? p.caption.substring(0, 200) : "", // Truncate for token limit
             views: p.view_count || p.views || 0,
             likes: p.like_count || 0,
             comments: p.comments_count || 0,
             date: p.timestamp
         }));
 
-        // 3. Call Vertex AI
+        // Compensation Logic
+        const campaignCompType = campaign.compensationType || "monetary"; // 'exchange', 'monetary'
+        const creatorPref = creator.collaborationPreference || "Ambos"; // 'Con remuneración', 'Intercambios', 'Ambos'
+
+        let compensationMatch = true;
+        let compensationNote = "El creador acepta este tipo de compensación.";
+
+        if (campaignCompType === 'exchange' && creatorPref === 'Con remuneración') {
+            compensationMatch = false;
+            compensationNote = "El creador prefiere pago monetario y la marca ofrece intercambio.";
+        } else if (campaignCompType === 'monetary' && creatorPref === 'Intercambios') {
+            // Less likely to be a blocker, but worth noting
+            compensationNote = "El creador prefiere intercambios, pero probablemente acepte pago.";
+        }
+
+        // 4. Call Vertex AI
         const vertex_ai = new VertexAI({ project: process.env.GCLOUD_PROJECT || 'rela-collab', location: 'us-central1' });
-        
-        // Use gemini-2.5-flash for speed/cost
         const model = vertex_ai.preview.getGenerativeModel({
             model: 'gemini-2.5-flash',
             generationConfig: {
@@ -817,71 +839,70 @@ exports.analyzeCreatorMatch = onDocumentWritten("campaigns/{campaignId}/matches/
         });
 
         const prompt = `
-Analiza los siguientes posts del creador para determinar su idoneidad.
-Datos disponibles:
-- Instagram: ${hasIg ? 'SÍ' : 'NO'} (${igPosts.length} posts)
-- TikTok: ${hasTiktok ? 'SÍ' : 'NO'} (${tiktokPosts.length} posts)
+Actúa como un experto en Marketing de Influencers. Tu tarea es analizar la compatibilidad entre un Creador y una Campaña de Marca.
 
-Posts recientes para contexto: ${JSON.stringify(postsData)}
+DATOS DE LA CAMPAÑA:
+- Nombre: ${campaign.name}
+- Descripción: ${campaign.description}
+- Objetivo: ${campaign.goal} (e.g., Awareness, Conversion)
+- Vibe de Marca: ${campaign.vibes ? campaign.vibes.join(', ') : 'General'}
+- Tipo de Compensación: ${campaignCompType === 'exchange' ? 'Intercambio (Producto)' : 'Pago Monetario'}
+- Detalles Compensación: ${campaign.exchangeDetails || campaign.creatorPayment + ' USD'}
 
-Campaña de la Marca:
-- Categoría: ${brandCategory}
-- Objetivo: ${campaignGoal}
+DATOS DEL CREADOR:
+- Bio: ${creator.bio || "No disponible"}
+- Vibe del Creador: ${creator.vibes ? creator.vibes.join(', ') : 'No especificado'}
+- Preferencia Compensación: ${creatorPref}
+- Nota de Compensación (Calculada): ${compensationNote}
+- Es Deal Breaker la compensación: ${compensationMatch ? 'NO' : 'SÍ'}
 
-Tarea:
-1. Genera una predicción para CADA plataforma marcada como "SÍ" arriba.
-2. Si una plataforma tiene datos (aunque sean pocos), DEBES generar una predicción.
-3. Calcula la probabilidad de éxito y genera una frase de venta persuasiva.
+CONTENIDO RECIENTE (Últimos 15 posts):
+${JSON.stringify(postsData)}
 
-Formato de Respuesta (JSON ÚNICAMENTE):
-Responde SOLO con un objeto JSON válido.
-Ejemplo de formato esperado:
+TAREA:
+1. Determina el % de Match (0-100%). Si la compensación es un Deal Breaker, el match debe ser bajo (<50%).
+2. Predice las métricas PROMEDIO que este creador generaría **específicamente para esta campaña** (vistas, likes, comentarios). Basa esto en el promedio de sus posts recientes.
+3. Redacta un análisis persuasivo siguiendo ESTRICTAMENTE este formato de plantilla:
+   "Match del [X]% - [Perfil/Nicho]: [Nota sobre compensación]. Basado en sus últimos [N] videos de [temática detectada], se predice un impacto de [V] vistas, [L] likes y [C] comentarios para tu campaña. Su audiencia [describe audiencia inferida] y tono [describe tono] encajan [bien/mal] con el Brand Vibe de tu marca."
+
+FORMATO EXCLUSIVO JSON:
+Responde SOLO con este objeto JSON:
 {
-  "instagram": "texto...",
-  "tiktok": "texto..."
-}
-
-Reglas:
-1. Escapa comillas dobles dentro de los textos (e.g. \\").
-2. No uses saltos de línea reales en los valores.
-3. Si una plataforma está marcada como "NO" (sin datos), usa null.
-
-Estructura:
-{
-  "instagram": "Frase para Instagram (si hay datos, si no null)",
-  "tiktok": "Frase para TikTok (si hay datos, si no null)"
+  "matchPercentage": 92,
+  "matchSummary": "Match del 92% - Perfil Fitness...",
+  "predictedMetrics": {
+      "avgViews": 12500,
+      "avgLikes": 850,
+      "avgComments": 45
+  },
+  "strengths": ["lista", "de", "puntos", "fuertes"],
+  "weaknesses": ["lista", "de", "puntos", "debiles"]
 }
 `;
 
         const result = await model.generateContent(prompt);
         const response = result.response;
         let text = response.candidates[0].content.parts[0].text;
-        console.log("Raw AI Response:", text); 
-        
+        console.log("Raw AI Response:", text);
+
         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const jsonMatch = text.match(/\{[\s\S]*\}/);
-        
+
         if (!jsonMatch) {
-            console.error("No JSON found in response:", text);
-            await snap.ref.set({
-                aiStatus: 'error',
-                aiError: "No JSON found in AI response"
-            }, { merge: true });
-            return;
+            throw new Error("No JSON found in AI response");
         }
-        
+
         const analysisJson = JSON.parse(jsonMatch[0]);
-        
-        // 4. Update the match document with the analysis
-        // Using snap.ref.set to update the same document (merge: true)
+
+        // 5. Update the match document
         await snap.ref.set({
-             aiAnalysis: analysisJson,
-             aiAnalysisDate: new Date(),
-             aiStatus: 'completed',
-             forceRetry: admin.firestore.FieldValue.delete() // Remove force flag
+            aiAnalysis: analysisJson,
+            aiAnalysisDate: new Date(),
+            aiStatus: 'completed',
+            forceRetry: admin.firestore.FieldValue.delete()
         }, { merge: true });
 
-        console.log(`Analysis completed for ${creatorId}`);
+        console.log(`Enhanced Analysis completed for ${creatorId}`);
 
     } catch (error) {
         console.error("AI Analysis Error:", error);

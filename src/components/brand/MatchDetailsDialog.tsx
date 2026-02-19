@@ -58,6 +58,20 @@ interface MatchDetailsDialogProps {
     onApprove?: () => void;
 }
 
+interface AiAnalysis {
+    matchPercentage?: number;
+    matchSummary?: string;
+    predictedMetrics?: {
+        avgViews: number;
+        avgLikes: number;
+        avgComments: number;
+    };
+    strengths?: string[];
+    weaknesses?: string[];
+    instagram?: string; // Legacy
+    tiktok?: string;    // Legacy
+}
+
 interface InstagramMedia {
     id: string;
     caption: string;
@@ -72,7 +86,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
     const [loadingPosts, setLoadingPosts] = useState(false);
     const [posts, setPosts] = useState<InstagramMedia[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [aiAnalysis, setAiAnalysis] = useState<{ instagram?: string, tiktok?: string } | null>(null);
+    const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null);
     const [loadingAnalysis, setLoadingAnalysis] = useState(false);
 
     const [activePlatform, setActivePlatform] = useState<"instagram" | "tiktok">("instagram");
@@ -215,7 +229,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                 <div className="space-y-6 md:space-y-8 py-4">
                     {/* AI Predictor Analysis */}
                     {(loadingAnalysis || aiAnalysis) && (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <h3 className="font-semibold flex items-center gap-2">
                                 <Sparkles className="w-4 h-4 text-primary" />
                                 AI ROI Predictor
@@ -225,36 +239,74 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                                 <div className="p-4 rounded-xl bg-muted/30 border border-border/50 animate-pulse space-y-2">
                                     <div className="h-4 bg-muted rounded w-3/4"></div>
                                     <div className="h-4 bg-muted rounded w-1/2"></div>
+                                    <div className="h-20 bg-muted rounded w-full mt-4"></div>
                                 </div>
                             ) : aiAnalysis ? (
-                                <div className="grid grid-cols-1 gap-3">
-                                    {aiAnalysis.instagram && (
-                                        <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 flex gap-3 items-start">
-                                            <div className="p-2 bg-white rounded-full shadow-sm">
-                                                <Instagram className="w-4 h-4 text-[#E1306C]" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-foreground font-medium">Instagram Prediction</p>
-                                                <p className="text-sm text-muted-foreground mt-1">{aiAnalysis.instagram}</p>
+                                <div className="space-y-4">
+                                    {/* New Format */}
+                                    {aiAnalysis.matchPercentage !== undefined ? (
+                                        <div className="bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/20 rounded-xl p-5">
+                                            <div className="flex flex-col md:flex-row gap-6 items-start">
+                                                {/* Score Circle */}
+                                                <div className="flex-shrink-0 flex items-center justify-center w-24 h-24 rounded-full border-4 border-primary/20 relative mx-auto md:mx-0">
+                                                    <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin-slow" style={{ animationDuration: '3s' }}></div>
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-3xl font-bold text-primary">{aiAnalysis.matchPercentage}%</span>
+                                                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Match</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Summary & Metrics */}
+                                                <div className="flex-1 space-y-4">
+                                                    <div className="prose prose-sm max-w-none text-muted-foreground">
+                                                        <p className="whitespace-pre-wrap">{aiAnalysis.matchSummary}</p>
+                                                    </div>
+
+                                                    {/* Predicted Metrics */}
+                                                    {aiAnalysis.predictedMetrics && (
+                                                        <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-4 bg-white/50 p-3 rounded-lg border border-border/50">
+                                                            <div className="text-center">
+                                                                <div className="text-lg font-bold text-primary">{aiAnalysis.predictedMetrics.avgViews.toLocaleString()}</div>
+                                                                <div className="text-[10px] sm:text-xs text-muted-foreground uppercase">Avg Views</div>
+                                                            </div>
+                                                            <div className="text-center border-l border-border/50">
+                                                                <div className="text-lg font-bold text-pink-500">{aiAnalysis.predictedMetrics.avgLikes.toLocaleString()}</div>
+                                                                <div className="text-[10px] sm:text-xs text-muted-foreground uppercase">Avg Likes</div>
+                                                            </div>
+                                                            <div className="text-center border-l border-border/50">
+                                                                <div className="text-lg font-bold text-blue-500">{aiAnalysis.predictedMetrics.avgComments.toLocaleString()}</div>
+                                                                <div className="text-[10px] sm:text-xs text-muted-foreground uppercase">Avg Comments</div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    )}
-
-                                    {aiAnalysis.tiktok && (
-                                        <div className="p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 flex gap-3 items-start">
-                                            <div className="p-2 bg-white rounded-full shadow-sm">
-                                                <Music2 className="w-4 h-4 text-black" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm text-foreground font-medium">TikTok Prediction</p>
-                                                <p className="text-sm text-muted-foreground mt-1">{aiAnalysis.tiktok}</p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {!aiAnalysis.instagram && !aiAnalysis.tiktok && (
-                                        <div className="p-4 rounded-xl bg-muted/30 border text-sm text-muted-foreground">
-                                            No sufficient data for AI prediction.
+                                    ) : (
+                                        // Legacy Format Fallback
+                                        <div className="grid grid-cols-1 gap-3">
+                                            {aiAnalysis.instagram && (
+                                                <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 flex gap-3 items-start">
+                                                    <div className="p-2 bg-white rounded-full shadow-sm">
+                                                        <Instagram className="w-4 h-4 text-[#E1306C]" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm text-foreground font-medium">Instagram Prediction</p>
+                                                        <p className="text-sm text-muted-foreground mt-1">{aiAnalysis.instagram}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {aiAnalysis.tiktok && (
+                                                <div className="p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 flex gap-3 items-start">
+                                                    <div className="p-2 bg-white rounded-full shadow-sm">
+                                                        <Music2 className="w-4 h-4 text-black" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm text-foreground font-medium">TikTok Prediction</p>
+                                                        <p className="text-sm text-muted-foreground mt-1">{aiAnalysis.tiktok}</p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
