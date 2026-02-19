@@ -748,64 +748,69 @@ const { VertexAI } = require('@google-cloud/vertexai');
 // ==========================================
 // 8. AI CREATOR MATCH ANALYSIS (TRIGGER)
 // ==========================================
-exports.analyzeCreatorMatch = functions.firestore
-    .document('campaigns/{campaignId}/matches/{creatorId}')
-    .onCreate(async (snap, context) => {
-        const { campaignId, creatorId } = context.params;
-        const matchData = snap.data();
-        
-        // If analysis already exists (e.g. manually added), skip
-        if (matchData.aiAnalysis) {
-            console.log(`Analysis already exists for ${creatorId} in ${campaignId}. Skipping.`);
-            return;
-        }
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 
-        const brandCategory = matchData.brandCategory || "General";
-        const campaignGoal = matchData.campaignGoal || "Brand Awareness";
+exports.analyzeCreatorMatch = onDocumentCreated("campaigns/{campaignId}/matches/{creatorId}", async (event) => {
+    const snap = event.data;
+    if (!snap) {
+        console.log("No data associated with the event");
+        return;
+    }
+    const { campaignId, creatorId } = event.params;
+    const matchData = snap.data();
 
-        console.log(`Starting AI analysis for creator ${creatorId} in campaign ${campaignId}`);
+    // If analysis already exists (e.g. manually added), skip
+    if (matchData.aiAnalysis) {
+        console.log(`Analysis already exists for ${creatorId} in ${campaignId}. Skipping.`);
+        return;
+    }
 
-        try {
-            // 1. Fetch Media from both platforms
-            const [igMedia, tiktokMedia] = await Promise.allSettled([
-                getInstagramMediaInternal(creatorId).catch(e => []),
-                getTikTokMediaInternal(creatorId).catch(e => ({ data: [] }))
-            ]);
+    const brandCategory = matchData.brandCategory || "General";
+    const campaignGoal = matchData.campaignGoal || "Brand Awareness";
 
-            const igPosts = igMedia.status === 'fulfilled' ? igMedia.value : [];
-            const tiktokPosts = tiktokMedia.status === 'fulfilled' ? (tiktokMedia.value.data || []) : [];
-            
-            const hasIg = igPosts.length > 0;
-            const hasTiktok = tiktokPosts.length > 0;
+    console.log(`Starting AI analysis for creator ${creatorId} in campaign ${campaignId}`);
 
-            // Combine and sort by date (newest first)
-            const allPosts = [...igPosts, ...tiktokPosts]
-                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                .slice(0, 15); // Analyze last 15 posts total
+    try {
+        // 1. Fetch Media from both platforms
+        const [igMedia, tiktokMedia] = await Promise.allSettled([
+            getInstagramMediaInternal(creatorId).catch(e => []),
+            getTikTokMediaInternal(creatorId).catch(e => ({ data: [] }))
+        ]);
 
-            // 2. Format for AI
-            const postsData = allPosts.map(p => ({
-                platform: p.media_type === 'VIDEO' ? (p.view_count ? 'TikTok' : 'Instagram Reel') : 'Instagram Post',
-                caption: p.caption,
-                views: p.view_count || p.views || 0,
-                likes: p.like_count || 0,
-                comments: p.comments_count || 0,
-                date: p.timestamp
-            }));
+        const igPosts = igMedia.status === 'fulfilled' ? igMedia.value : [];
+        const tiktokPosts = tiktokMedia.status === 'fulfilled' ? (tiktokMedia.value.data || []) : [];
 
-            // 3. Call Vertex AI
-            const vertex_ai = new VertexAI({ project: process.env.GCLOUD_PROJECT || 'rela-collab', location: 'us-central1' });
-            
-            // Use gemini-2.5-flash for speed/cost
-            const model = vertex_ai.preview.getGenerativeModel({
-                model: 'gemini-2.5-flash',
-                generationConfig: {
-                    'maxOutputTokens': 2048,
-                    'temperature': 0.7,
-                }
-            });
+        const hasIg = igPosts.length > 0;
+        const hasTiktok = tiktokPosts.length > 0;
 
-            const prompt = `
+        // Combine and sort by date (newest first)
+        const allPosts = [...igPosts, ...tiktokPosts]
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 15); // Analyze last 15 posts total
+
+        // 2. Format for AI
+        const postsData = allPosts.map(p => ({
+            platform: p.media_type === 'VIDEO' ? (p.view_count ? 'TikTok' : 'Instagram Reel') : 'Instagram Post',
+            caption: p.caption,
+            views: p.view_count || p.views || 0,
+            likes: p.like_count || 0,
+            comments: p.comments_count || 0,
+            date: p.timestamp
+        }));
+
+        // 3. Call Vertex AI
+        const vertex_ai = new VertexAI({ project: process.env.GCLOUD_PROJECT || 'rela-collab', location: 'us-central1' });
+
+        // Use gemini-2.5-flash for speed/cost
+        const model = vertex_ai.preview.getGenerativeModel({
+            model: 'gemini-2.5-flash',
+            generationConfig: {
+                'maxOutputTokens': 2048,
+                'temperature': 0.7,
+            }
+        });
+
+        const prompt = `
 Analiza los siguientes posts del creador para determinar su idoneidad.
 Datos disponibles:
 - Instagram: ${hasIg ? 'SÍ' : 'NO'} (${igPosts.length} posts)
@@ -826,8 +831,8 @@ Formato de Respuesta (JSON ÚNICAMENTE):
 Responde SOLO con un objeto JSON válido.
 Ejemplo de formato esperado:
 {
-  "instagram": "texto...",
-  "tiktok": "texto..."
+"instagram": "texto...",
+"tiktok": "texto..."
 }
 
 Reglas:
@@ -837,45 +842,44 @@ Reglas:
 
 Estructura:
 {
-  "instagram": "Frase para Instagram (si hay datos, si no null)",
-  "tiktok": "Frase para TikTok (si hay datos, si no null)"
+"instagram": "Frase para Instagram (si hay datos, si no null)",
+"tiktok": "Frase para TikTok (si hay datos, si no null)"
 }
 `;
 
-            const result = await model.generateContent(prompt);
-            const response = result.response;
-            let text = response.candidates[0].content.parts[0].text;
-            console.log("Raw AI Response:", text); 
-            
-            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const jsonMatch = text.match(/\{[\s\S]*\}/);
-            
-            if (!jsonMatch) {
-                console.error("No JSON found in response:", text);
-                await snap.ref.set({
-                    aiStatus: 'error',
-                    aiError: "No JSON found in AI response"
-                }, { merge: true });
-                return;
-            }
-            
-            const analysisJson = JSON.parse(jsonMatch[0]);
-            
-            // 4. Update the match document with the analysis
-            await snap.ref.set({
-                 aiAnalysis: analysisJson,
-                 aiAnalysisDate: new Date(),
-                 aiStatus: 'completed'
-            }, { merge: true });
+        const result = await model.generateContent(prompt);
+        const response = result.response;
+        let text = response.candidates[0].content.parts[0].text;
+        console.log("Raw AI Response:", text);
 
-            console.log(`Analysis completed for ${creatorId}`);
+        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
 
-        } catch (error) {
-            console.error("AI Analysis Error:", error);
-            // We don't throw error to avoid infinite retry loops on fatal errors
+        if (!jsonMatch) {
+            console.error("No JSON found in response:", text);
             await snap.ref.set({
                 aiStatus: 'error',
-                aiError: error.message
+                aiError: "No JSON found in AI response"
             }, { merge: true });
+            return;
         }
-    });
+
+        const analysisJson = JSON.parse(jsonMatch[0]);
+
+        // 4. Update the match document with the analysis
+        await snap.ref.set({
+            aiAnalysis: analysisJson,
+            aiAnalysisDate: new Date(),
+            aiStatus: 'completed'
+        }, { merge: true });
+
+        console.log(`Analysis completed for ${creatorId}`);
+    } catch (error) {
+        console.error("AI Analysis Error:", error);
+        // We don't throw error to avoid infinite retry loops on fatal errors
+        await snap.ref.set({
+            aiStatus: 'error',
+            aiError: error.message
+        }, { merge: true });
+    }
+});
