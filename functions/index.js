@@ -796,24 +796,35 @@ Campaña de la Marca:
 - Objetivo: ${campaignGoal || 'General'}
 
 Tarea:
-1. Filtra mentalmente los posts relacionados con la categoría de la marca.
-2. Calcula la probabilidad de éxito basándote en la consistencia de sus vistas en esos posts similares.
-3. Genera una SOLA frase de venta persuasiva para la marca.
+1. Separa mentalmente los posts por plataforma (Instagram vs TikTok).
+2. Para CADA plataforma con datos, calcula la probabilidad de éxito y genera una frase de venta.
 
-Formato de Respuesta (ESTRICTO):
-"Para esta campaña de [Categoría], el creador [Nombre] tiene un [Probabilidad]% de probabilidad de superar las [Promedio de vistas de posts similares] vistas en promedio, basado en sus últimos [N] videos de contenido similar."
+Formato de Respuesta (JSON ESTRICTO):
+Debes responder ÚNICAMENTE con un objeto JSON válido. No incluyas markdown (backticks) ni texto extra.
+Estructura:
+{
+  "instagram": "Frase para Instagram (si hay datos, si no null)",
+  "tiktok": "Frase para TikTok (si hay datos, si no null)"
+}
+
+Plantilla de Frase:
+"Para esta campaña de [Categoría], el creador [Nombre] tiene un [Probabilidad]% de probabilidad de superar las [Promedio de vistas] vistas en Instagram, basado en sus últimos [N] posts de contenido similar."
+(Ajusta "Instagram" a "TikTok" según corresponda).
 
 Contexto adicional:
-- Si no hay posts similares, basa el análisis en el rendimiento general pero menciona que es "basado en su rendimiento general".
+- Si no hay posts de una plataforma, devuelve null para esa clave.
 - Sé realista pero optimista con el ROI.
-- NO agregues texto adicional fuera de la frase solicitada.
 `;
 
             const result = await model.generateContent(prompt);
             const response = result.response;
-            const text = response.candidates[0].content.parts[0].text;
+            let text = response.candidates[0].content.parts[0].text;
 
-            return res.json({ success: true, analysis: text, postsAnalyzed: postsData.length });
+            // Clean up markdown if present
+            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            const analysisJson = JSON.parse(text);
+
+            return res.json({ success: true, analysis: analysisJson, postsAnalyzed: postsData.length });
 
         } catch (error) {
             console.error("AI Analysis Error:", error);

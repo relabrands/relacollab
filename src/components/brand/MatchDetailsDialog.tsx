@@ -70,7 +70,8 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
     const [loadingPosts, setLoadingPosts] = useState(false);
     const [posts, setPosts] = useState<InstagramMedia[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [aiAnalysis, setAiAnalysis] = useState("");
+    const [aiAnalysis, setAiAnalysis] = useState<{ instagram?: string, tiktok?: string } | null>(null);
+    const [loadingAnalysis, setLoadingAnalysis] = useState(false);
 
     const [activePlatform, setActivePlatform] = useState<"instagram" | "tiktok">("instagram");
 
@@ -90,39 +91,25 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
         }
     }, [activePlatform]);
 
-    const generateAnalysis = () => {
-        const vibes = campaign?.vibes?.join(", ") || "brand";
-        const categories = (creator.tags || []).join(", ");
-        const er = creator.instagramMetrics?.engagementRate || 0;
+    const generateAnalysis = async () => {
+        setLoadingAnalysis(true);
+        setAiAnalysis(null);
+        try {
+            // Call AI Endpoint
+            const response = await axios.post("https://us-central1-rella-collab.cloudfunctions.net/analyzeCreatorMatch", {
+                creatorId: creator.id,
+                brandCategory: campaign?.category || "General",
+                campaignGoal: campaign?.goal || "Brand Awareness"
+            });
 
-        // 1. Fit Analysis
-        let intro = `Based on a deep analysis of ${creator.name}'s profile, they are an excellent match for "${campaign?.name || "your campaign"}".`;
-
-        if (campaign?.location && creator.location?.toLowerCase().includes(campaign.location.toLowerCase())) {
-            intro += ` Their physical presence in ${creator.location} provides the geographic relevance needed for this activation.`;
+            if (response.data.success) {
+                setAiAnalysis(response.data.analysis); // Expecting { instagram: "...", tiktok: "..." }
+            }
+        } catch (error) {
+            console.error("Failed to generate AI analysis:", error);
+        } finally {
+            setLoadingAnalysis(false);
         }
-
-        // 2. Metrics Context
-        let metricsAnalysis = "";
-        const igFollowers = creator.instagramMetrics?.followers || 0;
-        const ttFollowers = creator.tiktokMetrics?.followers || 0;
-        const totalReach = igFollowers + ttFollowers;
-
-        if (er > 4) {
-            metricsAnalysis = `With an engagement rate of ${er}% on Instagram, their audience is highly responsive.`;
-        } else {
-            metricsAnalysis = `They have a combined reach of ${(totalReach / 1000).toFixed(1)}K followers across platforms.`;
-        }
-
-        // 3. Vibe/Content Match
-        let vibeCheck = "";
-        if (campaign?.vibes && campaign.vibes.length > 0) {
-            vibeCheck = `Their content style in ${categories} aligns seamlessly with your requested "${vibes}" aesthetic, ensuring the partnership feels authentic to their audience.`;
-        } else {
-            vibeCheck = `Their focus on ${categories} creates a natural context for your brand's messaging.`;
-        }
-
-        setAiAnalysis(`${intro} ${metricsAnalysis} ${vibeCheck}`);
     };
 
     const fetchCreatorPosts = async (platform: "instagram" | "tiktok") => {
@@ -206,6 +193,54 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                 </DialogHeader>
 
                 <div className="space-y-6 md:space-y-8 py-4">
+                    {/* AI Predictor Analysis */}
+                    {(loadingAnalysis || aiAnalysis) && (
+                        <div className="space-y-3">
+                            <h3 className="font-semibold flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-primary" />
+                                AI ROI Predictor
+                            </h3>
+
+                            {loadingAnalysis ? (
+                                <div className="p-4 rounded-xl bg-muted/30 border border-border/50 animate-pulse space-y-2">
+                                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                                    <div className="h-4 bg-muted rounded w-1/2"></div>
+                                </div>
+                            ) : aiAnalysis ? (
+                                <div className="grid grid-cols-1 gap-3">
+                                    {aiAnalysis.instagram && (
+                                        <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 flex gap-3 items-start">
+                                            <div className="p-2 bg-white rounded-full shadow-sm">
+                                                <Instagram className="w-4 h-4 text-[#E1306C]" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-foreground font-medium">Instagram Prediction</p>
+                                                <p className="text-sm text-muted-foreground mt-1">{aiAnalysis.instagram}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {aiAnalysis.tiktok && (
+                                        <div className="p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 flex gap-3 items-start">
+                                            <div className="p-2 bg-white rounded-full shadow-sm">
+                                                <Music2 className="w-4 h-4 text-black" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-foreground font-medium">TikTok Prediction</p>
+                                                <p className="text-sm text-muted-foreground mt-1">{aiAnalysis.tiktok}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {!aiAnalysis.instagram && !aiAnalysis.tiktok && (
+                                        <div className="p-4 rounded-xl bg-muted/30 border text-sm text-muted-foreground">
+                                            No sufficient data for AI prediction.
+                                        </div>
+                                    )}
+                                </div>
+                            ) : null}
+                        </div>
+                    )}
                     {/* AI Insights & Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
