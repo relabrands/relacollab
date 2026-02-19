@@ -171,113 +171,100 @@ exports.auth = functions.https.onRequest((req, res) => {
 // ==========================================
 exports.getInstagramMedia = functions.https.onRequest((req, res) => {
     return cors(req, res, async () => {
-        // Permitir POST y GET
         if (req.method !== 'POST' && req.method !== 'GET') return res.status(405).json({ error: "Method Not Allowed" });
 
         const userId = req.body.userId || req.query.userId;
         if (!userId) return res.status(400).json({ error: "Missing userId" });
 
         try {
-            // 1. Obtener Token
-            const userDoc = await db.collection("users").doc(userId).get();
-            if (!userDoc.exists) return res.status(404).json({ error: "User not found" });
-
-            const userData = userDoc.data();
-            const accessToken = userData.instagramAccessToken;
-            const igUserId = userData.instagramId;
-
-            if (!accessToken || !igUserId) return res.status(400).json({ error: "Instagram not connected" });
-
-            // 2. Obtener Lista Básica
-            // Pedimos media_product_type para saber si es Reel
-            const response = await axios.get(
-                `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=18&access_token=${accessToken}`
-            );
-
-            const rawPosts = response.data.data || [];
-
-            // 3. ENRIQUECER CON INSIGHTS (EN PARALELO)
-            const postsWithMetrics = await Promise.all(rawPosts.map(async (item) => {
-                // Métricas Base (vienen directo del post)
-                let metrics = {
-                    views: 0,
-                    reach: 0,
-                    saved: 0,
-                    shares: 0,
-                    interactions: (item.like_count || 0) + (item.comments_count || 0)
-                };
-
-                try {
-                    let metricParam = "";
-
-                    // LÓGICA CONDICIONAL EXACTA v19.0
-                    if (item.media_type === 'VIDEO' || item.media_product_type === 'REELS') {
-                        // VIDEO/REEL: Valid: plays, reach, saved, shares
-                        // total_interactions does NOT exist for media insights
-                        metricParam = "plays,reach,saved,shares";
-                    } else {
-                        // IMAGEN/CAROUSEL: Valid: reach, saved, shares
-                        // impressions: deprecated for new posts (will fail or return 0, better to omit if possible, or keep if we accept partial failure?)
-                        // shares: valid for images
-                        // total_interactions: invalid
-                        metricParam = "reach,saved,shares";
-                    }
-
-                    const insightRes = await axios.get(
-                        `https://graph.facebook.com/v19.0/${item.id}/insights?metric=${metricParam}&access_token=${accessToken}`
-                    );
-
-                    const data = insightRes.data.data;
-                    const getVal = (name) => {
-                        const m = data.find(x => x.name === name);
-                        return m ? m.values[0].value : 0;
-                    };
-
-                    // Asignar valores
-                    metrics.views = getVal('plays') || getVal('impressions') || 0;
-                    metrics.reach = getVal('reach') || 0;
-                    metrics.saved = getVal('saved') || 0;
-                    metrics.shares = getVal('shares') || 0; // Será 0 en imágenes
-
-                    // Total Interactions (API vs Cálculo manual)
-                    // A veces la API da un número más exacto que sumar likes+comments
-                    const apiInteractions = getVal('total_interactions');
-                    if (apiInteractions > 0) metrics.interactions = apiInteractions;
-
-                } catch (err) {
-                    // Si falla (post muy viejo o error de API), nos quedamos con likes/comments básicos
-                    // console.warn(`Error getting insights for ${item.id}: ${err.message}`);
-                }
-
-                return {
-                    id: item.id,
-                    caption: item.caption || "",
-                    media_type: item.media_type,
-                    media_product_type: item.media_product_type, // Útil para frontend
-                    thumbnail_url: item.media_type === 'VIDEO' ? item.thumbnail_url : item.media_url,
-                    permalink: item.permalink,
-                    timestamp: item.timestamp,
-                    like_count: item.like_count || 0,
-                    comments_count: item.comments_count || 0,
-
-                    // TUS MÉTRICAS NUEVAS
-                    // TUS MÉTRICAS NUEVAS
-                    view_count: metrics.views, // Standardized to view_count for frontend compatibility
-                    reach: metrics.reach,
-                    saved: metrics.saved,
-                    shares: metrics.shares,
-                    total_interactions: metrics.interactions
-                };
-            }));
-
-            return res.json({ success: true, data: postsWithMetrics });
-
+            const mediaData = await getInstagramMediaInternal(userId);
+            return res.json({ success: true, data: mediaData });
         } catch (error) {
             console.error("Error fetching media:", error.message);
             return res.status(500).json({ error: "System Error", details: error.message });
         }
     });
 });
+
+async function getInstagramMediaInternal(userId) {
+    // 1. Obtener Token
+    const userDoc = await db.collection("users").doc(userId).get();
+    if (!userDoc.exists) throw new Error("User not found");
+
+    const userData = userDoc.data();
+    const accessToken = userData.instagramAccessToken;
+    const igUserId = userData.instagramId;
+
+    if (!accessToken || !igUserId) throw new Error("Instagram not connected");
+
+    // 2. Obtener Lista Básica
+    const response = await axios.get(
+        `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=18&access_token=${accessToken}`
+    );
+
+    const rawPosts = response.data.data || [];
+
+    // 3. ENRIQUECER CON INSIGHTS (EN PARALELO)
+    const postsWithMetrics = await Promise.all(rawPosts.map(async (item) => {
+        // Métricas Base
+        let metrics = {
+            views: 0,
+            reach: 0,
+            saved: 0,
+            shares: 0,
+            interactions: (item.like_count || 0) + (item.comments_count || 0)
+        };
+
+        try {
+            let metricParam = "";
+            if (item.media_type === 'VIDEO' || item.media_product_type === 'REELS') {
+                metricParam = "plays,reach,saved,shares";
+            } else {
+                metricParam = "reach,saved,shares";
+            }
+
+            const insightRes = await axios.get(
+                `https://graph.facebook.com/v19.0/${item.id}/insights?metric=${metricParam}&access_token=${accessToken}`
+            );
+
+            const data = insightRes.data.data;
+            const getVal = (name) => {
+                const m = data.find(x => x.name === name);
+                return m ? m.values[0].value : 0;
+            };
+
+            metrics.views = getVal('plays') || getVal('impressions') || 0;
+            metrics.reach = getVal('reach') || 0;
+            metrics.saved = getVal('saved') || 0;
+            metrics.shares = getVal('shares') || 0;
+
+            const apiInteractions = getVal('total_interactions');
+            if (apiInteractions > 0) metrics.interactions = apiInteractions;
+
+        } catch (err) {
+            // Ignore insight errors
+        }
+
+        return {
+            id: item.id,
+            caption: item.caption || "",
+            media_type: item.media_type,
+            media_product_type: item.media_product_type,
+            thumbnail_url: item.media_type === 'VIDEO' ? item.thumbnail_url : item.media_url,
+            permalink: item.permalink,
+            timestamp: item.timestamp,
+            like_count: item.like_count || 0,
+            comments_count: item.comments_count || 0,
+            view_count: metrics.views,
+            reach: metrics.reach,
+            saved: metrics.saved,
+            shares: metrics.shares,
+            total_interactions: metrics.interactions
+        };
+    }));
+
+    return postsWithMetrics;
+}
 
 // Initialized lazily inside functions or using process.env
 const stripe = require('stripe');
@@ -662,89 +649,175 @@ exports.getTikTokMedia = functions.https.onRequest((req, res) => {
         if (!userId) return res.status(400).json({ error: "Missing userId" });
 
         try {
-            const userDoc = await db.collection("users").doc(userId).get();
-            if (!userDoc.exists) {
-                return res.status(404).json({ error: "User not found" });
-            }
+            const result = await getTikTokMediaInternal(userId, cursor);
+            return res.json(result);
+        } catch (error) {
+            console.error("Get TikTok Media Error:", error.message);
+            return res.status(500).json({ error: "Failed to fetch TikTok media", details: error.message });
+        }
+    });
+});
 
-            const userData = userDoc.data();
-            const accessToken = userData.tiktokAccessToken;
+async function getTikTokMediaInternal(userId, cursor) {
+    const userDoc = await db.collection("users").doc(userId).get();
+    if (!userDoc.exists) {
+        throw new Error("User not found");
+    }
 
-            if (!accessToken) {
-                return res.status(401).json({ error: "TikTok not connected" });
-            }
+    const userData = userDoc.data();
+    let accessToken = userData.tiktokAccessToken;
 
-            // Check token expiration (refresh if < 5 mins left)
-            const refreshToken = userData.tiktokRefreshToken;
-            const tokenExpiresAt = userData.tiktokTokenExpiresAt || 0;
+    if (!accessToken) {
+        throw new Error("TikTok not connected");
+    }
 
-            if (Date.now() > tokenExpiresAt - (5 * 60 * 1000)) {
-                console.log("TikTok token expired or expiring soon, refreshing...");
-                try {
-                    if (refreshToken) {
-                        // This helper updates Firestore too
-                        accessToken = await refreshTikTokAccessToken(userId, refreshToken);
-                    } else {
-                        console.warn("No refresh token found for user", userId);
-                        // If really expired, block
-                        if (Date.now() > tokenExpiresAt) {
-                            return res.status(401).json({ error: "TikTok token expired" });
-                        }
-                    }
-                } catch (refreshErr) {
-                    console.error("Failed to refresh token:", refreshErr.message);
-                    return res.status(401).json({ error: "TikTok token expired and refresh failed" });
+    // Check token expiration (refresh if < 5 mins left)
+    const refreshToken = userData.tiktokRefreshToken;
+    const tokenExpiresAt = userData.tiktokTokenExpiresAt || 0;
+
+    if (Date.now() > tokenExpiresAt - (5 * 60 * 1000)) {
+        console.log("TikTok token expired or expiring soon, refreshing...");
+        try {
+            if (refreshToken) {
+                // This helper updates Firestore too
+                accessToken = await refreshTikTokAccessToken(userId, refreshToken);
+            } else {
+                console.warn("No refresh token found for user", userId);
+                // If really expired, block
+                if (Date.now() > tokenExpiresAt) {
+                    throw new Error("TikTok token expired");
                 }
             }
+        } catch (refreshErr) {
+            console.error("Failed to refresh token:", refreshErr.message);
+            throw new Error("TikTok token expired and refresh failed");
+        }
+    }
 
-            // Fetch Video List
-            // https://developers.tiktok.com/doc/tiktok-api-v2-video-list
-            const videoFields = "id,title,cover_image_url,share_url,video_description,view_count,like_count,comment_count,share_count,create_time";
+    // Fetch Video List
+    // https://developers.tiktok.com/doc/tiktok-api-v2-video-list
+    const videoFields = "id,title,cover_image_url,share_url,video_description,view_count,like_count,comment_count,share_count,create_time";
 
-            const response = await axios.post("https://open.tiktokapis.com/v2/video/list/?fields=" + videoFields, {
-                max_count: 20,
-                cursor: cursor || 0
-            }, {
-                headers: {
-                    "Authorization": `Bearer ${accessToken}`,
-                    "Content-Type": "application/json"
-                }
-            });
+    const response = await axios.post("https://open.tiktokapis.com/v2/video/list/?fields=" + videoFields, {
+        max_count: 20,
+        cursor: cursor || 0
+    }, {
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+        }
+    });
 
-            const { data, error } = response.data;
+    const { data, error } = response.data;
 
-            if (error && error.code !== "ok") {
-                console.error("TikTok API Error:", error);
-                return res.status(400).json({ error: error.message, code: error.code });
-            }
+    if (error && error.code !== "ok") {
+        console.error("TikTok API Error:", error);
+        throw new Error(error.message);
+    }
 
-            const videos = data.videos || [];
-            const nextCursor = data.cursor; // Timestamp for next page
+    const videos = data.videos || [];
+    const nextCursor = data.cursor; // Timestamp for next page
 
-            // Map to a standard format
-            const mappedVideos = videos.map(v => ({
-                id: v.id,
-                caption: v.title || v.video_description || "",
-                media_type: "VIDEO",
-                media_url: v.share_url, // TikTok API v2 might not give direct video file URL for privacy/hotlinking, check docs. usually share_url or embed_html
-                thumbnail_url: v.cover_image_url,
-                permalink: v.share_url,
-                timestamp: new Date(v.create_time * 1000).toISOString(),
-                like_count: v.like_count,
-                comments_count: v.comment_count,
-                view_count: v.view_count,
-                share_count: v.share_count
+    // Map to a standard format
+    const mappedVideos = videos.map(v => ({
+        id: v.id,
+        caption: v.title || v.video_description || "",
+        media_type: "VIDEO",
+        media_url: v.share_url, // TikTok API v2 might not give direct video file URL for privacy/hotlinking, check docs. usually share_url or embed_html
+        thumbnail_url: v.cover_image_url,
+        permalink: v.share_url,
+        timestamp: new Date(v.create_time * 1000).toISOString(),
+        like_count: v.like_count,
+        comments_count: v.comment_count,
+        view_count: v.view_count,
+        share_count: v.share_count
+    }));
+
+    return {
+        success: true,
+        data: mappedVideos,
+        cursor: data.has_more ? nextCursor : null
+    };
+}
+const { VertexAI } = require('@google-cloud/vertexai');
+
+// ==========================================
+// 8. AI CREATOR MATCH ANALYSIS
+// ==========================================
+exports.analyzeCreatorMatch = functions.https.onRequest((req, res) => {
+    return cors(req, res, async () => {
+        if (req.method !== 'POST') return res.status(405).json({ error: "Method Not Allowed" });
+
+        const { creatorId, brandCategory, campaignGoal } = req.body;
+        if (!creatorId || !brandCategory) return res.status(400).json({ error: "Missing required fields" });
+
+        try {
+            // 1. Fetch Media from both platforms
+            const [igMedia, tiktokMedia] = await Promise.allSettled([
+                getInstagramMediaInternal(creatorId).catch(e => []),
+                getTikTokMediaInternal(creatorId).catch(e => ({ data: [] }))
+            ]);
+
+            const igPosts = igMedia.status === 'fulfilled' ? igMedia.value : [];
+            const tiktokPosts = tiktokMedia.status === 'fulfilled' ? (tiktokMedia.value.data || []) : [];
+
+            // Combine and sort by date (newest first)
+            const allPosts = [...igPosts, ...tiktokPosts]
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                .slice(0, 15); // Analyze last 15 posts total
+
+            // 2. Format for AI
+            const postsData = allPosts.map(p => ({
+                platform: p.media_type === 'VIDEO' ? (p.view_count ? 'TikTok' : 'Instagram Reel') : 'Instagram Post',
+                caption: p.caption,
+                views: p.view_count || p.views || 0,
+                likes: p.like_count || 0,
+                comments: p.comments_count || 0,
+                date: p.timestamp
             }));
 
-            return res.json({
-                success: true,
-                data: mappedVideos,
-                cursor: data.has_more ? nextCursor : null
+            // 3. Call Vertex AI
+            // Initialize Vertex with project and location
+            const vertex_ai = new VertexAI({ project: process.env.GCLOUD_PROJECT || 'rela-collab', location: 'us-central1' });
+            const model = vertex_ai.preview.getGenerativeModel({
+                model: 'gemini-1.0-pro',
+                generationConfig: {
+                    'maxOutputTokens': 256,
+                    'temperature': 0.7,
+                }
             });
 
+            const prompt = `
+Analiza los siguientes posts del creador para determinar su idoneidad.
+Posts recientes: ${JSON.stringify(postsData)}
+
+Campaña de la Marca:
+- Categoría: ${brandCategory}
+- Objetivo: ${campaignGoal || 'General'}
+
+Tarea:
+1. Filtra mentalmente los posts relacionados con la categoría de la marca.
+2. Calcula la probabilidad de éxito basándote en la consistencia de sus vistas en esos posts similares.
+3. Genera una SOLA frase de venta persuasiva para la marca.
+
+Formato de Respuesta (ESTRICTO):
+"Para esta campaña de [Categoría], el creador [Nombre] tiene un [Probabilidad]% de probabilidad de superar las [Promedio de vistas de posts similares] vistas en promedio, basado en sus últimos [N] videos de contenido similar."
+
+Contexto adicional:
+- Si no hay posts similares, basa el análisis en el rendimiento general pero menciona que es "basado en su rendimiento general".
+- Sé realista pero optimista con el ROI.
+- NO agregues texto adicional fuera de la frase solicitada.
+`;
+
+            const result = await model.generateContent(prompt);
+            const response = result.response;
+            const text = response.candidates[0].content.parts[0].text;
+
+            return res.json({ success: true, analysis: text, postsAnalyzed: postsData.length });
+
         } catch (error) {
-            console.error("Get TikTok Media Error:", error.response?.data || error.message);
-            return res.status(500).json({ error: "Failed to fetch TikTok media", details: error.message });
+            console.error("AI Analysis Error:", error);
+            return res.status(500).json({ error: "AI Analysis Failed", details: error.message });
         }
     });
 });
