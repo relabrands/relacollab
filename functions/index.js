@@ -742,29 +742,35 @@ async function getTikTokMediaInternal(userId, cursor) {
 const { VertexAI } = require('@google-cloud/vertexai');
 
 // ==========================================
-// 8. AI CREATOR MATCH ANALYSIS
-// ==========================================
 
 // ==========================================
 // 8. AI CREATOR MATCH ANALYSIS (TRIGGER)
 // ==========================================
-const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 
-exports.analyzeCreatorMatch = onDocumentCreated("campaigns/{campaignId}/matches/{creatorId}", async (event) => {
-    const snap = event.data;
-    if (!snap) {
-        console.log("No data associated with the event");
+exports.analyzeCreatorMatch = onDocumentWritten("campaigns/{campaignId}/matches/{creatorId}", async (event) => {
+    // Check if document was deleted
+    if (!event.data.after.exists) {
+        console.log("Document deleted. Skipping.");
         return;
     }
+    
+    // Get the current data (after the write)
+    const snap = event.data.after; 
     const { campaignId, creatorId } = event.params;
     const matchData = snap.data();
-
-    // If analysis already exists (e.g. manually added), skip
-    if (matchData.aiAnalysis) {
-        console.log(`Analysis already exists for ${creatorId} in ${campaignId}. Skipping.`);
+    
+    // If analysis already exists, skip unless explicitly requested (e.g., forceRetry)
+    if (matchData.aiAnalysis && !matchData.forceRetry) {
+        // console.log(`Analysis already exists for ${creatorId}. Skipping.`);
         return;
     }
 
+    // Skip if already completed (unless retry forced)
+    if (matchData.aiStatus === 'completed' && !matchData.forceRetry) {
+         return;
+    }
+    
     const brandCategory = matchData.brandCategory || "General";
     const campaignGoal = matchData.campaignGoal || "Brand Awareness";
 
@@ -779,7 +785,7 @@ exports.analyzeCreatorMatch = onDocumentCreated("campaigns/{campaignId}/matches/
 
         const igPosts = igMedia.status === 'fulfilled' ? igMedia.value : [];
         const tiktokPosts = tiktokMedia.status === 'fulfilled' ? (tiktokMedia.value.data || []) : [];
-
+        
         const hasIg = igPosts.length > 0;
         const hasTiktok = tiktokPosts.length > 0;
 
@@ -800,7 +806,7 @@ exports.analyzeCreatorMatch = onDocumentCreated("campaigns/{campaignId}/matches/
 
         // 3. Call Vertex AI
         const vertex_ai = new VertexAI({ project: process.env.GCLOUD_PROJECT || 'rela-collab', location: 'us-central1' });
-
+        
         // Use gemini-2.5-flash for speed/cost
         const model = vertex_ai.preview.getGenerativeModel({
             model: 'gemini-2.5-flash',
@@ -831,8 +837,8 @@ Formato de Respuesta (JSON ÚNICAMENTE):
 Responde SOLO con un objeto JSON válido.
 Ejemplo de formato esperado:
 {
-"instagram": "texto...",
-"tiktok": "texto..."
+  "instagram": "texto...",
+  "tiktok": "texto..."
 }
 
 Reglas:
@@ -842,19 +848,19 @@ Reglas:
 
 Estructura:
 {
-"instagram": "Frase para Instagram (si hay datos, si no null)",
-"tiktok": "Frase para TikTok (si hay datos, si no null)"
+  "instagram": "Frase para Instagram (si hay datos, si no null)",
+  "tiktok": "Frase para TikTok (si hay datos, si no null)"
 }
 `;
 
         const result = await model.generateContent(prompt);
         const response = result.response;
         let text = response.candidates[0].content.parts[0].text;
-        console.log("Raw AI Response:", text);
-
+        console.log("Raw AI Response:", text); 
+        
         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const jsonMatch = text.match(/\{[\s\S]*\}/);
-
+        
         if (!jsonMatch) {
             console.error("No JSON found in response:", text);
             await snap.ref.set({
@@ -863,20 +869,22 @@ Estructura:
             }, { merge: true });
             return;
         }
-
+        
         const analysisJson = JSON.parse(jsonMatch[0]);
-
+        
         // 4. Update the match document with the analysis
+        // Using snap.ref.set to update the same document (merge: true)
         await snap.ref.set({
-            aiAnalysis: analysisJson,
-            aiAnalysisDate: new Date(),
-            aiStatus: 'completed'
+             aiAnalysis: analysisJson,
+             aiAnalysisDate: new Date(),
+             aiStatus: 'completed',
+             forceRetry: admin.firestore.FieldValue.delete() // Remove force flag
         }, { merge: true });
 
         console.log(`Analysis completed for ${creatorId}`);
+
     } catch (error) {
         console.error("AI Analysis Error:", error);
-        // We don't throw error to avoid infinite retry loops on fatal errors
         await snap.ref.set({
             aiStatus: 'error',
             aiError: error.message

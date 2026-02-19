@@ -6,7 +6,7 @@ import { MatchScore } from "@/components/dashboard/MatchScore";
 import { Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2, ExternalLink, Check, Eye, Music2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 interface CreatorDetails {
@@ -85,18 +85,39 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
 
             // Listen for AI Analysis updates
             setLoadingAnalysis(true);
-            const unsubscribe = onSnapshot(doc(db, "campaigns", campaign.id, "matches", creator.id), (doc) => {
-                if (doc.exists()) {
-                    const data = doc.data();
+            const matchRef = doc(db, "campaigns", campaign.id, "matches", creator.id);
+            const unsubscribe = onSnapshot(matchRef, async (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
                     if (data.aiAnalysis) {
                         setAiAnalysis(data.aiAnalysis);
                         setLoadingAnalysis(false);
                     } else if (data.aiStatus === 'error') {
                         console.error("AI Analysis failed:", data.aiError);
                         setLoadingAnalysis(false);
+                    } else if (data.aiStatus === 'pending') {
+                        setLoadingAnalysis(true);
+                    } else if (!data.aiAnalysis && data.aiStatus !== 'completed') {
+                        // Document exists but no analysis - Trigger it
+                        setDoc(matchRef, { aiStatus: 'pending' }, { merge: true });
+                        setLoadingAnalysis(true);
                     }
                 } else {
-                    setLoadingAnalysis(false);
+                    // If document doesn't exist, create it to trigger AI analysis
+                    try {
+                        await setDoc(matchRef, {
+                            creatorId: creator.id,
+                            campaignId: campaign.id,
+                            brandCategory: campaign.category || "General",
+                            campaignGoal: campaign.goal || "Brand Awareness",
+                            status: 'potential', // Mark as potential match
+                            aiStatus: 'pending',
+                            createdAt: new Date()
+                        });
+                    } catch (err) {
+                        console.error("Error creating match trigger:", err);
+                        setLoadingAnalysis(false);
+                    }
                 }
             });
 
