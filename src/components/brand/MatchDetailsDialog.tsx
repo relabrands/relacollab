@@ -276,7 +276,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                             AI Match Intelligence
                             {aiAnalysis?.matchPercentage !== undefined && (
                                 <Badge variant="outline" className="text-xs font-normal ml-1 border-primary/30 text-primary">
-                                    Powered by Gemini
+                                    Powered by RELA AI
                                 </Badge>
                             )}
                         </h3>
@@ -287,7 +287,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                                 <div className="flex items-center gap-3">
                                     <Loader2 className="w-5 h-5 animate-spin text-primary" />
                                     <span className="text-sm text-muted-foreground">
-                                        Gemini AI is analyzing this match for your campaign...
+                                        RELA AI is analyzing this match for your campaign...
                                     </span>
                                 </div>
                                 <div className="space-y-2">
