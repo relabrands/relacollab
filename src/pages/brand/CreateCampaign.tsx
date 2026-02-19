@@ -293,24 +293,31 @@ export default function CreateCampaign() {
         const totalFee = perCreatorFee * creatorCount;
         const totalNet = perCreatorNet * creatorCount;
 
-        await addDoc(collection(db, "invoices"), {
-          type: "campaign_budget",
-          brandId: user.uid,
-          brandName: brandName,
-          campaignId: campaignRef.id,
-          campaignName: formData.name,
-          creatorCount: creatorCount,
-          perCreatorGross: grossAmount,
-          perCreatorFee: perCreatorFee,
-          perCreatorNet: perCreatorNet,
-          totalGross: totalGross,    // Total brand must pay RELA
-          totalFee: totalFee,        // RELA platform revenue
-          totalNet: totalNet,        // Total that will go to creators
-          feePercent: feePercent,
-          status: "pending",         // pending_payment → verifying → paid
-          createdAt: new Date().toISOString(),
-        });
+        try {
+          await addDoc(collection(db, "invoices"), {
+            type: "campaign_budget",
+            brandId: user.uid,
+            brandName: brandName,
+            campaignId: campaignRef.id,
+            campaignName: formData.name,
+            creatorCount: creatorCount,
+            perCreatorGross: grossAmount,
+            perCreatorFee: perCreatorFee,
+            perCreatorNet: perCreatorNet,
+            totalGross: totalGross,    // Total brand must pay RELA
+            totalFee: totalFee,        // RELA platform revenue
+            totalNet: totalNet,        // Total that will go to creators
+            feePercent: feePercent,
+            status: "pending",
+            createdAt: new Date().toISOString(),
+          });
+          console.log("✅ Invoice created:", totalGross, "for", creatorCount, "creators");
+        } catch (invoiceErr) {
+          console.error("❌ Invoice creation failed:", invoiceErr);
+          toast.error("Campaña creada, pero la factura no pudo generarse. Contacta soporte.");
+        }
       }
+
 
       toast.success("Campaign created successfully!");
       navigate("/brand/matches");
@@ -765,7 +772,7 @@ export default function CreateCampaign() {
                   {formData.compensationType === "monetary" && (
                     <div className="bg-muted/30 p-4 rounded-xl space-y-4">
                       <div>
-                        <Label htmlFor="creatorPayment">Pago al Creator</Label>
+                        <Label htmlFor="creatorPayment">Pago al Creator (por persona)</Label>
                         <div className="relative mt-2">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                             $
@@ -785,36 +792,50 @@ export default function CreateCampaign() {
                           />
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Cantidad que recibirá cada creator aprobado.
-                          Cantidad bruta que se pagará por cada creator aprobado.
+                          Monto bruto que pagarás a RELA por cada creator aprobado.
                         </p>
 
-                        {/* Fee Calculation Display */}
-                        {formData.creatorPayment && (
-                          <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border/50 space-y-2">
-                            <div className="flex justify-between font-bold text-base">
-                              <span>Total a Pagar (Billing):</span>
-                              <span className="text-primary">${Number(formData.creatorPayment).toLocaleString()}</span>
-                            </div>
+                        {/* Fee Calculation Display — shows per-creator AND total */}
+                        {formData.creatorPayment && (() => {
+                          const gross = Number(formData.creatorPayment);
+                          const count = parseInt(formData.creatorCount) || 1;
+                          const fee = gross * (config.serviceFeePercent / 100);
+                          const net = gross - fee;
+                          const totalG = gross * count;
+                          const totalF = fee * count;
+                          const totalN = net * count;
 
-                            <div className="flex justify-between text-sm text-muted-foreground pt-2 border-t border-border/50">
-                              <span className="flex items-center gap-1">
-                                Platform Fee ({config.serviceFeePercent}%)
-                                <span className="text-[10px] bg-primary/10 text-primary px-1 rounded">Deducted</span>
-                              </span>
-                              <span className="text-destructive">-${(Number(formData.creatorPayment) * (config.serviceFeePercent / 100)).toLocaleString()}</span>
-                            </div>
+                          return (
+                            <div className="mt-4 rounded-xl border border-border/60 overflow-hidden">
+                              {/* Total invoice line — most prominent */}
+                              <div className="px-4 py-3 bg-primary/10 border-b border-border/50 flex justify-between items-center">
+                                <span className="font-bold text-sm">
+                                  Total Factura ({count} creator{count > 1 ? "s" : ""})
+                                </span>
+                                <span className="text-primary font-black text-xl">${totalG.toLocaleString()}</span>
+                              </div>
 
-                            <div className="flex justify-between text-sm font-medium pt-1">
-                              <span>Pago Neto al Creator:</span>
-                              <span className="text-success">${(Number(formData.creatorPayment) * (1 - config.serviceFeePercent / 100)).toLocaleString()}</span>
+                              {/* Per-creator breakdown */}
+                              <div className="px-4 py-3 bg-muted/40 space-y-1.5 text-sm">
+                                <div className="flex justify-between text-muted-foreground">
+                                  <span>Por creator × {count}</span>
+                                  <span>${gross.toLocaleString()} × {count} = <strong className="text-foreground">${totalG.toLocaleString()}</strong></span>
+                                </div>
+                                <div className="flex justify-between text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    Fee RELA ({config.serviceFeePercent}% × {count})
+                                    <span className="text-[9px] bg-destructive/10 text-destructive px-1 rounded">Deducido</span>
+                                  </span>
+                                  <span className="text-destructive">-${totalF.toLocaleString()} (${fee.toLocaleString()}/c.u.)</span>
+                                </div>
+                                <div className="flex justify-between font-semibold pt-1 border-t border-border/40">
+                                  <span>Creators reciben en total</span>
+                                  <span className="text-green-600">${totalN.toLocaleString()} (${net.toLocaleString()}/c.u.)</span>
+                                </div>
+                              </div>
                             </div>
-
-                            <p className="text-[10px] text-muted-foreground mt-1">
-                              * El fee se deduce del presupuesto total para cubrir costos de transacción y garantía.
-                            </p>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
