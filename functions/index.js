@@ -801,6 +801,9 @@ Tarea:
 
 Formato de Respuesta (JSON ESTRICTO):
 Debes responder ÚNICAMENTE con un objeto JSON válido. No incluyas markdown (backticks) ni texto extra.
+Asegúrate de escapar correctamente cualquier comilla doble dentro del texto.
+NO uses saltos de línea reales dentro de los valores de las cadenas; usa \\n si es necesario.
+
 Estructura:
 {
   "instagram": "Frase para Instagram (si hay datos, si no null)",
@@ -820,9 +823,13 @@ Contexto adicional:
             const response = result.response;
             let text = response.candidates[0].content.parts[0].text;
 
-            // Clean up markdown if present
-            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const analysisJson = JSON.parse(text);
+            // Extract JSON using regex
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error("No JSON found in AI response");
+            }
+
+            const analysisJson = JSON.parse(jsonMatch[0]);
 
             return res.json({ success: true, analysis: analysisJson, postsAnalyzed: postsData.length });
 
