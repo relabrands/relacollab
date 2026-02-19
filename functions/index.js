@@ -748,10 +748,25 @@ exports.analyzeCreatorMatch = functions.https.onRequest((req, res) => {
     return cors(req, res, async () => {
         if (req.method !== 'POST') return res.status(405).json({ error: "Method Not Allowed" });
 
-        const { creatorId, brandCategory, campaignGoal } = req.body;
+        const { creatorId, brandCategory, campaignGoal, campaignId } = req.body;
         if (!creatorId || !brandCategory) return res.status(400).json({ error: "Missing required fields" });
 
         try {
+            // 0. Check for cached analysis (Persistence Layer)
+            if (campaignId) {
+                const matchRef = db.collection('campaigns').doc(campaignId).collection('matches').doc(creatorId);
+                const matchDoc = await matchRef.get();
+
+                if (matchDoc.exists && matchDoc.data().aiAnalysis) {
+                    console.log(`Returning cached analysis for creator ${creatorId} in campaign ${campaignId}`);
+                    return res.json({
+                        success: true,
+                        analysis: matchDoc.data().aiAnalysis,
+                        cached: true
+                    });
+                }
+            }
+
             // 1. Fetch Media from both platforms
             const [igMedia, tiktokMedia] = await Promise.allSettled([
                 getInstagramMediaInternal(creatorId).catch(e => []),
@@ -760,6 +775,9 @@ exports.analyzeCreatorMatch = functions.https.onRequest((req, res) => {
 
             const igPosts = igMedia.status === 'fulfilled' ? igMedia.value : [];
             const tiktokPosts = tiktokMedia.status === 'fulfilled' ? (tiktokMedia.value.data || []) : [];
+
+            const hasIg = igPosts.length > 0;
+            const hasTiktok = tiktokPosts.length > 0;
 
             // Combine and sort by date (newest first)
             const allPosts = [...igPosts, ...tiktokPosts]
@@ -791,15 +809,20 @@ exports.analyzeCreatorMatch = functions.https.onRequest((req, res) => {
 
             const prompt = `
 Analiza los siguientes posts del creador para determinar su idoneidad.
-Posts recientes: ${JSON.stringify(postsData)}
+Datos disponibles:
+- Instagram: ${hasIg ? 'SÍ' : 'NO'} (${igPosts.length} posts)
+- TikTok: ${hasTiktok ? 'SÍ' : 'NO'} (${tiktokPosts.length} posts)
+
+Posts recientes para contexto: ${JSON.stringify(postsData)}
 
 Campaña de la Marca:
 - Categoría: ${brandCategory}
 - Objetivo: ${campaignGoal || 'General'}
 
 Tarea:
-1. Separa mentalmente los posts por plataforma (Instagram vs TikTok).
-2. Para CADA plataforma con datos, calcula la probabilidad de éxito y genera una frase de venta.
+1. Genera una predicción para CADA plataforma marcada como "SÍ" arriba.
+2. Si una plataforma tiene datos (aunque sean pocos), DEBES generar una predicción.
+3. Calcula la probabilidad de éxito y genera una frase de venta persuasiva.
 
 Formato de Respuesta (JSON ÚNICAMENTE):
 Responde SOLO con un objeto JSON válido. NO incluyas ninguna explicación, ni markdown, ni backticks.
@@ -812,7 +835,7 @@ Ejemplo de formato esperado:
 Reglas:
 1. Escapa comillas dobles dentro de los textos (e.g. \\").
 2. No uses saltos de línea reales en los valores.
-3. Si no hay datos, usa null.
+3. Si una plataforma está marcada como "NO" (sin datos), usa null.
 
 Estructura:
 {
@@ -825,7 +848,6 @@ Plantilla de Frase:
 (Ajusta "Instagram" a "TikTok" según corresponda).
 
 Contexto adicional:
-- Si no hay posts de una plataforma, devuelve null para esa clave.
 - Sé realista pero optimista con el ROI.
 `;
 
@@ -846,11 +868,21 @@ Contexto adicional:
 
             const analysisJson = JSON.parse(jsonMatch[0]);
 
-            return res.json({ success: true, analysis: analysisJson, postsAnalyzed: postsData.length });
+            // 4. Cache Result (Persistence)
+            if (campaignId) {
+                await db.collection('campaigns').doc(campaignId).collection('matches').doc(creatorId).set({
+                    aiAnalysis: analysisJson,
+                    aiAnalysisDate: new Date()
+                }, { merge: true });
+            }
 
+            return res.json({ success: true, analysis: analysisJson, postsAnalyzed: postsData.length });
         } catch (error) {
             console.error("AI Analysis Error:", error);
-            return res.status(500).json({ error: "AI Analysis Failed", details: error.message });
+            // Fallback for error to avoid 500 on client
+            return res.json({ success: false, error: error.message });
         }
     });
 });
+
+

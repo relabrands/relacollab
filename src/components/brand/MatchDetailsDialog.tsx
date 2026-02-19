@@ -99,7 +99,8 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
             const response = await axios.post("https://us-central1-rella-collab.cloudfunctions.net/analyzeCreatorMatch", {
                 creatorId: creator.id,
                 brandCategory: campaign?.category || "General",
-                campaignGoal: campaign?.goal || "Brand Awareness"
+                campaignGoal: campaign?.goal || "Brand Awareness",
+                campaignId: campaign?.id
             });
 
             if (response.data.success) {
