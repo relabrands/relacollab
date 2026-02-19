@@ -779,10 +779,12 @@ exports.analyzeCreatorMatch = functions.https.onRequest((req, res) => {
             // 3. Call Vertex AI
             // Initialize Vertex with project and location
             const vertex_ai = new VertexAI({ project: process.env.GCLOUD_PROJECT || 'rela-collab', location: 'us-central1' });
+
+            // Use gemini-2.5-flash as requested by user
             const model = vertex_ai.preview.getGenerativeModel({
-                model: 'gemini-2.5-pro',
+                model: 'gemini-2.5-flash',
                 generationConfig: {
-                    'maxOutputTokens': 1024,
+                    'maxOutputTokens': 2048,
                     'temperature': 0.7,
                 }
             });
