@@ -68,15 +68,15 @@ const WHO_APPEARS = [
   "Solo yo",
   "Mi pareja",
   "Mis amigos",
-  "Mi familia",
   "No aparecen personas"
 ];
 
 const EXPERIENCE_TIME = [
-  "Menos de 6 meses",
-  "6-12 meses",
-  "1-2 años",
-  "3+ años"
+  "Menos de 5 meses",
+  "De 5 a 8 meses",
+  "De 8 meses a 1 año",
+  "Más de 1 año",
+  "Más de 3 años"
 ];
 
 const COLLABORATION_TYPES = [

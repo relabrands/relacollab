@@ -26,25 +26,34 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
 
     // Check onboarding completion
     const getOnboardingStep = () => {
-        if (!creator.contentTypes || creator.contentTypes.length === 0) {
-            return { step: 1, message: "No ha completado el tipo de contenido" };
+        // Step 1: Categories
+        if (!creator.categories || creator.categories.length === 0) {
+            return { step: 1, message: "No ha seleccionado categorías de contenido" };
         }
+        // Step 2: Content Formats
+        if (!creator.contentFormats || creator.contentFormats.length === 0) {
+            return { step: 2, message: "No ha seleccionado formatos de contenido" };
+        }
+        // Step 3: Vibes (Optional) - We don't block on this, but good to know
+        // Step 4: Details
         if (!creator.whoAppearsInContent || creator.whoAppearsInContent.length === 0) {
-            return { step: 2, message: "No ha indicado quién aparece en su contenido" };
+            return { step: 4, message: "No ha indicado quién aparece en su contenido" };
         }
         if (!creator.experienceTime) {
-            return { step: 2, message: "No ha indicado su tiempo de experiencia" };
+            return { step: 4, message: "No ha indicado su tiempo de experiencia" };
         }
         if (!creator.collaborationPreference) {
-            return { step: 2, message: "No ha indicado su preferencia de colaboración" };
+            return { step: 4, message: "No ha indicado su preferencia de colaboración" };
         }
         if (creator.hasBrandExperience === undefined) {
-            return { step: 2, message: "No ha indicado experiencia con marcas" };
+            return { step: 4, message: "No ha indicado experiencia con marcas" };
         }
+        // Step 5: Social Handles (Optional)
+
         if (creator.onboardingCompleted) {
             return null; // Completed
         }
-        return { step: 3, message: "Onboarding incompleto (información de redes)" };
+        return { step: 6, message: "Onboarding final (revisión pendiente)" };
     };
 
     const onboardingStatus = getOnboardingStep();
