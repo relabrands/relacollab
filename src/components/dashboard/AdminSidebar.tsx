@@ -13,6 +13,7 @@ import {
   Shield,
   FileText,
   TrendingUp,
+  DollarSign,
 } from "lucide-react";
 
 const adminNavItems = [
@@ -21,6 +22,7 @@ const adminNavItems = [
   { icon: Users, label: "Creators", path: "/admin/creators" },
   { icon: FileText, label: "Campaigns", path: "/admin/campaigns" },
   { icon: CreditCard, label: "Subscriptions", path: "/admin/subscriptions" },
+  { icon: DollarSign, label: "Finance", path: "/admin/finance" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },
 ];

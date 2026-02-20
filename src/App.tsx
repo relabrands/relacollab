@@ -49,6 +49,7 @@ import CreatorMessages from "./pages/creator/CreatorMessages";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminBrands from "./pages/admin/AdminBrands";
 import AdminCreators from "./pages/admin/AdminCreators";
+import AdminFinance from "./pages/admin/AdminFinance";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
@@ -219,6 +220,11 @@ const App = () => (
             <Route path="/admin/subscriptions" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminSubscriptions />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/finance" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminFinance />
               </ProtectedRoute>
             } />
             <Route path="/admin/analytics" element={
