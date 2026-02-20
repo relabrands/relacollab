@@ -309,7 +309,7 @@ export default function CreatorAnalytics() {
                                 <h3 className="font-bold text-base">
                                     Análisis IA — {selectedPlatform === "instagram" ? "Instagram" : "TikTok"}
                                 </h3>
-                                <Badge variant="outline" className="ml-auto text-[10px]">Gemini AI</Badge>
+                                <Badge variant="outline" className="ml-auto text-[10px]">RELA AI</Badge>
                                 {analysis && (
                                     <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={handleRetryAnalysis}>
                                         <RefreshCw className="w-3 h-3 mr-1" /> Refrescar
@@ -323,7 +323,7 @@ export default function CreatorAnalytics() {
                                     <div className="flex flex-col items-center justify-center py-10 gap-4">
                                         <Loader2 className="w-10 h-10 animate-spin text-primary" />
                                         <div className="text-center">
-                                            <p className="font-medium">Gemini está analizando tu perfil...</p>
+                                            <p className="font-medium">RELA AI está analizando tu perfil...</p>
                                             <p className="text-sm text-muted-foreground mt-1">
                                                 Revisando tus publicaciones reales y métricas de {selectedPlatform === "instagram" ? "Instagram" : "TikTok"}
                                             </p>

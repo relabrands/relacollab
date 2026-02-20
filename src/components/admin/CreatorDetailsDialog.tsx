@@ -26,6 +26,9 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
 
     // Check onboarding completion
     const getOnboardingStep = () => {
+        // Priority check: if completed, don't check details
+        if (creator.onboardingCompleted) return null;
+
         // Step 1: Categories
         if (!creator.categories || creator.categories.length === 0) {
             return { step: 1, message: "No ha seleccionado categorías de contenido" };

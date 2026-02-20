@@ -36,6 +36,8 @@ interface Creator {
   categories?: string[];
   // Onboarding fields
   contentTypes?: string[];
+  contentFormats?: string[]; // NEW
+  vibes?: string[]; // NEW
   whoAppearsInContent?: string[];
   experienceTime?: string;
   collaborationPreference?: string;
@@ -55,7 +57,6 @@ export default function AdminCreators() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Dialog State
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
@@ -68,37 +69,25 @@ export default function AdminCreators() {
       const q = query(collection(db, "users"), where("role", "==", "creator"));
       const querySnapshot = await getDocs(q);
 
-      // Fetch applications to count active/completed campaigns per creator
       const appsSnapshot = await getDocs(collection(db, "applications"));
       const allApps = await Promise.all(appsSnapshot.docs.map(async docSnap => {
         const appData = docSnap.data();
-        // Enrich with campaign title if possible (for details view)
-        let campaignTitle = "Unknown Campaign";
-        if (appData.campaignId) {
-          // Optimization: In a real app we would cache this or fetch differently
-          // For now we just use what we have or fetch if needed (skipping for list performance, assuming app has title snapshot or we fetch later)
-          // Let's assume the app might NOT have the title saved, so we try to get it if missing, 
-          // but to avoid N+1 queries here we'll just store the ID and fetch details only when opening the modal or use a map.
-          // BETTER: Fetch all campaigns once.
-          return { id: docSnap.id, ...appData };
-        }
+        if (appData.campaignId) return { id: docSnap.id, ...appData };
         return { id: docSnap.id, ...appData };
       }));
 
-      // Fetch active campaigns map for title lookup
       const campaignsSnapshot = await getDocs(collection(db, "campaigns"));
       const campaignMap: Record<string, string> = {};
-      campaignsSnapshot.docs.forEach(doc => {
-        campaignMap[doc.id] = doc.data().title || doc.data().name || "Untitled";
+      campaignsSnapshot.docs.forEach(docSnap => {
+        campaignMap[docSnap.id] = docSnap.data().title || docSnap.data().name || "Untitled";
       });
 
-      // Map app titles
       const enrichedApps = allApps
         .map(app => ({
           ...app,
           campaignTitle: campaignMap[app.campaignId] || "Unknown Campaign"
         }))
-        .filter(app => app.campaignTitle !== "Unknown Campaign"); // Filter out orphaned applications
+        .filter(app => app.campaignTitle !== "Unknown Campaign");
 
       setApplications(enrichedApps);
 
@@ -109,22 +98,21 @@ export default function AdminCreators() {
         }
       });
 
-      const creatorsData = querySnapshot.docs.map(doc => {
-        const data = doc.data();
+      const creatorsData = querySnapshot.docs.map(docSnap => {
+        const data = docSnap.data();
 
-        // Correctly extract metrics from instagramMetrics object if it exists
         const followersCount = data.instagramMetrics?.followers || data.instagramFollowers || 0;
         const engagementRate = data.instagramMetrics?.engagementRate || data.engagementRate || 0;
 
         return {
-          id: doc.id,
+          id: docSnap.id,
           name: data.displayName || data.name || "Unknown Creator",
           email: data.email || "",
           avatar: data.photoURL || data.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
           followers: followersCount > 0 ? `${(followersCount / 1000).toFixed(1)}K` : "0",
           engagement: engagementRate > 0 ? `${parseFloat(engagementRate).toFixed(2)}%` : "0%",
           status: data.status || "active",
-          campaigns: appCounts[doc.id] || 0,
+          campaigns: appCounts[docSnap.id] || 0,
           earnings: "$0", // Placeholder
           // Extra data
           location: data.location,
@@ -134,6 +122,8 @@ export default function AdminCreators() {
           categories: data.categories,
           // Onboarding fields for pending approval
           contentTypes: data.contentTypes,
+          contentFormats: data.contentFormats || [], // Extract new field
+          vibes: data.vibes || [], // Extract new field
           whoAppearsInContent: data.whoAppearsInContent,
           experienceTime: data.experienceTime,
           collaborationPreference: data.collaborationPreference,
@@ -141,7 +131,6 @@ export default function AdminCreators() {
           onboardingCompleted: data.onboardingCompleted
         } as Creator;
       });
-
       setCreators(creatorsData);
     } catch (error) {
       console.error("Error fetching creators:", error);
