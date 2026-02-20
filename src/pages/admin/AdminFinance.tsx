@@ -109,10 +109,14 @@ export default function AdminFinance() {
             const payoutsQuery = query(payoutsRef, orderBy("createdAt", "desc"));
             const payoutsSnap = await getDocs(payoutsQuery);
 
-            const payoutsData = payoutsSnap.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Payout[];
+            const payoutsData = payoutsSnap.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    amount: data.netAmount || data.amount || 0
+                };
+            }) as Payout[];
 
             setPayouts(payoutsData);
 
