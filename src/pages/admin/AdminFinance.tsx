@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { Search, DollarSign, FileText, CheckCircle, Download, ExternalLink, Loader2 as Loader, Eye, Upload, CreditCard, Building2, User } from "lucide-react";
 import { toast } from "sonner";
-import { collection, query, getDocs, doc, updateDoc, orderBy, getDoc } from "firebase/firestore";
+import { collection, query, getDocs, doc, updateDoc, orderBy, getDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 // Types
@@ -52,8 +52,11 @@ interface Payout {
     creatorName?: string;
     campaignId: string;
     campaignName: string;
-    amount: number; // This is usually the net amount
-    status: "pending" | "requested" | "paid";
+    amount: number;
+    netAmount?: number;
+    type?: "monetary" | "exchange";
+    status: "pending" | "ready_to_withdraw" | "requested" | "paid" | "completed";
+    paidAt?: any;
     createdAt: any;
     receiptUrl?: string;
     // Bank details fetched on demand
@@ -135,20 +138,53 @@ export default function AdminFinance() {
     };
 
     const handleMarkInvoicePaid = async (invoice: Invoice) => {
-        if (!confirm("Confirm that you have received payment for this invoice?")) return;
+        if (!confirm(`Confirm payment received for ${invoice.campaignName}? This will release creator payouts.`)) return;
 
         try {
-            await updateDoc(doc(db, "invoices", invoice.id), {
+            const batch = writeBatch(db);
+            const now = new Date().toISOString();
+
+            // 1. Mark invoice as paid
+            batch.update(doc(db, "invoices", invoice.id), {
                 status: "paid",
-                paidAt: new Date().toISOString()
+                paidAt: now
             });
 
-            toast.success("Invoice marked as PAID");
+            // 2. Find all `pending` payouts for this campaign and release them to `ready_to_withdraw`
+            const payoutsQ = query(
+                collection(db, "payouts"),
+                where("campaignId", "==", invoice.campaignId),
+                where("status", "==", "pending")
+            );
+            const payoutsSnap = await getDocs(payoutsQ);
+            let releasedCount = 0;
+            payoutsSnap.docs.forEach(payoutDoc => {
+                const d = payoutDoc.data();
+                // Only release monetary payouts, not exchanges
+                if (d.type !== "exchange") {
+                    batch.update(doc(db, "payouts", payoutDoc.id), {
+                        status: "ready_to_withdraw",
+                        releasedAt: now
+                    });
+                    releasedCount++;
+                }
+            });
+
+            await batch.commit();
+
+            toast.success(`Invoice confirmed! ${releasedCount} creator payout${releasedCount !== 1 ? 's' : ''} released for withdrawal.`);
             setInvoices(prev => prev.map(i => i.id === invoice.id ? { ...i, status: "paid" } : i));
+            // Refresh payouts to reflect new statuses
+            const refreshedPayoutsSnap = await getDocs(query(collection(db, "payouts"), orderBy("createdAt", "desc")));
+            const refreshed = refreshedPayoutsSnap.docs.map(d => {
+                const data = d.data();
+                return { id: d.id, ...data, amount: data.netAmount || data.amount || 0 };
+            }) as Payout[];
+            setPayouts(refreshed);
             setIsInvoiceDetailsOpen(false);
         } catch (error) {
-            console.error("Error updating invoice:", error);
-            toast.error("Failed to update invoice");
+            console.error("Error confirming invoice:", error);
+            toast.error("Failed to confirm invoice");
         }
     };
 
@@ -363,12 +399,17 @@ export default function AdminFinance() {
                                                         <td className="p-4 text-muted-foreground">{formatDate(payout.createdAt)}</td>
                                                         <td className="p-4 font-semibold">{formatCurrency(payout.amount)}</td>
                                                         <td className="p-4">
-                                                            <Badge
-                                                                variant={payout.status === 'paid' ? 'success' : payout.status === 'requested' ? 'warning' : 'secondary'}
-                                                                className="capitalize"
-                                                            >
-                                                                {payout.status === 'requested' ? 'Processing' : payout.status}
-                                                            </Badge>
+                                                            {(() => {
+                                                                const statusMap: Record<string, { label: string; variant: any }> = {
+                                                                    pending: { label: "Pending Approval", variant: "secondary" },
+                                                                    ready_to_withdraw: { label: "Ready for Payout", variant: "warning" },
+                                                                    requested: { label: "Processing", variant: "warning" },
+                                                                    paid: { label: "Paid", variant: "success" },
+                                                                    completed: { label: "Completed (Exchange)", variant: "success" },
+                                                                };
+                                                                const s = statusMap[payout.status] || { label: payout.status, variant: "secondary" };
+                                                                return <Badge variant={s.variant} className="capitalize">{s.label}</Badge>;
+                                                            })()}
                                                         </td>
                                                         <td className="p-4 text-right">
                                                             <Button variant="ghost" size="sm" onClick={() => handleViewPayout(payout)}>
@@ -463,14 +504,19 @@ export default function AdminFinance() {
                         )}
                         <DialogFooter className="gap-2">
                             <Button variant="outline" onClick={() => setIsInvoiceDetailsOpen(false)}>Close</Button>
-                            {selectedInvoice?.status !== 'paid' && (
+                            {selectedInvoice?.status === 'verifying' && (
                                 <Button
                                     variant="hero"
                                     onClick={() => selectedInvoice && handleMarkInvoicePaid(selectedInvoice)}
-                                    disabled={!selectedInvoice?.receiptUrl}
                                 >
-                                    Confirm Payment Received
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Confirm & Release Creator Payouts
                                 </Button>
+                            )}
+                            {selectedInvoice?.status === 'pending' && (
+                                <div className="text-sm text-muted-foreground italic">
+                                    Waiting for brand to upload receipt...
+                                </div>
                             )}
                         </DialogFooter>
                     </DialogContent>
