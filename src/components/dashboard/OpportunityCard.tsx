@@ -100,21 +100,40 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
       <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col justify-end text-white z-10">
 
         {/* Value/Compensation Badge */}
-        <div className="mb-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max">
-            {opportunity.compensationType === "monetary" || opportunity.rewardType === "paid" ? (
-              <span className="text-green-400">💵</span>
-            ) : (
-              <span className="text-orange-400">🎁</span>
-            )}
-            <span>
-              {opportunity.compensationType === 'monetary'
-                ? `$${opportunity.creatorPayment}`
-                : (opportunity.compensationType === 'exchange'
-                  ? (opportunity.exchangeDetails || "Product Exchange")
-                  : (opportunity.reward || "Negotiable"))}
-            </span>
-          </div>
+        <div className="mb-3 flex flex-wrap gap-2">
+          {opportunity.compensationType === "hybrid" ? (
+            <>
+              {/* Cash part */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max">
+                <span className="text-green-400">💵</span>
+                <span>${opportunity.creatorPayment}</span>
+              </div>
+              {/* Plus sign */}
+              <div className="inline-flex items-center justify-center font-bold text-white/80">
+                +
+              </div>
+              {/* Product/Exchange part */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max max-w-[200px] sm:max-w-xs">
+                <span className="text-orange-400">🎁</span>
+                <span className="truncate">{opportunity.exchangeDetails || "Product Exchange"}</span>
+              </div>
+            </>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max">
+              {opportunity.compensationType === "monetary" || opportunity.rewardType === "paid" ? (
+                <span className="text-green-400">💵</span>
+              ) : (
+                <span className="text-orange-400">🎁</span>
+              )}
+              <span>
+                {opportunity.compensationType === 'monetary'
+                  ? `$${opportunity.creatorPayment}`
+                  : (opportunity.compensationType === 'exchange'
+                    ? (opportunity.exchangeDetails || "Product Exchange")
+                    : (opportunity.reward || "Negotiable"))}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Title */}

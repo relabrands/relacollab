@@ -44,6 +44,7 @@ const contentTypeOptions = [
 const compensationOptions = [
   { id: "exchange", label: "Intercambio", description: "Producto, comida, servicios, etc." },
   { id: "monetary", label: "Pago Monetario", description: "Compensación en efectivo (cuesta créditos)" },
+  { id: "hybrid", label: "Ambos (Híbrido)", description: "Pago monetario + Intercambio de producto/servicio" },
 ];
 
 
@@ -200,11 +201,11 @@ export default function CreateCampaign() {
           toast.error("Select a compensation type");
           return false;
         }
-        if (formData.compensationType === "exchange" && !formData.exchangeDetails.trim()) {
+        if ((formData.compensationType === "exchange" || formData.compensationType === "hybrid") && !formData.exchangeDetails.trim()) {
           toast.error("Please describe what you're offering in exchange");
           return false;
         }
-        if (formData.compensationType === "monetary") {
+        if (formData.compensationType === "monetary" || formData.compensationType === "hybrid") {
           if (!formData.creatorPayment || parseFloat(formData.creatorPayment) <= 0) {
             toast.error("Creator payment amount is required");
             return false;
@@ -290,8 +291,8 @@ export default function CreateCampaign() {
 
       const campaignRef = await addDoc(collection(db, "campaigns"), campaignData);
 
-      // ✅ Auto-generate brand invoice for monetary campaigns
-      if (formData.compensationType === "monetary" && grossAmount > 0) {
+      // ✅ Auto-generate brand invoice for monetary or hybrid campaigns
+      if ((formData.compensationType === "monetary" || formData.compensationType === "hybrid") && grossAmount > 0) {
         const totalGross = grossAmount * creatorCount;
         const totalFee = perCreatorFee * creatorCount;
         const totalNet = perCreatorNet * creatorCount;
@@ -784,7 +785,7 @@ export default function CreateCampaign() {
                   {/* Compensation Type */}
                   <div>
                     <Label className="mb-4 block">¿Qué ofreces a cambio? *</Label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {compensationOptions.map((comp) => (
                         <button
                           key={comp.id}
@@ -805,8 +806,8 @@ export default function CreateCampaign() {
                     </div>
                   </div>
 
-                  {/* Exchange Details (if exchange selected) */}
-                  {formData.compensationType === "exchange" && (
+                  {/* Exchange Details (if exchange or hybrid selected) */}
+                  {(formData.compensationType === "exchange" || formData.compensationType === "hybrid") && (
                     <div className="bg-muted/30 p-4 rounded-xl space-y-3">
                       <Label htmlFor="exchangeDetails">¿Qué ofreces específicamente?</Label>
                       <Input
@@ -826,8 +827,8 @@ export default function CreateCampaign() {
                     </div>
                   )}
 
-                  {/* Monetary Details (if monetary selected) */}
-                  {formData.compensationType === "monetary" && (
+                  {/* Monetary Details (if monetary or hybrid selected) */}
+                  {(formData.compensationType === "monetary" || formData.compensationType === "hybrid") && (
                     <div className="bg-muted/30 p-4 rounded-xl space-y-4">
                       <div>
                         <Label htmlFor="creatorPayment">Pago al Creator (por persona)</Label>
@@ -931,7 +932,7 @@ export default function CreateCampaign() {
                       </div>
                     </div>
 
-                    {formData.compensationType === "monetary" && (
+                    {(formData.compensationType === "monetary" || formData.compensationType === "hybrid") && (
                       <div className={`text-xs mt-2 pt-2 border-t border-border/50 flex justify-between ${credits < ((parseInt(formData.creatorCount) || 0) * 1)
                         ? "text-destructive font-medium"
                         : "text-muted-foreground"
