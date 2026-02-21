@@ -17,6 +17,9 @@ interface CampaignCardProps {
     creatorCount?: number;
     endDate?: string;
     startDate?: string;
+    totalBudgetPerCreator?: number;
+    compensationType?: "monetary" | "exchange" | "hybrid";
+    exchangeDetails?: string;
   };
   onClick?: () => void;
 }
@@ -65,6 +68,8 @@ export function CampaignCard({ campaign, onClick }: CampaignCardProps) {
     }
   };
 
+  const totalBudget = (campaign.totalBudgetPerCreator || 0) * (campaign.creatorCount || 1) || campaign.budget || 0;
+
   return (
     <div className="glass-card p-6 hover-lift cursor-pointer group" onClick={handleClick}>
       <div className="flex items-start justify-between mb-4">
@@ -79,15 +84,37 @@ export function CampaignCard({ campaign, onClick }: CampaignCardProps) {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-muted/30 p-3 rounded-lg">
-          <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-            <DollarSign className="w-3 h-3" />
-            Budget
+        {campaign.compensationType === "exchange" ? (
+          <div className="bg-muted/30 p-3 rounded-lg">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <span className="text-orange-400">🎁</span>
+              Intercambio
+            </div>
+            <div className="font-semibold text-sm truncate" title={campaign.exchangeDetails || "Producto/Servicio"}>
+              {campaign.exchangeDetails || "Producto/Servicio"}
+            </div>
           </div>
-          <div className="font-semibold text-sm">
-            ${campaign.budget?.toLocaleString() || "500"}
+        ) : campaign.compensationType === "hybrid" ? (
+          <div className="bg-muted/30 p-3 rounded-lg overflow-hidden">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <span className="text-green-400">💵</span> + <span className="text-orange-400">🎁</span>
+              Híbrido
+            </div>
+            <div className="font-semibold text-sm truncate" title={`$${totalBudget.toLocaleString()} + ${campaign.exchangeDetails || "Intercambio"}`}>
+              ${totalBudget.toLocaleString()} + {campaign.exchangeDetails || "Intercambio"}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-muted/30 p-3 rounded-lg">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <DollarSign className="w-3 h-3" />
+              Budget
+            </div>
+            <div className="font-semibold text-sm">
+              ${totalBudget.toLocaleString()}
+            </div>
+          </div>
+        )}
 
         <div className="bg-muted/30 p-3 rounded-lg">
           <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
