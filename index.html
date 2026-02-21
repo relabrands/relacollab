@@ -1,22 +1,42 @@
 <!doctype html>
 <html lang="en">
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" href="https://relabrands.com/wp-content/uploads/2026/02/Favicon-1.jpg" />
-<title>RELA Collab | AI-Powered UGC Marketplace</title>
-<meta name="description"
-  content="The smartest way to collaborate. RELA Collab is the premier AI-powered UGC marketplace connecting brands with authentic creators for high-impact marketing." />
-<meta name="author" content="RELA Collab" />
 
-<meta property="og:title" content="RELA Collab | AI-Powered UGC Marketplace" />
-<meta property="og:description"
-  content="Connect with top creators and brands on the first AI-powered UGC marketplace." />
-<meta property="og:type" content="website" />
-<meta property="og:image" content="/og-image.png" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="https://relabrands.com/wp-content/uploads/2026/02/Favicon-1.jpg" />
+  <title>RELA Collab | AI-Powered UGC Marketplace</title>
+  <meta name="description"
+    content="The smartest way to collaborate. RELA Collab is the premier AI-powered UGC marketplace connecting brands with authentic creators for high-impact marketing." />
+  <meta name="author" content="RELA Collab" />
 
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:site" content="@relacollab" />
-<meta name="twitter:image" content="/og-image.png" />
+  <meta property="og:title" content="RELA Collab | AI-Powered UGC Marketplace" />
+  <meta property="og:description"
+    content="Connect with top creators and brands on the first AI-powered UGC marketplace." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/og-image.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@relacollab" />
+  <meta name="twitter:image" content="/og-image.png" />
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+          console.log('Service Worker desinstalado con éxito');
+        }
+        if (registrations.length > 0) window.location.reload();
+      });
+    }
+    // Limpia también el caché de la aplicación si existe
+    if (window.caches) {
+      caches.keys().then(function (names) {
+        for (let name of names) caches.delete(name);
+      });
+    }
+  </script>
 </head>
 
 <body>
