@@ -25,22 +25,24 @@ interface OpportunityCardProps {
     compensationType?: string;
     creatorPayment?: string;
     exchangeDetails?: string;
+    coverImage?: string;
+    deliverables?: Array<{ type: string; quantity: number; required: boolean; platform?: string }>;
   };
   onAccept?: (id: string) => void;
   isActive?: boolean;
   onViewDetails?: () => void;
 }
 
-const rewardTypeColors = {
-  paid: "bg-success/10 text-success",
-  experience: "bg-primary/10 text-primary",
-  hybrid: "bg-accent/10 text-accent",
-};
+const formatDeliverables = (deliverables?: Array<any>) => {
+  if (!deliverables || deliverables.length === 0) return null;
 
-const rewardTypeLabels = {
-  paid: "Paid",
-  experience: "Product/Service Exchange",
-  hybrid: "Experience + Cash",
+  const formatted = deliverables.map(d => {
+    const platform = d.platform === 'tiktok' ? 'TT' : 'IG';
+    const type = d.type || 'Post';
+    return `${d.quantity}x ${platform} ${type}`;
+  });
+
+  return formatted.join(' • ');
 };
 
 export function OpportunityCard({ opportunity, onAccept, isActive = false, onViewDetails }: OpportunityCardProps) {
@@ -60,59 +62,52 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
     }
   };
 
+  const hasDeliverables = opportunity.deliverables && opportunity.deliverables.length > 0;
+
   return (
     <div
       className={cn(
-        "glass-card p-6 hover-lift relative transition-all",
-        opportunity.isInvited && "border-primary/50 shadow-lg shadow-primary/5",
-        onViewDetails && "cursor-pointer"
+        "group relative w-full aspect-[3/4] max-h-[600px] overflow-hidden rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
+        opportunity.isInvited && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+        !onViewDetails && "cursor-default"
       )}
       onClick={handleCardClick}
     >
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <img
+          src={opportunity.coverImage || "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=800&auto=format&fit=crop"}
+          alt={opportunity.title}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        {/* Dark overay to make text pop */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-black/90" />
+      </div>
+
       {opportunity.isInvited && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1 z-10">
-          <Gift className="w-3 h-3 text-white" />
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-violet-600/90 backdrop-blur text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-1 z-10 w-max max-w-[90%] border border-white/20">
+          <Gift className="w-3.5 h-3.5 text-white" />
           Personal Invitation
         </div>
       )}
 
-      <div className="flex items-start gap-4 mb-4">
-        <img
-          src={opportunity.brandLogo || "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100&h=100&fit=crop"} // Fallback image
-          alt={opportunity.brandName}
-          className="w-14 h-14 rounded-xl object-cover border border-border/50"
-        />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold text-lg truncate">{opportunity.title}</h3>
-          </div>
-          <p className="text-sm text-muted-foreground">{opportunity.brandName}</p>
-        </div>
-        {!isActive && <MatchScore score={opportunity.matchScore} size="md" showLabel={false} />}
+      {/* Top action/status bar (e.g. Match Score) */}
+      <div className="absolute top-4 right-4 z-10">
+        {!isActive && <MatchScore score={opportunity.matchScore} size="sm" showLabel={false} />}
       </div>
 
-      {/* Details */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <MapPin className="w-4 h-4" />
-          {opportunity.location || "Remote"}
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Clock className="w-4 h-4" />
-          {opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString() : (opportunity.endDate ? new Date(opportunity.endDate).toLocaleDateString() : "Open Duration")}
-        </div>
-      </div>
+      {/* Content Container positioned at the bottom */}
+      <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col justify-end text-white z-10">
 
-      {/* Reward */}
-      <div className="p-4 rounded-xl bg-muted/50 mb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        {/* Value/Compensation Badge */}
+        <div className="mb-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max">
             {opportunity.compensationType === "monetary" || opportunity.rewardType === "paid" ? (
-              <DollarSign className="w-5 h-5 text-success" />
+              <span className="text-green-400">💵</span>
             ) : (
-              <Gift className="w-5 h-5 text-primary" />
+              <span className="text-orange-400">🎁</span>
             )}
-            <span className="font-semibold truncate max-w-[150px]">
+            <span>
               {opportunity.compensationType === 'monetary'
                 ? `$${opportunity.creatorPayment}`
                 : (opportunity.compensationType === 'exchange'
@@ -120,69 +115,63 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
                   : (opportunity.reward || "Negotiable"))}
             </span>
           </div>
-          <Badge className={cn("font-medium", rewardTypeColors[
-            opportunity.compensationType === 'monetary' ? 'paid' :
-              (opportunity.compensationType === 'exchange' ? 'experience' :
-                (opportunity.rewardType || "experience"))
-          ])}>
-            {opportunity.compensationType === 'monetary' ? 'Paid' : (opportunity.compensationType === 'exchange' ? 'Exchange' : rewardTypeLabels[opportunity.rewardType || "experience"])}
-          </Badge>
         </div>
-      </div>
 
-      {/* Tags */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {(opportunity.tags || []).map((tag) => (
-          <span
-            key={tag}
-            className="px-3 py-1 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
+        {/* Title */}
+        <h3 className="font-bold text-2xl mb-1 text-white leading-tight drop-shadow-md">
+          {opportunity.title}
+        </h3>
 
-      {/* Active Campaign Details */}
-      {isActive && (
-        <div className="mb-4 space-y-3 p-3 bg-muted/30 rounded-lg text-sm">
-          {opportunity.brandDescription && (
-            <div>
-              <span className="font-semibold block mb-1">About the Brand:</span>
-              <p className="text-muted-foreground line-clamp-2">{opportunity.brandDescription}</p>
-            </div>
-          )}
+        {/* Details Line 1: Brand / Description / Goal */}
+        <p className="text-white/80 text-sm font-medium mb-2 drop-shadow-sm line-clamp-1">
+          {opportunity.brandName} {opportunity.goal ? ` • ${opportunity.goal}` : ''}
+        </p>
 
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
-            <div>
-              <span className="font-semibold block text-xs uppercase text-muted-foreground">Compensation</span>
-              <p>{opportunity.reward || "Negotiable"}</p>
-            </div>
-            <div>
-              <span className="font-semibold block text-xs uppercase text-muted-foreground">Deadline</span>
-              <p>{opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString() : "Open"}</p>
-            </div>
+        {/* Deliverables String - mapping what we need */}
+        {hasDeliverables && (
+          <p className="text-white/90 text-[13px] mb-2 font-medium drop-shadow-sm">
+            {formatDeliverables(opportunity.deliverables)}
+          </p>
+        )}
+
+        {/* Details Line 2: Stats / Location / Deadline */}
+        <div className="flex items-center gap-4 text-[13px] text-white/70 mb-4 drop-shadow-sm font-medium">
+          <div className="flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="truncate max-w-[120px]">{opportunity.location || "Remote"}</span>
+          </div>
+          <div className="text-white/40">•</div>
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" />
+            <span>{opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString() : (opportunity.endDate ? new Date(opportunity.endDate).toLocaleDateString() : "Open")}</span>
           </div>
         </div>
-      )}
 
-      {/* Action */}
-      {isActive ? (
-        <Link to="/creator/content">
-          <Button variant="hero" className="w-full">
-            <Upload className="w-4 h-4 mr-2" />
-            Submit Content
-          </Button>
-        </Link>
-      ) : (
-        <Button
-          variant={opportunity.isInvited ? "hero" : "outline"}
-          className="w-full"
-          onClick={handleApply}
-        >
-          {opportunity.isInvited ? "Accept Invitation" : "Apply Now"}
-          <ArrowRight className="w-4 h-4 mr-2" />
-        </Button>
-      )}
+        {/* Action Buttons */}
+        <div className="flex gap-2 w-full mt-2">
+          {isActive ? (
+            <Link to="/creator/content" className="w-full">
+              <Button className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20 font-medium backdrop-blur-sm">
+                <Upload className="w-4 h-4 mr-2" />
+                Submit Content
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              className={cn(
+                "w-full font-medium transition-colors",
+                opportunity.isInvited
+                  ? "bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/30"
+                  : "bg-white text-black hover:bg-white/90"
+              )}
+              onClick={handleApply}
+            >
+              {opportunity.isInvited ? "Accept Invitation" : "Apply Now"}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

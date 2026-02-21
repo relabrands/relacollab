@@ -10,7 +10,8 @@ import { ArrowLeft, ArrowRight, Sparkles, Check, Loader2, X, Plus } from "lucide
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { addDoc, collection, doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Badge } from "@/components/ui/badge";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
@@ -57,6 +58,7 @@ export default function CreateCampaign() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    coverImage: "",
     goal: "",
     vibes: [] as string[],
     contentTypes: [] as string[],
@@ -283,6 +285,7 @@ export default function CreateCampaign() {
         creditCost: 1,
         approvedCount: 0,
         applicationCount: 0,
+        coverImage: formData.coverImage,
       };
 
       const campaignRef = await addDoc(collection(db, "campaigns"), campaignData);
@@ -428,6 +431,61 @@ export default function CreateCampaign() {
                     <p className="text-xs text-muted-foreground mt-1">
                       This will help creators understand what your campaign is about
                     </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="coverImage">Campaign Cover Image</Label>
+                    <div className="mt-2 flex items-center gap-4">
+                      {formData.coverImage ? (
+                        <div className="relative w-32 h-40 rounded-xl overflow-hidden border border-border">
+                          <img src={formData.coverImage} alt="Cover" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, coverImage: "" }))}
+                            className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <Input
+                            id="coverImage"
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              if (!user) return;
+
+                              const toastId = toast.loading("Uploading image...");
+                              try {
+                                const fileExt = file.name.split('.').pop();
+                                const fileName = `campaign-covers/${user.uid}_${Date.now()}.${fileExt}`;
+                                const storageRef = ref(storage, fileName);
+
+                                await uploadBytes(storageRef, file);
+                                const downloadURL = await getDownloadURL(storageRef);
+
+                                setFormData(prev => ({ ...prev, coverImage: downloadURL }));
+                                toast.success("Image uploaded successfully!", { id: toastId });
+                              } catch (error) {
+                                console.error("Error uploading image:", error);
+                                toast.error("Failed to upload image.", { id: toastId });
+                              }
+                            }}
+                            className="hidden"
+                          />
+                          <Label
+                            htmlFor="coverImage"
+                            className="flex flex-col items-center justify-center w-32 h-40 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 transition-colors bg-muted/20"
+                          >
+                            <Plus className="w-6 h-6 text-muted-foreground mb-2" />
+                            <span className="text-xs text-muted-foreground">Upload Cover</span>
+                          </Label>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
