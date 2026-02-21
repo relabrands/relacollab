@@ -462,6 +462,61 @@ export default function ContentLibrary() {
                 console.log("✅ Payout/earning record created for", submission.creatorId);
               }
             }
+
+            // --- AUTO-COMPLETE CAMPAIGN LOGIC ---
+            if (campaign && campaign.status !== "completed") {
+              // 1. Calculate how many deliverables are required per creator
+              const totalRequiredPerCreator = (campaign.deliverables || []).reduce(
+                (acc: number, item: any) => acc + (item.required ? item.quantity : 0),
+                0
+              ) || 1; // Default to 1 if no discrete deliverables specified
+
+              // 2. Fetch all approved submissions for this campaign (including the one we just approved in state)
+              const approvedSubmissionsQuery = query(
+                collection(db, "content_submissions"),
+                where("campaignId", "==", campaignId),
+                where("status", "==", "approved")
+              );
+              const approvedSubmissionsSnap = await getDocs(approvedSubmissionsQuery);
+              const approvedDocs = approvedSubmissionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+              // Ensure the current one is counted as approved even if the snap didn't catch our recent update yet
+              if (!approvedDocs.find(d => d.id === id)) {
+                approvedDocs.push({ id, creatorId: submission.creatorId } as any);
+              }
+
+              // 3. Group approved submissions by creator
+              const creatorApprovalCounts: Record<string, number> = {};
+              approvedDocs.forEach((doc: any) => {
+                const cId = doc.creatorId || doc.userId;
+                if (cId) {
+                  creatorApprovalCounts[cId] = (creatorApprovalCounts[cId] || 0) + 1;
+                }
+              });
+
+              // 4. Count how many creators have completed all their required deliverables
+              let creatorsCompleted = 0;
+              Object.values(creatorApprovalCounts).forEach(count => {
+                if (count >= totalRequiredPerCreator) {
+                  creatorsCompleted++;
+                }
+              });
+
+              // 5. Compare against the total slots approved for this campaign
+              const totalApprovedCreatorsForCampaign = campaign.approvedCount || 0;
+
+              if (totalApprovedCreatorsForCampaign > 0 && creatorsCompleted >= totalApprovedCreatorsForCampaign) {
+                // Auto-complete the campaign
+                await updateDoc(doc(db, "campaigns", campaignId), {
+                  status: "completed",
+                  completedAt: new Date().toISOString()
+                });
+                console.log(`🎉 Campaign ${campaignId} auto-completed!`);
+                toast.success("¡Campaña autocompletada! Todos los creadores han finalizado sus entregables.", { duration: 5000 });
+              }
+            }
+            // -------------------------------------
+
           }
         } catch (payoutErr) {
           // Non-blocking — log but don't block the UI
