@@ -1,8 +1,18 @@
 import { useState, ReactNode } from "react";
-import { Bell, Search, X } from "lucide-react";
+import { Bell, Search, X, LogOut, Settings, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DashboardHeaderProps {
   title: string;
@@ -12,6 +22,53 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ title, subtitle, children }: DashboardHeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  const { user, role, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return "U";
+    const parts = name.split(" ");
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  };
+  const initials = getInitials(user?.displayName);
+
+  const getSearchLinks = () => {
+    const links = [];
+    if (role === "creator") {
+      links.push({ title: "Mi Perfil (TikTok/Instagram)", path: "/creator/profile", keywords: ["perfil", "profile", "tiktok", "instagram", "social", "redes"] });
+      links.push({ title: "Oportunidades", path: "/creator/opportunities", keywords: ["oportunidades", "campaigns", "campañas", "opportunities", "buscar"] });
+      links.push({ title: "Mi Contenido", path: "/creator/content", keywords: ["contenido", "content", "mis videos", "posts", "entregables"] });
+      links.push({ title: "Ganancias", path: "/creator/earnings", keywords: ["ganancias", "earnings", "dinero", "pagos", "payments", "facturacion"] });
+      links.push({ title: "Configuración", path: "/creator/settings", keywords: ["configuracion", "ajustes", "settings"] });
+      links.push({ title: "Análisis IA", path: "/creator/analytics", keywords: ["ia", "analytics", "analiticas", "ai", "stats", "estadisticas"] });
+    } else if (role === "brand") {
+      links.push({ title: "Mi Perfil", path: "/brand/settings", keywords: ["perfil", "profile", "empresa", "brand"] });
+      links.push({ title: "Campañas", path: "/brand/campaigns", keywords: ["campañas", "campaigns", "mis campañas"] });
+      links.push({ title: "Creadores (Matches)", path: "/brand/matches", keywords: ["creadores", "matches", "buscar", "find", "influencers"] });
+      links.push({ title: "Librería de Contenido", path: "/brand/content", keywords: ["contenido", "library", "videos", "posts", "entregables"] });
+      links.push({ title: "Analíticas", path: "/brand/analytics", keywords: ["analiticas", "analytics", "stats", "ia", "ai", "estadisticas"] });
+      links.push({ title: "Pagos y Facturación", path: "/brand/payments", keywords: ["pagos", "facturacion", "billing", "payments", "suscripcion", "subscription"] });
+      links.push({ title: "Configuración", path: "/brand/settings", keywords: ["configuracion", "ajustes", "settings"] });
+    } else if (role === "admin") {
+      links.push({ title: "Marcas", path: "/admin/brands", keywords: ["marcas", "brands", "empresas"] });
+      links.push({ title: "Creadores", path: "/admin/creators", keywords: ["creadores", "creators", "influencers"] });
+      links.push({ title: "Campañas", path: "/admin/campaigns", keywords: ["campañas", "campaigns"] });
+      links.push({ title: "Finanzas", path: "/admin/finance", keywords: ["finanzas", "finance", "pagos", "facturacion"] });
+    }
+
+    if (!searchQuery) return [];
+    const query = searchQuery.toLowerCase();
+    return links.filter(link =>
+      link.title.toLowerCase().includes(query) ||
+      link.keywords.some(k => k.toLowerCase().includes(query))
+    );
+  };
+
+  const searchResults = getSearchLinks();
 
   const notifications = [
     { id: 1, message: "New campaign match found!", time: "2 min ago" },
@@ -43,14 +100,35 @@ export function DashboardHeader({ title, subtitle, children }: DashboardHeaderPr
           <div className="relative flex-1 md:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search..."
+              placeholder="Buscar (ej. tiktok, pagos)..."
               className="pl-10 w-full md:w-64 bg-card border-border/50"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  toast.info("Search functionality coming soon!");
-                }
-              }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
             />
+            {isSearchFocused && searchQuery && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border/50 rounded-xl shadow-elevated z-50 overflow-hidden glass-card">
+                {searchResults.length > 0 ? (
+                  <div className="py-2">
+                    {searchResults.map((result, idx) => (
+                      <button
+                        key={idx}
+                        className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors text-sm flex items-center justify-between group"
+                        onClick={() => navigate(result.path)}
+                      >
+                        <span>{result.title}</span>
+                        <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">Ir ↗</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-sm text-muted-foreground text-center">
+                    No se encontraron resultados
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="relative">
@@ -93,9 +171,38 @@ export function DashboardHeader({ title, subtitle, children }: DashboardHeaderPr
             )}
           </div>
 
-          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0">
-            JD
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity">
+                {initials}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 glass-card border-white/10 mt-2">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.displayName || "Usuario"}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem onClick={() => navigate(`/${role}/profile`)} className="cursor-pointer">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Mi perfil</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(`/${role}/settings`)} className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Configuración</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem
+                onClick={async () => { await logout(); navigate("/login"); }}
+                className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Cerrar sesión</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
