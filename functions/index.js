@@ -360,11 +360,12 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 if (insightError.response) {
                     console.error("❌ Instagram API Error Body:", JSON.stringify(insightError.response.data, null, 2));
                 }
-                // Fallback seguro: Si falla la API de insights, al menos devolvemos likes/comments
+                // Fallback: insights failed but we still have video_view_count from media fields
                 detailedMetrics = {
-                    views: 0,
+                    views: foundPost.video_view_count || foundPost.play_count || 0,
                     reach: 0,
                     saved: 0,
+                    shares: 0,
                     interactions: (foundPost.like_count || 0) + (foundPost.comments_count || 0)
                 };
             }

@@ -18,7 +18,9 @@ interface InstagramMedia {
     permalink: string;
     like_count?: number;
     comments_count?: number;
-    view_count?: number; // Added for TikTok compatibility
+    view_count?: number;            // TikTok
+    video_view_count?: number;      // Instagram (Reels/Video)
+    reach?: number;                 // Instagram (from getInstagramMedia enrichment)
 }
 
 import { TikTokMediaPicker } from "./TikTokMediaPicker";
@@ -218,8 +220,8 @@ export function DeliverableSubmissionDialog({
                     metrics: {
                         likes: media.like_count || 0,
                         comments: media.comments_count || 0,
-                        views: 0,
-                        reach: 0,
+                        views: media.video_view_count || media.view_count || 0,
+                        reach: media.reach || 0,
                         saved: 0,
                         shares: 0,
                         interactions: 0
@@ -313,8 +315,8 @@ export function DeliverableSubmissionDialog({
                     metrics: {
                         likes: media.like_count || 0,
                         comments: media.comments_count || 0,
-                        views: 0,
-                        reach: 0,
+                        views: media.video_view_count || media.view_count || 0,
+                        reach: media.reach || 0,
                         saved: 0,
                         shares: 0,
                         interactions: 0
