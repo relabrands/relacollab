@@ -35,10 +35,12 @@ export function AdminSidebar() {
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar text-sidebar-foreground flex flex-col">
       {/* Logo */}
       <Link to="/" className="flex items-center gap-3 px-6 py-6">
-        <div className="w-9 h-9 rounded-xl bg-gradient-primary flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-primary-foreground" />
-        </div>
-        <span className="font-bold text-lg">RELA Collab</span>
+        <img
+          src="https://relabrands.com/wp-content/uploads/2026/02/Favicon-1.jpg"
+          alt="RELA Brands Logo"
+          className="w-9 h-9 rounded-xl object-cover"
+        />
+        <span className="font-bold text-lg">RELA Brands</span>
       </Link>
 
       {/* Admin badge */}

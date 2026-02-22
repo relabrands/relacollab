@@ -36,10 +36,12 @@ export function Header() {
       <div className="container px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-bold text-xl">RELA Collab</span>
+          <img
+            src="https://relabrands.com/wp-content/uploads/2026/02/Favicon-1.jpg"
+            alt="RELA Brands Logo"
+            className="w-8 h-8 rounded-lg object-cover"
+          />
+          <span className="font-bold text-xl">RELA Brands</span>
         </Link>
 
         {/* Navigation */}
