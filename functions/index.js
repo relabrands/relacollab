@@ -512,7 +512,7 @@ async function refreshTikTokAccessToken(userId, refreshToken) {
 
         return access_token;
     } catch (error) {
-        console.error("Error refreshing TikTok token:", error.message);
+        console.error("Error refreshing TikTok token:", error.response?.data || error.message);
         throw error;
     }
 }
@@ -694,24 +694,45 @@ async function getTikTokMediaInternal(userId, cursor) {
         }
     }
 
-    // Fetch Video List
-    // https://developers.tiktok.com/doc/tiktok-api-v2-video-list
     const videoFields = "id,title,cover_image_url,share_url,video_description,view_count,like_count,comment_count,share_count,create_time";
 
-    const response = await axios.post("https://open.tiktokapis.com/v2/video/list/?fields=" + videoFields, {
-        max_count: 20,
-        cursor: cursor || 0
-    }, {
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
+    // Fetch Video List Helper
+    const fetchVideos = async (token) => {
+        return await axios.post("https://open.tiktokapis.com/v2/video/list/?fields=" + videoFields, {
+            max_count: 20,
+            cursor: cursor || 0
+        }, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        });
+    };
+
+    let response;
+    try {
+        response = await fetchVideos(accessToken);
+    } catch (fetchErr) {
+        // If 401 Unauthorized, force refresh and retry once
+        if (fetchErr.response && fetchErr.response.status === 401 && refreshToken) {
+            console.warn("TikTok token rejected (401). Forcing refresh and retry...");
+            try {
+                accessToken = await refreshTikTokAccessToken(userId, refreshToken);
+                response = await fetchVideos(accessToken);
+            } catch (retryErr) {
+                console.error("Retry with new token failed:", retryErr.response?.data || retryErr.message);
+                throw new Error("TikTok token expired and retry failed");
+            }
+        } else {
+            console.error("TikTok API fetch Error:", fetchErr.response?.data || fetchErr.message);
+            throw fetchErr;
         }
-    });
+    }
 
     const { data, error } = response.data;
 
     if (error && error.code !== "ok") {
-        console.error("TikTok API Error:", error);
+        console.error("TikTok API Error response:", error);
         throw new Error(error.message);
     }
 
@@ -726,11 +747,11 @@ async function getTikTokMediaInternal(userId, cursor) {
         media_url: v.share_url, // TikTok API v2 might not give direct video file URL for privacy/hotlinking, check docs. usually share_url or embed_html
         thumbnail_url: v.cover_image_url,
         permalink: v.share_url,
-        timestamp: new Date(v.create_time * 1000).toISOString(),
-        like_count: v.like_count,
-        comments_count: v.comment_count,
-        view_count: v.view_count,
-        share_count: v.share_count
+        timestamp: new Date((v.create_time || 0) * 1000).toISOString(),
+        like_count: v.like_count || 0,
+        comments_count: v.comment_count || 0,
+        view_count: v.view_count || 0,
+        share_count: v.share_count || 0
     }));
 
     return {
