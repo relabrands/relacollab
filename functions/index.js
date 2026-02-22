@@ -197,9 +197,9 @@ async function getInstagramMediaInternal(userId) {
 
     if (!accessToken || !igUserId) throw new Error("Instagram not connected");
 
-    // 2. Obtener Lista Básica
+    // 2. Obtener Lista Básica (+ video_view_count como campo directo del media)
     const response = await axios.get(
-        `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=18&access_token=${accessToken}`
+        `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count,video_view_count&limit=18&access_token=${accessToken}`
     );
 
     const rawPosts = response.data.data || [];
@@ -216,12 +216,9 @@ async function getInstagramMediaInternal(userId) {
         };
 
         try {
-            let metricParam = "";
-            if (item.media_type === 'VIDEO' || item.media_product_type === 'REELS') {
-                metricParam = "plays,reach,saved,shares";
-            } else {
-                metricParam = "reach,saved,shares";
-            }
+            // Skip `plays` — deprecated in Graph API v22+. Use video_view_count from media fields instead.
+            // Only fetch reach/saved/shares from insights (these work for all media types).
+            const metricParam = "reach,saved,shares";
 
             const insightRes = await axios.get(
                 `https://graph.facebook.com/v19.0/${item.id}/insights?metric=${metricParam}&access_token=${accessToken}`
@@ -233,7 +230,8 @@ async function getInstagramMediaInternal(userId) {
                 return m ? m.values[0].value : 0;
             };
 
-            metrics.views = getVal('plays') || getVal('impressions') || 0;
+            // Views: use video_view_count from media field (works for VIDEO + REEL)
+            metrics.views = item.video_view_count || 0;
             metrics.reach = getVal('reach') || 0;
             metrics.saved = getVal('saved') || 0;
             metrics.shares = getVal('shares') || 0;
@@ -242,7 +240,8 @@ async function getInstagramMediaInternal(userId) {
             if (apiInteractions > 0) metrics.interactions = apiInteractions;
 
         } catch (err) {
-            // Ignore insight errors
+            // Ignore insight errors — still use video_view_count if insights fail
+            metrics.views = item.video_view_count || 0;
         }
 
         return {
