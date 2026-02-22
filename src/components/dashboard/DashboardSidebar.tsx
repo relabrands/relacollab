@@ -79,10 +79,10 @@ export function DashboardSidebar({ type }: DashboardSidebarProps) {
       <Link to="/" className="flex items-center gap-3 px-6 py-6">
         <img
           src="https://relabrands.com/wp-content/uploads/2026/02/Favicon-1.jpg"
-          alt="RELA Brands Logo"
+          alt="RELA Collab Logo"
           className="w-9 h-9 rounded-xl object-cover"
         />
-        <span className="font-bold text-lg">RELA Brands</span>
+        <span className="font-bold text-lg">RELA Collab</span>
       </Link>
 
       {/* Type badge */}

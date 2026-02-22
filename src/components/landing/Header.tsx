@@ -38,10 +38,10 @@ export function Header() {
         <Link to="/" className="flex items-center gap-2">
           <img
             src="https://relabrands.com/wp-content/uploads/2026/02/Favicon-1.jpg"
-            alt="RELA Brands Logo"
+            alt="RELA Collab Logo"
             className="w-8 h-8 rounded-lg object-cover"
           />
-          <span className="font-bold text-xl">RELA Brands</span>
+          <span className="font-bold text-xl">RELA Collab</span>
         </Link>
 
         {/* Navigation */}

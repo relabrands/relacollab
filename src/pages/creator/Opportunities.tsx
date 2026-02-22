@@ -12,13 +12,35 @@ import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { calculateMatchScore } from "@/lib/matchScoring";
-
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 export default function Opportunities() {
   const { user } = useAuth();
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'paid' | 'experience' | 'pending'>('all');
+
+  // Filters State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterLocation, setFilterLocation] = useState("all");
+  const [filterScore, setFilterScore] = useState("all");
 
   // Dialog State
   const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null);
@@ -291,9 +313,29 @@ export default function Opportunities() {
   };
 
   const filteredOpportunities = opportunities.filter(op => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'paid') return op.rewardType === 'paid' || op.rewardType === 'hybrid';
-    if (activeTab === 'experience') return op.rewardType === 'experience' || op.rewardType === 'hybrid';
+    // 1. Tab Filter
+    if (activeTab === 'paid' && !(op.rewardType === 'paid' || op.rewardType === 'hybrid')) return false;
+    if (activeTab === 'experience' && !(op.rewardType === 'experience' || op.rewardType === 'hybrid')) return false;
+
+    // 2. Search Query Filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = (op.title || "").toLowerCase().includes(q);
+      const matchBrand = (op.brandName || "").toLowerCase().includes(q);
+      const matchTags = (op.categories || op.requirements || []).some((c: string) => c.toLowerCase().includes(q));
+      if (!matchTitle && !matchBrand && !matchTags) return false;
+    }
+
+    // 3. Location Filter
+    if (filterLocation !== 'all') {
+      if (filterLocation === 'remote' && op.location !== 'Remote') return false;
+      if (filterLocation !== 'remote' && op.location === 'Remote') return false; // simplistic assumption
+    }
+
+    // 4. Score Filter
+    if (filterScore === 'high' && op.matchScore < 80) return false;
+    if (filterScore === 'medium' && op.matchScore < 50) return false;
+
     return true;
   });
 
@@ -330,9 +372,9 @@ export default function Opportunities() {
           </div>
         </motion.div>
 
-        {/* Filters */}
+        {/* Filters and Tabs */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto no-scrollbar">
+          <div className="flex-1 w-full flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
             <Button
               variant={activeTab === 'all' ? "default" : "outline"}
               size="sm"
@@ -371,10 +413,76 @@ export default function Opportunities() {
               )}
             </Button>
           </div>
-          <Button variant="outline" size="sm" className="w-full md:w-auto">
-            <SlidersHorizontal className="w-4 h-4 mr-2" />
-            Filters
-          </Button>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search campaigns..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 !h-9 bg-background"
+              />
+            </div>
+
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9 whitespace-nowrap">
+                  <SlidersHorizontal className="w-4 h-4 mr-2" />
+                  Filters
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle>Filter Opportunities</SheetTitle>
+                  <SheetDescription>
+                    Narrow down campaigns to find your perfect match.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="py-6 space-y-6">
+                  <div className="space-y-3">
+                    <Label>Location</Label>
+                    <Select value={filterLocation} onValueChange={setFilterLocation}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Any location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any Location</SelectItem>
+                        <SelectItem value="remote">Remote Only</SelectItem>
+                        <SelectItem value="onsite">On-site / Local</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>Match Score</Label>
+                    <Select value={filterScore} onValueChange={setFilterScore}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Any score" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any Match Score</SelectItem>
+                        <SelectItem value="high">High Match ({">"}80%)</SelectItem>
+                        <SelectItem value="medium">Medium Match ({">"}50%)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full mt-4"
+                    onClick={() => {
+                      setFilterLocation("all");
+                      setFilterScore("all");
+                      setSearchQuery("");
+                    }}
+                  >
+                    Reset Filters
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
 
         {/* Opportunities Grid */}
