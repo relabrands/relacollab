@@ -329,7 +329,10 @@ export default function Opportunities() {
     // 3. Location Filter
     if (filterLocation !== 'all') {
       if (filterLocation === 'remote' && op.location !== 'Remote') return false;
-      if (filterLocation !== 'remote' && op.location === 'Remote') return false; // simplistic assumption
+      if (filterLocation !== 'remote' && filterLocation !== 'all') {
+        // Direct match against the campaign location string
+        if (op.location !== filterLocation) return false;
+      }
     }
 
     // 4. Score Filter
@@ -338,6 +341,9 @@ export default function Opportunities() {
 
     return true;
   });
+
+  // Extract unique locations for the filter dropdown
+  const uniqueLocations = Array.from(new Set(opportunities.map(op => op.location).filter(Boolean)));
 
   const displayItems = activeTab === 'pending' ? pendingApplications : filteredOpportunities;
 
@@ -448,8 +454,14 @@ export default function Opportunities() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Any Location</SelectItem>
-                        <SelectItem value="remote">Remote Only</SelectItem>
-                        <SelectItem value="onsite">On-site / Local</SelectItem>
+                        <SelectItem value="remote">Remote</SelectItem>
+                        {uniqueLocations
+                          .filter(loc => loc !== "Remote")
+                          .map((loc) => (
+                            <SelectItem key={loc} value={loc}>
+                              {loc}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
