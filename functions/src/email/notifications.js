@@ -68,7 +68,29 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             const creator = creatorSnap.data();
             const camp = campSnap.data();
             if (!creator?.email || !camp) return;
-            await sendEmail(creator.email, "invitation_received", { creatorName: creator.displayName || "Creator", brandName: inv.campaignData?.brandName || camp.brandName || "Brand", campaignTitle: camp.name || "Campaign", budget: camp.budget ? `$${camp.budget}` : "Por acordar", opportunitiesUrl: `${BASE_URL}/creator/opportunities` });
+
+            // Build compensation string based on compensationType
+            let compensationStr = "";
+            const ct = camp.compensationType || "";
+            if (ct === "monetary") {
+                compensationStr = camp.budget ? `$${camp.budget} USD` : "Por acordar";
+            } else if (ct === "exchange") {
+                compensationStr = camp.exchangeDetails || "Intercambio de producto/servicio";
+            } else if (ct === "hybrid") {
+                const money = camp.budget ? `$${camp.budget} USD` : "";
+                const exch = camp.exchangeDetails || "";
+                compensationStr = [money, exch].filter(Boolean).join(" + ");
+            } else {
+                compensationStr = "Por acordar";
+            }
+
+            await sendEmail(creator.email, "invitation_received", {
+                creatorName: creator.displayName || "Creator",
+                brandName: inv.campaignData?.brandName || camp.brandName || "Brand",
+                campaignTitle: camp.name || "Campaign",
+                compensation: compensationStr,
+                opportunitiesUrl: `${BASE_URL}/creator/opportunities`,
+            });
         } catch (err) { console.error("[Email] onInvitationCreated:", err); }
     });
 
@@ -180,7 +202,41 @@ function registerEmailNotifications(functions, admin, exportsObj) {
         } catch (err) { console.error("[Email] sendVisitScheduledEmail:", err); }
     });
 
-    // 10. Callable: send test email (used by admin frontend via httpsCallable)
+    // 10. Withdrawal Requested — Creator notified
+    exportsObj.onPayoutCreated = onDocumentCreated("payouts/{payoutId}", async (event) => {
+        const payout = event.data?.data();
+        if (!payout) return;
+        try {
+            const creatorSnap = await admin.firestore().doc(`users/${payout.userId || payout.creatorId}`).get();
+            const creator = creatorSnap.data();
+            if (!creator?.email) return;
+            await sendEmail(creator.email, "withdrawal_requested", {
+                creatorName: creator.displayName || "Creator",
+                amount: payout.amount ? `$${payout.amount}` : "",
+                earningsUrl: `${BASE_URL}/creator/earnings`,
+            });
+        } catch (err) { console.error("[Email] onPayoutCreated:", err); }
+    });
+
+    // 11. Withdrawal Approved/Sent — Creator notified
+    exportsObj.onPayoutStatusChanged = onDocumentUpdated("payouts/{payoutId}", async (event) => {
+        const before = event.data?.before.data();
+        const after = event.data?.after.data();
+        if (!before || !after || before.status === after.status) return;
+        if (after.status !== "paid" && after.status !== "completed" && after.status !== "sent") return;
+        try {
+            const creatorSnap = await admin.firestore().doc(`users/${after.userId || after.creatorId}`).get();
+            const creator = creatorSnap.data();
+            if (!creator?.email) return;
+            await sendEmail(creator.email, "withdrawal_approved", {
+                creatorName: creator.displayName || "Creator",
+                amount: after.amount ? `$${after.amount}` : "",
+                earningsUrl: `${BASE_URL}/creator/earnings`,
+            });
+        } catch (err) { console.error("[Email] onPayoutStatusChanged:", err); }
+    });
+
+    // 12. Callable: send test email (used by admin frontend via httpsCallable)
     exportsObj.sendTestEmail = functions.https.onCall(async (request) => {
         const { templateId, toEmail, vars } = request.data || request;
         if (!templateId || !toEmail) {
@@ -199,7 +255,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             welcome_creator: { subject: "🎉 Bienvenido, {{name}}!", variables: ["name", "email", "dashboardUrl"], html: w("🎉 ¡Bienvenido!", "Tu cuenta de creador está activa", "<p>Hola <strong>{{name}}</strong>, ya puedes explorar campañas y conectar tus redes sociales.</p>", "Ver Oportunidades", "{{dashboardUrl}}") },
             welcome_brand: { subject: "🚀 ¡Cuenta de Marca lista, {{name}}!", variables: ["name", "email", "dashboardUrl"], html: w("🚀 ¡Bienvenido!", "Conecta con los mejores creadores", "<p>Hola <strong>{{name}}</strong>, crea tu primera campaña y la IA encontrará tus matches perfectos.</p>", "Crear Campaña", "{{dashboardUrl}}") },
             application_received: { subject: "📩 {{creatorName}} aplicó a {{campaignTitle}}", variables: ["brandName", "creatorName", "campaignTitle", "matchesUrl"], html: w("📩 Nueva Aplicación", "Un creador quiere colaborar", "<p>Hola <strong>{{brandName}}</strong>, <strong>{{creatorName}}</strong> aplicó a <strong>{{campaignTitle}}</strong>.</p>", "Revisar Aplicación", "{{matchesUrl}}") },
-            invitation_received: { subject: "🎯 ¡Invitación a {{campaignTitle}}!", variables: ["creatorName", "brandName", "campaignTitle", "budget", "opportunitiesUrl"], html: w("🎯 Nueva Invitación", "Una marca te seleccionó", "<p>Hola <strong>{{creatorName}}</strong>, <strong>{{brandName}}</strong> te invitó a <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Presupuesto</div>{{budget}}</div>", "Ver Invitación", "{{opportunitiesUrl}}") },
+            invitation_received: { subject: "🎯 ¡Invitación a {{campaignTitle}}!", variables: ["creatorName", "brandName", "campaignTitle", "compensation", "opportunitiesUrl"], html: w("🎯 Nueva Invitación", "Una marca te seleccionó", "<p>Hola <strong>{{creatorName}}</strong>, <strong>{{brandName}}</strong> te invitó a <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Compensación</div>{{compensation}}</div>", "Ver Invitación", "{{opportunitiesUrl}}") },
             application_approved: { subject: "✅ ¡Aprobado en {{campaignTitle}}!", variables: ["creatorName", "brandName", "campaignTitle", "contentUrl"], html: w("✅ ¡Aprobado!", "Ya puedes empezar", "<p>Hola <strong>{{creatorName}}</strong>, <strong>{{brandName}}</strong> aprobó tu aplicación para <strong>{{campaignTitle}}</strong>.</p>", "Ver Campaña", "{{contentUrl}}") },
             application_rejected: { subject: "Actualización — {{campaignTitle}}", variables: ["creatorName", "campaignTitle", "opportunitiesUrl"], html: w("Actualización", "Sigue adelante", "<p>Hola <strong>{{creatorName}}</strong>, tu aplicación a <strong>{{campaignTitle}}</strong> no fue seleccionada esta vez. ¡Hay más oportunidades!</p>", "Ver Oportunidades", "{{opportunitiesUrl}}") },
             content_submitted: { subject: "📤 {{creatorName}} envió contenido — {{campaignTitle}}", variables: ["brandName", "creatorName", "campaignTitle", "postUrl", "reviewUrl"], html: w("📤 Contenido Enviado", "Listo para revisar", "<p>Hola <strong>{{brandName}}</strong>, <strong>{{creatorName}}</strong> envió contenido para <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Post URL</div>{{postUrl}}</div>", "Revisar Contenido", "{{reviewUrl}}") },
@@ -207,6 +263,8 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             content_approved: { subject: "🎉 ¡Contenido aprobado! — {{campaignTitle}}", variables: ["creatorName", "campaignTitle", "earningsUrl"], html: w("🎉 ¡Aprobado!", "Tu pago se procesará pronto", "<p>Hola <strong>{{creatorName}}</strong>, tu contenido para <strong>{{campaignTitle}}</strong> fue aprobado.</p>", "Ver Ganancias", "{{earningsUrl}}") },
             new_message: { subject: "💬 Mensaje de {{senderName}} — {{campaignTitle}}", variables: ["recipientName", "senderName", "campaignTitle", "messagePreview", "messagesUrl"], html: w("💬 Nuevo Mensaje", "", "<p>Hola <strong>{{recipientName}}</strong>, <strong>{{senderName}}</strong> te escribió sobre <strong>{{campaignTitle}}</strong>:</p><div class='hl'><em>{{messagePreview}}</em></div>", "Responder", "{{messagesUrl}}") },
             visit_scheduled: { subject: "📅 Visita — {{campaignTitle}}", variables: ["creatorName", "brandName", "campaignTitle", "visitDate", "visitTime", "location", "duration", "contentDeadline", "scheduleUrl"], html: w("📅 Visita Programada", "Revisa los detalles", "<p>Hola <strong>{{creatorName}}</strong>, tu visita con <strong>{{brandName}}</strong> para <strong>{{campaignTitle}}</strong> está confirmada.</p><div class='hl'><div class='lb'>Fecha y Hora</div>{{visitDate}} · {{visitTime}}</div><div class='hl'><div class='lb'>Ubicación</div>{{location}}</div><div class='hl'><div class='lb'>Duración</div>{{duration}} minutos</div><div class='hl'><div class='lb'>Fecha límite</div>{{contentDeadline}}</div>", "Ver Agenda", "{{scheduleUrl}}") },
+            withdrawal_requested: { subject: "💸 Solicitud de retiro recibida — {{amount}}", variables: ["creatorName", "amount", "earningsUrl"], html: w("💸 Solicitud de Retiro", "Hemos recibido tu solicitud", "<p>Hola <strong>{{creatorName}}</strong>, recibimos tu solicitud de retiro por <strong>{{amount}}</strong>. La procesaremos en un plazo de 2–5 días hábiles.</p><div class='hl'><div class='lb'>Monto solicitado</div>{{amount}}</div>", "Ver mis Ganancias", "{{earningsUrl}}") },
+            withdrawal_approved: { subject: "✅ Retiro enviado — {{amount}}", variables: ["creatorName", "amount", "earningsUrl"], html: w("✅ Retiro Procesado", "Tu pago fue enviado", "<p>Hola <strong>{{creatorName}}</strong>, tu retiro de <strong>{{amount}}</strong> fue aprobado y enviado a tu cuenta bancaria registrada. Puede tardar 1–3 días hábiles en reflejarse.</p><div class='hl'><div class='lb'>Monto enviado</div>{{amount}}</div>", "Ver mis Ganancias", "{{earningsUrl}}") },
         };
         const batch = db.batch();
         for (const [id, d] of Object.entries(tpls)) batch.set(db.doc(`emailTemplates/${id}`), { ...d, updatedAt: new Date().toISOString() }, { merge: true });

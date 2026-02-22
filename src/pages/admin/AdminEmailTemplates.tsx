@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { AdminSidebar } from "@/components/dashboard/AdminSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +30,8 @@ const TEMPLATE_LABELS: Record<string, { name: string; description: string; badge
     content_approved: { name: "Contenido Aprobado", description: "El creador sabe que su contenido fue aprobado", badge: "Creador" },
     new_message: { name: "Nuevo Mensaje", description: "Notificación de mensaje entrante", badge: "Todos" },
     visit_scheduled: { name: "Visita Programada", description: "Al confirmar una visita presencial", badge: "Creador" },
+    withdrawal_requested: { name: "Solicitud de Retiro", description: "El creador solicita retirar sus ganancias", badge: "Creador" },
+    withdrawal_approved: { name: "Retiro Enviado", description: "El retiro fue aprobado y enviado", badge: "Creador" },
 };
 
 export default function AdminEmailTemplates() {
@@ -144,7 +145,7 @@ export default function AdminEmailTemplates() {
                 welcome_creator: { subject: "🎉 Bienvenido, {{name}}!", variables: ["name", "email", "dashboardUrl"], html: w("🎉 ¡Bienvenido!", "Tu cuenta de creador está activa", "<p>Hola <strong>{{name}}</strong>, ya puedes explorar campañas y conectar tus redes sociales.</p>", "Ver Oportunidades", "{{dashboardUrl}}") },
                 welcome_brand: { subject: "🚀 ¡Cuenta de Marca lista, {{name}}!", variables: ["name", "email", "dashboardUrl"], html: w("🚀 ¡Bienvenido!", "Conecta con los mejores creadores", "<p>Hola <strong>{{name}}</strong>, crea tu primera campaña y la IA encontrará tus matches perfectos.</p>", "Crear Campaña", "{{dashboardUrl}}") },
                 application_received: { subject: "📩 {{creatorName}} aplicó a {{campaignTitle}}", variables: ["brandName", "creatorName", "campaignTitle", "matchesUrl"], html: w("📩 Nueva Aplicación", "Un creador quiere colaborar", "<p>Hola <strong>{{brandName}}</strong>, <strong>{{creatorName}}</strong> aplicó a <strong>{{campaignTitle}}</strong>.</p>", "Revisar Aplicación", "{{matchesUrl}}") },
-                invitation_received: { subject: "🎯 ¡Invitación a {{campaignTitle}}!", variables: ["creatorName", "brandName", "campaignTitle", "budget", "opportunitiesUrl"], html: w("🎯 Nueva Invitación", "Una marca te seleccionó", "<p>Hola <strong>{{creatorName}}</strong>, <strong>{{brandName}}</strong> te invitó a <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Presupuesto</div>{{budget}}</div>", "Ver Invitación", "{{opportunitiesUrl}}") },
+                invitation_received: { subject: "🎯 ¡Invitación a {{campaignTitle}}!", variables: ["creatorName", "brandName", "campaignTitle", "compensation", "opportunitiesUrl"], html: w("🎯 Nueva Invitación", "Una marca te seleccionó", "<p>Hola <strong>{{creatorName}}</strong>, <strong>{{brandName}}</strong> te invitó a <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Compensación</div>{{compensation}}</div>", "Ver Invitación", "{{opportunitiesUrl}}") },
                 application_approved: { subject: "✅ ¡Aprobado en {{campaignTitle}}!", variables: ["creatorName", "brandName", "campaignTitle", "contentUrl"], html: w("✅ ¡Aprobado!", "Ya puedes empezar", "<p>Hola <strong>{{creatorName}}</strong>, <strong>{{brandName}}</strong> aprobó tu aplicación para <strong>{{campaignTitle}}</strong>.</p>", "Ver Campaña", "{{contentUrl}}") },
                 application_rejected: { subject: "Actualización — {{campaignTitle}}", variables: ["creatorName", "campaignTitle", "opportunitiesUrl"], html: w("Actualización", "Sigue adelante", "<p>Hola <strong>{{creatorName}}</strong>, tu aplicación a <strong>{{campaignTitle}}</strong> no fue seleccionada esta vez. ¡Hay más oportunidades!</p>", "Ver Oportunidades", "{{opportunitiesUrl}}") },
                 content_submitted: { subject: "📤 {{creatorName}} envió contenido — {{campaignTitle}}", variables: ["brandName", "creatorName", "campaignTitle", "postUrl", "reviewUrl"], html: w("📤 Contenido Enviado", "Listo para revisar", "<p>Hola <strong>{{brandName}}</strong>, <strong>{{creatorName}}</strong> envió contenido para <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Post URL</div>{{postUrl}}</div>", "Revisar Contenido", "{{reviewUrl}}") },
@@ -152,6 +153,8 @@ export default function AdminEmailTemplates() {
                 content_approved: { subject: "🎉 ¡Contenido aprobado! — {{campaignTitle}}", variables: ["creatorName", "campaignTitle", "earningsUrl"], html: w("🎉 ¡Aprobado!", "Tu pago se procesará pronto", "<p>Hola <strong>{{creatorName}}</strong>, tu contenido para <strong>{{campaignTitle}}</strong> fue aprobado.</p>", "Ver Ganancias", "{{earningsUrl}}") },
                 new_message: { subject: "💬 Mensaje de {{senderName}} — {{campaignTitle}}", variables: ["recipientName", "senderName", "campaignTitle", "messagePreview", "messagesUrl"], html: w("💬 Nuevo Mensaje", "", "<p>Hola <strong>{{recipientName}}</strong>, <strong>{{senderName}}</strong> te escribió sobre <strong>{{campaignTitle}}</strong>:</p><div class='hl'><em>{{messagePreview}}</em></div>", "Responder", "{{messagesUrl}}") },
                 visit_scheduled: { subject: "📅 Visita — {{campaignTitle}}", variables: ["creatorName", "brandName", "campaignTitle", "visitDate", "visitTime", "location", "duration", "contentDeadline", "scheduleUrl"], html: w("📅 Visita Programada", "Revisa los detalles", "<p>Hola <strong>{{creatorName}}</strong>, tu visita con <strong>{{brandName}}</strong> para <strong>{{campaignTitle}}</strong> está confirmada.</p><div class='hl'><div class='lb'>Fecha y Hora</div>{{visitDate}} · {{visitTime}}</div><div class='hl'><div class='lb'>Ubicación</div>{{location}}</div><div class='hl'><div class='lb'>Duración</div>{{duration}} minutos</div><div class='hl'><div class='lb'>Fecha límite</div>{{contentDeadline}}</div>", "Ver Agenda", "{{scheduleUrl}}") },
+                withdrawal_requested: { subject: "💸 Solicitud de retiro recibida — {{amount}}", variables: ["creatorName", "amount", "earningsUrl"], html: w("💸 Solicitud de Retiro", "Hemos recibido tu solicitud", "<p>Hola <strong>{{creatorName}}</strong>, recibimos tu solicitud de retiro por <strong>{{amount}}</strong>. La procesaremos en un plazo de 2–5 días hábiles.</p><div class='hl'><div class='lb'>Monto solicitado</div>{{amount}}</div>", "Ver mis Ganancias", "{{earningsUrl}}") },
+                withdrawal_approved: { subject: "✅ Retiro enviado — {{amount}}", variables: ["creatorName", "amount", "earningsUrl"], html: w("✅ Retiro Procesado", "Tu pago fue enviado", "<p>Hola <strong>{{creatorName}}</strong>, tu retiro de <strong>{{amount}}</strong> fue aprobado y enviado a tu cuenta bancaria registrada. Puede tardar 1–3 días hábiles en reflejarse.</p><div class='hl'><div class='lb'>Monto enviado</div>{{amount}}</div>", "Ver mis Ganancias", "{{earningsUrl}}") },
             };
 
             const batch = writeBatch(db);
@@ -178,7 +181,6 @@ export default function AdminEmailTemplates() {
     return (
         <div className="flex min-h-screen bg-background">
             <AdminSidebar />
-            <MobileNav type="admin" />
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
