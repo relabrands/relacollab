@@ -52,7 +52,15 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             const brandSnap = await admin.firestore().doc(`users/${camp.brandId}`).get();
             const brand = brandSnap.data();
             if (!brand?.email) return;
-            await sendEmail(brand.email, "application_received", { brandName: brand.displayName || "Brand", creatorName: creatorSnap.data()?.displayName || "Creator", campaignTitle: camp.name || "Campaign", matchesUrl: `${BASE_URL}/brand/matches` });
+            const isAcceptedInvite = app.isInvitation === true || app.status === "approved";
+            const templateId = isAcceptedInvite ? "invitation_accepted" : "application_received";
+
+            await sendEmail(brand.email, templateId, {
+                brandName: brand.displayName || "Brand",
+                creatorName: creatorSnap.data()?.displayName || "Creator",
+                campaignTitle: camp.name || "Campaign",
+                matchesUrl: `${BASE_URL}/brand/matches`
+            });
         } catch (err) { console.error("[Email] onApplicationCreated:", err); }
     });
 

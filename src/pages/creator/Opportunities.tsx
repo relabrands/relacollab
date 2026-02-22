@@ -258,6 +258,7 @@ export default function Opportunities() {
         creatorId: user.uid,
         brandId: campaign.brandId,
         status: isInvitation ? "approved" : "pending",
+        isInvitation: !!isInvitation,
         createdAt: new Date().toISOString(),
         campaignData: {
           title: campaign.title,
