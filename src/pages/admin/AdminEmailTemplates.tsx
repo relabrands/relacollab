@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { DashboardSidebar } from "@/components/dashboard/AdminSidebar";
+import { AdminSidebar } from "@/components/dashboard/AdminSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Button } from "@/components/ui/button";
@@ -151,7 +151,7 @@ export default function AdminEmailTemplates() {
 
     return (
         <div className="flex min-h-screen bg-background">
-            <DashboardSidebar />
+            <AdminSidebar />
             <MobileNav type="admin" />
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
