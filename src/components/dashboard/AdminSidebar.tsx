@@ -14,6 +14,7 @@ import {
   FileText,
   TrendingUp,
   DollarSign,
+  Mail,
 } from "lucide-react";
 
 const adminNavItems = [
@@ -24,6 +25,7 @@ const adminNavItems = [
   { icon: CreditCard, label: "Subscriptions", path: "/admin/subscriptions" },
   { icon: DollarSign, label: "Finance", path: "/admin/finance" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
+  { icon: Mail, label: "Email Templates", path: "/admin/email-templates" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },
 ];
 

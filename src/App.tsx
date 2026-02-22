@@ -54,6 +54,7 @@ import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminEmailTemplates from "./pages/admin/AdminEmailTemplates";
 
 const queryClient = new QueryClient();
 
@@ -230,6 +231,11 @@ const App = () => (
             <Route path="/admin/analytics" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminAnalytics />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/email-templates" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminEmailTemplates />
               </ProtectedRoute>
             } />
             <Route path="/admin/settings" element={

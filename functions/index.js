@@ -974,3 +974,17 @@ RESPONDE SOLO con este JSON raw (sin markdown):
     }
 });
 
+
+// ─── Email Notifications (Resend) ─────────────────────────────────────────────
+const emailNotifications = require("./src/email/notifications");
+exports.onUserCreated = emailNotifications.onUserCreated;
+exports.onApplicationCreated = emailNotifications.onApplicationCreated;
+exports.onInvitationCreated = emailNotifications.onInvitationCreated;
+exports.onApplicationStatusChanged = emailNotifications.onApplicationStatusChanged;
+exports.onContentSubmitted = emailNotifications.onContentSubmitted;
+exports.onContentRevisionRequested = emailNotifications.onContentRevisionRequested;
+exports.onContentApproved = emailNotifications.onContentApproved;
+exports.sendNewMessageEmail = emailNotifications.sendNewMessageEmail;
+exports.sendVisitScheduledEmail = emailNotifications.sendVisitScheduledEmail;
+exports.sendTestEmail = emailNotifications.sendTestEmail;
+exports.seedEmailTemplates = emailNotifications.seedEmailTemplates;
