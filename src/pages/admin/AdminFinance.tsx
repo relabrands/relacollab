@@ -46,6 +46,19 @@ interface Invoice {
     perCreatorGross: number;
 }
 
+interface SubscriptionInvoice {
+    id: string;
+    brandId: string;
+    planId: string;
+    planName: string;
+    amount: number;
+    interval: string;
+    status: "verifying" | "paid";
+    createdAt: any;
+    paidAt?: any;
+    receiptUrl: string;
+}
+
 interface Payout {
     id: string;
     creatorId: string;
@@ -71,6 +84,7 @@ interface Payout {
 
 export default function AdminFinance() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [subscriptionInvoices, setSubscriptionInvoices] = useState<SubscriptionInvoice[]>([]);
     const [payouts, setPayouts] = useState<Payout[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -78,8 +92,10 @@ export default function AdminFinance() {
 
     // Dialog States
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+    const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionInvoice | null>(null);
     const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null);
     const [isInvoiceDetailsOpen, setIsInvoiceDetailsOpen] = useState(false);
+    const [isSubscriptionDetailsOpen, setIsSubscriptionDetailsOpen] = useState(false);
     const [isPayoutDetailsOpen, setIsPayoutDetailsOpen] = useState(false);
 
     // Payout Action State
@@ -106,6 +122,18 @@ export default function AdminFinance() {
             })) as Invoice[];
 
             setInvoices(invoicesData);
+
+            // Fetch Subscription Invoices
+            const subInvoicesRef = collection(db, "subscriptionInvoices");
+            const subInvoicesQuery = query(subInvoicesRef, orderBy("createdAt", "desc"));
+            const subInvoicesSnap = await getDocs(subInvoicesQuery);
+
+            const subInvoicesData = subInvoicesSnap.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as SubscriptionInvoice[];
+
+            setSubscriptionInvoices(subInvoicesData);
 
             // Fetch Creator Payouts
             const payoutsRef = collection(db, "payouts");
@@ -188,6 +216,43 @@ export default function AdminFinance() {
         }
     };
 
+    // --- Subscription Logic ---
+    const handleViewSubscription = (invoice: SubscriptionInvoice) => {
+        setSelectedSubscription(invoice);
+        setIsSubscriptionDetailsOpen(true);
+    };
+
+    const handleMarkSubscriptionPaid = async (invoice: SubscriptionInvoice) => {
+        if (!confirm(`Confirm payment received for ${invoice.planName} plan? This will activate the brand's subscription.`)) return;
+
+        try {
+            const batch = writeBatch(db);
+            const now = new Date().toISOString();
+
+            // 1. Mark subscription invoice as paid
+            batch.update(doc(db, "subscriptionInvoices", invoice.id), {
+                status: "paid",
+                paidAt: now
+            });
+
+            // 2. Activate plan for brand
+            batch.update(doc(db, "users", invoice.brandId), {
+                plan: invoice.planName,
+                subscriptionStatus: "active",
+                updatedAt: now
+            });
+
+            await batch.commit();
+
+            toast.success("Subscription payment confirmed and plan activated.");
+            setSubscriptionInvoices(prev => prev.map(i => i.id === invoice.id ? { ...i, status: "paid" } : i));
+            setIsSubscriptionDetailsOpen(false);
+        } catch (error) {
+            console.error("Error confirming subscription payment:", error);
+            toast.error("Failed to confirm subscription payment");
+        }
+    };
+
     // --- Payout Logic ---
     const handleViewPayout = async (payout: Payout) => {
         setSelectedPayout(payout);
@@ -261,6 +326,11 @@ export default function AdminFinance() {
         item.brandName?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const filteredSubInvoices = subscriptionInvoices.filter(item =>
+        item.planName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.brandId?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     const filteredPayouts = payouts.filter(item =>
         item.campaignName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.creatorName?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -289,17 +359,24 @@ export default function AdminFinance() {
                 </div>
 
                 <Tabs defaultValue="invoices" onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-8">
+                    <TabsList className="grid w-full grid-cols-3 mb-8">
                         <TabsTrigger value="invoices" className="flex items-center gap-2">
                             <FileText className="w-4 h-4" />
-                            Brand Invoices
+                            Campaigns
                             <Badge variant="secondary" className="ml-1">
                                 {filteredInvoices.filter(i => i.status === 'pending' || i.status === 'verifying').length}
                             </Badge>
                         </TabsTrigger>
+                        <TabsTrigger value="subscriptions" className="flex items-center gap-2">
+                            <CreditCard className="w-4 h-4" />
+                            Subscriptions
+                            <Badge variant="secondary" className="ml-1">
+                                {filteredSubInvoices.filter(i => i.status === 'verifying').length}
+                            </Badge>
+                        </TabsTrigger>
                         <TabsTrigger value="payouts" className="flex items-center gap-2">
                             <DollarSign className="w-4 h-4" />
-                            Creator Payouts
+                            Payouts
                             <Badge variant="secondary" className="ml-1">
                                 {filteredPayouts.filter(p => p.status === 'pending' || p.status === 'requested').length}
                             </Badge>
@@ -354,6 +431,60 @@ export default function AdminFinance() {
                                                         </td>
                                                         <td className="p-4 text-right">
                                                             <Button variant="ghost" size="sm" onClick={() => handleViewInvoice(invoice)}>
+                                                                <Eye className="w-4 h-4 mr-2" />
+                                                                Details
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </motion.div>
+                            </TabsContent>
+
+                            {/* Subscriptions Tab */}
+                            <TabsContent value="subscriptions">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="glass-card overflow-hidden"
+                                >
+                                    <table className="w-full">
+                                        <thead className="bg-muted/50">
+                                            <tr>
+                                                <th className="text-left p-4 font-medium text-muted-foreground">Plan</th>
+                                                <th className="text-left p-4 font-medium text-muted-foreground">Brand ID</th>
+                                                <th className="text-left p-4 font-medium text-muted-foreground">Date</th>
+                                                <th className="text-left p-4 font-medium text-muted-foreground">Amount</th>
+                                                <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
+                                                <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredSubInvoices.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                                                        No subscription invoices found
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                filteredSubInvoices.map((invoice) => (
+                                                    <tr key={invoice.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                                                        <td className="p-4 font-medium">{invoice.planName || "Unknown"}</td>
+                                                        <td className="p-4 truncate max-w-[150px]">{invoice.brandId}</td>
+                                                        <td className="p-4 text-muted-foreground">{formatDate(invoice.createdAt)}</td>
+                                                        <td className="p-4 font-semibold">{formatCurrency(invoice.amount)}</td>
+                                                        <td className="p-4">
+                                                            <Badge
+                                                                variant={invoice.status === 'paid' ? 'success' : 'warning'}
+                                                                className="capitalize"
+                                                            >
+                                                                {invoice.status}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="p-4 text-right">
+                                                            <Button variant="ghost" size="sm" onClick={() => handleViewSubscription(invoice)}>
                                                                 <Eye className="w-4 h-4 mr-2" />
                                                                 Details
                                                             </Button>
@@ -517,6 +648,65 @@ export default function AdminFinance() {
                                 <div className="text-sm text-muted-foreground italic">
                                     Waiting for brand to upload receipt...
                                 </div>
+                            )}
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* --- Subscription Details Dialog --- */}
+                <Dialog open={isSubscriptionDetailsOpen} onOpenChange={setIsSubscriptionDetailsOpen}>
+                    <DialogContent className="max-w-xl">
+                        <DialogHeader>
+                            <DialogTitle>Subscription Invoice Details</DialogTitle>
+                            <DialogDescription>Review subscription payment and activate plan.</DialogDescription>
+                        </DialogHeader>
+                        {selectedSubscription && (
+                            <div className="space-y-6 mt-4">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div className="space-y-1">
+                                        <p className="text-muted-foreground">Plan</p>
+                                        <p className="font-medium text-lg">{selectedSubscription.planName}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-muted-foreground">Amount</p>
+                                        <p className="font-bold text-lg text-primary">{formatCurrency(selectedSubscription.amount)}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-muted-foreground">Brand ID</p>
+                                        <p className="font-medium font-mono text-xs break-all">{selectedSubscription.brandId}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-muted-foreground">Date Submitted</p>
+                                        <p className="font-medium">{formatDate(selectedSubscription.createdAt)}</p>
+                                    </div>
+                                </div>
+
+                                {/* Receipt Section */}
+                                <div className="bg-muted/50 rounded-lg p-4 flex flex-col items-center justify-center gap-4">
+                                    <p className="text-sm font-medium">Uploaded Receipt</p>
+                                    {selectedSubscription.receiptUrl ? (
+                                        <Button variant="outline" asChild>
+                                            <a href={selectedSubscription.receiptUrl} target="_blank" rel="noopener noreferrer">
+                                                <ExternalLink className="w-4 h-4 mr-2" />
+                                                View Transfer Receipt
+                                            </a>
+                                        </Button>
+                                    ) : (
+                                        <p className="text-muted-foreground text-sm italic">No receipt provided</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        <DialogFooter className="gap-2">
+                            <Button variant="outline" onClick={() => setIsSubscriptionDetailsOpen(false)}>Close</Button>
+                            {selectedSubscription?.status === 'verifying' && (
+                                <Button
+                                    variant="hero"
+                                    onClick={() => selectedSubscription && handleMarkSubscriptionPaid(selectedSubscription)}
+                                >
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Verify Payment & Activate Plan
+                                </Button>
                             )}
                         </DialogFooter>
                     </DialogContent>

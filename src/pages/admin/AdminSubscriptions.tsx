@@ -47,7 +47,6 @@ interface Plan {
   name: string;
   price: number; // Monthly price in USD
   credits: number; // Credits included per month
-  stripePriceId: string;
   costPerExtraCredit: number;
   features: string[]; // Display text features
   permissions: string[]; // Functional permissions
@@ -60,7 +59,6 @@ const defaultPlan: Omit<Plan, "id"> = {
   name: "",
   price: 0,
   credits: 0,
-  stripePriceId: "",
   costPerExtraCredit: 0,
   features: ["Access to Creator Database", "Basic Analytics"],
   permissions: ["view_creators"],
@@ -120,7 +118,6 @@ export default function AdminSubscriptions() {
         name: plan.name,
         price: plan.price,
         credits: plan.credits,
-        stripePriceId: plan.stripePriceId,
         costPerExtraCredit: plan.costPerExtraCredit,
         features: plan.features || [],
         permissions: plan.permissions || [],
@@ -140,8 +137,7 @@ export default function AdminSubscriptions() {
       const planData = {
         ...formData,
         // Ensure nulls/undefineds are handled
-        price: formData.isFree ? 0 : formData.price,
-        stripePriceId: formData.isFree ? "" : formData.stripePriceId
+        price: formData.isFree ? 0 : formData.price
       };
 
       if (editingPlan) {
@@ -300,20 +296,7 @@ export default function AdminSubscriptions() {
                     </div>
                   )}
 
-                  {/* Stripe ID */}
-                  {!plan.isFree && (
-                    <div className="mb-6">
-                      <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Stripe Price ID</Label>
-                      <div
-                        className="flex items-center justify-between text-xs bg-muted p-2 rounded cursor-pointer hover:bg-muted/80 transition-colors group"
-                        onClick={() => copyToClipboard(plan.stripePriceId)}
-                        title="Click to copy"
-                      >
-                        <span className="font-mono truncate mr-2">{plan.stripePriceId || "Not configured"}</span>
-                        <Copy className="w-3 h-3 text-muted-foreground group-hover:text-foreground" />
-                      </div>
-                    </div>
-                  )}
+
                 </div>
 
                 {/* Footer Actions */}
@@ -397,17 +380,6 @@ export default function AdminSubscriptions() {
                     onChange={(e) => setFormData({ ...formData, credits: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
-                {!formData.isFree && (
-                  <div className="space-y-2">
-                    <Label htmlFor="stripeId">Stripe Price ID</Label>
-                    <Input
-                      id="stripeId"
-                      placeholder="price_H8..."
-                      value={formData.stripePriceId}
-                      onChange={(e) => setFormData({ ...formData, stripePriceId: e.target.value })}
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Permissions Section */}

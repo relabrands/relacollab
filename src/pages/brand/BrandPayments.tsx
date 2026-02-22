@@ -4,24 +4,22 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CreditCard, History, Loader2, Check } from "lucide-react";
+import { CreditCard, History, Loader2, Check, Building2, Copy, AlertCircle, Upload } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, where, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, where, doc, getDoc, addDoc } from "firebase/firestore";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { loadStripe } from "@stripe/stripe-js";
-
-// Initialize Stripe outside component
-// Use a placeholder key if usage of env vars is not configured yet
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "pk_test_placeholder_replace_me");
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface Plan {
     id: string;
     name: string;
     price: number;
     credits: number;
-    stripePriceId: string;
+    credits: number;
     features: string[];
     interval: "month" | "year";
     isFree?: boolean;
@@ -44,6 +42,13 @@ export default function BrandPayments() {
     const [loadingPayments, setLoadingPayments] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [currentPlan, setCurrentPlan] = useState<string | null>(null);
+
+    // Manual Payment States
+    const [isInstructionOpen, setIsInstructionOpen] = useState(false);
+    const [isUploadOpen, setIsUploadOpen] = useState(false);
+    const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<Plan | null>(null);
+    const [receiptUrl, setReceiptUrl] = useState("");
+    const [isSubmittingReceipt, setIsSubmittingReceipt] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -126,51 +131,42 @@ export default function BrandPayments() {
             return;
         }
 
-        setProcessingId(plan.id);
+        // Open manual payment instructions
+        setSelectedPlanForPayment(plan);
+        setIsInstructionOpen(true);
+    };
 
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast.success("Copiado al portapapeles!");
+    };
+
+    const handleUploadReceipt = async () => {
+        if (!user || !selectedPlanForPayment || !receiptUrl) return;
+        setIsSubmittingReceipt(true);
         try {
-            const stripe = await stripePromise;
-            if (!stripe) throw new Error("Stripe failed to load");
-
-            // Build the absolute success/cancel URLs
-            const successUrl = `${window.location.origin}/brand/payments?success=true`;
-            const cancelUrl = `${window.location.origin}/brand/payments?canceled=true`;
-
-            // Call your Cloud Function
-            // Note: Replace with your actual deployed function URL or use relative path if using rewrites
-            const response = await fetch("/api/checkout", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    priceId: plan.stripePriceId,
-                    userId: user.uid,
-                    successUrl,
-                    cancelUrl,
-                    mode: "subscription" // or payment depending on logic
-                }),
+            await addDoc(collection(db, "subscriptionInvoices"), {
+                brandId: user.uid,
+                planId: selectedPlanForPayment.id,
+                planName: selectedPlanForPayment.name,
+                amount: selectedPlanForPayment.price,
+                interval: selectedPlanForPayment.interval,
+                receiptUrl,
+                status: "verifying",
+                createdAt: new Date().toISOString()
             });
 
-            const session = await response.json();
+            toast.success("Comprobante enviado. El equipo RELA verificará el pago.");
+            setIsUploadOpen(false);
+            setReceiptUrl("");
+            setSelectedPlanForPayment(null);
 
-            if (session.error) {
-                throw new Error(session.error);
-            }
-
-            const result = await stripe.redirectToCheckout({
-                sessionId: session.sessionId,
-            });
-
-            if (result.error) {
-                throw new Error(result.error.message);
-            }
-
-        } catch (error: any) {
-            console.error("Subscription error:", error);
-            toast.error(error.message || "Failed to start checkout");
+            // Optionally update UI here to reflect pending state
+        } catch (error) {
+            console.error("Error uploading subscription receipt:", error);
+            toast.error("Error al enviar el comprobante.");
         } finally {
-            setProcessingId(null);
+            setIsSubmittingReceipt(false);
         }
     };
 
@@ -296,6 +292,94 @@ export default function BrandPayments() {
                 </div>
 
             </main>
+
+            {/* Manual Payment Instructions Modal */}
+            <Dialog open={isInstructionOpen} onOpenChange={setIsInstructionOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Instrucciones de Pago</DialogTitle>
+                        <DialogDescription>Transfiere el monto total a la siguiente cuenta bancaria para activar tu plan {selectedPlanForPayment?.name}.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        {selectedPlanForPayment && (
+                            <div className="bg-muted/40 rounded-lg p-3 text-sm space-y-1 my-2">
+                                <p className="font-semibold">Plan: {selectedPlanForPayment.name}</p>
+                                <p className="font-bold text-primary text-base">${selectedPlanForPayment.price.toLocaleString()} USD / {selectedPlanForPayment.interval === 'year' ? 'yr' : 'mo'}</p>
+                            </div>
+                        )}
+                        <div className="p-4 bg-muted rounded-xl space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Building2 className="w-5 h-5 text-primary" />
+                                <span className="font-semibold">Banco Popular Dominicano</span>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">Tipo de Cuenta</p>
+                                <p className="font-medium">Corriente (Checking)</p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">Número de Cuenta</p>
+                                <div className="flex items-center justify-between">
+                                    <p className="font-mono text-lg font-bold">789-555-123</p>
+                                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard("789555123")}>
+                                        <Copy className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">Beneficiario</p>
+                                <p className="font-medium">RELA Collab, S.R.L.</p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">RNC</p>
+                                <p className="font-medium">1-32-00000-1</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 items-start p-3 bg-blue-50 text-blue-800 rounded-lg text-sm">
+                            <AlertCircle className="w-5 h-5 shrink-0" />
+                            <p>Incluye el <strong>nombre de tu marca</strong> y la palabra "Suscripción" en la descripción de la transferencia.</p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsInstructionOpen(false)}>Cancelar</Button>
+                        <Button onClick={() => { setIsInstructionOpen(false); setIsUploadOpen(true); }}>
+                            <Upload className="w-4 h-4 mr-2" /> Subir Comprobante
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Upload Receipt Modal */}
+            <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Subir Comprobante de Pago</DialogTitle>
+                        <DialogDescription>
+                            Pega el link del comprobante de transferencia (Google Drive, Dropbox, etc.).
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedPlanForPayment && (
+                        <div className="bg-muted/40 rounded-lg p-3 text-sm space-y-1 my-2">
+                            <p className="font-semibold">Plan: {selectedPlanForPayment.name}</p>
+                            <p className="font-bold text-primary text-base">${selectedPlanForPayment.price.toLocaleString()} USD</p>
+                        </div>
+                    )}
+                    <div className="space-y-2">
+                        <Label>URL del Comprobante</Label>
+                        <Input
+                            placeholder="https://drive.google.com/..."
+                            value={receiptUrl}
+                            onChange={(e) => setReceiptUrl(e.target.value)}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsUploadOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleUploadReceipt} disabled={isSubmittingReceipt || !receiptUrl}>
+                            {isSubmittingReceipt && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Enviar para Verificación
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
