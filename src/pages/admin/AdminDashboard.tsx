@@ -213,7 +213,16 @@ export default function AdminDashboard() {
   const handleResetDatabase = async () => {
     setIsResetting(true);
     try {
-      const collectionsToReset = ["campaigns", "matches", "invitations", "jobs", "submissions"];
+      const collectionsToReset = [
+        "campaigns",
+        "matches",
+        "invitations",
+        "jobs",
+        "submissions",
+        "content_submissions",
+        "payouts",
+        "invoices"
+      ];
 
       for (const colName of collectionsToReset) {
         const q = query(collection(db, colName)); // Get all docs
@@ -242,7 +251,7 @@ export default function AdminDashboard() {
       }
 
       toast.success("Database reset successfully", {
-        description: "All campaigns, matches, and proposals have been deleted."
+        description: "All campaigns, matches, submissions, and financial data have been deleted."
       });
 
       // Refresh Data
@@ -321,6 +330,7 @@ export default function AdminDashboard() {
                   <li>Active Campaigns</li>
                   <li>Matches & Proposals</li>
                   <li>Jobs & Submissions</li>
+                  <li>Finances (Payouts & Invoices)</li>
                 </ul>
                 User accounts (Brands/Creators) will NOT be deleted.
               </AlertDialogDescription>
