@@ -5,8 +5,9 @@ import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { collection, getDocs, doc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, getDocs, doc, setDoc, writeBatch } from "firebase/firestore";
+import { db, functions } from "@/lib/firebase";
+import { httpsCallable } from "firebase/functions";
 import { toast } from "sonner";
 import { Mail, Save, Eye, Code, Send, RefreshCw, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -92,31 +93,41 @@ export default function AdminEmailTemplates() {
         if (!testEmail || !selectedTemplate) return;
         setSending(true);
         try {
-            const res = await fetch("https://us-central1-rela-collab.cloudfunctions.net/sendTestEmail", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    templateId: selectedTemplate.id,
-                    toEmail: testEmail,
-                    vars: {
-                        name: "Admin Test",
-                        creatorName: "Carlos Test",
-                        brandName: "Marca Prueba",
-                        campaignTitle: "Campaña de Prueba",
-                        budget: "$500",
-                        feedback: "El contenido necesita ajustes de iluminación.",
-                        messagePreview: "Este es un mensaje de prueba desde el sistema.",
-                    },
-                }),
+            const sendTestEmailFn = httpsCallable(functions, "sendTestEmail");
+            const result: any = await sendTestEmailFn({
+                templateId: selectedTemplate.id,
+                toEmail: testEmail,
+                vars: {
+                    name: "Admin Test",
+                    creatorName: "Carlos Test",
+                    brandName: "Marca Prueba",
+                    campaignTitle: "Campaña de Prueba",
+                    budget: "$500",
+                    feedback: "El contenido necesita ajustes de iluminación.",
+                    messagePreview: "Este es un mensaje de prueba desde el sistema.",
+                    dashboardUrl: "https://relacollab.com",
+                    matchesUrl: "https://relacollab.com/brand/matches",
+                    opportunitiesUrl: "https://relacollab.com/creator/opportunities",
+                    contentUrl: "https://relacollab.com/creator/content",
+                    earningsUrl: "https://relacollab.com/creator/earnings",
+                    reviewUrl: "https://relacollab.com/brand/content",
+                    messagesUrl: "https://relacollab.com/messages",
+                    scheduleUrl: "https://relacollab.com/creator/schedule",
+                    postUrl: "https://instagram.com/p/example",
+                    visitDate: "25/02/2026",
+                    visitTime: "10:00 AM",
+                    location: "Av. 27 de Febrero, Santo Domingo",
+                    duration: "60",
+                    contentDeadline: "01/03/2026",
+                },
             });
-            const data = await res.json();
-            if (data.success) {
+            if (result.data?.success) {
                 toast.success(`Email de prueba enviado a ${testEmail}`);
             } else {
                 toast.error("Error al enviar email de prueba");
             }
-        } catch {
-            toast.error("Error de conexión al enviar email");
+        } catch (err: any) {
+            toast.error(err?.message || "Error al enviar email de prueba");
         } finally {
             setSending(false);
         }
@@ -125,19 +136,34 @@ export default function AdminEmailTemplates() {
     const handleSeedTemplates = async () => {
         setSeeding(true);
         try {
-            const res = await fetch("https://us-central1-rela-collab.cloudfunctions.net/seedEmailTemplates", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-            });
-            const data = await res.json();
-            if (data.success) {
-                toast.success(`${data.templatesSeeded} plantillas creadas en Firestore`);
-                await fetchTemplates();
-            } else {
-                toast.error("Error al crear las plantillas");
+            const s = `body{font-family:'Segoe UI',sans-serif;margin:0;padding:0;background:#f4f4f7}.container{max-width:600px;margin:0 auto}.header{background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:40px 30px;text-align:center;border-radius:12px 12px 0 0}.header h1{color:#fff;margin:0;font-size:26px}.header p{color:rgba(255,255,255,.85);margin:8px 0 0;font-size:14px}.body{background:#fff;padding:40px 30px}.body p{color:#444;line-height:1.7;margin:0 0 16px}.hl{background:#f3f0ff;border-left:4px solid #7c3aed;padding:16px 20px;border-radius:0 8px 8px 0;margin:24px 0}.hl .lb{font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}.btn{display:inline-block;background:#7c3aed;color:#fff!important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;margin-top:24px}.footer{background:#f4f4f7;padding:20px;text-align:center;border-radius:0 0 12px 12px}.footer p{color:#999;font-size:12px;margin:4px 0}`;
+            const w = (h: string, sh: string, b: string, bt: string, bu: string) =>
+                `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${s}</style></head><body><div class="container"><div class="header"><h1>${h}</h1><p>${sh}</p></div><div class="body">${b}<a href="${bu}" class="btn">${bt}</a></div><div class="footer"><p>© 2026 RELA Collab · relacollab.com</p></div></div></body></html>`;
+
+            const templates: Record<string, any> = {
+                welcome_creator: { subject: "🎉 Bienvenido, {{name}}!", variables: ["name", "email", "dashboardUrl"], html: w("🎉 ¡Bienvenido!", "Tu cuenta de creador está activa", "<p>Hola <strong>{{name}}</strong>, ya puedes explorar campañas y conectar tus redes sociales.</p>", "Ver Oportunidades", "{{dashboardUrl}}") },
+                welcome_brand: { subject: "🚀 ¡Cuenta de Marca lista, {{name}}!", variables: ["name", "email", "dashboardUrl"], html: w("🚀 ¡Bienvenido!", "Conecta con los mejores creadores", "<p>Hola <strong>{{name}}</strong>, crea tu primera campaña y la IA encontrará tus matches perfectos.</p>", "Crear Campaña", "{{dashboardUrl}}") },
+                application_received: { subject: "📩 {{creatorName}} aplicó a {{campaignTitle}}", variables: ["brandName", "creatorName", "campaignTitle", "matchesUrl"], html: w("📩 Nueva Aplicación", "Un creador quiere colaborar", "<p>Hola <strong>{{brandName}}</strong>, <strong>{{creatorName}}</strong> aplicó a <strong>{{campaignTitle}}</strong>.</p>", "Revisar Aplicación", "{{matchesUrl}}") },
+                invitation_received: { subject: "🎯 ¡Invitación a {{campaignTitle}}!", variables: ["creatorName", "brandName", "campaignTitle", "budget", "opportunitiesUrl"], html: w("🎯 Nueva Invitación", "Una marca te seleccionó", "<p>Hola <strong>{{creatorName}}</strong>, <strong>{{brandName}}</strong> te invitó a <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Presupuesto</div>{{budget}}</div>", "Ver Invitación", "{{opportunitiesUrl}}") },
+                application_approved: { subject: "✅ ¡Aprobado en {{campaignTitle}}!", variables: ["creatorName", "brandName", "campaignTitle", "contentUrl"], html: w("✅ ¡Aprobado!", "Ya puedes empezar", "<p>Hola <strong>{{creatorName}}</strong>, <strong>{{brandName}}</strong> aprobó tu aplicación para <strong>{{campaignTitle}}</strong>.</p>", "Ver Campaña", "{{contentUrl}}") },
+                application_rejected: { subject: "Actualización — {{campaignTitle}}", variables: ["creatorName", "campaignTitle", "opportunitiesUrl"], html: w("Actualización", "Sigue adelante", "<p>Hola <strong>{{creatorName}}</strong>, tu aplicación a <strong>{{campaignTitle}}</strong> no fue seleccionada esta vez. ¡Hay más oportunidades!</p>", "Ver Oportunidades", "{{opportunitiesUrl}}") },
+                content_submitted: { subject: "📤 {{creatorName}} envió contenido — {{campaignTitle}}", variables: ["brandName", "creatorName", "campaignTitle", "postUrl", "reviewUrl"], html: w("📤 Contenido Enviado", "Listo para revisar", "<p>Hola <strong>{{brandName}}</strong>, <strong>{{creatorName}}</strong> envió contenido para <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Post URL</div>{{postUrl}}</div>", "Revisar Contenido", "{{reviewUrl}}") },
+                content_revision: { subject: "✏️ Cambios solicitados — {{campaignTitle}}", variables: ["creatorName", "campaignTitle", "feedback", "contentUrl"], html: w("✏️ Revisión", "La marca tiene comentarios", "<p>Hola <strong>{{creatorName}}</strong>, la marca solicitó cambios en <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Feedback</div>{{feedback}}</div>", "Ver Contenido", "{{contentUrl}}") },
+                content_approved: { subject: "🎉 ¡Contenido aprobado! — {{campaignTitle}}", variables: ["creatorName", "campaignTitle", "earningsUrl"], html: w("🎉 ¡Aprobado!", "Tu pago se procesará pronto", "<p>Hola <strong>{{creatorName}}</strong>, tu contenido para <strong>{{campaignTitle}}</strong> fue aprobado.</p>", "Ver Ganancias", "{{earningsUrl}}") },
+                new_message: { subject: "💬 Mensaje de {{senderName}} — {{campaignTitle}}", variables: ["recipientName", "senderName", "campaignTitle", "messagePreview", "messagesUrl"], html: w("💬 Nuevo Mensaje", "", "<p>Hola <strong>{{recipientName}}</strong>, <strong>{{senderName}}</strong> te escribió sobre <strong>{{campaignTitle}}</strong>:</p><div class='hl'><em>{{messagePreview}}</em></div>", "Responder", "{{messagesUrl}}") },
+                visit_scheduled: { subject: "📅 Visita — {{campaignTitle}}", variables: ["creatorName", "brandName", "campaignTitle", "visitDate", "visitTime", "location", "duration", "contentDeadline", "scheduleUrl"], html: w("📅 Visita Programada", "Revisa los detalles", "<p>Hola <strong>{{creatorName}}</strong>, tu visita con <strong>{{brandName}}</strong> para <strong>{{campaignTitle}}</strong> está confirmada.</p><div class='hl'><div class='lb'>Fecha y Hora</div>{{visitDate}} · {{visitTime}}</div><div class='hl'><div class='lb'>Ubicación</div>{{location}}</div><div class='hl'><div class='lb'>Duración</div>{{duration}} minutos</div><div class='hl'><div class='lb'>Fecha límite</div>{{contentDeadline}}</div>", "Ver Agenda", "{{scheduleUrl}}") },
+            };
+
+            const batch = writeBatch(db);
+            const now = new Date().toISOString();
+            for (const [id, data] of Object.entries(templates)) {
+                batch.set(doc(db, "emailTemplates", id), { ...data, updatedAt: now }, { merge: true });
             }
-        } catch {
-            toast.error("Error de conexión");
+            await batch.commit();
+            toast.success(`${Object.keys(templates).length} plantillas creadas/actualizadas`);
+            await fetchTemplates();
+        } catch (err: any) {
+            toast.error(err?.message || "Error al crear las plantillas");
         } finally {
             setSeeding(false);
         }

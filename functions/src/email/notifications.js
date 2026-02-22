@@ -180,13 +180,15 @@ function registerEmailNotifications(functions, admin, exportsObj) {
         } catch (err) { console.error("[Email] sendVisitScheduledEmail:", err); }
     });
 
-    // 10. HTTP: test email
-    exportsObj.sendTestEmail = functions.https.onRequest((req, res) => cors(req, res, async () => {
-        const { templateId, toEmail, vars } = req.body;
-        if (!templateId || !toEmail) return res.status(400).json({ error: "templateId and toEmail required" });
+    // 10. Callable: send test email (used by admin frontend via httpsCallable)
+    exportsObj.sendTestEmail = functions.https.onCall(async (request) => {
+        const { templateId, toEmail, vars } = request.data || request;
+        if (!templateId || !toEmail) {
+            throw new functions.https.HttpsError("invalid-argument", "templateId and toEmail are required");
+        }
         await sendEmail(toEmail, templateId, vars || {});
-        return res.json({ success: true });
-    }));
+        return { success: true };
+    });
 
     // 11. HTTP: seed templates
     exportsObj.seedEmailTemplates = functions.https.onRequest((req, res) => cors(req, res, async () => {
