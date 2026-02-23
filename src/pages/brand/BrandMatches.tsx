@@ -148,8 +148,8 @@ export default function BrandMatches() {
               avatar: creatorData.photoURL || creatorData.avatar,
               tags: creatorData.categories || creatorData.tags || ["General"],
               status: appData.status, // 'pending', 'approved', 'rejected'
-              followers: formatNumber(creatorData.instagramMetrics?.followers || 0),
-              engagement: (creatorData.instagramMetrics?.engagementRate || 0) + "%",
+              followers: formatNumber(creatorData.instagramMetrics?.followers || creatorData.tiktokMetrics?.followers || 0),
+              engagement: (creatorData.instagramMetrics?.engagementRate || creatorData.tiktokMetrics?.engagementRate || 0) + "%",
               instagramMetrics: creatorData.instagramMetrics,
               location: creatorData.location || "Unknown",
               submissionUrl: submission?.postUrl || null
@@ -199,8 +199,8 @@ export default function BrandMatches() {
             matchReason: matchReason,
             matchBreakdown: breakdown,
             tags: creator.categories || creator.tags || ["General"],
-            followers: formatNumber(creator.instagramMetrics?.followers || 0),
-            engagement: (creator.instagramMetrics?.engagementRate || 0) + "%",
+            followers: formatNumber(creator.instagramMetrics?.followers || creator.tiktokMetrics?.followers || 0),
+            engagement: (creator.instagramMetrics?.engagementRate || creator.tiktokMetrics?.engagementRate || 0) + "%",
             instagramMetrics: creator.instagramMetrics,
             tiktokMetrics: creator.tiktokMetrics,
             tiktokUsername: creator.socialHandles?.tiktok,

@@ -141,8 +141,13 @@ export const calculateMatchScore = (campaign: any, creator: any): MatchScoreResu
     // ========================================
     // 5. SOCIAL METRICS (Max 15 points)
     // ========================================
-    const er = creator.instagramMetrics?.engagementRate || 0;
-    const followers = creator.instagramMetrics?.followers || 0;
+    const igEr = creator.instagramMetrics?.engagementRate || 0;
+    const igFollowers = creator.instagramMetrics?.followers || 0;
+    const tkEr = creator.tiktokMetrics?.engagementRate || 0;
+    const tkFollowers = creator.tiktokMetrics?.followers || 0;
+
+    const er = Math.max(igEr, tkEr);
+    const followers = Math.max(igFollowers, tkFollowers);
 
     // Engagement rate (10 points max)
     if (er >= 5) {
