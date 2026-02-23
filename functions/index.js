@@ -1031,8 +1031,9 @@ RESPONDE ÚNICAMENTE con el JSON raw (sin markdown, sin bloques de código, sin 
             const model = vertexForCampaign.preview.getGenerativeModel({
                 model: "gemini-2.5-flash",
                 generationConfig: {
-                    maxOutputTokens: 1024,
+                    maxOutputTokens: 4096, // Increased to prevent truncation
                     temperature: 0.85,
+                    responseMimeType: "application/json", // Force valid JSON
                 },
             });
 
