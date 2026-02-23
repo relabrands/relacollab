@@ -78,6 +78,8 @@ export function CampaignShareCard({ campaign, campaignUrl }: CampaignShareCardPr
                     height: CARD_H * scale,
                     overflow: "hidden",
                     flexShrink: 0,
+                    borderRadius: 32 * scale, // mirrors the inner card's border-radius
+                    boxShadow: "0 32px 80px rgba(120,80,255,0.35)",
                 }}
             >
                 {/* ─── Story card (fixed 9:16, captured for export) ─────── */}
@@ -96,7 +98,6 @@ export function CampaignShareCard({ campaign, campaignUrl }: CampaignShareCardPr
                         flexDirection: "column",
                         alignItems: "center",
                         fontFamily: "'Inter', 'Segoe UI', sans-serif",
-                        boxShadow: "0 32px 80px rgba(120,80,255,0.35)",
                     }}
                 >
                     {/* ── Ambient glow blobs ──────────────────────────────── */}
