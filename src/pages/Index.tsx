@@ -1,5 +1,7 @@
 import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
+import { TrustedBrands } from "@/components/landing/TrustedBrands";
+import { ContentExamples } from "@/components/landing/ContentExamples";
 import { ForBrands } from "@/components/landing/ForBrands";
 import { ForCreators } from "@/components/landing/ForCreators";
 import { HowItWorks } from "@/components/landing/HowItWorks";
@@ -12,6 +14,8 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <Hero />
+      <TrustedBrands />
+      <ContentExamples />
       <ForBrands />
       <ForCreators />
       <HowItWorks />
