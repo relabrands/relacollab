@@ -171,10 +171,27 @@ export function CampaignShareCard({ campaign, campaignUrl }: CampaignShareCardPr
                     }}
                 />
 
+                {/* ── Tagline (above campaign title) ───────────────────── */}
+                <p
+                    style={{
+                        marginTop: 22,
+                        width: 300,
+                        textAlign: "center",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "rgba(200,180,255,0.6)",
+                        lineHeight: 1.5,
+                        letterSpacing: 0.2,
+                    }}
+                >
+                    We're looking for creators to
+                    <br />collaborate with us.
+                </p>
+
                 {/* ── Campaign title ───────────────────────────────────── */}
                 <h1
                     style={{
-                        marginTop: 22,
+                        marginTop: 10,
                         width: 300,
                         textAlign: "center",
                         fontSize: 30,
@@ -187,28 +204,25 @@ export function CampaignShareCard({ campaign, campaignUrl }: CampaignShareCardPr
                     {campaign.title}
                 </h1>
 
-                {/* ── Category badge ───────────────────────────────────── */}
-                {campaign.category && (
-                    <div
-                        style={{
-                            marginTop: 16,
-                            paddingLeft: 16,
-                            paddingRight: 16,
-                            paddingTop: 6,
-                            paddingBottom: 6,
-                            borderRadius: 999,
-                            background: "rgba(168,85,247,0.18)",
-                            border: "1px solid rgba(168,85,247,0.4)",
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: "#d8b4fe",
-                            letterSpacing: 0.5,
-                            textTransform: "uppercase",
-                        }}
-                    >
-                        {campaign.category}
-                    </div>
-                )}
+                {/* ── CTA below title ──────────────────────────────────── */}
+                <div
+                    style={{
+                        marginTop: 14,
+                        paddingLeft: 20,
+                        paddingRight: 20,
+                        paddingTop: 8,
+                        paddingBottom: 8,
+                        borderRadius: 999,
+                        background: "linear-gradient(90deg, rgba(168,85,247,0.25), rgba(99,102,241,0.25))",
+                        border: "1px solid rgba(168,85,247,0.45)",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#e9d5ff",
+                        letterSpacing: 0.3,
+                    }}
+                >
+                    Colabora con esta campaña 🚀
+                </div>
 
                 {/* ── QR Code area ─────────────────────────────────────── */}
                 <div
@@ -249,20 +263,7 @@ export function CampaignShareCard({ campaign, campaignUrl }: CampaignShareCardPr
                     </p>
                 </div>
 
-                {/* ── CTA text ─────────────────────────────────────────── */}
-                <p
-                    style={{
-                        marginTop: 24,
-                        fontSize: 14,
-                        fontWeight: 500,
-                        color: "rgba(200,180,255,0.55)",
-                        textAlign: "center",
-                        width: 280,
-                        lineHeight: 1.5,
-                    }}
-                >
-                    We're looking for creators to collaborate with us.
-                </p>
+
 
                 {/* ── RELA Collab watermark ────────────────────────────── */}
                 <div
