@@ -103,17 +103,26 @@ export function CreatorCard({
           )}
         </div>
 
-        {/* Score badge */}
+        {/* Score badge / Status badge */}
         <div className="flex-shrink-0 flex flex-col items-center gap-1">
-          <div className={`${color} text-white font-black text-base w-14 h-14 rounded-2xl flex flex-col items-center justify-center leading-none shadow-sm`}>
-            <span>{score}%</span>
-            <span className="text-[8px] font-semibold opacity-80 uppercase tracking-wider">{label}</span>
-          </div>
-          {hasAI && (
-            <span className="flex items-center gap-0.5 text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-              <Sparkles className="w-2.5 h-2.5" />
-              RELA AI
-            </span>
+          {isCollaborating ? (
+            <div className={`bg-primary text-primary-foreground font-bold w-14 h-14 rounded-2xl flex flex-col items-center justify-center leading-none shadow-sm`}>
+              <Check className="w-5 h-5 mb-1" />
+              <span className="text-[8px] font-semibold uppercase tracking-wider text-center leading-tight">Collab</span>
+            </div>
+          ) : (
+            <>
+              <div className={`${color} text-white font-black text-base w-14 h-14 rounded-2xl flex flex-col items-center justify-center leading-none shadow-sm`}>
+                <span>{score}%</span>
+                <span className="text-[8px] font-semibold opacity-80 uppercase tracking-wider">{label}</span>
+              </div>
+              {hasAI && (
+                <span className="flex items-center gap-0.5 text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  RELA AI
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -138,7 +147,11 @@ export function CreatorCard({
 
       {/* ── AI Summary (if available) or match reason ── */}
       <div className="px-5 flex-1">
-        {hasAI && creator.aiAnalysis?.matchSummary ? (
+        {isCollaborating ? (
+          <p className="text-[11px] text-muted-foreground italic border-l-2 border-primary/30 pl-3 leading-relaxed">
+            Content creation in progress.
+          </p>
+        ) : hasAI && creator.aiAnalysis?.matchSummary ? (
           <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-3 bg-primary/5 border border-primary/10 rounded-xl px-3 py-2">
             <Sparkles className="w-3 h-3 inline mr-1 text-primary" />
             {creator.aiAnalysis.matchSummary}

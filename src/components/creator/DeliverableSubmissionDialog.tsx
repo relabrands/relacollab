@@ -120,16 +120,22 @@ export function DeliverableSubmissionDialog({
             submitted?: SubmittedContent;
         }> = [];
 
+        const typeCounters: Record<string, number> = {};
+
         campaign.deliverables?.forEach(deliverable => {
             for (let i = 1; i <= deliverable.quantity; i++) {
-                const key = `${deliverable.type}_${i}`;
+                typeCounters[deliverable.type] = (typeCounters[deliverable.type] || 0) + 1;
+                const counter = typeCounters[deliverable.type];
+
+                const key = `${deliverable.type}_${counter}`;
+
                 const existing = submittedContent.find(
-                    s => s.deliverableType === deliverable.type && s.deliverableNumber === i
+                    s => s.deliverableType === deliverable.type && s.deliverableNumber === counter
                 );
 
                 slots.push({
                     type: deliverable.type,
-                    number: i,
+                    number: counter,
                     required: deliverable.required,
                     key,
                     submitted: existing,
@@ -294,8 +300,9 @@ export function DeliverableSubmissionDialog({
 
             // NORMAL SUBMISSION MODE: Create new documents
             const submissionPromises = Array.from(selectedDeliverables.entries()).map(async ([key, media]) => {
-                const [type, numberStr] = key.split("_");
-                const number = parseInt(numberStr);
+                const lastUnderscore = key.lastIndexOf('_');
+                const type = key.substring(0, lastUnderscore);
+                const number = parseInt(key.substring(lastUnderscore + 1), 10);
 
                 // 1. Create the submission document locally first
                 const docRef = await addDoc(collection(db, "content_submissions"), {

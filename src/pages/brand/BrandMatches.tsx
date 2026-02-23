@@ -5,7 +5,7 @@ import { CreatorCard } from "@/components/dashboard/CreatorCard";
 import { MatchDetailsDialog } from "@/components/brand/MatchDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Sparkles, Filter, SlidersHorizontal, Loader2, Plus, Users, UserCheck } from "lucide-react";
+import { Sparkles, Filter, SlidersHorizontal, Loader2, Plus, Users, UserCheck, CheckCircle } from "lucide-react";
 import { collection, getDocs, query, where, orderBy, doc, getDoc, addDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
@@ -40,9 +40,10 @@ export default function BrandMatches() {
 
   const [applicants, setApplicants] = useState<any[]>([]);
   const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [completedCreators, setCompletedCreators] = useState<any[]>([]);
   const [activePlatform, setActivePlatform] = useState<string>("instagram");
-  const [allApplications, setAllApplications] = useState<any[]>([]); // Debugging stateatches' | 'invited' | 'applicants' | 'collaborating'>('matches');
-  const [viewMode, setViewMode] = useState<'matches' | 'invited' | 'applicants' | 'collaborating'>('matches');
+  const [allApplications, setAllApplications] = useState<any[]>([]); // Debugging state
+  const [viewMode, setViewMode] = useState<'matches' | 'invited' | 'applicants' | 'collaborating' | 'completed'>('matches');
 
   // Dialog State
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
@@ -142,7 +143,7 @@ export default function BrandMatches() {
               id: creatorDoc.id, // Creator ID
               applicationId: appDoc.id, // Application Ref
               matchScore: score,
-              matchReason: "Applied to your campaign",
+              matchReason: appData.status === 'approved' || appData.status === 'accepted' ? "Active Collaboration" : "Applied to your campaign",
               matchBreakdown: breakdown,
               name: creatorData.displayName || "Unknown Creator",
               avatar: creatorData.photoURL || creatorData.avatar,
@@ -152,7 +153,8 @@ export default function BrandMatches() {
               engagement: (creatorData.instagramMetrics?.engagementRate || creatorData.tiktokMetrics?.engagementRate || 0) + "%",
               instagramMetrics: creatorData.instagramMetrics,
               location: creatorData.location || "Unknown",
-              submissionUrl: submission?.postUrl || null
+              submissionUrl: submission?.postUrl || null,
+              submissionStatus: submission?.status || null
             };
           }
           return null;
@@ -163,11 +165,12 @@ export default function BrandMatches() {
 
         // Filter into buckets
         setApplicants(allApplications.filter((a: any) => a.status === 'pending'));
-        setCollaborators(allApplications.filter((a: any) => a.status === 'approved' || a.status === 'accepted')); // Accepted invitations should be here
+        setCollaborators(allApplications.filter((a: any) => (a.status === 'approved' || a.status === 'accepted') && a.submissionStatus !== 'approved'));
+        setCompletedCreators(allApplications.filter((a: any) => (a.status === 'approved' || a.status === 'accepted') && a.submissionStatus === 'approved'));
 
         // DEBUG LOGS
         console.log("All Applications/Invites Fetched:", allApplications);
-        console.log("Collaborators Filtered:", allApplications.filter((a: any) => a.status === 'approved' || a.status === 'accepted'));
+        console.log("Collaborators Filtered:", allApplications.filter((a: any) => (a.status === 'approved' || a.status === 'accepted') && a.submissionStatus !== 'approved'));
 
 
 
@@ -336,15 +339,17 @@ export default function BrandMatches() {
 
   const visibleCreators = viewMode === 'collaborating'
     ? collaborators
-    : viewMode === 'applicants'
-      ? applicants
-      : creators.filter((c) => {
-        if (viewMode === 'matches') {
-          return !approvedIds.includes(c.id) && !rejectedIds.includes(c.id) && !applicants.find(a => a.id === c.id) && !collaborators.find(col => col.id === c.id);
-        } else {
-          return approvedIds.includes(c.id) && !collaborators.find(col => col.id === c.id);
-        }
-      });
+    : viewMode === 'completed'
+      ? completedCreators
+      : viewMode === 'applicants'
+        ? applicants
+        : creators.filter((c) => {
+          if (viewMode === 'matches') {
+            return !approvedIds.includes(c.id) && !rejectedIds.includes(c.id) && !applicants.find(a => a.id === c.id) && !collaborators.find(col => col.id === c.id) && !completedCreators.find(col => col.id === c.id);
+          } else {
+            return approvedIds.includes(c.id) && !collaborators.find(col => col.id === c.id) && !completedCreators.find(col => col.id === c.id);
+          }
+        });
 
   const handleCardClick = (creator: any) => {
     setSelectedCreator(creator);
@@ -480,12 +485,20 @@ export default function BrandMatches() {
               Collaborating ({collaborators.length})
             </Button>
             <Button
+              variant={viewMode === 'completed' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode('completed')}
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Completed ({completedCreators.length})
+            </Button>
+            <Button
               variant={viewMode === 'invited' ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode('invited')}
             >
               <UserCheck className="w-4 h-4 mr-2" />
-              Invited ({approvedIds.filter(id => !collaborators.some(c => c.id === id)).length})
+              Invited ({approvedIds.filter(id => !collaborators.some(c => c.id === id) && !completedCreators.some(c => c.id === id)).length})
             </Button>
           </div>
         </div>
@@ -545,7 +558,8 @@ export default function BrandMatches() {
               {viewMode === 'applicants' ? "No pending applications yet" :
                 viewMode === 'matches' ? "No matching creators found" :
                   viewMode === 'collaborating' ? "No active collaborations" :
-                    "No invited creators"}
+                    viewMode === 'completed' ? "No completed collaborations" :
+                      "No invited creators"}
             </h3>
             <p className="text-muted-foreground mb-6">
               {viewMode === 'applicants'
@@ -554,7 +568,9 @@ export default function BrandMatches() {
                   ? "We couldn't find creators matching your campaign criteria. Try broadening your requirements or check back later as new creators join daily."
                   : viewMode === 'collaborating'
                     ? "Once you approve applicants or creators accept invitations, they'll appear here."
-                    : "Creators you invite will show here. Browse the Matches tab to find and invite creators."}
+                    : viewMode === 'completed'
+                      ? "When a creator's content is approved, they will be moved to this tab."
+                      : "Creators you invite will show here. Browse the Matches tab to find and invite creators."}
             </p>
 
             {viewMode === 'matches' && (
@@ -587,11 +603,11 @@ export default function BrandMatches() {
           creator={selectedCreator}
           campaign={activeCampaign}
           isApplicant={viewMode === 'applicants'} // Pass context to dialog
-          isCollaborating={viewMode === 'collaborating'}
+          isCollaborating={viewMode === 'collaborating' || viewMode === 'completed'}
           onApprove={() => {
             if (viewMode === 'applicants') {
               handleApproveApplicant(selectedCreator);
-            } else if (viewMode === 'collaborating') {
+            } else if (viewMode === 'collaborating' || viewMode === 'completed') {
               handleViewContent(selectedCreator);
             } else {
               handleSendProposal(selectedCreator.id, selectedCreator.name);
