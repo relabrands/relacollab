@@ -211,19 +211,21 @@ function registerEmailNotifications(functions, admin, exportsObj) {
     });
 
     // 10. Withdrawal Requested — Creator notified
-    exportsObj.onPayoutCreated = onDocumentCreated("payouts/{payoutId}", async (event) => {
-        const payout = event.data?.data();
-        if (!payout) return;
+    exportsObj.onPayoutRequested = onDocumentUpdated("payouts/{payoutId}", async (event) => {
+        const before = event.data?.before.data();
+        const after = event.data?.after.data();
+        if (!before || !after || before.status === after.status) return;
+        if (after.status !== "requested") return;
         try {
-            const creatorSnap = await admin.firestore().doc(`users/${payout.userId || payout.creatorId}`).get();
+            const creatorSnap = await admin.firestore().doc(`users/${after.userId || after.creatorId}`).get();
             const creator = creatorSnap.data();
             if (!creator?.email) return;
             await sendEmail(creator.email, "withdrawal_requested", {
                 creatorName: creator.displayName || "Creator",
-                amount: payout.amount ? `$${payout.amount}` : "",
+                amount: after.netAmount ? `$${after.netAmount}` : (after.amount ? `$${after.amount}` : ""),
                 earningsUrl: `${BASE_URL}/creator/earnings`,
             });
-        } catch (err) { console.error("[Email] onPayoutCreated:", err); }
+        } catch (err) { console.error("[Email] onPayoutRequested:", err); }
     });
 
     // 11. Withdrawal Approved/Sent — Creator notified

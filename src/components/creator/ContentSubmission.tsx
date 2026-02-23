@@ -308,135 +308,144 @@ export function ContentSubmission() {
 
                 <CollapsibleContent className="mt-4">
                   <div className="space-y-2">
-                    {campaign.deliverables.map((deliverable) => {
-                      return Array.from({ length: deliverable.quantity }, (_, index) => {
-                        const deliverableNumber = index + 1;
-                        const submission = getDeliverableStatus(
-                          campaign,
-                          submissions,
-                          deliverable.type,
-                          deliverableNumber
-                        );
+                    {(() => {
+                      const typeCounters: Record<string, number> = {};
+                      const renderSlots: React.ReactNode[] = [];
 
-                        return (
-                          <div
-                            key={`${deliverable.type}_${deliverableNumber}`}
-                            className={`flex items-center justify-between p-3 rounded-lg border ${submission?.status === "approved"
-                              ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                              : submission?.status === "needs_revision"
-                                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
-                                : submission?.status === "pending"
-                                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                                  : "border-border"
-                              }`}
-                          >
-                            <div className="flex items-center gap-3 flex-1">
-                              {/* Thumbnail Preview or Emoji */}
-                              {submission ? (
-                                <a
-                                  href={submission.contentUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="relative group flex-shrink-0"
-                                  title="View on Instagram"
-                                >
-                                  <img
-                                    src={submission.thumbnailUrl || submission.contentUrl || "https://via.placeholder.com/80"}
-                                    alt={`${deliverable.type} #${deliverableNumber}`}
-                                    className="w-16 h-16 object-cover rounded-lg border-2 border-border group-hover:border-primary transition-colors"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).src = "https://via.placeholder.com/80";
-                                    }}
-                                  />
-                                  {(deliverable.type === "Reel" || deliverable.type === "Video") && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg group-hover:bg-black/40 transition-colors">
-                                      <Play className="w-6 h-6 text-white fill-white" />
+                      campaign.deliverables.forEach((deliverable) => {
+                        for (let i = 1; i <= deliverable.quantity; i++) {
+                          typeCounters[deliverable.type] = (typeCounters[deliverable.type] || 0) + 1;
+                          const deliverableNumber = typeCounters[deliverable.type];
+
+                          const submission = getDeliverableStatus(
+                            campaign,
+                            submissions,
+                            deliverable.type,
+                            deliverableNumber
+                          );
+
+                          renderSlots.push(
+                            <div
+                              key={`${deliverable.type}_${deliverableNumber}`}
+                              className={`flex items-center justify-between p-3 rounded-lg border ${submission?.status === "approved"
+                                ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                                : submission?.status === "needs_revision"
+                                  ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
+                                  : submission?.status === "pending"
+                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+                                    : "border-border"
+                                }`}
+                            >
+                              <div className="flex items-center gap-3 flex-1">
+                                {/* Thumbnail Preview or Emoji */}
+                                {submission ? (
+                                  <a
+                                    href={submission.contentUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="relative group flex-shrink-0"
+                                    title="View on Platform"
+                                  >
+                                    <img
+                                      src={submission.thumbnailUrl || submission.contentUrl || "https://via.placeholder.com/80"}
+                                      alt={`${deliverable.type} #${deliverableNumber}`}
+                                      className="w-16 h-16 object-cover rounded-lg border-2 border-border group-hover:border-primary transition-colors"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/80";
+                                      }}
+                                    />
+                                    {(deliverable.type === "Reel" || deliverable.type === "Video" || deliverable.type === "TikTok") && (
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg group-hover:bg-black/40 transition-colors">
+                                        <Play className="w-6 h-6 text-white fill-white" />
+                                      </div>
+                                    )}
+                                    <div className="absolute -top-1 -right-1 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <ExternalLink className="w-3 h-3 text-white" />
                                     </div>
-                                  )}
-                                  <div className="absolute -top-1 -right-1 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <ExternalLink className="w-3 h-3 text-white" />
+                                  </a>
+                                ) : (
+                                  <span className="text-3xl flex-shrink-0">
+                                    {deliverable.type === "Post" ? "📸" :
+                                      deliverable.type === "Reel" ? "🎬" :
+                                        deliverable.type === "Story" ? "📱" :
+                                          deliverable.type === "Carousel" ? "🖼️" :
+                                            deliverable.type === "Video" ? "🎥" : "✨"}
+                                  </span>
+                                )}
+                                <div className="flex-1">
+                                  <div className="font-medium">
+                                    {deliverable.type} #{deliverableNumber}
                                   </div>
-                                </a>
-                              ) : (
-                                <span className="text-3xl flex-shrink-0">
-                                  {deliverable.type === "Post" && "📸"}
-                                  {deliverable.type === "Reel" && "🎬"}
-                                  {deliverable.type === "Story" && "📱"}
-                                  {deliverable.type === "Carousel" && "🖼️"}
-                                  {deliverable.type === "Video" && "🎥"}
-                                </span>
-                              )}
-                              <div className="flex-1">
-                                <div className="font-medium">
-                                  {deliverable.type} #{deliverableNumber}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Badge variant={deliverable.required ? "default" : "outline"} className="text-xs">
-                                    {deliverable.required ? "Required" : "Optional"}
-                                  </Badge>
-                                  {submission && (
-                                    <Badge
-                                      variant={
-                                        submission.status === "approved"
-                                          ? "default"
-                                          : submission.status === "needs_revision"
-                                            ? "destructive"
-                                            : submission.status === "revision_requested"
-                                              ? "destructive"
-                                              : "secondary"
-                                      }
-                                      className={
-                                        submission.status === "approved"
-                                          ? "bg-green-100 text-green-700 hover:bg-green-100 border-green-200"
-                                          : "text-xs"
-                                      }
-                                    >
-                                      {submission.status === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
-                                      {(submission.status === "needs_revision" || submission.status === "revision_requested") && <AlertCircle className="w-3 h-3 mr-1" />}
-                                      {submission.status === "pending" && <Clock className="w-3 h-3 mr-1" />}
-                                      {submission.status.replace(/_/g, " ").toUpperCase()}
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant={deliverable.required ? "default" : "outline"} className="text-xs">
+                                      {deliverable.required ? "Required" : "Optional"}
                                     </Badge>
-                                  )}
-                                </div>
-                                {submission?.revisionHistory && submission.revisionHistory.length > 0 && (
-                                  <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded border border-orange-200">
-                                    <p className="text-xs font-medium text-orange-800 dark:text-orange-300">
-                                      ✏️ Edits Requested:
-                                    </p>
-                                    <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
-                                      {submission.revisionHistory[submission.revisionHistory.length - 1].notes}
-                                    </p>
-                                    {submission.status === "revision_requested" && (
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="mt-2 w-full text-xs"
-                                        onClick={() => handleResubmit(campaign, submission)}
+                                    {submission && (
+                                      <Badge
+                                        variant={
+                                          submission.status === "approved"
+                                            ? "default"
+                                            : submission.status === "needs_revision"
+                                              ? "destructive"
+                                              : submission.status === "revision_requested"
+                                                ? "destructive"
+                                                : "secondary"
+                                        }
+                                        className={
+                                          submission.status === "approved"
+                                            ? "bg-green-100 text-green-700 hover:bg-green-100 border-green-200"
+                                            : "text-xs"
+                                        }
                                       >
-                                        <Upload className="w-3 h-3 mr-1" />
-                                        Resubmit Content
-                                      </Button>
+                                        {submission.status === "approved" && <CheckCircle className="w-3 h-3 mr-1" />}
+                                        {(submission.status === "needs_revision" || submission.status === "revision_requested") && <AlertCircle className="w-3 h-3 mr-1" />}
+                                        {submission.status === "pending" && <Clock className="w-3 h-3 mr-1" />}
+                                        {submission.status.replace(/_/g, " ").toUpperCase()}
+                                      </Badge>
                                     )}
                                   </div>
-                                )}
+                                  {submission?.revisionHistory && submission.revisionHistory.length > 0 && (
+                                    <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded border border-orange-200">
+                                      <p className="text-xs font-medium text-orange-800 dark:text-orange-300">
+                                        ✏️ Edits Requested:
+                                      </p>
+                                      <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
+                                        {submission.revisionHistory[submission.revisionHistory.length - 1].notes}
+                                      </p>
+                                      {submission.status === "revision_requested" && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="mt-2 w-full text-xs"
+                                          onClick={() => handleResubmit(campaign, submission)}
+                                        >
+                                          <Upload className="w-3 h-3 mr-1" />
+                                          Resubmit Content
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
 
-                            {/* Delete button for pending submissions */}
-                            {submission?.status === "pending" && submission.id && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteSubmission(submission.id!)}
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-                        );
+                              {/* Delete button for pending submissions */}
+                              {submission?.status === "pending" && submission.id && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteSubmission(submission.id!)}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        }
                       });
-                    })}
+
+                      return renderSlots;
+                    })()}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
