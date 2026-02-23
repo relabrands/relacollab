@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, Share2 } from "lucide-react";
 import { toast } from "sonner";
@@ -228,7 +228,7 @@ export function CampaignShareCard({ campaign, campaignUrl }: CampaignShareCardPr
                         backdropFilter: "blur(10px)",
                     }}
                 >
-                    <QRCode
+                    <QRCodeSVG
                         value={shareUrl}
                         size={120}
                         bgColor="transparent"
