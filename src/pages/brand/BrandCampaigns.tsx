@@ -3,7 +3,7 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { CampaignCard } from "@/components/dashboard/CampaignCard";
-import { Plus, Loader2, Filter, Share2 } from "lucide-react";
+import { Plus, Loader2, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
@@ -112,18 +112,11 @@ export default function BrandCampaigns() {
                 {!loading && filteredCampaigns.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredCampaigns.map((campaign) => (
-                            <div key={campaign.id} className="relative group">
-                                <CampaignCard campaign={campaign} />
-                                {/* Share Button Overlay */}
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                    onClick={() => handleShareCampaign(campaign)}
-                                >
-                                    <Share2 className="w-4 h-4 mr-1" /> Share
-                                </Button>
-                            </div>
+                            <CampaignCard
+                                key={campaign.id}
+                                campaign={campaign}
+                                onShare={() => handleShareCampaign(campaign)}
+                            />
                         ))}
                     </div>
                 ) : !loading && (

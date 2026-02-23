@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, DollarSign, Users, ArrowRight, FileCheck, TrendingUp } from "lucide-react";
+import { Calendar, DollarSign, Users, ArrowRight, FileCheck, TrendingUp, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { collection, query, where, getDocs } from "firebase/firestore";
@@ -22,6 +22,7 @@ interface CampaignCardProps {
     exchangeDetails?: string;
   };
   onClick?: () => void;
+  onShare?: () => void;
 }
 
 const statusColors = {
@@ -31,7 +32,7 @@ const statusColors = {
   pending: "bg-warning/10 text-warning border-warning/20",
 };
 
-export function CampaignCard({ campaign, onClick }: CampaignCardProps) {
+export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     applications: 0,
@@ -153,17 +154,33 @@ export function CampaignCard({ campaign, onClick }: CampaignCardProps) {
         </div>
       )}
 
-      <Button
-        variant="ghost"
-        className="w-full justify-between text-primary hover:text-primary hover:bg-primary/5"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleClick();
-        }}
-      >
-        View Details
-        <ArrowRight className="w-4 h-4" />
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant="ghost"
+          className="flex-1 justify-between text-primary hover:text-primary hover:bg-primary/5"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClick();
+          }}
+        >
+          View Details
+          <ArrowRight className="w-4 h-4" />
+        </Button>
+        {onShare && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="px-3 gap-1.5 text-muted-foreground hover:text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onShare();
+            }}
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            Story
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
