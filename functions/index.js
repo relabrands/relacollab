@@ -983,21 +983,19 @@ registerEmailNotifications(functions, admin, exports);
 // ─── AI Campaign Generator ────────────────────────────────────────────────────
 const { VertexAI: VertexAIForCampaign } = require("@google-cloud/vertexai");
 
-exports.generateCampaign = functions
-    .runWith({ timeoutSeconds: 60, memory: "512MB" })
-    .https.onRequest((req, res) => {
-        return cors(req, res, async () => {
-            if (req.method !== "POST") {
-                return res.status(405).json({ error: "Method not allowed" });
-            }
+exports.generateCampaign = functions.https.onRequest((req, res) => {
+    return cors(req, res, async () => {
+        if (req.method !== "POST") {
+            return res.status(405).json({ error: "Method not allowed" });
+        }
 
-            const { prompt: userPrompt, brandName } = req.body;
+        const { prompt: userPrompt, brandName } = req.body;
 
-            if (!userPrompt || userPrompt.trim().length < 5) {
-                return res.status(400).json({ error: "Se necesita una descripción más detallada." });
-            }
+        if (!userPrompt || userPrompt.trim().length < 5) {
+            return res.status(400).json({ error: "Se necesita una descripción más detallada." });
+        }
 
-            const systemPrompt = `
+        const systemPrompt = `
 Eres un experto en marketing de influencers y estrategia de contenido digital para marcas latinoamericanas.
 Tu tarea es generar un plan de campaña de influencer marketing basado en la descripción de la marca.
 
@@ -1024,57 +1022,57 @@ RESPONDE ÚNICAMENTE con el JSON raw (sin markdown, sin bloques de código, sin 
 }
 `;
 
-            try {
-                const vertexForCampaign = new VertexAIForCampaign({
-                    project: process.env.GCLOUD_PROJECT || "rela-collab",
-                    location: "us-central1",
-                });
+        try {
+            const vertexForCampaign = new VertexAIForCampaign({
+                project: process.env.GCLOUD_PROJECT || "rela-collab",
+                location: "us-central1",
+            });
 
-                const model = vertexForCampaign.preview.getGenerativeModel({
-                    model: "gemini-2.5-flash",
-                    generationConfig: {
-                        maxOutputTokens: 1024,
-                        temperature: 0.85,
-                    },
-                });
+            const model = vertexForCampaign.preview.getGenerativeModel({
+                model: "gemini-2.5-flash",
+                generationConfig: {
+                    maxOutputTokens: 1024,
+                    temperature: 0.85,
+                },
+            });
 
-                const result = await model.generateContent(systemPrompt);
-                let rawText = result.response.candidates[0].content.parts[0].text;
-                console.log("Campaign AI raw:", rawText);
+            const result = await model.generateContent(systemPrompt);
+            let rawText = result.response.candidates[0].content.parts[0].text;
+            console.log("Campaign AI raw:", rawText);
 
-                // Strip markdown code fences if present
-                let cleanText = rawText
-                    .replace(/```json\s*/gi, "")
-                    .replace(/```\s*/g, "")
-                    .trim();
+            // Strip markdown code fences if present
+            let cleanText = rawText
+                .replace(/```json\s*/gi, "")
+                .replace(/```\s*/g, "")
+                .trim();
 
-                // Extract first JSON object
-                const start = cleanText.indexOf("{");
-                const end = cleanText.lastIndexOf("}");
-                if (start !== -1 && end !== -1) {
-                    cleanText = cleanText.substring(start, end + 1);
-                }
-
-                const campaignData = JSON.parse(cleanText);
-
-                // Validate & sanitize vibe values against allowed list
-                const allowedVibes = ["romantic", "party", "family", "healthy", "premium", "adventure"];
-                if (campaignData.brandVibe && Array.isArray(campaignData.brandVibe)) {
-                    campaignData.brandVibe = campaignData.brandVibe.filter(v => allowedVibes.includes(v));
-                }
-
-                // Validate goal value
-                const allowedGoals = ["awareness", "conversion", "content"];
-                if (!allowedGoals.includes(campaignData.goal)) {
-                    campaignData.goal = "awareness";
-                }
-
-                return res.status(200).json({ success: true, campaign: campaignData });
-
-            } catch (error) {
-                console.error("generateCampaign error:", error);
-                return res.status(500).json({ error: "Error generando la campaña. Intenta de nuevo." });
+            // Extract first JSON object
+            const start = cleanText.indexOf("{");
+            const end = cleanText.lastIndexOf("}");
+            if (start !== -1 && end !== -1) {
+                cleanText = cleanText.substring(start, end + 1);
             }
-        });
+
+            const campaignData = JSON.parse(cleanText);
+
+            // Validate & sanitize vibe values against allowed list
+            const allowedVibes = ["romantic", "party", "family", "healthy", "premium", "adventure"];
+            if (campaignData.brandVibe && Array.isArray(campaignData.brandVibe)) {
+                campaignData.brandVibe = campaignData.brandVibe.filter(v => allowedVibes.includes(v));
+            }
+
+            // Validate goal value
+            const allowedGoals = ["awareness", "conversion", "content"];
+            if (!allowedGoals.includes(campaignData.goal)) {
+                campaignData.goal = "awareness";
+            }
+
+            return res.status(200).json({ success: true, campaign: campaignData });
+
+        } catch (error) {
+            console.error("generateCampaign error:", error);
+            return res.status(500).json({ error: "Error generando la campaña. Intenta de nuevo." });
+        }
     });
+});
 
