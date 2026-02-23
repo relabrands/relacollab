@@ -171,22 +171,22 @@ export function CampaignShareCard({ campaign, campaignUrl }: CampaignShareCardPr
                     }}
                 />
 
-                {/* ── Tagline (above campaign title) ───────────────────── */}
-                <p
+                {/* ── Tagline headline (above campaign title) ──────────── */}
+                <h2
                     style={{
                         marginTop: 22,
-                        width: 300,
+                        width: 310,
                         textAlign: "center",
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: "rgba(200,180,255,0.6)",
-                        lineHeight: 1.5,
-                        letterSpacing: 0.2,
+                        fontSize: 22,
+                        fontWeight: 800,
+                        color: "#ffffff",
+                        lineHeight: 1.3,
+                        letterSpacing: -0.3,
                     }}
                 >
-                    We're looking for creators to
-                    <br />collaborate with us.
-                </p>
+                    ¡Buscamos creadores para
+                    <br />colaborar con nosotros!
+                </h2>
 
                 {/* ── Campaign title ───────────────────────────────────── */}
                 <h1
