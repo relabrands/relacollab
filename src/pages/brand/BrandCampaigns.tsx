@@ -3,18 +3,21 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { CampaignCard } from "@/components/dashboard/CampaignCard";
-import { Plus, Loader2, Filter } from "lucide-react";
+import { Plus, Loader2, Filter, Share2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CampaignShareCard } from "@/components/brand/CampaignShareCard";
 
 export default function BrandCampaigns() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [campaigns, setCampaigns] = useState<any[]>([]);
     const [filter, setFilter] = useState("all");
+    const [selectedCampaignToShare, setSelectedCampaignToShare] = useState<any | null>(null);
 
     useEffect(() => {
         const fetchCampaigns = async () => {
@@ -42,6 +45,10 @@ export default function BrandCampaigns() {
         if (filter === "all") return true;
         return c.status === filter;
     });
+
+    const handleShareCampaign = (campaign: any) => {
+        setSelectedCampaignToShare(campaign);
+    };
 
     return (
         <div className="flex min-h-screen bg-background">
@@ -105,7 +112,18 @@ export default function BrandCampaigns() {
                 {!loading && filteredCampaigns.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredCampaigns.map((campaign) => (
-                            <CampaignCard key={campaign.id} campaign={campaign} />
+                            <div key={campaign.id} className="relative group">
+                                <CampaignCard campaign={campaign} />
+                                {/* Share Button Overlay */}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                    onClick={() => handleShareCampaign(campaign)}
+                                >
+                                    <Share2 className="w-4 h-4 mr-1" /> Share
+                                </Button>
+                            </div>
                         ))}
                     </div>
                 ) : !loading && (
@@ -124,6 +142,28 @@ export default function BrandCampaigns() {
                     </div>
                 )}
             </main>
+
+            {/* Share Campaign Story Dialog */}
+            <Dialog open={!!selectedCampaignToShare} onOpenChange={() => setSelectedCampaignToShare(null)}>
+                <DialogContent className="max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle>Download Story Card</DialogTitle>
+                    </DialogHeader>
+                    {selectedCampaignToShare && (
+                        <div className="flex justify-center py-2">
+                            <CampaignShareCard
+                                campaign={{
+                                    id: selectedCampaignToShare.id,
+                                    title: selectedCampaignToShare.name || selectedCampaignToShare.title,
+                                    brandName: selectedCampaignToShare.brandName || "",
+                                    brandLogo: selectedCampaignToShare.brandLogo || selectedCampaignToShare.logoUrl || "",
+                                    category: selectedCampaignToShare.category || selectedCampaignToShare.vibes?.[0] || "",
+                                }}
+                            />
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
