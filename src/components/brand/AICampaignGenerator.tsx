@@ -93,7 +93,7 @@ export function AICampaignGenerator({ brandName, onGenerated }: AICampaignGenera
                     </div>
                     <div>
                         <p className="text-sm font-semibold text-white/80">Asistente IA de Campañas</p>
-                        <p className="text-xs text-purple-300/50">Muy pronto: Describe tu idea y Gemini lo hará por ti</p>
+                        <p className="text-xs text-purple-300/50">Muy pronto: Describe tu idea y RELA AI lo hará por ti</p>
                     </div>
                 </div>
                 {open ? (
@@ -136,7 +136,7 @@ export function AICampaignGenerator({ brandName, onGenerated }: AICampaignGenera
                             </Button>
 
                             <p className="text-[11px] text-center text-purple-400/40">
-                                Powered by Gemini 2.5 Flash · Esta función estará disponible en la próxima actualización
+                                Powered by RELA AI · Esta función estará disponible en la próxima actualización
                             </p>
                         </div>
                     </motion.div>

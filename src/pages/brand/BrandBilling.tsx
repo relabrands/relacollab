@@ -22,7 +22,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { collection, query, where, getDocs, orderBy, doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -317,7 +318,7 @@ export default function BrandBilling() {
                     <DialogHeader>
                         <DialogTitle>Subir Comprobante de Pago</DialogTitle>
                         <DialogDescription>
-                            Pega el link del comprobante de transferencia (Google Drive, Dropbox, etc.).
+                            Sube una foto o PDF del comprobante de transferencia.
                         </DialogDescription>
                     </DialogHeader>
                     {selectedInvoice && (
@@ -327,13 +328,51 @@ export default function BrandBilling() {
                             <p className="font-bold text-primary text-base">${selectedInvoice.totalGross.toLocaleString()} USD</p>
                         </div>
                     )}
-                    <div className="space-y-2">
-                        <Label>URL del Comprobante</Label>
-                        <Input
-                            placeholder="https://drive.google.com/..."
-                            value={receiptUrl}
-                            onChange={(e) => setReceiptUrl(e.target.value)}
-                        />
+                    <div className="space-y-3">
+                        <Label>Archivo del Comprobante</Label>
+                        <div className="flex items-center gap-4">
+                            {receiptUrl ? (
+                                <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 rounded-xl border border-green-200 dark:border-green-500/20 w-full">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2 className="w-5 h-5 shrink-0" />
+                                        <p className="text-sm font-medium">Archivo listo para enviar</p>
+                                    </div>
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => setReceiptUrl("")} className="h-8 hover:bg-green-100 dark:hover:bg-green-500/20 hover:text-green-800 dark:hover:text-green-300">
+                                        Cambiar
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    disabled={isSubmitting}
+                                    className="cursor-pointer file:text-primary file:font-medium hover:file:bg-primary/10 file:bg-primary/5 file:border-0 file:mr-4 file:px-4 file:py-2 file:rounded-md transition-all"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file || !user) return;
+
+                                        const toastId = toast.loading("Subiendo comprobante...");
+                                        setIsSubmitting(true);
+                                        try {
+                                            const fileExt = file.name.split('.').pop();
+                                            const fileName = `receipts/${user.uid}_${Date.now()}.${fileExt}`;
+                                            const storageRef = ref(storage, fileName);
+
+                                            await uploadBytes(storageRef, file);
+                                            const downloadURL = await getDownloadURL(storageRef);
+
+                                            setReceiptUrl(downloadURL);
+                                            toast.success("Archivo subido correctamente", { id: toastId });
+                                        } catch (error) {
+                                            console.error("Upload error:", error);
+                                            toast.error("Error al subir el archivo", { id: toastId });
+                                        } finally {
+                                            setIsSubmitting(false);
+                                        }
+                                    }}
+                                />
+                            )}
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsUploadOpen(false)}>Cancelar</Button>
