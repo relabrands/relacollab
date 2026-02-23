@@ -18,6 +18,7 @@ import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { AICampaignGenerator } from "@/components/brand/AICampaignGenerator";
 
 const goalOptions = [
   { id: "awareness", label: "Awareness", description: "Increase brand visibility" },
@@ -150,6 +151,32 @@ export default function CreateCampaign() {
       vibes: prev.vibes.includes(vibeId)
         ? prev.vibes.filter((v) => v !== vibeId)
         : [...prev.vibes, vibeId],
+    }));
+  };
+
+  // ── AI Campaign Generator handler ──────────────────────────────
+  const handleAIGenerated = (aiData: {
+    title: string;
+    description: string;
+    goal: string;
+    brandVibe: string[];
+    audience: string;
+    goals: string[];
+  }) => {
+    setFormData((prev) => ({
+      ...prev,
+      name: aiData.title || prev.name,
+      description: [
+        aiData.description || "",
+        aiData.audience ? `\n\nPúblico objetivo: ${aiData.audience}` : "",
+        aiData.goals?.length
+          ? `\n\nObjetivos:\n${aiData.goals.map((g, i) => `${i + 1}. ${g}`).join("\n")}`
+          : "",
+      ]
+        .join("")
+        .trim(),
+      goal: aiData.goal || prev.goal,
+      vibes: aiData.brandVibe?.length ? aiData.brandVibe : prev.vibes,
     }));
   };
 
@@ -390,6 +417,15 @@ export default function CreateCampaign() {
 
         {/* Form Steps */}
         <div className="max-w-2xl mx-auto">
+
+          {/* ── AI Campaign Generator (show only on step 1) ── */}
+          {step === 1 && (
+            <AICampaignGenerator
+              brandName={(formData as any).brandName || ""}
+              onGenerated={handleAIGenerated}
+            />
+          )}
+
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div

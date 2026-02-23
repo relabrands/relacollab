@@ -978,3 +978,103 @@ RESPONDE SOLO con este JSON raw (sin markdown):
 // ─── Email Notifications (Resend) ─────────────────────────────────────────────
 const { registerEmailNotifications } = require("./src/email/notifications");
 registerEmailNotifications(functions, admin, exports);
+
+
+// ─── AI Campaign Generator ────────────────────────────────────────────────────
+const { VertexAI: VertexAIForCampaign } = require("@google-cloud/vertexai");
+
+exports.generateCampaign = functions
+    .runWith({ timeoutSeconds: 60, memory: "512MB" })
+    .https.onRequest((req, res) => {
+        return cors(req, res, async () => {
+            if (req.method !== "POST") {
+                return res.status(405).json({ error: "Method not allowed" });
+            }
+
+            const { prompt: userPrompt, brandName } = req.body;
+
+            if (!userPrompt || userPrompt.trim().length < 5) {
+                return res.status(400).json({ error: "Se necesita una descripción más detallada." });
+            }
+
+            const systemPrompt = `
+Eres un experto en marketing de influencers y estrategia de contenido digital para marcas latinoamericanas.
+Tu tarea es generar un plan de campaña de influencer marketing basado en la descripción de la marca.
+
+MARCA: ${brandName || "la marca"}
+DESCRIPCIÓN DE LA IDEA: ${userPrompt}
+
+GENERA un JSON estructurado con la siguiente información:
+
+1. "title": Un nombre de campaña creativo y atractivo (máx 8 palabras) que enganche al creador.
+2. "description": Una descripción clara y motivadora (2-4 frases) de qué debe hacer el creador, qué contenido crear y qué se espera de él/ella.
+3. "goal": El objetivo principal. DEBE ser exactamente uno de estos valores: "awareness", "conversion", "content".
+4. "brandVibe": Un array de 1-3 etiquetas de estilo que representen el vibe de la campaña. DEBES elegir solo de esta lista exacta: ["romantic", "party", "family", "healthy", "premium", "adventure"].
+5. "audience": Una descripción breve (1-2 frases) del público objetivo ideal para esta campaña.
+6. "goals": Un array de exactamente 3 objetivos específicos y medibles para la campaña (ej: "Generar 10 posts en Instagram con el producto").
+
+RESPONDE ÚNICAMENTE con el JSON raw (sin markdown, sin bloques de código, sin texto adicional). Ejemplo de formato:
+{
+  "title": "Verano Saludable con [Marca]",
+  "description": "Crea contenido mostrando cómo integras nuestro producto en tu rutina de verano...",
+  "goal": "awareness",
+  "brandVibe": ["healthy", "adventure"],
+  "audience": "Jóvenes de 18-35 años interesados en vida saludable y bienestar.",
+  "goals": ["Generar 15 posts en Instagram", "Alcanzar 50,000 impresiones", "Obtener 500 menciones del hashtag"]
+}
+`;
+
+            try {
+                const vertexForCampaign = new VertexAIForCampaign({
+                    project: process.env.GCLOUD_PROJECT || "rela-collab",
+                    location: "us-central1",
+                });
+
+                const model = vertexForCampaign.preview.getGenerativeModel({
+                    model: "gemini-2.5-flash",
+                    generationConfig: {
+                        maxOutputTokens: 1024,
+                        temperature: 0.85,
+                    },
+                });
+
+                const result = await model.generateContent(systemPrompt);
+                let rawText = result.response.candidates[0].content.parts[0].text;
+                console.log("Campaign AI raw:", rawText);
+
+                // Strip markdown code fences if present
+                let cleanText = rawText
+                    .replace(/```json\s*/gi, "")
+                    .replace(/```\s*/g, "")
+                    .trim();
+
+                // Extract first JSON object
+                const start = cleanText.indexOf("{");
+                const end = cleanText.lastIndexOf("}");
+                if (start !== -1 && end !== -1) {
+                    cleanText = cleanText.substring(start, end + 1);
+                }
+
+                const campaignData = JSON.parse(cleanText);
+
+                // Validate & sanitize vibe values against allowed list
+                const allowedVibes = ["romantic", "party", "family", "healthy", "premium", "adventure"];
+                if (campaignData.brandVibe && Array.isArray(campaignData.brandVibe)) {
+                    campaignData.brandVibe = campaignData.brandVibe.filter(v => allowedVibes.includes(v));
+                }
+
+                // Validate goal value
+                const allowedGoals = ["awareness", "conversion", "content"];
+                if (!allowedGoals.includes(campaignData.goal)) {
+                    campaignData.goal = "awareness";
+                }
+
+                return res.status(200).json({ success: true, campaign: campaignData });
+
+            } catch (error) {
+                console.error("generateCampaign error:", error);
+                return res.status(500).json({ error: "Error generando la campaña. Intenta de nuevo." });
+            }
+        });
+    });
+
