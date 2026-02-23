@@ -76,25 +76,30 @@ export function AICampaignGenerator({ brandName, onGenerated }: AICampaignGenera
     };
 
     return (
-        <div className="mb-8 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-[#1a0533]/80 to-[#0d0d1a]/80 backdrop-blur-sm overflow-hidden shadow-lg shadow-purple-900/20">
+        <div className="mb-8 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-[#1a0533]/80 to-[#0d0d1a]/80 backdrop-blur-sm overflow-hidden shadow-lg shadow-purple-900/20 relative">
+            {/* ── Coming Soon Overlay / Badge ─────────────────────────── */}
+            <div className="absolute top-4 right-14 z-10 px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-500/50 text-xs font-bold text-purple-300 uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+                Coming Soon
+            </div>
+
             {/* ── Header / toggle ─────────────────────────────────────── */}
             <button
                 onClick={() => setOpen((v) => !v)}
                 className="w-full flex items-center justify-between px-6 py-4 text-left focus:outline-none group"
             >
                 <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center shadow-md shadow-purple-700/40">
-                        <Sparkles className="w-4 h-4 text-white" />
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600/50 to-indigo-600/50 flex items-center justify-center shadow-md shadow-purple-700/20">
+                        <Sparkles className="w-4 h-4 text-white/50" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-white">Asistente IA de Campañas</p>
-                        <p className="text-xs text-purple-300/70">Describe tu idea y Gemini generará todo por ti</p>
+                        <p className="text-sm font-semibold text-white/80">Asistente IA de Campañas</p>
+                        <p className="text-xs text-purple-300/50">Muy pronto: Describe tu idea y Gemini lo hará por ti</p>
                     </div>
                 </div>
                 {open ? (
-                    <ChevronUp className="w-4 h-4 text-purple-400" />
+                    <ChevronUp className="w-4 h-4 text-purple-400/50" />
                 ) : (
-                    <ChevronDown className="w-4 h-4 text-purple-400" />
+                    <ChevronDown className="w-4 h-4 text-purple-400/50" />
                 )}
             </button>
 
@@ -117,60 +122,21 @@ export function AICampaignGenerator({ brandName, onGenerated }: AICampaignGenera
                                 onChange={(e) => setPrompt(e.target.value)}
                                 placeholder="Ej: Somos una cafetería en Caracas que quiere colaborar con creadores para mostrar nuestra nueva colección de bebidas de temporada. Buscamos contenido auténtico y lifestyle para redes sociales..."
                                 rows={4}
-                                disabled={loading}
-                                className="bg-white/5 border-purple-500/25 text-white placeholder:text-purple-300/40 resize-none focus:border-purple-500/60 focus:ring-purple-500/20 text-sm"
+                                disabled={true}
+                                className="bg-white/5 border-purple-500/10 text-white/50 placeholder:text-purple-300/30 resize-none cursor-not-allowed text-sm"
                             />
-
-                            {/* Loading shimmer */}
-                            <AnimatePresence mode="wait">
-                                {loading && (
-                                    <motion.div
-                                        key="shimmer"
-                                        initial={{ opacity: 0, y: 6 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -6 }}
-                                        className="space-y-3"
-                                    >
-                                        {/* Animated message */}
-                                        <motion.p
-                                            key={msgIndex}
-                                            initial={{ opacity: 0, x: 10 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -10 }}
-                                            className="text-sm text-purple-300 font-medium flex items-center gap-2"
-                                        >
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
-                                            {LOADING_MESSAGES[msgIndex]}
-                                        </motion.p>
-
-                                        {/* Shimmer bars */}
-                                        {[80, 60, 90, 45].map((w, i) => (
-                                            <div
-                                                key={i}
-                                                style={{ width: `${w}%` }}
-                                                className="h-3 rounded-full bg-gradient-to-r from-purple-800/40 via-purple-600/30 to-purple-800/40 animate-pulse"
-                                            />
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
 
                             {/* Generate button */}
                             <Button
-                                onClick={handleGenerate}
-                                disabled={loading || prompt.trim().length < 10}
-                                className="w-full gap-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-purple-700/30 transition-all duration-200 disabled:opacity-50"
+                                disabled={true}
+                                className="w-full gap-2.5 bg-gradient-to-r from-purple-900 to-indigo-900 text-white/50 font-semibold py-3 rounded-xl cursor-not-allowed opacity-70"
                             >
-                                {loading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Wand2 className="w-4 h-4" />
-                                )}
-                                {loading ? "Generando campaña..." : "Generar con IA"}
+                                <Wand2 className="w-4 h-4" />
+                                Generar con IA (Próximamente)
                             </Button>
 
-                            <p className="text-[11px] text-center text-purple-400/50">
-                                Powered by Gemini 2.5 Flash · Los campos del formulario se llenarán automáticamente
+                            <p className="text-[11px] text-center text-purple-400/40">
+                                Powered by Gemini 2.5 Flash · Esta función estará disponible en la próxima actualización
                             </p>
                         </div>
                     </motion.div>

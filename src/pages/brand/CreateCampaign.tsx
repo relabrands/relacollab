@@ -406,7 +406,7 @@ export default function CreateCampaign() {
               </div>
             ))}
           </div>
-          <div className="flex justify-center gap-16 md:gap-24 mt-4 text-xs md:text-sm text-muted-foreground">
+          <div className="flex justify-center flex-wrap gap-4 sm:gap-8 md:gap-24 mt-4 text-xs md:text-sm text-muted-foreground">
             <span className={step === 1 ? "text-primary font-medium" : ""}>Basics</span>
             <span className={step === 2 ? "text-primary font-medium" : ""}>Goals</span>
             <span className={step === 3 ? "text-primary font-medium" : ""}>Audience</span>
@@ -433,7 +433,7 @@ export default function CreateCampaign() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="glass-card p-8"
+                className="glass-card p-5 sm:p-8"
               >
                 <h2 className="text-xl font-semibold mb-6">Campaign Basics</h2>
 
@@ -525,7 +525,7 @@ export default function CreateCampaign() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="startDate">Start Date</Label>
                       <Input
@@ -561,14 +561,14 @@ export default function CreateCampaign() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="glass-card p-8"
+                className="glass-card p-5 sm:p-8"
               >
                 <h2 className="text-xl font-semibold mb-6">Campaign Goals</h2>
 
                 <div className="space-y-6">
                   <div>
                     <Label className="mb-4 block">What's your main goal?</Label>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {goalOptions.map((goal) => (
                         <button
                           key={goal.id}
@@ -591,7 +591,7 @@ export default function CreateCampaign() {
 
                   <div>
                     <Label className="mb-4 block">Brand Vibe (select multiple)</Label>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {vibeOptions.map((vibe) => (
                         <button
                           key={vibe.id}
@@ -617,7 +617,7 @@ export default function CreateCampaign() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="glass-card p-8"
+                className="glass-card p-5 sm:p-8"
               >
                 <h2 className="text-xl font-semibold mb-6">Target Audience</h2>
 
@@ -640,7 +640,7 @@ export default function CreateCampaign() {
 
                   <div>
                     <Label className="mb-4 block">Age Range</Label>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {["18-24", "25-34", "35-44", "45+"].map((age) => (
                         <button
                           key={age}
@@ -667,7 +667,7 @@ export default function CreateCampaign() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="glass-card p-8"
+                className="glass-card p-5 sm:p-8"
               >
                 <h2 className="text-xl font-semibold mb-6">Tipo de Contenido & Compensación</h2>
 
@@ -990,7 +990,7 @@ export default function CreateCampaign() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="glass-card p-8"
+                className="glass-card p-5 sm:p-8"
               >
                 <h2 className="text-xl font-semibold mb-6">Visit & Scheduling</h2>
 
@@ -1016,7 +1016,7 @@ export default function CreateCampaign() {
                   {formData.requiresVisit && (
                     <div className="space-y-6 p-6 bg-primary/5 rounded-xl border border-primary/10">
                       {/* Visit Location */}
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="visitLocation">Dirección / Local</Label>
                           <Input
@@ -1068,7 +1068,7 @@ export default function CreateCampaign() {
                       </div>
 
                       {/* Time Windows */}
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="visitStartTime">Hora de inicio</Label>
                           <Input
