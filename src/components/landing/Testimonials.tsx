@@ -3,50 +3,50 @@ import { Star } from "lucide-react";
 
 const testimonials = [
     {
-        quote: "RELA Collab changed my life. I went from struggling to find brand deals to having a consistent stream of opportunities that actually match my content style. The AI matching is scary accurate!",
+        quote: "RELA Collab me cambió la vida. Pasé de luchar por conseguir acuerdos a tener un flujo constante de oportunidades que realmente encajan con mi estilo. ¡El matching de IA es increíblemente preciso!",
         name: "María González",
         handle: "@mariagram",
-        role: "Lifestyle Creator • 85K followers",
+        role: "Creadora • 85K seguidores",
         type: "creator",
         avatar: "MG",
     },
     {
-        quote: "We launched three campaigns through RELA Collab and saw a 3x improvement in engagement compared to our previous influencer strategy. The creator quality is genuinely impressive.",
+        quote: "Lanzamos tres campañas en RELA Collab y vimos una mejora de 3x en la interacción con respecto a nuestra estrategia anterior. La calidad de los creadores es impresionante.",
         name: "Carlos Reyes",
         handle: "Director de Marketing",
-        role: "Beauty Brand • Santo Domingo",
+        role: "Marca de Belleza",
         type: "brand",
         avatar: "CR",
     },
     {
-        quote: "The AI match scores are real. Every creator I've worked with through RELA was a genuine fit. I've cut my creator sourcing time by 80%.",
+        quote: "Los scores de match son reales. Cada creador con el que trabajé fue la elección correcta. He reducido mi tiempo de búsqueda en un 80%.",
         name: "Daniela Ortiz",
         handle: "CMO",
-        role: "Fashion Startup",
+        role: "Startup de Moda",
         type: "brand",
         avatar: "DO",
     },
     {
-        quote: "Finally a platform that treats creators like professionals. Transparent pay, real brands, and I get notified when opportunities land in my feed — no more inbox hunting.",
+        quote: "Por fin una plataforma que trata a los creadores como profesionales. Pagos transparentes, marcas reales, y me notifican cuando llegan oportunidades, ya no tengo que buscar.",
         name: "Luis Marte",
         handle: "@luismarte",
-        role: "Fitness Creator • 42K followers",
+        role: "Creador Fitness • 42K seguidores",
         type: "creator",
         avatar: "LM",
     },
     {
-        quote: "We reduced our influencer spend by 40% and doubled our content output. The campaign dashboard makes everything effortless to manage.",
+        quote: "Redujimos nuestro gasto en influencers en un 40% y duplicamos nuestro contenido. El dashboard hace que todo sea súper fácil de gestionar.",
         name: "Sofía Tavares",
         handle: "Growth Lead",
-        role: "Tech Startup",
+        role: "Startup Tech",
         type: "brand",
         avatar: "ST",
     },
     {
-        quote: "I was skeptical, but after my first paid campaign I was hooked. My first deal came within a week of signing up. No cold emails, no awkward negotiations — just content creation.",
+        quote: "Era escéptica, pero después de mi primera campaña pagada me enganché. Mi primer acuerdo llegó a la semana de registrarme. Sin correos fríos ni negociaciones incómodas.",
         name: "Ana Belén",
         handle: "@anabelen",
-        role: "Food & Travel Creator • 120K followers",
+        role: "Creadora de Viajes • 120K seguidores",
         type: "creator",
         avatar: "AB",
     },
@@ -76,14 +76,14 @@ export function Testimonials() {
                     >
                         <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 text-success text-sm font-medium mb-6">
                             <Star className="w-4 h-4 fill-success" />
-                            What People Are Saying
+                            Lo que dice la gente
                         </span>
                         <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                            Trusted by Creators{" "}
-                            <span className="gradient-text">& Brands Alike</span>
+                            Elegido por Creadores{" "}
+                            <span className="gradient-text">y Marcas por igual</span>
                         </h2>
                         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                            Real results from real people. See why RELA Collab is the preferred UGC platform in Latin America.
+                            Resultados reales de personas reales. Descubre por qué RELA Collab es la plataforma de UGC preferida en Latinoamérica.
                         </p>
                     </motion.div>
 
@@ -114,11 +114,11 @@ export function Testimonials() {
                                     </div>
                                     <span
                                         className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${testimonial.type === "creator"
-                                                ? "bg-accent/10 text-accent"
-                                                : "bg-primary/10 text-primary"
+                                            ? "bg-accent/10 text-accent"
+                                            : "bg-primary/10 text-primary"
                                             }`}
                                     >
-                                        {testimonial.type === "creator" ? "Creator" : "Brand"}
+                                        {testimonial.type === "creator" ? "Creador" : "Marca"}
                                     </span>
                                 </div>
                             </motion.div>

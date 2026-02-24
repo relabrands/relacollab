@@ -6,26 +6,26 @@ import { FileText, Sparkles, Users, CheckCircle, Inbox, DollarSign, Star, Phone 
 const brandSteps = [
   {
     icon: FileText,
-    title: "Create Your Campaign Brief",
-    description: "Define your goals, target audience, budget, and brand vibe. Our smart form guides you through every detail.",
+    title: "Crea el brief de tu campaña",
+    description: "Define tus objetivos, público, presupuesto e identidad. Nuestro formulario te guía en cada detalle.",
     color: "primary",
   },
   {
     icon: Sparkles,
-    title: "AI Finds Your Best Matches",
-    description: "Our AI cross-references your brief against thousands of creator profiles. You receive a curated shortlist ranked by match score.",
+    title: "La IA encuentra tus mejores matches",
+    description: "Nuestra IA cruza tu brief con miles de perfiles. Recibes una lista curada calificada por nivel de coincidencia.",
     color: "accent",
   },
   {
     icon: Users,
-    title: "Invite & Collaborate",
-    description: "Review match scores and creator portfolios, send proposals, and start the collaboration right inside the platform.",
+    title: "Invita y colabora",
+    description: "Revisa puntajes de match y portafolios, envía propuestas e inicia la colaboración desde la plataforma.",
     color: "success",
   },
   {
     icon: CheckCircle,
-    title: "Approve Content & Pay",
-    description: "Review submitted UGC, request revisions if needed, approve content, and release payment — all in one click.",
+    title: "Aprueba el contenido y paga",
+    description: "Revisa el UGC, pide revisiones si es necesario, aprueba el contenido y libera el pago con un clic.",
     color: "primary",
   },
 ];
@@ -33,26 +33,26 @@ const brandSteps = [
 const creatorSteps = [
   {
     icon: Phone,
-    title: "Build Your Creator Profile",
-    description: "Connect your TikTok or Instagram, select your content categories, and let your audience data speak for itself.",
+    title: "Crea tu perfil de creador",
+    description: "Conecta tu TikTok o Instagram, elige tus categorías y deja que los datos de tu audiencia hablen por sí solos.",
     color: "accent",
   },
   {
     icon: Inbox,
-    title: "Discover Matched Opportunities",
-    description: "Browse campaigns ranked by how well they align with your niche, style, and audience. Every opportunity is scored for you.",
+    title: "Descubre oportunidades perfectas",
+    description: "Explora campañas ordenadas por qué tanto encajan con tu nicho y audiencia. Cada una tiene un puntaje calculado para ti.",
     color: "primary",
   },
   {
     icon: Star,
-    title: "Apply or Get Invited",
-    description: "Apply to campaigns you love, or receive direct invitations from brands that have already chosen you as their ideal match.",
+    title: "Aplica o recibe invitaciones",
+    description: "Aplica a las campañas que te encanten o recibe invitaciones de marcas que ya te eligieron como su match ideal.",
     color: "success",
   },
   {
     icon: DollarSign,
-    title: "Create, Submit & Get Paid",
-    description: "Submit your content link, wait for brand approval, and receive your payment securely — no invoices, no chasing.",
+    title: "Crea, envía y recibe tu pago",
+    description: "Sube el link de tu contenido, espera la aprobación de la marca y recibe tu pago. Así de sencillo.",
     color: "primary",
   },
 ];
@@ -71,9 +71,9 @@ export function HowItWorks() {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">How It Works</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">Cómo funciona</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            A simple, powerful flow — whether you're a brand or a creator.
+            Un flujo simple y poderoso, ya seas una marca o un creador.
           </p>
 
           {/* Toggle */}
@@ -84,7 +84,7 @@ export function HowItWorks() {
               onClick={() => setActiveView("brand")}
               className="px-6"
             >
-              I'm a Brand
+              Soy una Marca
             </Button>
             <Button
               variant={activeView === "creator" ? "default" : "ghost"}
@@ -92,7 +92,7 @@ export function HowItWorks() {
               onClick={() => setActiveView("creator")}
               className="px-6"
             >
-              I'm a Creator
+              Soy un Creador
             </Button>
           </div>
         </motion.div>
@@ -123,7 +123,7 @@ export function HowItWorks() {
                 >
                   <step.icon className="w-7 h-7 text-primary-foreground" />
                 </div>
-                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Step {index + 1}</div>
+                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Paso {index + 1}</div>
                 <h3 className="font-semibold text-base mb-2">{step.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{step.description}</p>
               </div>

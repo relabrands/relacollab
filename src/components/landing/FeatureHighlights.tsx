@@ -4,43 +4,43 @@ import { Sparkles, BarChart3, Shield, Zap, MessageSquare, Clock } from "lucide-r
 const features = [
     {
         icon: Sparkles,
-        title: "AI Match Intelligence",
-        description: "Our matching engine trains on thousands of campaign performance signals to surface the right creator for every brief — instantly.",
+        title: "Inteligencia de Match con IA",
+        description: "Nuestro motor de matching se entrena con miles de señales de rendimiento de campañas para encontrar al creador adecuado para cada brief, al instante.",
         gradient: "from-primary/20 to-primary/5",
         iconGradient: "bg-gradient-primary",
     },
     {
         icon: BarChart3,
-        title: "Live Campaign Analytics",
-        description: "Track every metric that matters — reach, impressions, engagement rate, link clicks — in real time across all your active campaigns.",
+        title: "Analíticas de Campaña en Vivo",
+        description: "Rastrea cada métrica importante (alcance, impresiones, tasa de interacción, clics en enlaces) en tiempo real en todas tus campañas activas.",
         gradient: "from-accent/20 to-accent/5",
         iconGradient: "bg-gradient-accent",
     },
     {
         icon: Shield,
-        title: "Escrow-Protected Payments",
-        description: "Brands fund campaigns upfront. Creators get paid automatically the moment their content is approved. Zero disputes, zero delays.",
+        title: "Pagos Protegidos en Custodia",
+        description: "Las marcas financian las campañas por adelantado. Los creadores reciben su pago automáticamente en cuanto su contenido es aprobado. Cero disputas, cero retrasos.",
         gradient: "from-success/20 to-success/5",
         iconGradient: "bg-gradient-success",
     },
     {
         icon: Zap,
-        title: "Instant Creator Discovery",
-        description: "Filter by niche, follower count, location, engagement rate, and platform. Identify your ideal creator in under 60 seconds.",
+        title: "Descubrimiento Instantáneo de Creadores",
+        description: "Filtra por nicho, cantidad de seguidores, ubicación, tasa de interacción y plataforma. Identifica a tu creador ideal en menos de 60 segundos.",
         gradient: "from-warning/20 to-warning/5",
         iconGradient: "bg-gradient-to-br from-warning to-orange-500",
     },
     {
         icon: MessageSquare,
-        title: "Built-in Collaboration Hub",
-        description: "Brief sharing, content submission, revision requests, and approvals — everything happens in-platform. No more email chaos.",
+        title: "Centro de Colaboración Integrado",
+        description: "Envío de briefs, presentación de contenido, solicitudes de revisión y aprobaciones: todo sucede en la plataforma. Dile adiós al caos de correos.",
         gradient: "from-primary/15 to-accent/10",
         iconGradient: "bg-gradient-primary",
     },
     {
         icon: Clock,
-        title: "Campaign Timeline Management",
-        description: "Set deadlines, send automated reminders, and track deliverable status from brief to final approval with a visual campaign timeline.",
+        title: "Gestión de Tiempos de Campaña",
+        description: "Establece fechas límite, envía recordatorios automáticos y rastrea el estado de los entregables desde el brief hasta la aprobación final con una línea de tiempo visual.",
         gradient: "from-accent/15 to-success/10",
         iconGradient: "bg-gradient-accent",
     },
@@ -60,14 +60,14 @@ export function FeatureHighlights() {
                     >
                         <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 text-primary text-sm font-medium mb-6">
                             <Sparkles className="w-4 h-4" />
-                            Platform Features
+                            Características de la Plataforma
                         </span>
                         <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                            Everything You Need to{" "}
-                            <span className="gradient-text">Run Great UGC</span>
+                            Todo lo que necesitas para{" "}
+                            <span className="gradient-text">gestionar un gran UGC</span>
                         </h2>
                         <p className="text-xl text-sidebar-foreground/70 max-w-2xl mx-auto">
-                            A complete toolkit for modern creator-brand collaborations — from discovery to payment, all in one place.
+                            Un kit de herramientas completo para colaboraciones modernas entre creadores y marcas: desde el descubrimiento hasta el pago, todo en un solo lugar.
                         </p>
                     </motion.div>
 

@@ -35,7 +35,7 @@ export function Hero() {
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
               <Sparkles className="w-4 h-4" />
-              AI-Powered Creator Matching Platform
+              Plataforma de Matching de Creadores impulsada por IA
             </span>
           </motion.div>
 
@@ -46,8 +46,8 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            <span className="block">Where Brands Meet</span>
-            <span className="gradient-text">Their Perfect Creator</span>
+            <span className="block">Donde las marcas encuentran</span>
+            <span className="gradient-text">a su creador perfecto</span>
           </motion.h1>
 
           {/* Subheadline */}
@@ -57,8 +57,8 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            The smarter UGC marketplace. We don't just list creators — we{" "}
-            <span className="text-foreground font-semibold">match them with precision</span> using AI trained on real campaign results.
+            El marketplace de UGC más inteligente. No solo listamos creadores: los{" "}
+            <span className="text-foreground font-semibold">conectamos con precisión</span> usando IA entrenada con resultados reales de campañas.
           </motion.p>
 
           {/* Quick Value Props */}
@@ -68,7 +68,7 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.25 }}
           >
-            {["No cold pitching", "Secure payments", "Real-time analytics", "Vetted creators"].map((item) => (
+            {["Sin propuestas en frío", "Pagos seguros", "Analíticas en tiempo real", "Creadores verificados"].map((item) => (
               <span key={item} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground px-3 py-1 rounded-full border border-border/60 bg-background/50">
                 <CheckCircle className="w-3.5 h-3.5 text-success" />
                 {item}
@@ -85,13 +85,13 @@ export function Hero() {
           >
             <Link to="/login">
               <Button variant="hero" size="xl">
-                I'm a Brand
+                Soy una Marca
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
             <Link to="/login">
               <Button variant="glass" size="xl">
-                I'm a Creator
+                Soy un Creador
                 <Zap className="w-5 h-5" />
               </Button>
             </Link>
@@ -106,19 +106,19 @@ export function Hero() {
           >
             <div className="text-center">
               <div className="text-3xl md:text-4xl font-bold text-primary mb-1">2.5K+</div>
-              <div className="text-muted-foreground text-xs md:text-sm">Verified Creators</div>
+              <div className="text-muted-foreground text-xs md:text-sm">Creadores verificados</div>
             </div>
             <div className="text-center">
               <div className="text-3xl md:text-4xl font-bold text-primary mb-1">94%</div>
-              <div className="text-muted-foreground text-xs md:text-sm">AI Match Accuracy</div>
+              <div className="text-muted-foreground text-xs md:text-sm">Precisión de IA</div>
             </div>
             <div className="text-center">
               <div className="text-3xl md:text-4xl font-bold text-primary mb-1">500+</div>
-              <div className="text-muted-foreground text-xs md:text-sm">Brands Served</div>
+              <div className="text-muted-foreground text-xs md:text-sm">Marcas registradas</div>
             </div>
             <div className="text-center">
               <div className="text-3xl md:text-4xl font-bold text-primary mb-1">3x</div>
-              <div className="text-muted-foreground text-xs md:text-sm">Avg. Engagement Boost</div>
+              <div className="text-muted-foreground text-xs md:text-sm">Aumento de interacción</div>
             </div>
           </motion.div>
         </div>
@@ -136,9 +136,9 @@ export function Hero() {
                 <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-4">
                   <Sparkles className="w-6 h-6 text-primary-foreground" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">AI Match Engine</h3>
+                <h3 className="font-semibold text-lg mb-2">Motor de Matching con IA</h3>
                 <p className="text-muted-foreground text-sm">
-                  Deep analysis of campaign goals, creator audience data, and engagement patterns for precise matching.
+                  Análisis profundo de objetivos de campaña, datos de audiencia y patrones de interacción para un matching preciso.
                 </p>
               </div>
 
@@ -146,9 +146,9 @@ export function Hero() {
                 <div className="w-12 h-12 rounded-xl bg-gradient-accent flex items-center justify-center mb-4">
                   <TrendingUp className="w-6 h-6 text-accent-foreground" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">Performance Tracking</h3>
+                <h3 className="font-semibold text-lg mb-2">Seguimiento de rendimiento</h3>
                 <p className="text-muted-foreground text-sm">
-                  Real-time metrics across every campaign deliverable. Know your ROI before the campaign ends.
+                  Métricas en tiempo real de cada entregable de la campaña. Conoce tu ROI antes de que termine.
                 </p>
               </div>
 
@@ -156,9 +156,9 @@ export function Hero() {
                 <div className="w-12 h-12 rounded-xl bg-gradient-success flex items-center justify-center mb-4">
                   <Shield className="w-6 h-6 text-success-foreground" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">Protected Payments</h3>
+                <h3 className="font-semibold text-lg mb-2">Pagos protegidos</h3>
                 <p className="text-muted-foreground text-sm">
-                  Escrow-style payments ensure funds are only released when content is reviewed and approved.
+                  Pagos en custodia aseguran que los fondos solo se liberen cuando el contenido sea revisado y aprobado.
                 </p>
               </div>
             </div>

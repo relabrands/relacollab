@@ -41,10 +41,10 @@ export function ContentExamples() {
                                     controlsList="nodownload nofullscreen noremoteplayback"
                                 />
                                 <div className="absolute top-4 left-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm z-10">
-                                    <span className="text-red-500">❤️</span> 14.2K Reach
+                                    <span className="text-red-500">❤️</span> 14.2K Alcance
                                 </div>
                                 <div className="absolute top-12 left-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm z-10">
-                                    <span className="text-gray-500">💬</span> 45 comments
+                                    <span className="text-gray-500">💬</span> 45 comentarios
                                 </div>
                             </motion.div>
                         </div>
@@ -70,10 +70,10 @@ export function ContentExamples() {
                                     controlsList="nodownload nofullscreen noremoteplayback"
                                 />
                                 <div className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm z-10">
-                                    <span className="text-red-500">❤️</span> 18.5K Reach
+                                    <span className="text-red-500">❤️</span> 18.5K Alcance
                                 </div>
                                 <div className="absolute top-12 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm z-10">
-                                    <span className="text-gray-500">💬</span> 34 comments
+                                    <span className="text-gray-500">💬</span> 34 comentarios
                                 </div>
                             </motion.div>
                         </div>
@@ -90,26 +90,26 @@ export function ContentExamples() {
                     >
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
                             <span className="w-2 h-2 rounded-full bg-primary"></span>
-                            Real creators, real results
+                            Creadores reales, resultados reales
                         </div>
 
                         <h2 className="text-4xl md:text-5xl font-bold leading-tight text-foreground">
-                            82% of people try a new place because they saw it on social media.
+                            El 82% de las personas prueban un lugar nuevo porque lo vieron en redes sociales.
                         </h2>
 
                         <p className="text-xl text-muted-foreground">
-                            With TikTok and Reels becoming search engines, your next customer
-                            is looking for you long before they open Google.
+                            Con TikTok y Reels convirtiéndose en motores de búsqueda, tu próximo cliente
+                            te está buscando mucho antes de abrir Google.
                         </p>
 
                         <div className="grid grid-cols-2 gap-4 pt-6">
                             <div className="p-4 rounded-xl border border-border bg-background shadow-sm text-center">
                                 <div className="text-3xl font-bold text-primary mb-1">+200%</div>
-                                <div className="text-sm font-medium text-muted-foreground">Organic views</div>
+                                <div className="text-sm font-medium text-muted-foreground">Vistas orgánicas</div>
                             </div>
                             <div className="p-4 rounded-xl border border-border bg-background shadow-sm text-center">
                                 <div className="text-3xl font-bold text-success mb-1">-55%</div>
-                                <div className="text-sm font-medium text-muted-foreground">Content costs</div>
+                                <div className="text-sm font-medium text-muted-foreground">Costo de contenido</div>
                             </div>
                         </div>
                     </motion.div>

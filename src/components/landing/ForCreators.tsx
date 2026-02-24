@@ -6,33 +6,33 @@ import { ArrowRight, Zap, DollarSign, Star, TrendingUp, Inbox, Award } from "luc
 const creatorBenefits = [
     {
         icon: Inbox,
-        title: "Opportunities Come to You",
-        description: "No more cold pitching or chasing brands. Get matched with campaigns that fit your content style and audience naturally.",
+        title: "Las oportunidades llegan a ti",
+        description: "No más propuestas en frío ni perseguir marcas. Consigue matches con campañas que se ajusten naturalmente a tu estilo y audiencia.",
     },
     {
         icon: DollarSign,
-        title: "Real, Transparent Pay",
-        description: "Know exactly what you'll earn before you apply. Paid campaigns, product exchanges, or both — you get to choose what works for you.",
+        title: "Pago real y transparente",
+        description: "Conoce exactamente cuánto ganarás antes de aplicar. Campañas pagadas, intercambios de productos o ambos: tú eliges.",
     },
     {
         icon: Zap,
-        title: "AI-Matched, Not Randomly Assigned",
-        description: "Our AI scores your profile against each campaign. Only high-fit opportunities land in your feed, so every application counts.",
+        title: "Matching con IA, no asignaciones al azar",
+        description: "Nuestra IA califica tu perfil frente a cada campaña. Solo las oportunidades de alta coincidencia llegan a tu feed.",
     },
     {
         icon: TrendingUp,
-        title: "Grow Your Creator Business",
-        description: "Build a track record with verified campaign wins, accumulate reviews, and unlock higher-paying brand deals over time.",
+        title: "Haz crecer tu negocio como creador",
+        description: "Construye un historial con campañas verificadas, acumula reseñas y desbloquea acuerdos mejor pagados.",
     },
     {
         icon: Star,
-        title: "Showcase Your Best Work",
-        description: "Your content library lives on your creator profile, making it easy for brands to discover and fall in love with your style.",
+        title: "Muestra tu mejor trabajo",
+        description: "Tu biblioteca de contenido vive en tu perfil de creador, facilitando que las marcas descubran tu estilo.",
     },
     {
         icon: Award,
-        title: "Protected Payments — Always",
-        description: "Brands fund campaigns before you even start creating. No chasing invoices. No ghosting. Your earnings are always secured.",
+        title: "Pagos protegidos, siempre",
+        description: "Las marcas financian las campañas antes de que empieces a crear. Sin facturas pendientes, sin ghosting. Tus ganancias están aseguradas.",
     },
 ];
 
@@ -51,14 +51,14 @@ export function ForCreators() {
                     >
                         <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-6">
                             <Zap className="w-4 h-4" />
-                            For Creators
+                            Para Creadores
                         </span>
                         <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                            Turn Your Content Into{" "}
-                            <span className="gradient-text">Consistent Income</span>
+                            Convierte tu contenido en{" "}
+                            <span className="gradient-text">Ingresos consistentes</span>
                         </h2>
                         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                            Stop struggling to find brand deals. RELA Collab connects you with companies that actually match your niche, audience, and creative style.
+                            Deja de lidiar para conseguir acuerdos con marcas. RELA Collab te conecta con empresas que realmente encajan con tu nicho, audiencia y estilo.
                         </p>
                     </motion.div>
 
@@ -91,14 +91,14 @@ export function ForCreators() {
                         transition={{ duration: 0.5 }}
                     >
                         <h3 className="text-2xl md:text-3xl font-bold mb-4">
-                            Ready to Work with Your Dream Brands?
+                            ¿Listo para trabajar con tus marcas ideales?
                         </h3>
                         <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-                            Apply in minutes. Get matched instantly. Start creating for brands that value your audience.
+                            Aplica en minutos. Consigue matches al instante. Empieza a crear para marcas que valoran tu audiencia.
                         </p>
                         <Link to="/login">
                             <Button variant="glass" size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
-                                Join as a Creator
+                                Únete como Creador
                                 <ArrowRight className="w-5 h-5" />
                             </Button>
                         </Link>

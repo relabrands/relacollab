@@ -22,10 +22,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const navLinks = [
-  { label: "Home", href: "/", sectionId: null },
-  { label: "How It Works", href: "/#how-it-works", sectionId: "how-it-works" },
-  { label: "For Brands", href: "/#for-brands", sectionId: "for-brands" },
-  { label: "For Creators", href: "/apply", sectionId: null },
+  { label: "Inicio", href: "/", sectionId: null },
+  { label: "Cómo funciona", href: "/#how-it-works", sectionId: "how-it-works" },
+  { label: "Para Marcas", href: "/#for-brands", sectionId: "for-brands" },
+  { label: "Para Creadores", href: "/apply", sectionId: null },
 ];
 
 export function Header() {

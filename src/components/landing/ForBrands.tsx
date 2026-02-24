@@ -6,33 +6,33 @@ import { ArrowRight, Sparkles, BarChart3, Clock, ShieldCheck, Target, Users } fr
 const brandBenefits = [
     {
         icon: Sparkles,
-        title: "AI-Powered Creator Matching",
-        description: "Stop sifting through hundreds of profiles. Our AI instantly finds creators whose audience, vibe, and engagement perfectly match your campaign goals.",
+        title: "Matching de creadores con IA",
+        description: "Olvídate de revisar cientos de perfiles. Nuestra IA encuentra al instante creadores cuya audiencia, estilo e interacción encajan con tus objetivos.",
     },
     {
         icon: Target,
-        title: "Campaigns That Actually Convert",
-        description: "Set your objectives, target demographics, and brand identity — we surface creators whose followers will genuinely resonate with your products.",
+        title: "Campañas que realmente convierten",
+        description: "Define tus objetivos, público objetivo e identidad de marca; nosotros encontramos creadores cuyos seguidores conectarán genuinamente con tus productos.",
     },
     {
         icon: Clock,
-        title: "Launch in Hours, Not Weeks",
-        description: "From campaign brief to live content in record time. Manage every deliverable, deadline, and approval in one unified dashboard.",
+        title: "Lanza en horas, no en semanas",
+        description: "Desde el brief de la campaña hasta el contenido en vivo en tiempo récord. Gestiona todo en un solo panel.",
     },
     {
         icon: BarChart3,
-        title: "Real-Time Performance Analytics",
-        description: "Track views, engagement, reach, and ROI across every creator's post. Know exactly what's working so you can optimize fast.",
+        title: "Analíticas de rendimiento en tiempo real",
+        description: "Rastrea vistas, interacción, alcance y ROI en las publicaciones de cada creador. Conoce exactamente qué funciona.",
     },
     {
         icon: ShieldCheck,
-        title: "Secure, Risk-Free Payments",
-        description: "Funds are only released when you approve the content. Zero risk, full control over your UGC investment.",
+        title: "Pagos seguros y sin riesgos",
+        description: "Los fondos solo se liberan cuando apruebas el contenido. Cero riesgo, control total sobre tu inversión en UGC.",
     },
     {
         icon: Users,
-        title: "Curated Creator Network",
-        description: "Every creator on RELA Collab is verified. We vet for real engagement, quality content, and professional reliability.",
+        title: "Red curada de creadores",
+        description: "Cada creador en RELA Collab está verificado. Validamos su interacción real, contenido de calidad y profesionalismo.",
     },
 ];
 
@@ -51,14 +51,14 @@ export function ForBrands() {
                     >
                         <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
                             <Target className="w-4 h-4" />
-                            For Brands
+                            Para Marcas
                         </span>
                         <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                            Find the Perfect Creator.{" "}
-                            <span className="gradient-text">Every Time.</span>
+                            Encuentra al creador perfecto.{" "}
+                            <span className="gradient-text">Siempre.</span>
                         </h2>
                         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                            Stop gambling on influencer partnerships. RELA Collab's AI ensures every creator you work with is a genuine fit for your brand.
+                            Deja de adivinar en tus campañas con influencers. La IA de RELA Collab asegura que cada creador con el que trabajes sea ideal para tu marca.
                         </p>
                     </motion.div>
 
@@ -91,14 +91,14 @@ export function ForBrands() {
                         transition={{ duration: 0.5 }}
                     >
                         <h3 className="text-2xl md:text-3xl font-bold mb-4">
-                            Start Your First AI-Matched Campaign Today
+                            Inicia tu primera campaña con IA hoy
                         </h3>
                         <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-                            Join hundreds of brands that have replaced guesswork with data-driven creator partnerships.
+                            Únete a cientos de marcas que han reemplazado las suposiciones con colaboraciones basadas en datos.
                         </p>
                         <Link to="/login">
                             <Button variant="hero" size="lg">
-                                Get Started as a Brand
+                                Empezar como Marca
                                 <ArrowRight className="w-5 h-5" />
                             </Button>
                         </Link>

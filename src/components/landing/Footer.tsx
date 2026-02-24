@@ -17,24 +17,24 @@ export function Footer() {
 
           <div className="flex flex-wrap items-center gap-6 text-sm text-sidebar-foreground/70">
             <Link to="/" className="hover:text-sidebar-foreground transition-colors">
-              Home
+              Inicio
             </Link>
-            <Link to="/brand" className="hover:text-sidebar-foreground transition-colors">
-              For Brands
+            <Link to="/#for-brands" className="hover:text-sidebar-foreground transition-colors">
+              Para Marcas
             </Link>
-            <Link to="/creator" className="hover:text-sidebar-foreground transition-colors">
-              For Creators
+            <Link to="/apply" className="hover:text-sidebar-foreground transition-colors">
+              Para Creadores
             </Link>
             <Link to="/politica-de-privacidad" className="hover:text-sidebar-foreground transition-colors">
-              Privacy Policy
+              Política de Privacidad
             </Link>
             <Link to="/terminos-y-condiciones" className="hover:text-sidebar-foreground transition-colors">
-              Terms & Conditions
+              Términos y Condiciones
             </Link>
           </div>
 
           <div className="text-sm text-sidebar-foreground/50">
-            © 2026 RELA Collab. All rights reserved.
+            © 2026 RELA Collab. Todos los derechos reservados.
           </div>
         </div>
       </div>

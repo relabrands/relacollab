@@ -20,7 +20,7 @@ export function TrustedBrands() {
                     className="text-center mb-12"
                 >
                     <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-                        Top brands grow with RELA Collab
+                        Marcas top crecen con RELA Collab
                     </h2>
                 </motion.div>
 
