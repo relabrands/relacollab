@@ -14,145 +14,145 @@ import {
     Target,
     CheckCircle2,
     ArrowRight,
+    Star,
     Instagram,
-    Star
+    Play,
+    Clock,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Header } from "@/components/landing/Header";
 
 export default function Apply() {
-    const benefits = [
+    const beneficios = [
         {
             icon: DollarSign,
-            title: "Get Paid for Your Content",
-            description: "Earn competitive rates for authentic content that brands love. You set your worth, we help you get it."
+            title: "Cobros Garantizados",
+            description: "Recibe pagos puntuales por cada campaña completada. Sin perseguir marcas, sin incertidumbre."
         },
         {
             icon: Target,
-            title: "AI-Powered Matching",
-            description: "Our smart algorithm connects you with brands that perfectly align with your style and audience."
+            title: "Matching con IA",
+            description: "Nuestro algoritmo te conecta con marcas que encajan con tu estilo, nicho y audiencia perfectamente."
         },
         {
             icon: Zap,
-            title: "Instant Opportunities",
-            description: "Access hundreds of campaigns daily. Apply with one click and start creating within hours."
+            title: "Oportunidades Diarias",
+            description: "Accede a decenas de campañas activas todos los días. Aplica con un clic y empieza a crear."
         },
         {
             icon: Shield,
-            title: "Secure & Protected",
-            description: "Guaranteed payments, contract protection, and dedicated support. Focus on creating, we handle the rest."
+            title: "Contratos Protegidos",
+            description: "Cada colaboración está respaldada por un contrato digital. Tú creas, nosotros protegemos."
         },
         {
             icon: Award,
-            title: "Build Your Portfolio",
-            description: "Showcase your best work and build lasting relationships with world-class brands."
+            title: "Construye tu Portafolio",
+            description: "Trabaja con marcas reconocidas y construye un portafolio que abra más puertas."
         },
         {
             icon: TrendingUp,
-            title: "Grow Your Influence",
-            description: "Access exclusive training, analytics, and resources to level up your creator game."
+            title: "Crece como Creador",
+            description: "Accede a analytics, recursos y capacitaciones exclusivas para llevar tu contenido al siguiente nivel."
         }
     ];
 
-    const stats = [
-        { value: "10K+", label: "Active Creators" },
-        { value: "500+", label: "Brand Partners" },
-        { value: "$2M+", label: "Paid to Creators" },
-        { value: "98%", label: "Satisfaction Rate" }
+    const estadisticas = [
+        { value: "10K+", label: "Creadores activos" },
+        { value: "500+", label: "Marcas aliadas" },
+        { value: "$2M+", label: "Pagado a creadores" },
+        { value: "98%", label: "Satisfacción" }
     ];
 
-    const howItWorks = [
+    const comoFunciona = [
         {
             step: "01",
-            title: "Create Your Profile",
-            description: "Sign up in minutes. Connect your social accounts and showcase your unique style.",
+            title: "Crea tu perfil",
+            description: "Regístrate en minutos. Conecta tu Instagram y/o TikTok y muestra tu estilo único.",
             icon: Camera
         },
         {
             step: "02",
-            title: "Get Matched",
-            description: "Our AI finds campaigns that fit your vibe, audience, and content style perfectly.",
+            title: "Recibe matches",
+            description: "Nuestra IA analiza tu perfil y te sugiere campañas que se adaptan a tu contenido y audiencia.",
             icon: Sparkles
         },
         {
             step: "03",
-            title: "Create & Earn",
-            description: "Submit your content, get approved, and receive payment. It's that simple.",
+            title: "Crea y gana",
+            description: "Entrega tu contenido, obtén aprobación y recibe tu pago. Así de simple.",
             icon: CheckCircle2
         }
     ];
 
+    const requisitos = [
+        "Tener cuenta activa en Instagram o TikTok",
+        "Mínimo 1,000 seguidores",
+        "Contenido original y auténtico",
+        "Disponibilidad para completar campañas a tiempo",
+        "Ganas de crecer y colaborar con marcas"
+    ];
+
     return (
         <div className="min-h-screen bg-background">
-            {/* Navbar */}
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
-                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-                            <Sparkles className="w-4 h-4 text-primary-foreground" />
-                        </div>
-                        <span className="font-bold text-lg">RELA Collab</span>
-                    </Link>
-                    <div className="flex items-center gap-4">
-                        <Link to="/login">
-                            <Button variant="ghost" size="sm">Sign In</Button>
-                        </Link>
-                        <Link to="/login">
-                            <Button variant="hero" size="sm">Get Started</Button>
-                        </Link>
-                    </div>
-                </div>
-            </nav>
+            <Header />
 
             {/* Hero Section */}
-            <section className="pt-32 pb-20 px-4 relative overflow-hidden">
-                {/* Background gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-background -z-10" />
+            <section className="pt-28 pb-20 px-4 relative overflow-hidden">
+                {/* Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-accent/5 to-background -z-10" />
+                <div className="absolute top-20 left-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl -z-10" />
+                <div className="absolute bottom-10 right-1/4 w-48 h-48 bg-accent/10 rounded-full blur-3xl -z-10" />
 
-                <div className="container mx-auto max-w-6xl">
+                <div className="container mx-auto max-w-5xl">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 24 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
                         className="text-center space-y-6"
                     >
-                        <Badge className="px-4 py-1.5 text-sm font-medium">
-                            <Star className="w-3 h-3 mr-1 fill-current" />
-                            Join 10,000+ Creators Earning Daily
+                        <Badge className="px-4 py-1.5 text-sm font-medium gap-1.5">
+                            <Star className="w-3 h-3 fill-current" />
+                            Únete a +10,000 creadores que ya ganan
                         </Badge>
 
-                        <h1 className="text-5xl md:text-7xl font-bold leading-tight">
-                            Turn Your Content Into
+                        <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight">
+                            Convierte tu contenido
                             <br />
-                            <span className="text-gradient">Consistent Income</span>
+                            <span className="text-gradient">en ingresos reales</span>
                         </h1>
 
                         <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                            The smartest UGC marketplace powered by AI. Connect with top brands, create authentic content, and get paid for what you love doing.
+                            La plataforma de UGC más inteligente de Latinoamérica. Conecta con marcas top, crea contenido auténtico y cobra por lo que amas hacer.
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                             <Link to="/login">
-                                <Button variant="hero" size="lg" className="text-lg px-8 h-14 group">
-                                    Start Earning Today
-                                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                                <Button size="lg" className="text-lg px-8 h-14 group gap-2">
+                                    Empezar a ganar hoy
+                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </Button>
                             </Link>
-                            <Button variant="outline" size="lg" className="text-lg px-8 h-14">
-                                See How It Works
+                            <Button variant="outline" size="lg" className="text-lg px-8 h-14 gap-2">
+                                <Play className="w-4 h-4 fill-current" />
+                                Ver cómo funciona
                             </Button>
                         </div>
 
+                        <p className="text-sm text-muted-foreground">
+                            Sin costo · Sin tarjeta de crédito · Empieza en menos de 3 minutos
+                        </p>
+
                         {/* Stats */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-12 max-w-4xl mx-auto">
-                            {stats.map((stat, index) => (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-12 max-w-3xl mx-auto">
+                            {estadisticas.map((stat, index) => (
                                 <motion.div
                                     key={stat.label}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.2 + index * 0.1 }}
+                                    transition={{ delay: 0.3 + index * 0.1 }}
                                     className="text-center"
                                 >
-                                    <div className="text-4xl md:text-5xl font-bold text-gradient mb-2">
+                                    <div className="text-4xl md:text-5xl font-bold text-gradient mb-1">
                                         {stat.value}
                                     </div>
                                     <div className="text-sm text-muted-foreground">{stat.label}</div>
@@ -163,19 +163,19 @@ export default function Apply() {
                 </div>
             </section>
 
-            {/* How It Works */}
-            <section className="py-20 px-4 bg-muted/30">
+            {/* Cómo Funciona */}
+            <section id="como-funciona" className="py-20 px-4 bg-muted/30">
                 <div className="container mx-auto max-w-6xl">
                     <div className="text-center mb-16">
-                        <Badge className="mb-4">Simple Process</Badge>
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4">How It Works</h2>
+                        <Badge className="mb-4">Proceso simple</Badge>
+                        <h2 className="text-4xl md:text-5xl font-bold mb-4">Cómo funciona</h2>
                         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                            From signup to your first payment in three simple steps
+                            Desde que te registras hasta tu primer pago en solo tres pasos
                         </p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
-                        {howItWorks.map((item, index) => (
+                        {comoFunciona.map((item, index) => (
                             <motion.div
                                 key={item.step}
                                 initial={{ opacity: 0, y: 20 }}
@@ -183,14 +183,14 @@ export default function Apply() {
                                 viewport={{ once: true }}
                                 transition={{ delay: index * 0.2 }}
                             >
-                                <Card className="relative overflow-hidden h-full hover:shadow-lg transition-shadow">
+                                <Card className="relative overflow-hidden h-full hover:shadow-lg transition-all hover:border-primary/30 group">
                                     <CardContent className="p-8">
-                                        <div className="absolute top-0 right-0 text-9xl font-bold text-primary/5">
+                                        <div className="absolute top-0 right-0 text-9xl font-bold text-primary/5 leading-none select-none">
                                             {item.step}
                                         </div>
                                         <div className="relative">
-                                            <div className="w-14 h-14 rounded-2xl bg-gradient-primary flex items-center justify-center mb-6">
-                                                <item.icon className="w-7 h-7 text-primary-foreground" />
+                                            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
+                                                <item.icon className="w-7 h-7 text-primary" />
                                             </div>
                                             <h3 className="text-2xl font-bold mb-3">{item.title}</h3>
                                             <p className="text-muted-foreground leading-relaxed">
@@ -205,36 +205,36 @@ export default function Apply() {
                 </div>
             </section>
 
-            {/* Benefits Grid */}
+            {/* Beneficios */}
             <section className="py-20 px-4">
                 <div className="container mx-auto max-w-6xl">
                     <div className="text-center mb-16">
-                        <Badge className="mb-4">Why Choose Us</Badge>
+                        <Badge className="mb-4">Por qué elegirnos</Badge>
                         <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                            Everything You Need to Succeed
+                            Todo lo que necesitas para triunfar
                         </h2>
                         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                            We've built the ultimate platform for creators who want to monetize their content without the hassle
+                            Construimos la plataforma definitiva para creadores que quieren monetizar sin complicaciones
                         </p>
                     </div>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {benefits.map((benefit, index) => (
+                        {beneficios.map((beneficio, index) => (
                             <motion.div
-                                key={benefit.title}
+                                key={beneficio.title}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
-                                transition={{ delay: index * 0.1 }}
+                                transition={{ delay: index * 0.08 }}
                             >
-                                <Card className="h-full hover:shadow-lg transition-all hover:border-primary/50">
+                                <Card className="h-full hover:shadow-md transition-all hover:border-primary/40 group">
                                     <CardContent className="p-6">
-                                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                                            <benefit.icon className="w-6 h-6 text-primary" />
+                                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                                            <beneficio.icon className="w-6 h-6 text-primary" />
                                         </div>
-                                        <h3 className="text-xl font-bold mb-2">{benefit.title}</h3>
-                                        <p className="text-muted-foreground leading-relaxed">
-                                            {benefit.description}
+                                        <h3 className="text-lg font-bold mb-2">{beneficio.title}</h3>
+                                        <p className="text-muted-foreground text-sm leading-relaxed">
+                                            {beneficio.description}
                                         </p>
                                     </CardContent>
                                 </Card>
@@ -244,77 +244,164 @@ export default function Apply() {
                 </div>
             </section>
 
-            {/* Social Proof */}
+            {/* Requisitos */}
             <section className="py-20 px-4 bg-muted/30">
-                <div className="container mx-auto max-w-4xl text-center">
-                    <Badge className="mb-6">Trusted by Creators Worldwide</Badge>
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                        Join the Creator Economy Revolution
-                    </h2>
-                    <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-                        From micro-influencers to established content creators, thousands trust RELA Collab to grow their business and secure consistent income through authentic brand partnerships.
-                    </p>
+                <div className="container mx-auto max-w-4xl">
+                    <div className="grid md:grid-cols-2 gap-12 items-center">
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                        >
+                            <Badge className="mb-4">¿Califico?</Badge>
+                            <h2 className="text-4xl font-bold mb-4 leading-tight">
+                                ¿Qué necesitas para unirte?
+                            </h2>
+                            <p className="text-muted-foreground mb-8 leading-relaxed">
+                                Buscamos creadores auténticos de cualquier nicho: food, lifestyle, belleza, tecnología, fitness y más. Si tienes audiencia y pasión, tienes un lugar aquí.
+                            </p>
+                            <ul className="space-y-3">
+                                {requisitos.map((req, i) => (
+                                    <motion.li
+                                        key={i}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        whileInView={{ opacity: 1, x: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: i * 0.08 }}
+                                        className="flex items-center gap-3"
+                                    >
+                                        <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                                        </div>
+                                        <span className="text-sm font-medium">{req}</span>
+                                    </motion.li>
+                                ))}
+                            </ul>
+                        </motion.div>
 
-                    <div className="flex justify-center gap-2 mb-8">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <Star key={star} className="w-8 h-8 fill-yellow-400 text-yellow-400" />
-                        ))}
-                    </div>
+                        <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            className="space-y-4"
+                        >
+                            {/* Testimonial card */}
+                            <Card className="border-primary/20 bg-primary/5">
+                                <CardContent className="p-6">
+                                    <div className="flex gap-1 mb-3">
+                                        {[1, 2, 3, 4, 5].map(s => (
+                                            <Star key={s} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                        ))}
+                                    </div>
+                                    <p className="text-sm italic text-muted-foreground mb-4 leading-relaxed">
+                                        "Antes tardaba semanas buscando marcas. Ahora RELA Collab me manda oportunidades que encajan perfecto con mi contenido. ¡Ya generé más de $3,000 en mis primeros 2 meses!"
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm">
+                                            VM
+                                        </div>
+                                        <div>
+                                            <div className="font-semibold text-sm">Valentina M.</div>
+                                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                                <Instagram className="w-3 h-3" /> 45K seguidores · Lifestyle
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                    <p className="text-sm text-muted-foreground mb-12">
-                        Rated 4.9/5 from 2,500+ creator reviews
-                    </p>
-
-                    <div className="glass-card p-8 md:p-12">
-                        <Instagram className="w-12 h-12 text-primary mx-auto mb-6" />
-                        <p className="text-lg md:text-xl italic mb-6 text-muted-foreground leading-relaxed">
-                            "RELA Collab changed my life. I went from struggling to find brand deals to having a consistent stream of opportunities that actually match my content style. The AI matching is scary accurate!"
-                        </p>
-                        <div className="flex items-center justify-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-gradient-primary" />
-                            <div className="text-left">
-                                <div className="font-bold">Sarah Martinez</div>
-                                <div className="text-sm text-muted-foreground">Content Creator, 125K followers</div>
-                            </div>
-                        </div>
+                            <Card>
+                                <CardContent className="p-6">
+                                    <div className="flex gap-1 mb-3">
+                                        {[1, 2, 3, 4, 5].map(s => (
+                                            <Star key={s} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                        ))}
+                                    </div>
+                                    <p className="text-sm italic text-muted-foreground mb-4 leading-relaxed">
+                                        "Lo que más me gusta es la transparencia. Sé exactamente cuánto voy a cobrar antes de aceptar una campaña. No más sorpresas, no más regateos."
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center text-white font-bold text-sm">
+                                            CR
+                                        </div>
+                                        <div>
+                                            <div className="font-semibold text-sm">Carlos R.</div>
+                                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                                <Instagram className="w-3 h-3" /> 22K seguidores · Food & Tech
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
                     </div>
                 </div>
             </section>
 
-            {/* Final CTA */}
+            {/* CTA Final */}
             <section className="py-20 px-4">
                 <div className="container mx-auto max-w-4xl">
-                    <Card className="glass-card border-primary/20 overflow-hidden">
-                        <CardContent className="p-12 text-center relative">
-                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/10 to-transparent -z-10" />
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                    >
+                        <Card className="border-primary/20 overflow-hidden relative">
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent" />
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <CardContent className="p-12 text-center relative">
+                                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                                    <Users className="w-8 h-8 text-primary" />
+                                </div>
+                                <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                                    ¿Listo para empezar a ganar?
+                                </h2>
+                                <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
+                                    Únete a miles de creadores que ya monetizan su contenido con marcas que los valoran. Es gratis y toma menos de 3 minutos.
+                                </p>
 
-                            <Users className="w-16 h-16 text-primary mx-auto mb-6" />
-                            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                                Ready to Start Earning?
-                            </h2>
-                            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                                Join thousands of creators who are already making money doing what they love. It's free to join and takes less than 3 minutes.
-                            </p>
+                                <Link to="/login">
+                                    <Button size="lg" className="text-lg px-12 h-14 group gap-2">
+                                        Crear mi cuenta gratis
+                                        <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                                    </Button>
+                                </Link>
 
-                            <Link to="/login">
-                                <Button variant="hero" size="lg" className="text-lg px-12 h-14 group">
-                                    Create Your Free Account
-                                    <Sparkles className="w-5 h-5 ml-2 group-hover:rotate-12 transition-transform" />
-                                </Button>
-                            </Link>
-
-                            <p className="text-sm text-muted-foreground mt-6">
-                                No credit card required • Start earning in 24 hours • Cancel anytime
-                            </p>
-                        </CardContent>
-                    </Card>
+                                <div className="flex items-center justify-center gap-6 mt-8 text-sm text-muted-foreground">
+                                    <span className="flex items-center gap-1.5">
+                                        <CheckCircle2 className="w-4 h-4 text-primary" />
+                                        Sin tarjeta de crédito
+                                    </span>
+                                    <span className="flex items-center gap-1.5">
+                                        <Clock className="w-4 h-4 text-primary" />
+                                        Aprobación en 24h
+                                    </span>
+                                    <span className="flex items-center gap-1.5">
+                                        <Shield className="w-4 h-4 text-primary" />
+                                        100% seguro
+                                    </span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 </div>
             </section>
 
             {/* Footer */}
             <footer className="py-8 px-4 border-t border-border">
-                <div className="container mx-auto max-w-6xl text-center text-sm text-muted-foreground">
-                    <p>&copy; 2024 RELA Collab. All rights reserved.</p>
+                <div className="container mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+                    <p>© 2025 RELA Collab. Todos los derechos reservados.</p>
+                    <div className="flex gap-4">
+                        <Link to="/politica-de-privacidad" className="hover:text-foreground transition-colors">
+                            Privacidad
+                        </Link>
+                        <Link to="/terminos-y-condiciones" className="hover:text-foreground transition-colors">
+                            Términos
+                        </Link>
+                        <Link to="/login" className="hover:text-foreground transition-colors">
+                            Iniciar sesión
+                        </Link>
+                    </div>
                 </div>
             </footer>
         </div>
