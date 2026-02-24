@@ -739,20 +739,36 @@ exports.analyzeCreatorMatch = onDocumentWritten("campaigns/{campaignId}/matches/
         const hasIg = igPosts.length > 0;
         const hasTiktok = tiktokPosts.length > 0;
 
+        const igPostsTagged = igPosts.map(p => ({ ...p, _platform: 'Instagram' }));
+        const tiktokPostsTagged = tiktokPosts.map(p => ({ ...p, _platform: 'TikTok' }));
+
         // Combine and sort by date (newest first)
-        const allPosts = [...igPosts, ...tiktokPosts]
+        const allPosts = [...igPostsTagged, ...tiktokPostsTagged]
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
             .slice(0, 15); // Analyze last 15 posts total
 
         // 3. Prepare Data for AI
-        const postsData = allPosts.map(p => ({
-            platform: p.media_type === 'VIDEO' ? (p.view_count ? 'TikTok' : 'Instagram Reel') : 'Instagram Post',
-            caption: p.caption ? p.caption.substring(0, 200) : "", // Truncate for token limit
-            views: p.view_count || p.views || 0,
-            likes: p.like_count || 0,
-            comments: p.comments_count || 0,
-            date: p.timestamp
-        }));
+        const postsData = allPosts.map(p => {
+            const isIg = p._platform === 'Instagram';
+            const isVideo = p.media_type === 'VIDEO' || p.media_product_type === 'REELS';
+            let platformLabel;
+            if (isIg) {
+                platformLabel = isVideo ? 'Instagram Reel' : 'Instagram Post';
+            } else {
+                platformLabel = 'TikTok';
+            }
+            // For Instagram: view_count comes from getInstagramMediaInternal (views insight or video_view_count)
+            // For TikTok: view_count is the TikTok play count
+            const views = p.view_count || p.views || 0;
+            return {
+                platform: platformLabel,
+                caption: p.caption ? p.caption.substring(0, 200) : "",
+                views,
+                likes: p.like_count || 0,
+                comments: p.comments_count || 0,
+                date: p.timestamp
+            };
+        });
 
         // Compensation Logic
         const campaignCompType = campaign.compensationType || "monetary"; // 'exchange', 'monetary'
