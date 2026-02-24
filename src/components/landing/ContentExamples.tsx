@@ -19,17 +19,20 @@ export function ContentExamples() {
                             transition={{ duration: 0.7 }}
                             className="absolute left-[10%] z-10 w-64 rounded-[2rem] overflow-hidden border-4 border-black/10 dark:border-white/10 shadow-2xl bg-black"
                         >
-                            {/* Replace placeholder with actual Reel/TikTok Image */}
-                            <img
-                                src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=600&auto=format&fit=crop"
-                                alt="Food Example 1"
+                            {/* Replace placeholder with actual Reel/TikTok Image/Video */}
+                            <video
+                                src="https://relabrands.com/wp-content/uploads/2026/02/video2.mp4"
                                 className="w-full h-[450px] object-cover opacity-80"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
                             />
                             <div className="absolute top-4 left-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-semibold flex items-center gap-1 shadow-sm">
-                                <span className="text-red-500">❤️</span> 8.2K likes
+                                <span className="text-red-500">❤️</span> 14.2K Reach
                             </div>
                             <div className="absolute top-12 left-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-semibold flex items-center gap-1 shadow-sm">
-                                <span className="text-gray-500">💬</span> 78 comments
+                                <span className="text-gray-500">💬</span> 45 comments
                             </div>
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
@@ -45,16 +48,19 @@ export function ContentExamples() {
                             transition={{ duration: 0.7, delay: 0.2 }}
                             className="absolute right-[10%] top-20 z-0 w-64 rounded-[2rem] overflow-hidden border-4 border-black/10 dark:border-white/10 shadow-2xl bg-black"
                         >
-                            <img
-                                src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600&auto=format&fit=crop"
-                                alt="Food Example 2"
+                            <video
+                                src="https://relabrands.com/wp-content/uploads/2026/02/video1.mp4"
                                 className="w-full h-[450px] object-cover opacity-80"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
                             />
                             <div className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-semibold flex items-center gap-1 shadow-sm">
-                                <span className="text-red-500">❤️</span> 12.5K likes
+                                <span className="text-red-500">❤️</span> 18.5K Reach
                             </div>
                             <div className="absolute top-12 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-semibold flex items-center gap-1 shadow-sm">
-                                <span className="text-gray-500">💬</span> 103 comments
+                                <span className="text-gray-500">💬</span> 34 comments
                             </div>
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
@@ -75,26 +81,26 @@ export function ContentExamples() {
                     >
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
                             <span className="w-2 h-2 rounded-full bg-primary"></span>
-                            Creadores reales, resultados reales
+                            Real creators, real results
                         </div>
 
                         <h2 className="text-4xl md:text-5xl font-bold leading-tight text-foreground">
-                            El 82% de las personas prueban un nuevo lugar porque lo vieron en redes sociales.
+                            82% of people try a new place because they saw it on social media.
                         </h2>
 
                         <p className="text-xl text-muted-foreground">
-                            Con TikTok y los Reels convirtiéndose en motores de búsqueda, tu próximo cliente
-                            te está buscando mucho antes de abrir Google.
+                            With TikTok and Reels becoming search engines, your next customer
+                            is looking for you long before they open Google.
                         </p>
 
                         <div className="grid grid-cols-2 gap-4 pt-6">
                             <div className="p-4 rounded-xl border border-border bg-background shadow-sm text-center">
                                 <div className="text-3xl font-bold text-primary mb-1">+200%</div>
-                                <div className="text-sm font-medium text-muted-foreground">Vistas orgánicas</div>
+                                <div className="text-sm font-medium text-muted-foreground">Organic views</div>
                             </div>
                             <div className="p-4 rounded-xl border border-border bg-background shadow-sm text-center">
                                 <div className="text-3xl font-bold text-success mb-1">-55%</div>
-                                <div className="text-sm font-medium text-muted-foreground">Costo de contenido</div>
+                                <div className="text-sm font-medium text-muted-foreground">Content costs</div>
                             </div>
                         </div>
                     </motion.div>

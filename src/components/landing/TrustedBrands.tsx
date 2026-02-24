@@ -1,14 +1,11 @@
 import { motion } from "framer-motion";
 
 const brands = [
-    { name: "Brand 1", logo: "https://via.placeholder.com/150x60?text=Brand+1" },
-    { name: "Brand 2", logo: "https://via.placeholder.com/150x60?text=Brand+2" },
-    { name: "Brand 3", logo: "https://via.placeholder.com/150x60?text=Brand+3" },
-    { name: "Brand 4", logo: "https://via.placeholder.com/150x60?text=Brand+4" },
-    { name: "Brand 5", logo: "https://via.placeholder.com/150x60?text=Brand+5" },
-    { name: "Brand 6", logo: "https://via.placeholder.com/150x60?text=Brand+6" },
-    { name: "Brand 7", logo: "https://via.placeholder.com/150x60?text=Brand+7" },
-    { name: "Brand 8", logo: "https://via.placeholder.com/150x60?text=Brand+8" },
+    { name: "Ontol", logo: "https://relabrands.com/wp-content/uploads/2026/02/ontol.png" },
+    { name: "Pilexil", logo: "https://relabrands.com/wp-content/uploads/2026/02/pilexil.png" },
+    { name: "Secalia", logo: "https://relabrands.com/wp-content/uploads/2026/02/secalia.png" },
+    { name: "Thrombocid", logo: "https://relabrands.com/wp-content/uploads/2026/02/thrombocid.png" },
+
 ];
 
 export function TrustedBrands() {
@@ -23,7 +20,7 @@ export function TrustedBrands() {
                     className="text-center mb-12"
                 >
                     <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-                        Las mejores marcas crecen con RELA Collab
+                        Top brands grow with RELA Collab
                     </h2>
                 </motion.div>
 
