@@ -88,6 +88,7 @@ export default function CreateCampaign() {
       type: string;
       quantity: number;
       required: boolean;
+      platform: "instagram" | "tiktok";
     }>,
   });
 
@@ -103,7 +104,7 @@ export default function CreateCampaign() {
   const handleAddDeliverable = () => {
     setFormData(prev => ({
       ...prev,
-      deliverables: [...prev.deliverables, { type: "", quantity: 1, required: true }]
+      deliverables: [...prev.deliverables, { type: "", quantity: 1, required: true, platform: "instagram" }]
     }));
   };
 
@@ -729,7 +730,7 @@ export default function CreateCampaign() {
                             {/* Platform Selector */}
                             <div className="w-32">
                               <Select
-                                value={(deliverable as any).platform || "instagram"}
+                                value={deliverable.platform}
                                 onValueChange={(value) =>
                                   handleUpdateDeliverable(index, "platform", value)
                                 }

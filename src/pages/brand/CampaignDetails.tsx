@@ -229,7 +229,7 @@ export default function CampaignDetails() {
                                                 {campaign.deliverables?.length > 0 ? (
                                                     campaign.deliverables.map((del: any, i: number) => (
                                                         <Badge key={i} variant="secondary" className="capitalize">
-                                                            {del.quantity}x {del.type}
+                                                            {del.quantity}x {del.type} {del.platform ? (del.platform.toLowerCase() === "tiktok" ? "TikTok" : "Instagram") : ""}
                                                         </Badge>
                                                     ))
                                                 ) : (
