@@ -209,7 +209,7 @@ export function CampaignShareCard({ campaign, campaignUrl }: CampaignShareCardPr
                             color: "rgba(200,180,255,0.65)",
                             letterSpacing: 1.5, textTransform: "uppercase", margin: 0,
                         }}>
-                            Scan to Join
+                            Escanea para Unirte
                         </p>
                     </div>
 

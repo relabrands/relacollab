@@ -101,7 +101,7 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
             ) : (
               <Image className="w-12 h-12 mb-2 opacity-50" />
             )}
-            <span className="text-xs text-center">Preview unavailable</span>
+            <span className="text-xs text-center">Vista previa no disponible</span>
           </div>
         )}
 
@@ -149,7 +149,7 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
             <Button size="sm" variant="glass" className="flex-1" asChild>
               <a href={content.postUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4 mr-1" />
-                View
+                Ver
               </a>
             </Button>
           )}
@@ -161,7 +161,7 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
               e.stopPropagation();
               onRefreshMetrics?.(content);
             }}
-            title="Refresh Metrics (Get latest cover & stats)"
+            title="Actualizar Métricas (Obtener portada y estadísticas recientes)"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -175,7 +175,7 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
                   e.stopPropagation();
                   onStatusChange?.(content.id, "approved");
                 }}
-                title="Approve Content"
+                title="Aprobar Contenido"
               >
                 <Check className="w-4 h-4" />
               </Button>
@@ -186,7 +186,7 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
                   e.stopPropagation();
                   onRequestEdit?.(content);
                 }}
-                title="Request Edits"
+                title="Solicitar Ediciones"
               >
                 <Edit className="w-4 h-4" />
               </Button>
@@ -208,9 +208,12 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
             <p className="text-xs text-muted-foreground truncate">{content.campaignName}</p>
           </div>
           <Badge className={statusColors[content.status]}>
-            {content.status === "rejected" ? "rejected" :
-              content.status === "revision_requested" ? "revision requested" :
-                content.status}
+            {content.status === "rejected" ? "rechazado" :
+              content.status === "revision_requested" ? "revisión solicitada" :
+                content.status === "approved" ? "aprobado" :
+                  content.status === "pending" ? "pendiente" :
+                    content.status === "live" ? "en vivo" :
+                      content.status}
           </Badge>
         </div>
 
@@ -218,29 +221,29 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
         {content.metrics && (
           <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/50">
             {/* Row 1 */}
-            <div className="text-center group-hover:scale-105 transition-transform" title="Views">
+            <div className="text-center group-hover:scale-105 transition-transform" title="Vistas">
               <Eye className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs font-medium">{formatNumber(content.metrics.views)}</p>
             </div>
-            <div className="text-center group-hover:scale-105 transition-transform" title="Reach">
+            <div className="text-center group-hover:scale-105 transition-transform" title="Alcance">
               <BarChart2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs font-medium">{formatNumber(content.metrics.reach)}</p>
             </div>
-            <div className="text-center group-hover:scale-105 transition-transform" title="Saved">
+            <div className="text-center group-hover:scale-105 transition-transform" title="Guardados">
               <Bookmark className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs font-medium">{formatNumber(content.metrics.saved)}</p>
             </div>
 
             {/* Row 2 */}
-            <div className="text-center group-hover:scale-105 transition-transform" title="Likes">
+            <div className="text-center group-hover:scale-105 transition-transform" title="Me gusta">
               <Heart className={`w-4 h-4 mx-auto mb-1 ${content.metrics.likes > 0 ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
               <p className="text-xs font-medium">{formatNumber(content.metrics.likes)}</p>
             </div>
-            <div className="text-center group-hover:scale-105 transition-transform" title="Comments">
+            <div className="text-center group-hover:scale-105 transition-transform" title="Comentarios">
               <MessageCircle className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs font-medium">{formatNumber(content.metrics.comments)}</p>
             </div>
-            <div className="text-center group-hover:scale-105 transition-transform" title="Shares">
+            <div className="text-center group-hover:scale-105 transition-transform" title="Compartidos">
               <Share2 className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
               <p className="text-xs font-medium">{formatNumber(content.metrics.shares)}</p>
             </div>
@@ -255,7 +258,7 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
           </div>
           {content.metrics?.updatedAt && (
             <span className="text-[10px] opacity-70">
-              Updated {new Date(content.metrics.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              Actualizado {new Date(content.metrics.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
         </div>
@@ -282,7 +285,7 @@ export default function ContentLibrary() {
         const campaignsQuery = query(collection(db, "campaigns"), where("brandId", "==", user.uid));
         const campaignsSnapshot = await getDocs(campaignsQuery);
         const campaignIds = campaignsSnapshot.docs.map(d => d.id);
-        const campaignMap = new Map(campaignsSnapshot.docs.map(d => [d.id, d.data().name || "Untitled"]));
+        const campaignMap = new Map(campaignsSnapshot.docs.map(d => [d.id, d.data().name || "Sin Título"]));
 
         if (campaignIds.length === 0) {
           setLoading(false);
@@ -319,9 +322,9 @@ export default function ContentLibrary() {
             return {
               id: sub.id,
               creatorId: sub.creatorId || sub.userId,
-              creatorName: creatorData.displayName || "Unknown Creator",
+              creatorName: creatorData.displayName || "Creador Desconocido",
               creatorAvatar: creatorData.photoURL || creatorData.avatar || "https://via.placeholder.com/150",
-              campaignName: campaignMap.get(sub.campaignId) || sub.campaignName || "Unknown Campaign",
+              campaignName: campaignMap.get(sub.campaignId) || sub.campaignName || "Campaña Desconocida",
               // Determine type from mediaType or fallback
               type: (sub.mediaType === "VIDEO" || sub.mediaType === "REELS") ? "video" : "image",
               platform: sub.platform || "instagram",
@@ -533,10 +536,10 @@ export default function ContentLibrary() {
         item.id === id ? { ...item, status: newStatus } : item
       ));
 
-      toast.success(newStatus === "approved" ? "Content approved! Earning record created for creator." : "Changes requested");
+      toast.success(newStatus === "approved" ? "¡Contenido aprobado! Registro de ganancias creado para el creador." : "Cambios solicitados");
     } catch (error) {
       console.error("Error updating status:", error);
-      toast.error("Failed to update status");
+      toast.error("Error al actualizar el estado");
     }
   };
 
@@ -560,11 +563,11 @@ export default function ContentLibrary() {
       // But wait, in ContentLibrary we enriched creatorName but maybe didn't save creatorId?
       // Ah, in enrichment map we use sub.userId.
       // Let's check enrichment logic.
-      toast.error("Cannot refresh: missing post information");
+      toast.error("No se puede actualizar: falta información de la publicación");
       return;
     }
 
-    const toastId = toast.loading("Refreshing metrics...");
+    const toastId = toast.loading("Actualizando métricas...");
 
     try {
       const response = await fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
@@ -609,22 +612,22 @@ export default function ContentLibrary() {
             }
             return item;
           }));
-          toast.success("Metrics updated!", { id: toastId });
+          toast.success("¡Métricas actualizadas!", { id: toastId });
         } else {
-          toast.error("Failed to get metrics", { id: toastId });
+          toast.error("Error al obtener las métricas", { id: toastId });
         }
       } else {
         // Try to get error message from response
-        let errorMessage = "Server error";
+        let errorMessage = "Error del servidor";
         try {
           const errorData = await response.json();
-          errorMessage = errorData.details || errorData.error || "Server error";
+          errorMessage = errorData.details || errorData.error || "Error del servidor";
         } catch (e) { }
         toast.error(`Error: ${errorMessage}`, { id: toastId });
       }
     } catch (error) {
       console.error(error);
-      toast.error("Network error handling refresh", { id: toastId });
+      toast.error("Error de red al intentar actualizar", { id: toastId });
     }
   };
 
@@ -635,33 +638,33 @@ export default function ContentLibrary() {
 
       <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <DashboardHeader
-          title="Content Library"
-          subtitle="All creator content from your campaigns"
+          title="Biblioteca de Contenidos"
+          subtitle="Todo el contenido de los creadores de tus campañas"
         />
 
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="glass-card">
             <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Total Content</p>
+              <p className="text-sm text-muted-foreground">Contenido Total</p>
               <p className="text-2xl font-bold">{stats.total}</p>
             </CardContent>
           </Card>
           <Card className="glass-card">
             <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Live Posts</p>
+              <p className="text-sm text-muted-foreground">Publicaciones en Vivo</p>
               <p className="text-2xl font-bold text-success">{stats.live}</p>
             </CardContent>
           </Card>
           <Card className="glass-card">
             <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Total Views</p>
+              <p className="text-sm text-muted-foreground">Vistas Totales</p>
               <p className="text-2xl font-bold">{formatNumber(stats.totalViews)}</p>
             </CardContent>
           </Card>
           <Card className="glass-card">
             <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Total Engagement</p>
+              <p className="text-sm text-muted-foreground">Interacción Total</p>
               <p className="text-2xl font-bold">{formatNumber(stats.totalEngagement)}</p>
             </CardContent>
           </Card>
@@ -673,7 +676,7 @@ export default function ContentLibrary() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search by creator or campaign..."
+                placeholder="Buscar por creador o campaña..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -688,7 +691,7 @@ export default function ContentLibrary() {
               onClick={() => setActivePlatform("all")}
               size="sm"
             >
-              All
+              Todos
             </Button>
             <Button
               variant={activePlatform === "instagram" ? "default" : "outline"}
@@ -712,11 +715,11 @@ export default function ContentLibrary() {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
           <TabsList>
-            <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
-            <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>
-            <TabsTrigger value="revision_requested">Revisions ({stats.revisions})</TabsTrigger>
-            <TabsTrigger value="approved">Approved ({stats.approved})</TabsTrigger>
-            <TabsTrigger value="live">Live ({stats.live})</TabsTrigger>
+            <TabsTrigger value="all">Todos ({stats.total})</TabsTrigger>
+            <TabsTrigger value="pending">Pendientes ({stats.pending})</TabsTrigger>
+            <TabsTrigger value="revision_requested">Revisiones ({stats.revisions})</TabsTrigger>
+            <TabsTrigger value="approved">Aprobados ({stats.approved})</TabsTrigger>
+            <TabsTrigger value="live">En Vivo ({stats.live})</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -736,9 +739,9 @@ export default function ContentLibrary() {
         {filteredContent.length === 0 && (
           <div className="text-center py-12">
             <Image className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No content found</h3>
+            <h3 className="text-lg font-medium mb-2">No se encontró contenido</h3>
             <p className="text-muted-foreground">
-              {contentList.length === 0 ? "You haven't received any content submissions yet." : "Try adjusting your search or filters"}
+              {contentList.length === 0 ? "Aún no has recibido ningún envío de contenido." : "Intenta ajustar tu búsqueda o filtros"}
             </p>
           </div>
         )}

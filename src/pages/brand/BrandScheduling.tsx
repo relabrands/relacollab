@@ -76,8 +76,8 @@ export default function BrandScheduling() {
                         newEvents.push({
                             id: `deadline_${doc.id}`,
                             type: "deadline",
-                            title: `${data.name} (Deadline)`,
-                            creatorName: "All Creators",
+                            title: `${data.name} (Fecha Límite)`,
+                            creatorName: "Todos los Creadores",
                             date: deadlineDate,
                             status: "active",
                             campaignId: doc.id
@@ -104,30 +104,30 @@ export default function BrandScheduling() {
                         const visitData = visitDoc.data();
 
                         // Fetch creator info
-                        let creatorName = "Unknown Creator";
+                        let creatorName = "Creador Desconocido";
                         let creatorAvatar = "";
                         if (visitData.creatorId) {
                             const cDoc = await getDoc(doc(db, "users", visitData.creatorId));
                             if (cDoc.exists()) {
                                 const cData = cDoc.data();
-                                creatorName = cData.displayName || cData.fullName || "Creator";
+                                creatorName = cData.displayName || cData.fullName || "Creador";
                                 creatorAvatar = cData.photoURL || cData.avatar;
                             }
                         }
 
                         // Find campaign name
                         const campaign = campaignsList.find(c => c.id === visitData.campaignId);
-                        const campaignName = campaign ? campaign.name : "Campaign";
+                        const campaignName = campaign ? campaign.name : "Campaña";
 
                         newEvents.push({
                             id: visitDoc.id,
                             type: "visit",
-                            title: `${campaignName} - Visit`,
+                            title: `${campaignName} - Visita`,
                             creatorName: creatorName,
                             creatorAvatar: creatorAvatar,
                             date: new Date(visitData.scheduledDate),
                             status: visitData.status,
-                            location: visitData.location?.city || "Location",
+                            location: visitData.location?.city || "Ubicación",
                             time: visitData.scheduledTime,
                             duration: visitData.duration,
                             campaignId: visitData.campaignId
@@ -166,15 +166,15 @@ export default function BrandScheduling() {
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader
-                    title="Campaign Schedule"
-                    subtitle="Track creator visits and campaign deadlines"
+                    title="Calendario de Campañas"
+                    subtitle="Monitorea las visitas de creadores y fechas límite de campañas"
                 />
 
                 <div className="flex flex-col md:flex-row gap-4 mb-6">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search creator..."
+                            placeholder="Buscar creador..."
                             value={searchCreator}
                             onChange={(e) => setSearchCreator(e.target.value)}
                             className="pl-10"
@@ -182,10 +182,10 @@ export default function BrandScheduling() {
                     </div>
                     <Select value={filterCampaign} onValueChange={setFilterCampaign}>
                         <SelectTrigger className="w-full md:w-[250px]">
-                            <SelectValue placeholder="Filter by Campaign" />
+                            <SelectValue placeholder="Filtrar por Campaña" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Campaigns</SelectItem>
+                            <SelectItem value="all">Todas las Campañas</SelectItem>
                             {campaigns.map(c => (
                                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                             ))}
@@ -216,14 +216,14 @@ export default function BrandScheduling() {
                         </Card>
 
                         <div className="glass-card p-4 space-y-3">
-                            <h3 className="font-semibold text-sm">Legend</h3>
+                            <h3 className="font-semibold text-sm">Leyenda</h3>
                             <div className="flex items-center gap-2 text-sm">
                                 <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                                <span>Creator Visit</span>
+                                <span>Visita de Creador</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                                 <span className="w-3 h-3 rounded-full bg-orange-500"></span>
-                                <span>Content Deadline</span>
+                                <span>Fecha Límite de Contenido</span>
                             </div>
                         </div>
                     </div>
@@ -232,7 +232,7 @@ export default function BrandScheduling() {
                     <div className="lg:col-span-2">
                         <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
                             <CalendarIcon className="w-5 h-5 text-primary" />
-                            {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Select a date"}
+                            {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Selecciona una fecha"}
                         </h2>
 
                         {selectedDateEvents.length > 0 ? (
@@ -259,9 +259,9 @@ export default function BrandScheduling() {
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <Badge variant={event.type === 'visit' ? "default" : "secondary"} className="text-xs">
-                                                            {event.type === 'visit' ? "Visit" : "Deadline"}
+                                                            {event.type === 'visit' ? "Visita" : "Fecha Límite"}
                                                         </Badge>
-                                                        {event.status === 'confirmed' && <Badge variant="success" className="text-xs">Confirmed</Badge>}
+                                                        {event.status === 'confirmed' && <Badge variant="default" className="text-xs bg-green-500 hover:bg-green-600">Confirmada</Badge>}
                                                     </div>
                                                     <h3 className="font-semibold text-lg">{event.title}</h3>
                                                     <p className="text-sm text-muted-foreground">{event.creatorName}</p>
@@ -293,7 +293,7 @@ export default function BrandScheduling() {
                         ) : (
                             <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/20">
                                 <CalendarIcon className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                                <p className="text-muted-foreground">No events scheduled for this day</p>
+                                <p className="text-muted-foreground">No hay eventos programados para este día</p>
                             </div>
                         )}
                     </div>

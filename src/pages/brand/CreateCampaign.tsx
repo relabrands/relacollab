@@ -21,25 +21,25 @@ import { Switch } from "@/components/ui/switch";
 import { AICampaignGenerator } from "@/components/brand/AICampaignGenerator";
 
 const goalOptions = [
-  { id: "awareness", label: "Awareness", description: "Increase brand visibility" },
-  { id: "conversion", label: "Conversion", description: "Drive sales or bookings" },
-  { id: "content", label: "Content Production", description: "UGC for ads" },
+  { id: "awareness", label: "Reconocimiento", description: "Aumentar la visibilidad de la marca" },
+  { id: "conversion", label: "Conversión", description: "Impulsar ventas o reservas" },
+  { id: "content", label: "Producción de Contenido", description: "UGC para anuncios" },
 ];
 
 const vibeOptions = [
-  { id: "romantic", label: "Romantic", emoji: "💕" },
-  { id: "party", label: "Party", emoji: "🎉" },
-  { id: "family", label: "Family", emoji: "👨‍👩‍👧‍👦" },
-  { id: "healthy", label: "Healthy", emoji: "🥗" },
+  { id: "romantic", label: "Romántico", emoji: "💕" },
+  { id: "party", label: "Fiesta", emoji: "🎉" },
+  { id: "family", label: "Familia", emoji: "👨‍👩‍👧‍👦" },
+  { id: "healthy", label: "Saludable", emoji: "🥗" },
   { id: "premium", label: "Premium", emoji: "✨" },
-  { id: "adventure", label: "Adventure", emoji: "🏔️" },
+  { id: "adventure", label: "Aventura", emoji: "🏔️" },
 ];
 
 const contentTypeOptions = [
-  { id: "post", label: "Post", emoji: "📸" },
+  { id: "post", label: "Publicación", emoji: "📸" },
   { id: "video", label: "Video", emoji: "🎥" },
   { id: "stories", label: "Historias", emoji: "📱" },
-  { id: "carousel", label: "Carretes", emoji: "🎠" },
+  { id: "carousel", label: "Carruseles", emoji: "🎠" },
 ];
 
 const compensationOptions = [
@@ -184,68 +184,68 @@ export default function CreateCampaign() {
     switch (currentStep) {
       case 1:
         if (!formData.name.trim()) {
-          toast.error("Campaign name is required");
+          toast.error("El nombre de la campaña es requerido");
           return false;
         }
         if (!formData.description.trim()) {
-          toast.error("Campaign description is required");
+          toast.error("La descripción de la campaña es requerida");
           return false;
         }
         if (!formData.startDate || !formData.endDate) {
-          toast.error("Start and end dates are required");
+          toast.error("Las fechas de inicio y fin son requeridas");
           return false;
         }
         if (new Date(formData.startDate) >= new Date(formData.endDate)) {
-          toast.error("End date must be after start date");
+          toast.error("La fecha de fin debe ser después de la fecha de inicio");
           return false;
         }
         return true;
 
       case 2:
         if (formData.vibes.length === 0) {
-          toast.error("Select at least one vibe for your campaign");
+          toast.error("Selecciona al menos un vibe para tu campaña");
           return false;
         }
         if (!formData.goal.trim()) {
-          toast.error("Campaign goal is required");
+          toast.error("El objetivo de la campaña es requerido");
           return false;
         }
         return true;
 
       case 3:
         if (!formData.location.trim()) {
-          toast.error("Target location is required");
+          toast.error("La ubicación objetivo es requerida");
           return false;
         }
         if (!formData.ageRange) {
-          toast.error("Target age range is required");
+          toast.error("El rango de edad objetivo es requerido");
           return false;
         }
         return true;
 
       case 4:
         if (!formData.compensationType) {
-          toast.error("Select a compensation type");
+          toast.error("Selecciona un tipo de compensación");
           return false;
         }
         if ((formData.compensationType === "exchange" || formData.compensationType === "hybrid") && !formData.exchangeDetails.trim()) {
-          toast.error("Please describe what you're offering in exchange");
+          toast.error("Por favor describe qué ofreces a cambio");
           return false;
         }
         if (formData.compensationType === "monetary" || formData.compensationType === "hybrid") {
           if (!formData.creatorPayment || parseFloat(formData.creatorPayment) <= 0) {
-            toast.error("Creator payment amount is required");
+            toast.error("El monto de pago al creador es requerido");
             return false;
           }
           // Credit cost fixed at 1 per creator
           const totalCost = 1 * (parseInt(formData.creatorCount) || 1);
           if (credits < totalCost) {
-            toast.error(`Insufficient credits. You need ${totalCost} credits but have ${credits}`);
+            toast.error(`Créditos insuficientes. Necesitas ${totalCost} créditos pero tienes ${credits}`);
             return false;
           }
         }
         if (!formData.creatorCount || parseInt(formData.creatorCount) < 1) {
-          toast.error("Number of creators must be at least 1");
+          toast.error("El número de creadores debe ser al menos 1");
           return false;
         }
         return true;
@@ -253,11 +253,11 @@ export default function CreateCampaign() {
       case 5:
         if (formData.requiresVisit) {
           if (!formData.visitLocation.trim() || !formData.visitCity.trim()) {
-            toast.error("Visit location and city are required");
+            toast.error("La dirección y ciudad de la visita son requeridas");
             return false;
           }
           if (formData.visitDays.length === 0) {
-            toast.error("Select at least one available day for visits");
+            toast.error("Selecciona al menos un día disponible para visitas");
             return false;
           }
         }
@@ -270,7 +270,7 @@ export default function CreateCampaign() {
 
   const handleSubmit = async () => {
     if (!user) {
-      toast.error("You must be logged in to create a campaign.");
+      toast.error("Debes iniciar sesión para crear una campaña.");
       return;
     }
 
@@ -350,11 +350,11 @@ export default function CreateCampaign() {
       }
 
 
-      toast.success("Campaign created successfully!");
+      toast.success("¡Campaña creada exitosamente!");
       navigate("/brand/matches");
     } catch (error) {
       console.error("Error creating campaign:", error);
-      toast.error("Failed to create campaign.");
+      toast.error("Error al crear la campaña.");
     } finally {
       setIsSubmitting(false);
     }
@@ -380,8 +380,8 @@ export default function CreateCampaign() {
         </div>
 
         <DashboardHeader
-          title="Create Campaign"
-          subtitle="Let's find your perfect creators"
+          title="Crear Campaña"
+          subtitle="Encontremos a tus creadores perfectos"
         />
 
         {/* Progress Steps */}
@@ -407,11 +407,11 @@ export default function CreateCampaign() {
             ))}
           </div>
           <div className="flex justify-center flex-wrap gap-4 sm:gap-8 md:gap-24 mt-4 text-xs md:text-sm text-muted-foreground">
-            <span className={step === 1 ? "text-primary font-medium" : ""}>Basics</span>
-            <span className={step === 2 ? "text-primary font-medium" : ""}>Goals</span>
-            <span className={step === 3 ? "text-primary font-medium" : ""}>Audience</span>
-            <span className={step === 4 ? "text-primary font-medium" : ""}>Budget</span>
-            <span className={step === 5 ? "text-primary font-medium" : ""}>Visit</span>
+            <span className={step === 1 ? "text-primary font-medium" : ""}>Básicos</span>
+            <span className={step === 2 ? "text-primary font-medium" : ""}>Objetivos</span>
+            <span className={step === 3 ? "text-primary font-medium" : ""}>Público</span>
+            <span className={step === 4 ? "text-primary font-medium" : ""}>Presupuesto</span>
+            <span className={step === 5 ? "text-primary font-medium" : ""}>Visita</span>
           </div>
         </div>
 
@@ -435,14 +435,14 @@ export default function CreateCampaign() {
                 exit={{ opacity: 0, x: -20 }}
                 className="glass-card p-5 sm:p-8"
               >
-                <h2 className="text-xl font-semibold mb-6">Campaign Basics</h2>
+                <h2 className="text-xl font-semibold mb-6">Información Básica</h2>
 
                 <div className="space-y-6">
                   <div>
-                    <Label htmlFor="name">Campaign Name</Label>
+                    <Label htmlFor="name">Nombre de la Campaña</Label>
                     <Input
                       id="name"
-                      placeholder="e.g., Summer Wellness Launch"
+                      placeholder="Ej: Lanzamiento Bienestar Verano"
                       value={formData.name}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, name: e.target.value }))
@@ -452,10 +452,10 @@ export default function CreateCampaign() {
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Campaign Description *</Label>
+                    <Label htmlFor="description">Descripción de la Campaña *</Label>
                     <Textarea
                       id="description"
-                      placeholder="Describe your campaign, what you're promoting, and what creators will showcase..."
+                      placeholder="Describe tu campaña, qué estás promoviendo y qué mostrarán los creadores..."
                       value={formData.description}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -466,12 +466,12 @@ export default function CreateCampaign() {
                       className="mt-2 min-h-[120px]"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      This will help creators understand what your campaign is about
+                      Esto ayudará a los creadores a entender de qué trata tu campaña
                     </p>
                   </div>
 
                   <div>
-                    <Label htmlFor="coverImage">Campaign Cover Image</Label>
+                    <Label htmlFor="coverImage">Imagen de Portada de la Campaña</Label>
                     <div className="mt-2 flex items-center gap-4">
                       {formData.coverImage ? (
                         <div className="relative w-32 h-40 rounded-xl overflow-hidden border border-border">
@@ -495,7 +495,7 @@ export default function CreateCampaign() {
                               if (!file) return;
                               if (!user) return;
 
-                              const toastId = toast.loading("Uploading image...");
+                              const toastId = toast.loading("Subiendo imagen...");
                               try {
                                 const fileExt = file.name.split('.').pop();
                                 const fileName = `campaign-covers/${user.uid}_${Date.now()}.${fileExt}`;
@@ -505,10 +505,10 @@ export default function CreateCampaign() {
                                 const downloadURL = await getDownloadURL(storageRef);
 
                                 setFormData(prev => ({ ...prev, coverImage: downloadURL }));
-                                toast.success("Image uploaded successfully!", { id: toastId });
+                                toast.success("¡Imagen subida exitosamente!", { id: toastId });
                               } catch (error) {
                                 console.error("Error uploading image:", error);
-                                toast.error("Failed to upload image.", { id: toastId });
+                                toast.error("Error al subir la imagen.", { id: toastId });
                               }
                             }}
                             className="hidden"
@@ -518,7 +518,7 @@ export default function CreateCampaign() {
                             className="flex flex-col items-center justify-center w-32 h-40 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 transition-colors bg-muted/20"
                           >
                             <Plus className="w-6 h-6 text-muted-foreground mb-2" />
-                            <span className="text-xs text-muted-foreground">Upload Cover</span>
+                            <span className="text-xs text-muted-foreground">Subir Portada</span>
                           </Label>
                         </div>
                       )}
@@ -527,7 +527,7 @@ export default function CreateCampaign() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="startDate">Start Date</Label>
+                      <Label htmlFor="startDate">Fecha de Inicio</Label>
                       <Input
                         id="startDate"
                         type="date"
@@ -539,7 +539,7 @@ export default function CreateCampaign() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="endDate">End Date</Label>
+                      <Label htmlFor="endDate">Fecha de Fin</Label>
                       <Input
                         id="endDate"
                         type="date"
@@ -563,11 +563,11 @@ export default function CreateCampaign() {
                 exit={{ opacity: 0, x: -20 }}
                 className="glass-card p-5 sm:p-8"
               >
-                <h2 className="text-xl font-semibold mb-6">Campaign Goals</h2>
+                <h2 className="text-xl font-semibold mb-6">Objetivos de la Campaña</h2>
 
                 <div className="space-y-6">
                   <div>
-                    <Label className="mb-4 block">What's your main goal?</Label>
+                    <Label className="mb-4 block">¿Cuál es tu objetivo principal?</Label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {goalOptions.map((goal) => (
                         <button
@@ -590,7 +590,7 @@ export default function CreateCampaign() {
                   </div>
 
                   <div>
-                    <Label className="mb-4 block">Brand Vibe (select multiple)</Label>
+                    <Label className="mb-4 block">Vibe de la Marca (selecciona varios)</Label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {vibeOptions.map((vibe) => (
                         <button
@@ -619,14 +619,14 @@ export default function CreateCampaign() {
                 exit={{ opacity: 0, x: -20 }}
                 className="glass-card p-5 sm:p-8"
               >
-                <h2 className="text-xl font-semibold mb-6">Target Audience</h2>
+                <h2 className="text-xl font-semibold mb-6">Público Objetivo</h2>
 
                 <div className="space-y-6">
                   <div>
-                    <Label htmlFor="location">Location</Label>
+                    <Label htmlFor="location">Ubicación</Label>
                     <Input
                       id="location"
-                      placeholder="e.g., Los Angeles, CA"
+                      placeholder="Ej: Santo Domingo, DN"
                       value={formData.location}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -639,7 +639,7 @@ export default function CreateCampaign() {
                   </div>
 
                   <div>
-                    <Label className="mb-4 block">Age Range</Label>
+                    <Label className="mb-4 block">Rango de Edad</Label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {["18-24", "25-34", "35-44", "45+"].map((age) => (
                         <button
@@ -697,9 +697,9 @@ export default function CreateCampaign() {
                   <div className="border-t pt-6">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <Label className="block">Deliverables per Creator</Label>
+                        <Label className="block">Entregables por Creador</Label>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Specify what content each creator should deliver
+                          Especifica qué contenido debe entregar cada creador
                         </p>
                       </div>
                       <Button
@@ -709,14 +709,14 @@ export default function CreateCampaign() {
                         onClick={handleAddDeliverable}
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        Add Deliverable
+                        Añadir Entregable
                       </Button>
                     </div>
 
                     {formData.deliverables.length === 0 ? (
                       <div className="text-center py-8 border-2 border-dashed rounded-xl">
                         <p className="text-muted-foreground">
-                          No deliverables set. Click "Add Deliverable" to specify content requirements.
+                          No se han establecido entregables. Haz clic en "Añadir Entregable" para especificar los requisitos de contenido.
                         </p>
                       </div>
                     ) : (
@@ -735,7 +735,7 @@ export default function CreateCampaign() {
                                 }
                               >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Platform" />
+                                  <SelectValue placeholder="Plataforma" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="instagram">Instagram</SelectItem>
@@ -753,13 +753,13 @@ export default function CreateCampaign() {
                                 }
                               >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select type" />
+                                  <SelectValue placeholder="Seleccionar tipo" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="Post">📸 Post</SelectItem>
+                                  <SelectItem value="Post">📸 Publicación</SelectItem>
                                   <SelectItem value="Video">🎥 Video</SelectItem>
-                                  <SelectItem value="Story">📱 Story</SelectItem>
-                                  <SelectItem value="Carousel">🖼️ Carousel</SelectItem>
+                                  <SelectItem value="Story">📱 Historia</SelectItem>
+                                  <SelectItem value="Carousel">🖼️ Carrusel</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -778,7 +778,7 @@ export default function CreateCampaign() {
                                     parseInt(e.target.value) || 1
                                   )
                                 }
-                                placeholder="Qty"
+                                placeholder="Cant."
                               />
                             </div>
 
@@ -791,7 +791,7 @@ export default function CreateCampaign() {
                                 }
                               />
                               <span className="text-sm whitespace-nowrap">
-                                {deliverable.required ? "Required" : "Optional"}
+                                {deliverable.required ? "Requerido" : "Opcional"}
                               </span>
                             </div>
 
@@ -812,7 +812,7 @@ export default function CreateCampaign() {
                     {formData.deliverables.length > 0 && (
                       <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
                         <p className="text-sm text-blue-700 dark:text-blue-300">
-                          💡 Creators will submit each deliverable individually and can do so progressively.
+                          💡 Los creadores enviarán cada entregable individualmente y podrán hacerlo de manera progresiva.
                         </p>
                       </div>
                     )}
@@ -905,7 +905,7 @@ export default function CreateCampaign() {
                               {/* Total invoice line — most prominent */}
                               <div className="px-4 py-3 bg-primary/10 border-b border-border/50 flex justify-between items-center">
                                 <span className="font-bold text-sm">
-                                  Total Factura ({count} creator{count > 1 ? "s" : ""})
+                                  Total Factura ({count} creador{count !== 1 ? "es" : ""})
                                 </span>
                                 <span className="text-primary font-black text-xl">${totalG.toLocaleString()}</span>
                               </div>
@@ -913,7 +913,7 @@ export default function CreateCampaign() {
                               {/* Per-creator breakdown */}
                               <div className="px-4 py-3 bg-muted/40 space-y-1.5 text-sm">
                                 <div className="flex justify-between text-muted-foreground">
-                                  <span>Por creator × {count}</span>
+                                  <span>Por creador × {count}</span>
                                   <span>${gross.toLocaleString()} × {count} = <strong className="text-foreground">${totalG.toLocaleString()}</strong></span>
                                 </div>
                                 <div className="flex justify-between text-muted-foreground">
@@ -924,7 +924,7 @@ export default function CreateCampaign() {
                                   <span className="text-destructive">-${totalF.toLocaleString()} (${fee.toLocaleString()}/c.u.)</span>
                                 </div>
                                 <div className="flex justify-between font-semibold pt-1 border-t border-border/40">
-                                  <span>Creators reciben en total</span>
+                                  <span>Creadores reciben en total</span>
                                   <span className="text-green-600">${totalN.toLocaleString()} (${net.toLocaleString()}/c.u.)</span>
                                 </div>
                               </div>
@@ -937,12 +937,12 @@ export default function CreateCampaign() {
 
                   {/* Creator Count (Moved Up) */}
                   <div className="mt-4">
-                    <Label htmlFor="creatorCount">¿Cuántos creators necesitas?</Label>
+                    <Label htmlFor="creatorCount">¿Cuántos creadores necesitas?</Label>
                     <Input
                       id="creatorCount"
                       type="number"
                       min="1"
-                      placeholder="e.g. 5"
+                      placeholder="Ej: 5"
                       value={formData.creatorCount}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -960,7 +960,7 @@ export default function CreateCampaign() {
                       <div>
                         <Label className="text-secondary-foreground font-semibold">Costo Total en Créditos</Label>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Calculado basado en {formData.creatorCount || 0} creators (1 crédito por creator)
+                          Calculado basado en {formData.creatorCount || 0} creadores (1 crédito por creador)
                         </p>
                       </div>
                       <div className="text-2xl font-bold text-primary">
@@ -992,15 +992,15 @@ export default function CreateCampaign() {
                 exit={{ opacity: 0, x: -20 }}
                 className="glass-card p-5 sm:p-8"
               >
-                <h2 className="text-xl font-semibold mb-6">Visit & Scheduling</h2>
+                <h2 className="text-xl font-semibold mb-6">Visita y Programación</h2>
 
                 <div className="space-y-6">
                   {/* Requires Visit Toggle */}
                   <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                     <div>
-                      <Label className="text-base font-medium">¿Requiere visita del creator?</Label>
+                      <Label className="text-base font-medium">¿Requiere visita del creador?</Label>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Activa si el creator necesita ir a tu local o ubicación específica
+                        Activa si el creador necesita ir a tu local o ubicación específica
                       </p>
                     </div>
                     <Button
@@ -1124,7 +1124,7 @@ export default function CreateCampaign() {
                           <option value="7">1 semana después de la visita</option>
                         </select>
                         <p className="text-xs text-muted-foreground mt-2">
-                          El creator debe entregar el contenido en este plazo tras completar la visita
+                          El creador debe entregar el contenido en este plazo tras completar la visita
                         </p>
                       </div>
                     </div>
@@ -1132,8 +1132,8 @@ export default function CreateCampaign() {
 
                   {!formData.requiresVisit && (
                     <div className="text-center py-8 text-muted-foreground">
-                      <p>Esta campaña no requiere visita física del creator</p>
-                      <p className="text-sm mt-2">El creator puede crear el contenido remotamente</p>
+                      <p>Esta campaña no requiere visita física del creador</p>
+                      <p className="text-sm mt-2">El creador puede crear el contenido remotamente</p>
                     </div>
                   )}
                 </div>
@@ -1149,7 +1149,7 @@ export default function CreateCampaign() {
               disabled={step === 1}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Previous
+              Anterior
             </Button>
 
             {step < totalSteps ? (
@@ -1161,7 +1161,7 @@ export default function CreateCampaign() {
                   }
                 }}
               >
-                Next Step
+                Siguiente Paso
                 <ArrowRight className="w-4 h-4" />
               </Button>
             ) : (
@@ -1169,12 +1169,12 @@ export default function CreateCampaign() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating...
+                    Creando...
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Find Matches
+                    Encontrar Matches
                   </>
                 )}
               </Button>

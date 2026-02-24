@@ -58,13 +58,13 @@ export default function BrandCampaigns() {
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <DashboardHeader
-                        title="Campaigns"
-                        subtitle="Manage your active and past campaigns"
+                        title="Campañas"
+                        subtitle="Gestiona tus campañas activas y pasadas"
                     />
                     <Link to="/brand/campaigns/new">
                         <Button variant="hero">
                             <Plus className="w-4 h-4 mr-2" />
-                            Create Campaign
+                            Crear Campaña
                         </Button>
                     </Link>
                 </div>
@@ -76,28 +76,28 @@ export default function BrandCampaigns() {
                         size="sm"
                         onClick={() => setFilter("all")}
                     >
-                        All
+                        Todas
                     </Button>
                     <Button
                         variant={filter === "active" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setFilter("active")}
                     >
-                        Active
+                        Activas
                     </Button>
                     <Button
                         variant={filter === "completed" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setFilter("completed")}
                     >
-                        Completed
+                        Completadas
                     </Button>
                     <Button
                         variant={filter === "draft" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setFilter("draft")}
                     >
-                        Drafts
+                        Borradores
                     </Button>
                 </div>
 
@@ -124,12 +124,12 @@ export default function BrandCampaigns() {
                         <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
                             <Filter className="w-6 h-6 text-muted-foreground" />
                         </div>
-                        <p className="text-muted-foreground mb-4">No campaigns found.</p>
+                        <p className="text-muted-foreground mb-4">No se encontraron campañas.</p>
                         {filter !== "all" ? (
-                            <Button variant="link" onClick={() => setFilter("all")}>Clear filters</Button>
+                            <Button variant="link" onClick={() => setFilter("all")}>Limpiar filtros</Button>
                         ) : (
                             <Link to="/brand/campaigns/new">
-                                <Button variant="outline">Create your first campaign</Button>
+                                <Button variant="outline">Crea tu primera campaña</Button>
                             </Link>
                         )}
                     </div>
@@ -140,7 +140,7 @@ export default function BrandCampaigns() {
             <Dialog open={!!selectedCampaignToShare} onOpenChange={() => setSelectedCampaignToShare(null)}>
                 <DialogContent className="max-w-xl">
                     <DialogHeader>
-                        <DialogTitle>Download Story Card</DialogTitle>
+                        <DialogTitle>Descargar Tarjeta de Historia</DialogTitle>
                     </DialogHeader>
                     {selectedCampaignToShare && (
                         <div className="flex justify-center py-2">
@@ -150,7 +150,6 @@ export default function BrandCampaigns() {
                                     title: selectedCampaignToShare.name || selectedCampaignToShare.title,
                                     brandName: selectedCampaignToShare.brandName || "",
                                     brandLogo: selectedCampaignToShare.brandLogo || selectedCampaignToShare.logoUrl || "",
-                                    category: selectedCampaignToShare.category || selectedCampaignToShare.vibes?.[0] || "",
                                 }}
                             />
                         </div>

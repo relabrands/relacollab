@@ -143,16 +143,16 @@ export default function BrandMatches() {
               id: creatorDoc.id, // Creator ID
               applicationId: appDoc.id, // Application Ref
               matchScore: score,
-              matchReason: appData.status === 'approved' || appData.status === 'accepted' ? "Active Collaboration" : "Applied to your campaign",
+              matchReason: appData.status === 'approved' || appData.status === 'accepted' ? "Colaboración Activa" : "Aplicó a tu campaña",
               matchBreakdown: breakdown,
-              name: creatorData.displayName || "Unknown Creator",
+              name: creatorData.displayName || "Creador Desconocido",
               avatar: creatorData.photoURL || creatorData.avatar,
               tags: creatorData.categories || creatorData.tags || ["General"],
               status: appData.status, // 'pending', 'approved', 'rejected'
               followers: formatNumber(creatorData.instagramMetrics?.followers || creatorData.tiktokMetrics?.followers || 0),
               engagement: (creatorData.instagramMetrics?.engagementRate || creatorData.tiktokMetrics?.engagementRate || 0) + "%",
               instagramMetrics: creatorData.instagramMetrics,
-              location: creatorData.location || "Unknown",
+              location: creatorData.location || "Desconocido",
               submissionUrl: submission?.postUrl || null,
               submissionStatus: submission?.status || null
             };
@@ -192,7 +192,7 @@ export default function BrandMatches() {
           const { score, reasons, breakdown } = calculateMatchScore(activeCampaign, creator);
 
           let matchReason = reasons.join(" • ");
-          if (!matchReason) matchReason = "Matched based on availability";
+          if (!matchReason) matchReason = "Match basado en disponibilidad";
 
           return {
             ...creator,
@@ -208,7 +208,7 @@ export default function BrandMatches() {
             tiktokMetrics: creator.tiktokMetrics,
             tiktokUsername: creator.socialHandles?.tiktok,
             instagramUsername: creator.instagramUsername || creator.socialHandles?.instagram,
-            location: creator.location || "Unknown",
+            location: creator.location || "Desconocido",
             aiAnalysis: null as any,
           };
         })
@@ -261,7 +261,7 @@ export default function BrandMatches() {
   const handleSendProposal = async (id: string, creatorName: string) => {
     if (!activeCampaign || !user) return;
     if (approvedIds.includes(id)) {
-      toast.info(`Already sent a proposal to ${creatorName}`);
+      toast.info(`Ya se envió una propuesta a ${creatorName}`);
       return;
     }
 
@@ -273,17 +273,17 @@ export default function BrandMatches() {
         status: "pending",
         createdAt: new Date().toISOString(),
         campaignData: {
-          title: activeCampaign.name || "Untitled Campaign",
-          brandName: activeCampaign.brandName || "Brand",
+          title: activeCampaign.name || "Campaña Sin Título",
+          brandName: activeCampaign.brandName || "Marca",
           image: activeCampaign.images?.[0] || "",
-          budget: activeCampaign.budget || "Negotiable"
+          budget: activeCampaign.budget || "Negociable"
         }
       });
       setApprovedIds((prev) => [...prev, id]);
-      toast.success(`Proposal sent to ${creatorName}!`);
+      toast.success(`¡Propuesta enviada a ${creatorName}!`);
     } catch (error) {
       console.error("Error sending proposal:", error);
-      toast.error("Failed to send proposal.");
+      toast.error("Error al enviar la propuesta.");
     }
   };
 
@@ -302,15 +302,15 @@ export default function BrandMatches() {
         });
       }
 
-      toast.success(`Approved ${creator.name}!`, {
-        description: "The campaign is now active for them."
+      toast.success(`¡Aprobado ${creator.name}!`, {
+        description: "La campaña ahora está activa para ellos."
       });
 
       // Remove from list locally
       setApplicants(prev => prev.filter(a => a.id !== creator.id));
     } catch (error) {
       console.error("Error approving applicant:", error);
-      toast.error("Failed to approve applicant");
+      toast.error("Error al aprobar al solicitante");
     }
   };
 
@@ -321,7 +321,7 @@ export default function BrandMatches() {
 
   const handleRejectApplicant = async (creator: any) => {
     // Add confirmation
-    if (!confirm(`Are you sure you want to reject ${creator.name}'s application? This action cannot be undone.`)) {
+    if (!confirm(`¿Estás seguro de que deseas rechazar la solicitud de ${creator.name}? Esta acción no se puede deshacer.`)) {
       return;
     }
 
@@ -330,10 +330,10 @@ export default function BrandMatches() {
         status: "rejected"
       });
       setApplicants(prev => prev.filter(a => a.id !== creator.id));
-      toast.info("Application rejected");
+      toast.info("Solicitud rechazada");
     } catch (error) {
       console.error("Error rejecting:", error);
-      toast.error("Failed to reject application. Please try again.");
+      toast.error("Error al rechazar la solicitud. Por favor, inténtalo de nuevo.");
     }
   };
 
@@ -360,8 +360,8 @@ export default function BrandMatches() {
     if (creator.submissionUrl) {
       window.open(creator.submissionUrl, "_blank");
     } else {
-      toast.info("Content not yet submitted", {
-        description: "This creator hasn't submitted their content link yet."
+      toast.info("Contenido aún no enviado", {
+        description: "Este creador aún no ha enviado el enlace de su contenido."
       });
     }
   };
@@ -378,12 +378,12 @@ export default function BrandMatches() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <DashboardHeader
               title={
-                viewMode === 'matches' ? "Your Matches" :
-                  viewMode === 'applicants' ? "Applicants" : "Invited Creators"
+                viewMode === 'matches' ? "Tus Matches" :
+                  viewMode === 'applicants' ? "Solicitantes" : "Creadores Invitados"
               }
               subtitle={
-                viewMode === 'matches' ? "Creators that perfectly fit your campaigns" :
-                  viewMode === 'applicants' ? "Creators who want to work with you" : "Creators you have sent proposals to"
+                viewMode === 'matches' ? "Creadores que encajan perfectamente con tus campañas" :
+                  viewMode === 'applicants' ? "Creadores que quieren trabajar contigo" : "Creadores a los que has enviado propuestas"
               }
             />
 
@@ -391,7 +391,7 @@ export default function BrandMatches() {
             {campaigns.length > 0 && (
               <div className="w-full md:w-64 space-y-2">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Searching Matches For:
+                  Buscando Matches Para:
                 </Label>
                 <Select
                   value={activeCampaign?.id}
@@ -401,7 +401,7 @@ export default function BrandMatches() {
                   }}
                 >
                   <SelectTrigger className="w-full bg-background border-input">
-                    <SelectValue placeholder="Select a Campaign" />
+                    <SelectValue placeholder="Selecciona una Campaña" />
                   </SelectTrigger>
                   <SelectContent>
                     {campaigns.map((c) => (
@@ -433,18 +433,18 @@ export default function BrandMatches() {
             </div>
             <div>
               <h3 className="font-semibold text-lg mb-2">
-                {viewMode === 'applicants' ? "Application Status" : "AI Match Summary"}
+                {viewMode === 'applicants' ? "Estado de Solicitudes" : "Resumen de Match con IA"}
               </h3>
               {activeCampaign ? (
                 <p className="text-muted-foreground">
                   {viewMode === 'applicants'
-                    ? `You have ${applicants.length} pending applications to review for ${activeCampaign.name}.`
-                    : `We found ${creators.length} potential matches for ${activeCampaign.name}.`
+                    ? `Tienes ${applicants.length} solicitudes pendientes por revisar para ${activeCampaign.name}.`
+                    : `Encontramos ${creators.length} posibles matches para ${activeCampaign.name}.`
                   }
                 </p>
               ) : (
                 <p className="text-muted-foreground">
-                  No active campaign found. <Link to="/brand/campaigns/new" className="text-primary hover:underline">Create a campaign</Link> to get better matches.
+                  No se encontró ninguna campaña activa. <Link to="/brand/campaigns/new" className="text-primary hover:underline">Crear una campaña</Link> para obtener mejores matches.
                 </p>
               )}
             </div>
@@ -469,7 +469,7 @@ export default function BrandMatches() {
               className="relative"
             >
               <Users className="w-4 h-4 mr-2" />
-              Applicants
+              Solicitantes
               {applicants.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
                   {applicants.length}
@@ -482,7 +482,7 @@ export default function BrandMatches() {
               onClick={() => setViewMode('collaborating')}
             >
               <Users className="w-4 h-4 mr-2" />
-              Collaborating ({collaborators.length})
+              Colaborando ({collaborators.length})
             </Button>
             <Button
               variant={viewMode === 'completed' ? "default" : "outline"}
@@ -490,7 +490,7 @@ export default function BrandMatches() {
               onClick={() => setViewMode('completed')}
             >
               <CheckCircle className="w-4 h-4 mr-2" />
-              Completed ({completedCreators.length})
+              Completadas ({completedCreators.length})
             </Button>
             <Button
               variant={viewMode === 'invited' ? "default" : "outline"}
@@ -498,7 +498,7 @@ export default function BrandMatches() {
               onClick={() => setViewMode('invited')}
             >
               <UserCheck className="w-4 h-4 mr-2" />
-              Invited ({approvedIds.filter(id => !collaborators.some(c => c.id === id) && !completedCreators.some(c => c.id === id)).length})
+              Invitados ({approvedIds.filter(id => !collaborators.some(c => c.id === id) && !completedCreators.some(c => c.id === id)).length})
             </Button>
           </div>
         </div>
@@ -543,7 +543,7 @@ export default function BrandMatches() {
             </motion.div>
           )) : (
             <div className="col-span-3 text-center py-20">
-              <p className="text-muted-foreground">Select a campaign to see matches.</p>
+              <p className="text-muted-foreground">Selecciona una campaña para ver los matches.</p>
             </div>
           )}
         </div>
@@ -555,32 +555,32 @@ export default function BrandMatches() {
               <Filter className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="text-xl font-semibold mb-2">
-              {viewMode === 'applicants' ? "No pending applications yet" :
-                viewMode === 'matches' ? "No matching creators found" :
-                  viewMode === 'collaborating' ? "No active collaborations" :
-                    viewMode === 'completed' ? "No completed collaborations" :
-                      "No invited creators"}
+              {viewMode === 'applicants' ? "Aún no hay solicitudes pendientes" :
+                viewMode === 'matches' ? "No se encontraron creadores compatibles" :
+                  viewMode === 'collaborating' ? "No hay colaboraciones activas" :
+                    viewMode === 'completed' ? "No hay colaboraciones completadas" :
+                      "No hay creadores invitados"}
             </h3>
             <p className="text-muted-foreground mb-6">
               {viewMode === 'applicants'
-                ? "Creators will appear here when they discover and apply to your campaign. Share your campaign to attract more applicants."
+                ? "Los creadores aparecerán aquí cuando descubran y soliciten unirse a tu campaña. Comparte tu campaña para atraer más solicitantes."
                 : viewMode === 'matches'
-                  ? "We couldn't find creators matching your campaign criteria. Try broadening your requirements or check back later as new creators join daily."
+                  ? "No pudimos encontrar creadores que coincidan con los criterios de tu campaña. Intenta ampliar tus requisitos o vuelve más tarde, ya que se unen nuevos creadores a diario."
                   : viewMode === 'collaborating'
-                    ? "Once you approve applicants or creators accept invitations, they'll appear here."
+                    ? "Una vez que apruebes a los solicitantes o los creadores acepten las invitaciones, aparecerán aquí."
                     : viewMode === 'completed'
-                      ? "When a creator's content is approved, they will be moved to this tab."
-                      : "Creators you invite will show here. Browse the Matches tab to find and invite creators."}
+                      ? "Cuando se apruebe el contenido de un creador, se moverá a esta pestaña."
+                      : "Los creadores que invites aparecerán aquí. Explora la pestaña Matches para encontrar e invitar creadores."}
             </p>
 
             {viewMode === 'matches' && (
               <div className="bg-muted/30 rounded-lg p-4 text-sm text-left">
-                <p className="font-medium mb-2">💡 Tips to get more matches:</p>
+                <p className="font-medium mb-2">💡 Consejos para obtener más matches:</p>
                 <ul className="space-y-1 text-muted-foreground">
-                  <li>• Adjust location preferences</li>
-                  <li>• Review campaign vibes and categories</li>
-                  <li>• Ensure budget is competitive</li>
-                  <li>• Make campaign description compelling</li>
+                  <li>• Ajusta las preferencias de ubicación</li>
+                  <li>• Revisa las vibras y categorías de la campaña</li>
+                  <li>• Asegúrate de que el presupuesto sea competitivo</li>
+                  <li>• Haz que la descripción de la campaña sea atractiva</li>
                 </ul>
               </div>
             )}
@@ -590,7 +590,7 @@ export default function BrandMatches() {
         {!activeCampaign && campaigns.length === 0 && (
           <div className="text-center py-20">
             <Link to="/brand/campaigns/new">
-              <Button variant="hero">Create Campaign</Button>
+              <Button variant="hero">Crear Campaña</Button>
             </Link>
           </div>
         )}

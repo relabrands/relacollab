@@ -135,7 +135,7 @@ export default function BrandAnalytics() {
                 creatorStats[creatorKey].shares += shares;
                 creatorStats[creatorKey].views += views;
                 creatorStats[creatorKey].interactions += interactions;
-                creatorStats[creatorKey].campaigns.add(campMap.get(sub.campaignId) || "Unknown");
+                creatorStats[creatorKey].campaigns.add(campMap.get(sub.campaignId) || "Desconocido");
             }
 
             setStats({
@@ -161,7 +161,7 @@ export default function BrandAnalytics() {
                     const stat = creatorStats[id];
                     return {
                         ...stat,
-                        name: profile?.displayName || "Unknown Creator",
+                        name: profile?.displayName || "Creador Desconocido",
                         avatar: profile?.photoURL || profile?.avatar,
                         handle: profile?.instagramUsername || profile?.socialHandles?.tiktok,
                         campaigns: Array.from(stat.campaigns).join(", ")
@@ -178,7 +178,7 @@ export default function BrandAnalytics() {
             filteredSubmissions.forEach(sub => {
                 if (!campaignGroups[sub.campaignId]) {
                     campaignGroups[sub.campaignId] = {
-                        name: campMap.get(sub.campaignId) || "Unknown",
+                        name: campMap.get(sub.campaignId) || "Desconocido",
                         likes: 0,
                         posts: 0
                     };
@@ -205,7 +205,7 @@ export default function BrandAnalytics() {
             <MobileNav type="brand" />
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
-                <DashboardHeader title="Analytics Overview" subtitle="Real-time performance from valid submissions" />
+                <DashboardHeader title="Resumen de Analytics" subtitle="Rendimiento en tiempo real de los envíos válidos" />
 
                 {/* Platform Toggle */}
                 <div className="flex gap-2 mb-6">
@@ -214,7 +214,7 @@ export default function BrandAnalytics() {
                         onClick={() => setActivePlatform("all")}
                         size="sm"
                     >
-                        All Platforms
+                        Todas las Plataformas
                     </Button>
                     <Button
                         variant={activePlatform === "instagram" ? "default" : "outline"}
@@ -237,35 +237,35 @@ export default function BrandAnalytics() {
                 {/* Overall Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
                     <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Posts</CardTitle></CardHeader>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Publicaciones Totales</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold">{stats.totalPosts}</div></CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Views</CardTitle></CardHeader>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Vistas Totales</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold text-indigo-600">{stats.totalViews?.toLocaleString() || 0}</div></CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Reach</CardTitle></CardHeader>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Alcance Total</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold text-blue-600">{stats.totalReach?.toLocaleString() || 0}</div></CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Interactions</CardTitle></CardHeader>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Interacciones Totales</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold text-teal-600">{stats.totalInteractions?.toLocaleString() || 0}</div></CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Likes</CardTitle></CardHeader>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Me gusta Totales</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold text-pink-600">{stats.totalLikes.toLocaleString()}</div></CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Comments</CardTitle></CardHeader>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Comentarios Totales</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold text-primary">{stats.totalComments.toLocaleString()}</div></CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Saved</CardTitle></CardHeader>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Guardados Totales</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold text-purple-600">{stats.totalSaved?.toLocaleString() || 0}</div></CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Shares</CardTitle></CardHeader>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Compartidos Totales</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold text-orange-600">{stats.totalShares?.toLocaleString() || 0}</div></CardContent>
                     </Card>
                 </div>
@@ -275,7 +275,7 @@ export default function BrandAnalytics() {
                         {/* Chart */}
                         <Card className="col-span-3 lg:col-span-2">
                             <CardHeader>
-                                <CardTitle>Campaign Performance (Likes)</CardTitle>
+                                <CardTitle>Rendimiento de Campaña (Me gusta)</CardTitle>
                             </CardHeader>
                             <CardContent className="pl-2">
                                 <ResponsiveContainer width="100%" height={300}>
@@ -292,7 +292,7 @@ export default function BrandAnalytics() {
                         {/* Creator Breakdown Table */}
                         <Card className="col-span-3">
                             <CardHeader>
-                                <CardTitle>Creator Performance</CardTitle>
+                                <CardTitle>Rendimiento de Creadores</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
@@ -301,16 +301,16 @@ export default function BrandAnalytics() {
                                             <table className="w-full text-sm text-left">
                                                 <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
                                                     <tr>
-                                                        <th className="px-4 py-3 rounded-l-lg">Creator</th>
-                                                        <th className="px-4 py-3">Campaigns</th>
-                                                        <th className="px-4 py-3 text-right">Posts</th>
-                                                        <th className="px-4 py-3 text-right">Views</th>
-                                                        <th className="px-4 py-3 text-right">Reach</th>
-                                                        <th className="px-4 py-3 text-right">Likes</th>
-                                                        <th className="px-4 py-3 text-right">Comments</th>
-                                                        <th className="px-4 py-3 text-right">Saved</th>
-                                                        <th className="px-4 py-3 text-right">Shares</th>
-                                                        <th className="px-4 py-3 text-right rounded-r-lg">Interactions</th>
+                                                        <th className="px-4 py-3 rounded-l-lg">Creador</th>
+                                                        <th className="px-4 py-3">Campañas</th>
+                                                        <th className="px-4 py-3 text-right">Publicaciones</th>
+                                                        <th className="px-4 py-3 text-right">Vistas</th>
+                                                        <th className="px-4 py-3 text-right">Alcance</th>
+                                                        <th className="px-4 py-3 text-right">Me gusta</th>
+                                                        <th className="px-4 py-3 text-right">Comentarios</th>
+                                                        <th className="px-4 py-3 text-right">Guardados</th>
+                                                        <th className="px-4 py-3 text-right">Compartidos</th>
+                                                        <th className="px-4 py-3 text-right rounded-r-lg">Interacciones</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -340,7 +340,7 @@ export default function BrandAnalytics() {
                                             </table>
                                         </div>
                                     ) : (
-                                        <p className="text-center text-muted-foreground py-8">No specific creator data available yet.</p>
+                                        <p className="text-center text-muted-foreground py-8">Aún no hay datos específicos de creadores disponibles.</p>
                                     )}
                                 </div>
                             </CardContent>
@@ -348,7 +348,7 @@ export default function BrandAnalytics() {
                     </div>
                 ) : (
                     <div className="text-center p-8 border rounded-lg bg-white">
-                        <p>No analytics data available yet. Start a campaign to see results!</p>
+                        <p>Aún no hay datos de analytics disponibles. ¡Inicia una campaña para ver los resultados!</p>
                     </div>
                 )}
             </main>

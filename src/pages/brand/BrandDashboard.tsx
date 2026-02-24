@@ -23,25 +23,25 @@ export default function BrandDashboard() {
     iconColor: "primary" | "accent" | "success";
   }[]>([
     {
-      title: "Active Campaigns",
+      title: "Campañas Activas",
       value: 0,
-      change: "0 this month",
+      change: "0 este mes",
       changeType: "neutral",
       icon: FileText,
       iconColor: "primary",
     },
     {
-      title: "Matched Creators",
+      title: "Creadores Matcheados",
       value: 0,
-      change: "0 this week",
+      change: "0 esta semana",
       changeType: "neutral",
       icon: Users,
       iconColor: "accent",
     },
     {
-      title: "Total Spend",
+      title: "Inversión Total",
       value: "$0",
-      change: "This month",
+      change: "Este mes",
       changeType: "neutral",
       icon: DollarSign,
       iconColor: "primary",
@@ -86,8 +86,8 @@ export default function BrandDashboard() {
         }
 
         setStats(prev => [
-          { ...prev[0], value: activeCount, change: `${activeCount} this month` },
-          { ...prev[1], value: totalMatched, change: `${totalMatched} this week`, changeType: totalMatched > 0 ? "positive" : "neutral" },
+          { ...prev[0], value: activeCount, change: `${activeCount} este mes` },
+          { ...prev[1], value: totalMatched, change: `${totalMatched} esta semana`, changeType: totalMatched > 0 ? "positive" : "neutral" },
           { ...prev[2], value: "$0" }
         ]);
 
@@ -116,8 +116,8 @@ export default function BrandDashboard() {
 
       <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <DashboardHeader
-          title={`Welcome back, ${user?.displayName || 'Brand'}`}
-          subtitle="Here's what's happening with your campaigns"
+          title={`Bienvenido de nuevo, ${user?.displayName || 'Marca'}`}
+          subtitle="Esto es lo que está pasando con tus campañas"
         />
 
         {/* Stats Grid */}
@@ -129,11 +129,11 @@ export default function BrandDashboard() {
 
         {/* Quick Actions */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Recent Campaigns</h2>
+          <h2 className="text-xl font-semibold">Campañas Recientes</h2>
           <Link to="/brand/campaigns/new">
             <Button variant="hero">
               <Plus className="w-4 h-4" />
-              Create Campaign
+              Crear Campaña
             </Button>
           </Link>
         </div>
@@ -147,9 +147,9 @@ export default function BrandDashboard() {
           </div>
         ) : (
           <div className="text-center py-12 bg-white rounded-lg border border-dashed">
-            <p className="text-muted-foreground mb-4">No campaigns yet.</p>
+            <p className="text-muted-foreground mb-4">Aún no hay campañas.</p>
             <Link to="/brand/campaigns/new">
-              <Button variant="outline">Create your first campaign</Button>
+              <Button variant="outline">Crea tu primera campaña</Button>
             </Link>
           </div>
         )}

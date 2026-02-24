@@ -82,7 +82,7 @@ export default function BrandPayments() {
             setPlans(fetchedPlans);
         } catch (error: any) {
             console.error("Error fetching plans:", error);
-            toast.error("Failed to load plans: " + (error.message || "Unknown error"));
+            toast.error("Error al cargar los planes: " + (error.message || "Error desconocido"));
         } finally {
             setLoadingPlans(false);
         }
@@ -121,11 +121,11 @@ export default function BrandPayments() {
                 // Usually this is done via backend, but as a fallback/mock for now if API missing:
                 // Note: Real implementation should rely on the API call above.
 
-                toast.success(`Subscribed to ${plan.name} successfully!`);
+                toast.success(`¡Suscrito a ${plan.name} exitosamente!`);
                 setCurrentPlan(plan.name);
             } catch (error) {
                 console.error("Error subscribing to free plan", error);
-                toast.error("Failed to subscribe");
+                toast.error("Error al suscribirse");
             } finally {
                 setProcessingId(null);
             }
@@ -177,16 +177,16 @@ export default function BrandPayments() {
             <MobileNav type="brand" />
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
-                <DashboardHeader title="Payments" subtitle="Manage your subscription and billing" />
+                <DashboardHeader title="Pagos" subtitle="Gestiona tu suscripción y facturación" />
 
                 {/* Plans Section */}
                 <div className="mb-10">
-                    <h3 className="text-xl font-semibold mb-4">Subscription Plans</h3>
+                    <h3 className="text-xl font-semibold mb-4">Planes de Suscripción</h3>
                     {loadingPlans ? (
                         <div className="flex items-center justify-center py-10"><Loader2 className="animate-spin" /></div>
                     ) : plans.length === 0 ? (
                         <Card className="p-8 text-center text-muted-foreground border-dashed">
-                            No plans available at the moment.
+                            No hay planes disponibles en este momento.
                         </Card>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -197,24 +197,24 @@ export default function BrandPayments() {
                                     <Card key={plan.id} className={`flex flex-col relative overflow-hidden transition-all ${isCurrentPlan ? 'border-primary shadow-md bg-primary/5' : 'hover:shadow-lg hover:border-primary/50'}`}>
                                         {isCurrentPlan && (
                                             <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-lg">
-                                                CURRENT PLAN
+                                                PLAN ACTUAL
                                             </div>
                                         )}
                                         <CardHeader>
                                             <CardTitle className="text-xl">{plan.name}</CardTitle>
-                                            <CardDescription>{plan.interval === "year" ? "Yearly" : "Monthly"} billing</CardDescription>
+                                            <CardDescription>Facturación {plan.interval === "year" ? "anual" : "mensual"}</CardDescription>
                                         </CardHeader>
                                         <CardContent className="flex-1">
                                             <div className="mb-4">
                                                 <span className="text-4xl font-bold">${plan.price}</span>
-                                                <span className="text-muted-foreground">/{plan.interval === "year" ? "yr" : "mo"}</span>
+                                                <span className="text-muted-foreground">/{plan.interval === "year" ? "año" : "mes"}</span>
                                             </div>
                                             <div className="space-y-2 mb-6">
                                                 <div className="flex items-center gap-2 text-sm font-medium">
                                                     <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
                                                         <span className="text-primary text-xs">⚡</span>
                                                     </div>
-                                                    {plan.credits} Credits / month
+                                                    {plan.credits} Créditos / mes
                                                 </div>
                                                 {plan.features?.map((feature, i) => (
                                                     <div key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -234,11 +234,11 @@ export default function BrandPayments() {
                                                 {processingId === plan.id ? (
                                                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
                                                 ) : isCurrentPlan ? (
-                                                    "Current Plan"
+                                                    "Plan Actual"
                                                 ) : plan.isFree || plan.price === 0 ? (
-                                                    "Start for Free"
+                                                    "Comenzar Gratis"
                                                 ) : (
-                                                    "Subscribe"
+                                                    "Suscribirse"
                                                 )}
                                             </Button>
                                         </CardFooter>
@@ -251,21 +251,21 @@ export default function BrandPayments() {
 
                 {/* Payment History */}
                 <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><History className="w-5 h-5" /> Payment History</h3>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><History className="w-5 h-5" /> Historial de Pagos</h3>
                     <Card>
                         <CardContent className="p-0">
                             {loadingPayments ? (
                                 <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto" /></div>
                             ) : payments.length === 0 ? (
-                                <div className="p-8 text-center text-muted-foreground">No payment history found.</div>
+                                <div className="p-8 text-center text-muted-foreground">No se encontró historial de pagos.</div>
                             ) : (
                                 <div className="relative w-full overflow-auto">
                                     <table className="w-full caption-bottom text-sm">
                                         <thead className="[&_tr]:border-b">
                                             <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Amount</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Date</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Estado</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Monto</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Fecha</th>
                                             </tr>
                                         </thead>
                                         <tbody className="[&_tr:last-child]:border-0">

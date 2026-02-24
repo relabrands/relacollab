@@ -71,15 +71,15 @@ export default function BrandSettings() {
         if (!file || !user) return;
 
         if (!file.type.startsWith("image/")) {
-            toast.error("Please upload an image file");
+            toast.error("Por favor, sube un archivo de imagen");
             return;
         }
         if (file.size > 5 * 1024 * 1024) {
-            toast.error("File size must be less than 5MB");
+            toast.error("El tamaño del archivo debe ser menor a 5MB");
             return;
         }
 
-        const toastId = toast.loading("Uploading logo...");
+        const toastId = toast.loading("Subiendo logo...");
 
         try {
             const storageRef = ref(storage, `brand_logos/${user.uid}/${Date.now()}_${file.name}`);
@@ -100,10 +100,10 @@ export default function BrandSettings() {
             // 3. Update Local State
             setFormData(prev => ({ ...prev, photoURL: downloadURL }));
 
-            toast.success("Brand logo updated!", { id: toastId });
+            toast.success("¡Logo de la marca actualizado!", { id: toastId });
         } catch (error) {
             console.error("Error uploading logo:", error);
-            toast.error("Failed to upload logo", { id: toastId });
+            toast.error("Error al subir el logo", { id: toastId });
         }
     };
 
@@ -120,10 +120,10 @@ export default function BrandSettings() {
                 displayName: formData.brandName, // Sync display name
                 updatedAt: new Date().toISOString()
             });
-            toast.success("Settings updated successfully");
+            toast.success("Configuración actualizada exitosamente");
         } catch (error) {
             console.error("Error saving settings:", error);
-            toast.error("Failed to update settings");
+            toast.error("Error al actualizar la configuración");
         } finally {
             setLoading(false);
         }
@@ -139,12 +139,12 @@ export default function BrandSettings() {
             <MobileNav type="brand" />
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
-                <DashboardHeader title="Settings" subtitle="Manage your brand profile and preferences" />
+                <DashboardHeader title="Configuración" subtitle="Gestiona el perfil y preferencias de tu marca" />
 
                 <Card className="max-w-3xl">
                     <CardHeader>
-                        <CardTitle>Brand Profile</CardTitle>
-                        <CardDescription>This information will be visible to creators matching with your campaigns.</CardDescription>
+                        <CardTitle>Perfil de la Marca</CardTitle>
+                        <CardDescription>Esta información será visible para los creadores que hagan match con tus campañas.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {/* Avatar Upload */}
@@ -155,11 +155,11 @@ export default function BrandSettings() {
                                 className="w-24 h-24 rounded-2xl object-cover ring-2 ring-border"
                             />
                             <div>
-                                <h3 className="font-medium mb-1">Brand Logo</h3>
-                                <p className="text-sm text-muted-foreground mb-3">This will be displayed on your campaigns.</p>
+                                <h3 className="font-medium mb-1">Logo de la Marca</h3>
+                                <p className="text-sm text-muted-foreground mb-3">Esto se mostrará en tus campañas.</p>
                                 <div className="flex gap-2">
                                     <Button variant="outline" size="sm" onClick={handleChangePhoto}>
-                                        Change Logo
+                                        Cambiar Logo
                                     </Button>
                                     <input
                                         type="file"
@@ -174,7 +174,7 @@ export default function BrandSettings() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="brandName">Brand Name</Label>
+                                <Label htmlFor="brandName">Nombre de la Marca</Label>
                                 <Input
                                     id="brandName"
                                     value={formData.brandName}
@@ -183,7 +183,7 @@ export default function BrandSettings() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="contactPerson">Contact Person</Label>
+                                <Label htmlFor="contactPerson">Persona de Contacto</Label>
                                 <Input
                                     id="contactPerson"
                                     value={formData.contactPerson}
@@ -192,7 +192,7 @@ export default function BrandSettings() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="phone">Phone Number</Label>
+                                <Label htmlFor="phone">Número de Teléfono</Label>
                                 <Input
                                     id="phone"
                                     type="tel"
@@ -202,7 +202,7 @@ export default function BrandSettings() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="website">Website</Label>
+                                <Label htmlFor="website">Sitio Web</Label>
                                 <Input
                                     id="website"
                                     type="url"
@@ -212,7 +212,7 @@ export default function BrandSettings() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="instagram">Instagram Username</Label>
+                                <Label htmlFor="instagram">Usuario de Instagram</Label>
                                 <div className="relative">
                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
                                     <Input
@@ -228,41 +228,41 @@ export default function BrandSettings() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="industry">Industry</Label>
+                                <Label htmlFor="industry">Industria</Label>
                                 <Select value={formData.industry} onValueChange={(val) => handleUpdate("industry", val)}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select industry" />
+                                        <SelectValue placeholder="Seleccionar industria" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="fashion">Fashion</SelectItem>
-                                        <SelectItem value="beauty">Beauty</SelectItem>
-                                        <SelectItem value="tech">Technology</SelectItem>
-                                        <SelectItem value="food">Food & Beverage</SelectItem>
+                                        <SelectItem value="fashion">Moda</SelectItem>
+                                        <SelectItem value="beauty">Belleza</SelectItem>
+                                        <SelectItem value="tech">Tecnología</SelectItem>
+                                        <SelectItem value="food">Alimentos y Bebidas</SelectItem>
                                         <SelectItem value="fitness">Fitness</SelectItem>
-                                        <SelectItem value="lifestyle">Lifestyle</SelectItem>
-                                        <SelectItem value="travel">Travel</SelectItem>
-                                        <SelectItem value="other">Other</SelectItem>
+                                        <SelectItem value="lifestyle">Estilo de Vida</SelectItem>
+                                        <SelectItem value="travel">Viajes</SelectItem>
+                                        <SelectItem value="other">Otro</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="location">Location</Label>
+                                <Label htmlFor="location">Ubicación</Label>
                                 <Input
                                     id="location"
                                     value={formData.location}
                                     onChange={(e) => handleUpdate("location", e.target.value)}
-                                    placeholder="City, Country"
+                                    placeholder="Ciudad, País"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="description">Brand Bio / Description</Label>
+                            <Label htmlFor="description">Biografía / Descripción de la Marca</Label>
                             <Textarea
                                 id="description"
                                 value={formData.description}
                                 onChange={(e) => handleUpdate("description", e.target.value)}
-                                placeholder="Tell creators about your brand mission..."
+                                placeholder="Cuéntale a los creadores sobre la misión de tu marca..."
                                 className="min-h-[100px]"
                             />
                         </div>
@@ -270,7 +270,7 @@ export default function BrandSettings() {
                         <div className="pt-4 flex justify-end">
                             <Button onClick={handleSave} disabled={loading} className="w-full md:w-auto">
                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Save Changes
+                                Guardar Cambios
                             </Button>
                         </div>
                     </CardContent>

@@ -126,7 +126,7 @@ export default function BrandBilling() {
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader
-                    title="Billing & Payments"
+                    title="Facturación y Pagos"
                     subtitle="Facturas de campañas y pagos a RELA"
                 />
 
@@ -324,7 +324,7 @@ export default function BrandBilling() {
                     {selectedInvoice && (
                         <div className="bg-muted/40 rounded-lg p-3 text-sm space-y-1 my-2">
                             <p className="font-semibold">{selectedInvoice.campaignName}</p>
-                            <p className="text-muted-foreground">{selectedInvoice.creatorCount} creators × ${selectedInvoice.perCreatorGross.toLocaleString()}</p>
+                            <p className="text-muted-foreground">{selectedInvoice.creatorCount} creador{selectedInvoice.creatorCount !== 1 ? "es" : ""} × ${selectedInvoice.perCreatorGross.toLocaleString()}</p>
                             <p className="font-bold text-primary text-base">${selectedInvoice.totalGross.toLocaleString()} USD</p>
                         </div>
                     )}
@@ -418,12 +418,12 @@ function InvoiceRow({
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Users className="w-3 h-3" />
-                    <span>{invoice.creatorCount} creator{invoice.creatorCount > 1 ? "s" : ""} × ${invoice.perCreatorGross.toLocaleString()} c/u</span>
+                    <span>{invoice.creatorCount} creador{invoice.creatorCount > 1 ? "es" : ""} × ${invoice.perCreatorGross.toLocaleString()} c/u</span>
                 </div>
                 <div className="flex gap-4 text-sm mt-1">
                     <span>Total: <strong className="text-foreground">${invoice.totalGross.toLocaleString()}</strong></span>
                     <span className="text-muted-foreground">Fee RELA ({invoice.feePercent}%): ${invoice.totalFee.toLocaleString()}</span>
-                    <span className="text-green-600 font-medium">Creators reciben: ${invoice.totalNet.toLocaleString()}</span>
+                    <span className="text-green-600 font-medium">Creadores reciben: ${invoice.totalNet.toLocaleString()}</span>
                 </div>
                 <p className="text-[10px] text-muted-foreground">
                     {new Date(invoice.createdAt).toLocaleDateString("es-DO", { day: "2-digit", month: "long", year: "numeric" })}

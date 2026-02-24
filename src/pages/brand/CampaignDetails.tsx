@@ -120,8 +120,8 @@ export default function CampaignDetails() {
     if (!campaign) {
         return (
             <div className="flex min-h-screen items-center justify-center flex-col gap-4">
-                <h2 className="text-xl font-semibold">Campaign not found</h2>
-                <Link to="/brand"><Button>Go Back</Button></Link>
+                <h2 className="text-xl font-semibold">Campaña no encontrada</h2>
+                <Link to="/brand"><Button>Volver</Button></Link>
             </div>
         );
     }
@@ -145,13 +145,13 @@ export default function CampaignDetails() {
                 <div className="mb-6">
                     <Link to="/brand" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
                         <ArrowLeft className="w-4 h-4" />
-                        Back to Dashboard
+                        Volver al Dashboard
                     </Link>
                 </div>
 
                 {/* Header with Edit/Delete */}
                 <div className="flex items-start justify-between mb-8 gap-4">
-                    <DashboardHeader title={campaign.name} subtitle="Campaign Details & Progress" />
+                    <DashboardHeader title={campaign.name} subtitle="Detalles de la Campaña y Progreso" />
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <Button variant="outline" size="sm" onClick={() => { setEditForm(campaign); setIsEditOpen(true); }}>
                             <Edit2 className="w-4 h-4 mr-1.5" />
@@ -165,7 +165,7 @@ export default function CampaignDetails() {
                         <Link to={`/brand/matches?campaignId=${campaign.id}`}>
                             <Button variant="hero" size="sm">
                                 <Sparkles className="w-4 h-4 mr-2" />
-                                View Matches
+                                Ver Matches
                             </Button>
                         </Link>
                     </div>
@@ -182,7 +182,7 @@ export default function CampaignDetails() {
                                         <FileCheck className="w-5 h-5 text-blue-600" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Applications</p>
+                                        <p className="text-sm text-muted-foreground">Solicitudes</p>
                                         <p className="text-2xl font-bold">{applicationsCount}</p>
                                     </div>
                                 </div>
@@ -193,7 +193,7 @@ export default function CampaignDetails() {
                                         <UserCheck className="w-5 h-5 text-green-600" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Approved</p>
+                                        <p className="text-sm text-muted-foreground">Aprobados</p>
                                         <p className="text-2xl font-bold">{approvedCount}</p>
                                     </div>
                                 </div>
@@ -204,7 +204,7 @@ export default function CampaignDetails() {
                                         <Users className="w-5 h-5 text-purple-600" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Collaborating</p>
+                                        <p className="text-sm text-muted-foreground">Colaborando</p>
                                         <p className="text-2xl font-bold">{collaboratingCount}</p>
                                     </div>
                                 </div>
@@ -213,18 +213,18 @@ export default function CampaignDetails() {
 
                         {/* Description */}
                         <div className="glass-card p-6">
-                            <h3 className="text-lg font-semibold mb-4">About this Campaign</h3>
+                            <h3 className="text-lg font-semibold mb-4">Sobre esta Campaña</h3>
                             <p className="text-muted-foreground whitespace-pre-wrap">{campaign.description}</p>
                         </div>
 
                         {/* Content & Compensation */}
                         {(campaign.contentTypes || campaign.compensationType) && (
                             <div className="glass-card p-6">
-                                <h3 className="text-lg font-semibold mb-4">Content & Compensation</h3>
+                                <h3 className="text-lg font-semibold mb-4">Contenido y Compensación</h3>
                                 <div className="space-y-4">
                                     {campaign.contentTypes?.length > 0 && (
                                         <div>
-                                            <p className="text-sm text-muted-foreground mb-2">Content Types Needed</p>
+                                            <p className="text-sm text-muted-foreground mb-2">Tipos de Contenido Necesarios</p>
                                             <div className="flex flex-wrap gap-2">
                                                 {campaign.contentTypes.map((type: string) => (
                                                     <Badge key={type} variant="secondary" className="capitalize">{type}</Badge>
@@ -235,7 +235,7 @@ export default function CampaignDetails() {
 
                                     {campaign.compensationType && (
                                         <div className="bg-muted/30 p-4 rounded-lg space-y-2">
-                                            <p className="text-sm text-muted-foreground mb-1">Compensation Type</p>
+                                            <p className="text-sm text-muted-foreground mb-1">Tipo de Compensación</p>
                                             <p className="font-medium capitalize">
                                                 {isMonetary ? "💰 Pago Monetario" : "🎁 Intercambio"}
                                             </p>
@@ -256,7 +256,7 @@ export default function CampaignDetails() {
                                                     </div>
                                                     {neededCount > 1 && (
                                                         <div className="flex justify-between font-semibold pt-1 border-t border-border/40">
-                                                            <span>Total ({neededCount} creators)</span>
+                                                            <span>Total ({neededCount} creadores)</span>
                                                             <span className="text-primary">${totalBudget.toLocaleString()}</span>
                                                         </div>
                                                     )}
@@ -270,23 +270,23 @@ export default function CampaignDetails() {
 
                         {/* Targeting & Vibe */}
                         <div className="glass-card p-6">
-                            <h3 className="text-lg font-semibold mb-4">Targeting & Vibe</h3>
+                            <h3 className="text-lg font-semibold mb-4">Público Objetivo y Vibe</h3>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <div className="p-4 bg-muted/30 rounded-xl">
                                     <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-                                        <MapPin className="w-4 h-4" /> Location
+                                        <MapPin className="w-4 h-4" /> Ubicación
                                     </div>
-                                    <div className="font-medium">{campaign.location || "Anywhere"}</div>
+                                    <div className="font-medium">{campaign.location || "Cualquier lugar"}</div>
                                 </div>
                                 <div className="p-4 bg-muted/30 rounded-xl">
                                     <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-                                        <Users className="w-4 h-4" /> Age Range
+                                        <Users className="w-4 h-4" /> Rango de Edad
                                     </div>
                                     <div className="font-medium">{campaign.ageRange}</div>
                                 </div>
                                 <div className="p-4 bg-muted/30 rounded-xl">
                                     <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-                                        <Target className="w-4 h-4" /> Goal
+                                        <Target className="w-4 h-4" /> Objetivo
                                     </div>
                                     <div className="font-medium capitalize">{campaign.goal}</div>
                                 </div>
@@ -294,7 +294,7 @@ export default function CampaignDetails() {
 
                             {campaign.vibes?.length > 0 && (
                                 <div className="mt-6">
-                                    <p className="text-sm text-muted-foreground mb-3">Vibe Keywords</p>
+                                    <p className="text-sm text-muted-foreground mb-3">Palabras Clave de Vibe</p>
                                     <div className="flex flex-wrap gap-2">
                                         {campaign.vibes.map((vibe: string) => (
                                             <Badge key={vibe} variant="secondary" className="px-3 py-1 capitalize">{vibe}</Badge>
@@ -311,20 +311,20 @@ export default function CampaignDetails() {
                         <div className="glass-card p-6 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/10">
                             <h3 className="font-semibold mb-4 flex items-center gap-2">
                                 <Briefcase className="w-5 h-5 text-primary" />
-                                Hiring Progress
+                                Progreso de Contratación
                             </h3>
                             <div className="mb-2 flex justify-between text-sm">
-                                <span className="text-muted-foreground">Creators Hired</span>
+                                <span className="text-muted-foreground">Creadores Contratados</span>
                                 <span className="font-medium">{approvedCount} / {neededCount}</span>
                             </div>
                             <Progress value={progress} className="h-2 mb-4" />
                             <p className="text-xs text-muted-foreground mb-4">
                                 {approvedCount >= neededCount
-                                    ? "🎉 Goal reached! You've hired all needed creators."
-                                    : `You need ${neededCount - approvedCount} more creator${neededCount - approvedCount !== 1 ? "s" : ""} to reach your goal.`}
+                                    ? "🎉 ¡Objetivo alcanzado! Has contratado a todos los creadores necesarios."
+                                    : `Necesitas ${neededCount - approvedCount} creador${neededCount - approvedCount !== 1 ? "es" : ""} más para alcanzar tu objetivo.`}
                             </p>
                             <Link to={`/brand/matches?campaignId=${campaign.id}`}>
-                                <Button className="w-full" variant="outline">Find Creators</Button>
+                                <Button className="w-full" variant="outline">Buscar Creadores</Button>
                             </Link>
                         </div>
 
@@ -333,19 +333,19 @@ export default function CampaignDetails() {
                             <div className="flex items-center justify-between py-2 border-b">
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <Calendar className="w-4 h-4" />
-                                    <span>Start Date</span>
+                                    <span>Fecha de Inicio</span>
                                 </div>
                                 <span className="font-medium">
-                                    {campaign.startDate ? new Date(campaign.startDate).toLocaleDateString() : "Not set"}
+                                    {campaign.startDate ? new Date(campaign.startDate).toLocaleDateString() : "No establecido"}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between py-2 border-b">
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <Calendar className="w-4 h-4" />
-                                    <span>End Date</span>
+                                    <span>Fecha de Fin</span>
                                 </div>
                                 <span className="font-medium">
-                                    {campaign.endDate ? new Date(campaign.endDate).toLocaleDateString() : "Not set"}
+                                    {campaign.endDate ? new Date(campaign.endDate).toLocaleDateString() : "No establecido"}
                                 </span>
                             </div>
 
@@ -354,12 +354,12 @@ export default function CampaignDetails() {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <DollarSign className="w-4 h-4" />
-                                        <span>Budget</span>
+                                        <span>Presupuesto</span>
                                     </div>
                                     {isMonetary ? (
                                         <div className="text-right">
                                             <span className="font-bold text-primary text-lg">${totalBudget.toLocaleString()}</span>
-                                            <p className="text-[10px] text-muted-foreground">{neededCount} creator{neededCount > 1 ? "s" : ""} × ${perCreatorGross.toLocaleString()}</p>
+                                            <p className="text-[10px] text-muted-foreground">{neededCount} creador{neededCount > 1 ? "es" : ""} × ${perCreatorGross.toLocaleString()}</p>
                                         </div>
                                     ) : (
                                         <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
@@ -370,11 +370,11 @@ export default function CampaignDetails() {
                                 {isMonetary && totalFee > 0 && (
                                     <div className="mt-2 pt-2 border-t border-border/40 text-xs text-muted-foreground space-y-1">
                                         <div className="flex justify-between">
-                                            <span>Fee RELA</span>
+                                            <span>Comisión RELA</span>
                                             <span className="text-destructive">-${totalFee.toLocaleString()}</span>
                                         </div>
                                         <div className="flex justify-between font-medium text-foreground">
-                                            <span>Creators reciben</span>
+                                            <span>Creadores reciben</span>
                                             <span className="text-green-600">${totalNet.toLocaleString()}</span>
                                         </div>
                                     </div>
