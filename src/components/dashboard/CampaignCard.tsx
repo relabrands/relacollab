@@ -109,7 +109,7 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
           <div className="bg-muted/30 p-3 rounded-lg">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
               <DollarSign className="w-3 h-3" />
-              Budget
+              Presupuesto
             </div>
             <div className="font-semibold text-sm">
               ${totalBudget.toLocaleString()}
@@ -120,7 +120,7 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
         <div className="bg-muted/30 p-3 rounded-lg">
           <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
             <Users className="w-3 h-3" />
-            Creators Needed
+            Creadores Necesarios
           </div>
           <div className="font-semibold text-sm">{campaign.creatorCount || "-"}</div>
         </div>
@@ -128,7 +128,7 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
         <div className="bg-blue-500/10 p-3 rounded-lg border border-blue-500/20">
           <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 text-xs mb-1">
             <FileCheck className="w-3 h-3" />
-            Applications
+            Solicitudes
           </div>
           <div className="font-semibold text-sm text-blue-700 dark:text-blue-400">
             {stats.applications}
@@ -138,7 +138,7 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
         <div className="bg-green-500/10 p-3 rounded-lg border border-green-500/20">
           <div className="flex items-center gap-2 text-green-700 dark:text-green-400 text-xs mb-1">
             <TrendingUp className="w-3 h-3" />
-            Approved
+            Aprobados
           </div>
           <div className="font-semibold text-sm text-green-700 dark:text-green-400">
             {stats.approved}
@@ -150,7 +150,7 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
       {campaign.endDate && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 pb-4 border-b">
           <Calendar className="w-4 h-4" />
-          <span>Ends: {new Date(campaign.endDate).toLocaleDateString()}</span>
+          <span>Finaliza: {new Date(campaign.endDate).toLocaleDateString()}</span>
         </div>
       )}
 
@@ -163,7 +163,7 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
             handleClick();
           }}
         >
-          View Details
+          Ver Detalles
           <ArrowRight className="w-4 h-4" />
         </Button>
         {onShare && (
@@ -177,7 +177,7 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
             }}
           >
             <Share2 className="w-3.5 h-3.5" />
-            Story
+            Historia
           </Button>
         )}
       </div>

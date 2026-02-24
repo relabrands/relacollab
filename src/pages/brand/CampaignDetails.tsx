@@ -222,13 +222,21 @@ export default function CampaignDetails() {
                             <div className="glass-card p-6">
                                 <h3 className="text-lg font-semibold mb-4">Contenido y Compensación</h3>
                                 <div className="space-y-4">
-                                    {campaign.contentTypes?.length > 0 && (
+                                    {(campaign.deliverables?.length > 0 || campaign.contentTypes?.length > 0) && (
                                         <div>
                                             <p className="text-sm text-muted-foreground mb-2">Tipos de Contenido Necesarios</p>
                                             <div className="flex flex-wrap gap-2">
-                                                {campaign.contentTypes.map((type: string) => (
-                                                    <Badge key={type} variant="secondary" className="capitalize">{type}</Badge>
-                                                ))}
+                                                {campaign.deliverables?.length > 0 ? (
+                                                    campaign.deliverables.map((del: any, i: number) => (
+                                                        <Badge key={i} variant="secondary" className="capitalize">
+                                                            {del.quantity}x {del.type}
+                                                        </Badge>
+                                                    ))
+                                                ) : (
+                                                    campaign.contentTypes?.map((type: string) => (
+                                                        <Badge key={type} variant="secondary" className="capitalize">{type}</Badge>
+                                                    ))
+                                                )}
                                             </div>
                                         </div>
                                     )}
