@@ -27,7 +27,7 @@ export function ContentExamples() {
                             transition={{ duration: 0.7 }}
                             className="absolute left-[-10%] sm:left-[5%] lg:left-[10%] z-10 w-[220px] sm:w-64 shadow-2xl"
                         >
-                            <div className="relative w-full h-[380px] sm:h-[450px] rounded-[2rem] overflow-hidden border-4 border-black/10 dark:border-white/10 bg-black">
+                            <div className="relative w-full h-[380px] sm:h-[450px] rounded-[2rem] overflow-hidden border-4 border-black/10 dark:border-white/10 bg-black [transform:translateZ(0)]">
                                 <video
                                     ref={video1Ref}
                                     src="https://relabrands.com/wp-content/uploads/2026/02/video2.mp4"
@@ -55,7 +55,7 @@ export function ContentExamples() {
                             transition={{ duration: 0.7, delay: 0.2 }}
                             className="absolute right-[-10%] sm:right-[5%] lg:right-[10%] top-12 lg:top-20 z-0 w-[220px] sm:w-64 shadow-2xl"
                         >
-                            <div className="relative w-full h-[380px] sm:h-[450px] rounded-[2rem] overflow-hidden border-4 border-black/10 dark:border-white/10 bg-black">
+                            <div className="relative w-full h-[380px] sm:h-[450px] rounded-[2rem] overflow-hidden border-4 border-black/10 dark:border-white/10 bg-black [transform:translateZ(0)]">
                                 <video
                                     ref={video2Ref}
                                     src="https://relabrands.com/wp-content/uploads/2026/02/video1.mp4"
