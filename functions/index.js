@@ -236,22 +236,22 @@ async function getInstagramMediaInternal(userId) {
             console.warn(`[getInstagramMedia] Insights failed for ${item.id}: ${err.message}`);
         }
 
-        // Step 2: Try to get video_views separately for VIDEO/REEL (won't break other metrics if it fails)
+        // Step 2: Try to get `views` separately for VIDEO/REEL (Instagram's current metric for play counts)
         const isVideo = item.media_type === 'VIDEO' || item.media_product_type === 'REELS';
         if (isVideo) {
             try {
                 const videoRes = await axios.get(
-                    `https://graph.facebook.com/v19.0/${item.id}/insights?metric=video_views&access_token=${accessToken}`
+                    `https://graph.facebook.com/v19.0/${item.id}/insights?metric=views&access_token=${accessToken}`
                 );
                 const vData = videoRes.data.data;
-                const vViews = vData.find(x => x.name === 'video_views');
+                const vViews = vData.find(x => x.name === 'views');
                 if (vViews && vViews.values[0].value > 0) {
                     metrics.views = vViews.values[0].value;
                 } else {
                     metrics.views = item.video_view_count || 0;
                 }
             } catch (vErr) {
-                // video_views failed — use media field fallback
+                // `views` insight not available — fall back to video_view_count media field
                 metrics.views = item.video_view_count || 0;
             }
         } else {
@@ -357,22 +357,22 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 }
             }
 
-            // Step 2: Try video_views for VIDEO/REEL only (won't break other metrics if fails)
+            // Step 2: Try `views` insight for VIDEO/REEL only (current metric per docs, won't break reach/saves/shares if fails)
             const mediaType2 = foundPost.media_type;
             const mediaProductType2 = foundPost.media_product_type;
             if (mediaType2 === 'VIDEO' || mediaProductType2 === 'REELS') {
                 try {
                     const videoRes = await axios.get(
-                        `https://graph.facebook.com/v19.0/${foundPost.id}/insights?metric=video_views&access_token=${accessToken}`
+                        `https://graph.facebook.com/v19.0/${foundPost.id}/insights?metric=views&access_token=${accessToken}`
                     );
                     const vData = videoRes.data.data;
-                    const vViews = vData.find(x => x.name === 'video_views');
+                    const vViews = vData.find(x => x.name === 'views');
                     if (vViews && vViews.values[0].value > 0) {
                         detailedMetrics.views = vViews.values[0].value;
-                        console.log(`✅ video_views from insights: ${detailedMetrics.views}`);
+                        console.log(`✅ views from insights: ${detailedMetrics.views}`);
                     }
                 } catch (vErr) {
-                    console.warn('video_views insight unavailable, using video_view_count fallback:', vErr.message);
+                    console.warn('views insight unavailable, using video_view_count fallback:', vErr.message);
                 }
             }
 
