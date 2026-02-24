@@ -216,9 +216,10 @@ async function getInstagramMediaInternal(userId) {
         };
 
         try {
-            // Skip `plays` — deprecated in Graph API v22+. Use video_view_count from media fields instead.
-            // Only fetch reach/saved/shares from insights (these work for all media types).
-            const metricParam = "reach,saved,shares";
+            // Skip `plays` — deprecated in Graph API v22+.
+            // Use `video_views` insight (for VIDEO/REEL) or `video_view_count` media field as fallback.
+            const isVideo = item.media_type === 'VIDEO' || item.media_product_type === 'REELS';
+            const metricParam = isVideo ? "video_views,reach,saved,shares" : "reach,saved,shares";
 
             const insightRes = await axios.get(
                 `https://graph.facebook.com/v19.0/${item.id}/insights?metric=${metricParam}&access_token=${accessToken}`
@@ -230,8 +231,9 @@ async function getInstagramMediaInternal(userId) {
                 return m ? m.values[0].value : 0;
             };
 
-            // Views: use video_view_count from media field (works for VIDEO + REEL)
-            metrics.views = item.video_view_count || 0;
+            // Views: prefer video_views insight, fall back to video_view_count media field
+            const videoViewsInsight = getVal('video_views');
+            metrics.views = videoViewsInsight > 0 ? videoViewsInsight : (item.video_view_count || 0);
             metrics.reach = getVal('reach') || 0;
             metrics.saved = getVal('saved') || 0;
             metrics.shares = getVal('shares') || 0;
@@ -323,12 +325,11 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 // (Quitamos 'shares' para evitar errores, ya que total_interactions lo incluye)
 
                 if (mediaType === 'VIDEO' || mediaProductType === 'REELS') {
-                    // REELS/VIDEO: reach, saved, shares
-                    // Removed: plays (Deprecated/Error in v22+), total_interactions (Invalid)
-                    metricsParams = "reach,saved,shares";
+                    // REELS/VIDEO: video_views, reach, saved, shares
+                    // video_views is the preferred metric for play count in v19+
+                    metricsParams = "video_views,reach,saved,shares";
                 } else {
                     // IMAGE: reach, saved, shares
-                    // Removed: impressions (Deprecated/Invalid for new), total_interactions (Invalid)
                     metricsParams = "reach,saved,shares";
                 }
 
@@ -345,12 +346,11 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 };
 
                 detailedMetrics = {
-                    // Plays metric is deprecated/erroring. Use media fields for views.
-                    views: foundPost.video_view_count || foundPost.play_count || foundPost.view_count || 0,
+                    // Use video_views insight as primary, then fallback to media field video_view_count
+                    views: getVal('video_views') || foundPost.video_view_count || foundPost.play_count || foundPost.view_count || 0,
                     reach: getVal('reach') || 0,
                     saved: getVal('saved') || 0,
                     shares: getVal('shares') || 0,
-                    // Si total_interactions viene de la API, úsalo. Si no, calcúlalo.
                     interactions: getVal('total_interactions') ||
                         ((foundPost.like_count || 0) + (foundPost.comments_count || 0))
                 };
