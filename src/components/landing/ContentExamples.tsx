@@ -25,13 +25,12 @@ export function ContentExamples() {
                             whileInView={{ opacity: 1, x: 0, rotate: -5 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.7 }}
-                            className="absolute left-[-10%] sm:left-[5%] lg:left-[10%] z-10 w-[220px] sm:w-64 rounded-[2rem] overflow-hidden border-4 border-black/10 dark:border-white/10 shadow-2xl bg-black"
+                            className="absolute left-[-10%] sm:left-[5%] lg:left-[10%] z-10 w-[220px] sm:w-64 h-[380px] sm:h-[450px] rounded-[2rem] overflow-hidden border-4 border-black/10 dark:border-white/10 shadow-2xl bg-black relative"
                         >
-                            {/* Replace placeholder with actual Reel/TikTok Image/Video */}
                             <video
                                 ref={video1Ref}
                                 src="https://relabrands.com/wp-content/uploads/2026/02/video2.mp4"
-                                className="w-full h-[380px] sm:h-[450px] object-cover opacity-90"
+                                className="absolute inset-0 w-full h-full object-cover opacity-90"
                                 autoPlay
                                 loop
                                 muted
@@ -39,10 +38,10 @@ export function ContentExamples() {
                                 disablePictureInPicture
                                 controlsList="nodownload nofullscreen noremoteplayback"
                             />
-                            <div className="absolute top-4 left-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm">
+                            <div className="absolute top-4 left-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm z-10">
                                 <span className="text-red-500">❤️</span> 14.2K Reach
                             </div>
-                            <div className="absolute top-12 left-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm">
+                            <div className="absolute top-12 left-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm z-10">
                                 <span className="text-gray-500">💬</span> 45 comments
                             </div>
                         </motion.div>
@@ -52,12 +51,12 @@ export function ContentExamples() {
                             whileInView={{ opacity: 1, x: 0, rotate: 5 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.7, delay: 0.2 }}
-                            className="absolute right-[-10%] sm:right-[5%] lg:right-[10%] top-12 lg:top-20 z-0 w-[220px] sm:w-64 rounded-[2rem] overflow-hidden border-4 border-black/10 dark:border-white/10 shadow-2xl bg-black"
+                            className="absolute right-[-10%] sm:right-[5%] lg:right-[10%] top-12 lg:top-20 z-0 w-[220px] sm:w-64 h-[380px] sm:h-[450px] rounded-[2rem] overflow-hidden border-4 border-black/10 dark:border-white/10 shadow-2xl bg-black relative"
                         >
                             <video
                                 ref={video2Ref}
                                 src="https://relabrands.com/wp-content/uploads/2026/02/video1.mp4"
-                                className="w-full h-[380px] sm:h-[450px] object-cover opacity-90"
+                                className="absolute inset-0 w-full h-full object-cover opacity-90"
                                 autoPlay
                                 loop
                                 muted
@@ -65,10 +64,10 @@ export function ContentExamples() {
                                 disablePictureInPicture
                                 controlsList="nodownload nofullscreen noremoteplayback"
                             />
-                            <div className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm">
+                            <div className="absolute top-4 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm z-10">
                                 <span className="text-red-500">❤️</span> 18.5K Reach
                             </div>
-                            <div className="absolute top-12 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm">
+                            <div className="absolute top-12 right-4 bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-full px-3 py-1 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-sm z-10">
                                 <span className="text-gray-500">💬</span> 34 comments
                             </div>
                         </motion.div>
