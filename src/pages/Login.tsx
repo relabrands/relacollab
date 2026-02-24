@@ -15,7 +15,7 @@ const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoggingIn, setIsLoggingIn] = useState(false);
-    const { signInWithGoogle, loginWithEmail, registerWithEmail, updateRole, logout, user, role: userRole } = useAuth();
+    const { loginWithEmail, registerWithEmail, updateRole, logout, user, role: userRole } = useAuth();
     const navigate = useNavigate();
 
     // Redirect if already logged in
@@ -24,24 +24,6 @@ const Login = () => {
             navigate(`/${userRole}`);
         }
     }, [user, userRole, navigate]);
-
-    const handleGoogleLogin = async () => {
-        if (!role) return;
-        setIsLoggingIn(true);
-        try {
-            const finalRole = await signInWithGoogle(role);
-            if (finalRole) {
-                navigate(`/${finalRole}`);
-            } else {
-                navigate('/');
-            }
-        } catch (error) {
-            console.error("Login failed:", error);
-            toast.error("Error al iniciar sesión con Google");
-        } finally {
-            setIsLoggingIn(false);
-        }
-    };
 
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -219,25 +201,6 @@ const Login = () => {
                         </TabsContent>
                     </Tabs>
 
-                    <div className="mt-6">
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
-                            </div>
-                        </div>
-                        <Button
-                            variant="outline"
-                            type="button"
-                            className="w-full mt-4"
-                            onClick={handleGoogleLogin}
-                            disabled={isLoggingIn}
-                        >
-                            Google
-                        </Button>
-                    </div>
                 </CardContent>
             </Card>
         </div>
