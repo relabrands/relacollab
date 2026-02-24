@@ -60,8 +60,8 @@ export function Header() {
     <>
       <motion.header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
-            ? "bg-background/95 backdrop-blur-xl shadow-sm border-b border-border/60"
-            : "bg-background/70 backdrop-blur-md border-b border-transparent"
+          ? "bg-background/95 backdrop-blur-xl shadow-sm border-b border-border/60"
+          : "bg-background/70 backdrop-blur-md border-b border-transparent"
           }`}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -80,19 +80,18 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
-            {!user &&
-              navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={`relative px-4 py-2 text-sm font-medium transition-colors rounded-md ${location.pathname === link.href
-                      ? "text-foreground bg-muted"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                    }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={`relative px-4 py-2 text-sm font-medium transition-colors rounded-md ${location.pathname === link.href
+                  ? "text-foreground bg-muted"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  }`}
+              >
+                {link.label}
+              </Link>
+            ))}
             {user && role === "admin" && (
               <Link
                 to="/admin"
@@ -223,27 +222,26 @@ export function Header() {
 
               {/* Nav Links */}
               <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-                {!user &&
-                  navLinks.map((link, i) => (
-                    <motion.div
-                      key={link.href}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.07 }}
+                {navLinks.map((link, i) => (
+                  <motion.div
+                    key={link.href}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.07 }}
+                  >
+                    <Link
+                      to={link.href}
+                      className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors ${location.pathname === link.href
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground hover:bg-muted"
+                        }`}
+                      onClick={() => setMobileOpen(false)}
                     >
-                      <Link
-                        to={link.href}
-                        className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors ${location.pathname === link.href
-                            ? "bg-primary/10 text-primary"
-                            : "text-foreground hover:bg-muted"
-                          }`}
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        {link.label}
-                        <ChevronRight className="w-4 h-4 opacity-40" />
-                      </Link>
-                    </motion.div>
-                  ))}
+                      {link.label}
+                      <ChevronRight className="w-4 h-4 opacity-40" />
+                    </Link>
+                  </motion.div>
+                ))}
                 {user && role === "admin" && (
                   <Link
                     to="/admin"
