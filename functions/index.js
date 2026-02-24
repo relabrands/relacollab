@@ -216,34 +216,47 @@ async function getInstagramMediaInternal(userId) {
         };
 
         try {
-            // Skip `plays` — deprecated in Graph API v22+.
-            // Use `video_views` insight (for VIDEO/REEL) or `video_view_count` media field as fallback.
-            const isVideo = item.media_type === 'VIDEO' || item.media_product_type === 'REELS';
-            const metricParam = isVideo ? "video_views,reach,saved,shares" : "reach,saved,shares";
-
-            const insightRes = await axios.get(
-                `https://graph.facebook.com/v19.0/${item.id}/insights?metric=${metricParam}&access_token=${accessToken}`
+            // Step 1: Always fetch reach/saved/shares (reliable for all media types)
+            const baseInsightRes = await axios.get(
+                `https://graph.facebook.com/v19.0/${item.id}/insights?metric=reach,saved,shares&access_token=${accessToken}`
             );
-
-            const data = insightRes.data.data;
-            const getVal = (name) => {
-                const m = data.find(x => x.name === name);
+            const baseData = baseInsightRes.data.data;
+            const getBaseVal = (name) => {
+                const m = baseData.find(x => x.name === name);
                 return m ? m.values[0].value : 0;
             };
+            metrics.reach = getBaseVal('reach') || 0;
+            metrics.saved = getBaseVal('saved') || 0;
+            metrics.shares = getBaseVal('shares') || 0;
 
-            // Views: prefer video_views insight, fall back to video_view_count media field
-            const videoViewsInsight = getVal('video_views');
-            metrics.views = videoViewsInsight > 0 ? videoViewsInsight : (item.video_view_count || 0);
-            metrics.reach = getVal('reach') || 0;
-            metrics.saved = getVal('saved') || 0;
-            metrics.shares = getVal('shares') || 0;
-
-            const apiInteractions = getVal('total_interactions');
+            const apiInteractions = getBaseVal('total_interactions');
             if (apiInteractions > 0) metrics.interactions = apiInteractions;
 
         } catch (err) {
-            // Ignore insight errors — still use video_view_count if insights fail
-            metrics.views = item.video_view_count || 0;
+            console.warn(`[getInstagramMedia] Insights failed for ${item.id}: ${err.message}`);
+        }
+
+        // Step 2: Try to get video_views separately for VIDEO/REEL (won't break other metrics if it fails)
+        const isVideo = item.media_type === 'VIDEO' || item.media_product_type === 'REELS';
+        if (isVideo) {
+            try {
+                const videoRes = await axios.get(
+                    `https://graph.facebook.com/v19.0/${item.id}/insights?metric=video_views&access_token=${accessToken}`
+                );
+                const vData = videoRes.data.data;
+                const vViews = vData.find(x => x.name === 'video_views');
+                if (vViews && vViews.values[0].value > 0) {
+                    metrics.views = vViews.values[0].value;
+                } else {
+                    metrics.views = item.video_view_count || 0;
+                }
+            } catch (vErr) {
+                // video_views failed — use media field fallback
+                metrics.views = item.video_view_count || 0;
+            }
+        } else {
+            // Images don't have views
+            metrics.views = 0;
         }
 
         return {
@@ -312,65 +325,58 @@ exports.getPostMetrics = functions.https.onRequest((req, res) => {
                 return res.status(404).json({ error: "Post not found in recent media" });
             }
 
-            // 3. Obtener Insights (LÓGICA SEGURA v19.0)
-            let detailedMetrics = {};
+            // 3. Fetch Insights (in two steps to prevent total failure)
+            let detailedMetrics = {
+                views: foundPost.video_view_count || 0,
+                reach: 0,
+                saved: 0,
+                shares: 0,
+                interactions: (foundPost.like_count || 0) + (foundPost.comments_count || 0)
+            };
+
+            // Step 1: fetch reach/saved/shares — works for all media types
             try {
-                const mediaType = foundPost.media_type;
-                const mediaProductType = foundPost.media_product_type;
-                let metricsParams = "";
-
-                // REGLA DE ORO:
-                // VIDEO/REEL -> plays, reach, saved, total_interactions
-                // IMAGE -> impressions, reach, saved, total_interactions
-                // (Quitamos 'shares' para evitar errores, ya que total_interactions lo incluye)
-
-                if (mediaType === 'VIDEO' || mediaProductType === 'REELS') {
-                    // REELS/VIDEO: video_views, reach, saved, shares
-                    // video_views is the preferred metric for play count in v19+
-                    metricsParams = "video_views,reach,saved,shares";
-                } else {
-                    // IMAGE: reach, saved, shares
-                    metricsParams = "reach,saved,shares";
-                }
-
-                console.log(`Fetching insights for ${foundPost.id} with: ${metricsParams}`);
-
+                console.log(`Fetching base insights for ${foundPost.id}`);
                 const insightsResponse = await axios.get(
-                    `https://graph.facebook.com/v19.0/${foundPost.id}/insights?metric=${metricsParams}&access_token=${accessToken}`
+                    `https://graph.facebook.com/v19.0/${foundPost.id}/insights?metric=reach,saved,shares&access_token=${accessToken}`
                 );
-
                 const data = insightsResponse.data.data;
                 const getVal = (name) => {
                     const m = data.find(x => x.name === name);
                     return m ? m.values[0].value : 0;
                 };
-
-                detailedMetrics = {
-                    // Use video_views insight as primary, then fallback to media field video_view_count
-                    views: getVal('video_views') || foundPost.video_view_count || foundPost.play_count || foundPost.view_count || 0,
-                    reach: getVal('reach') || 0,
-                    saved: getVal('saved') || 0,
-                    shares: getVal('shares') || 0,
-                    interactions: getVal('total_interactions') ||
-                        ((foundPost.like_count || 0) + (foundPost.comments_count || 0))
-                };
-
+                detailedMetrics.reach = getVal('reach') || 0;
+                detailedMetrics.saved = getVal('saved') || 0;
+                detailedMetrics.shares = getVal('shares') || 0;
+                const apiInteractions = getVal('total_interactions');
+                if (apiInteractions > 0) detailedMetrics.interactions = apiInteractions;
             } catch (insightError) {
-                console.warn("Insights fetch failed (using basic stats):", insightError.message);
+                console.warn("Base insights fetch failed:", insightError.message);
                 if (insightError.response) {
                     console.error("❌ Instagram API Error Body:", JSON.stringify(insightError.response.data, null, 2));
                 }
-                // Fallback: insights failed but we still have video_view_count from media fields
-                detailedMetrics = {
-                    views: foundPost.video_view_count || foundPost.play_count || 0,
-                    reach: 0,
-                    saved: 0,
-                    shares: 0,
-                    interactions: (foundPost.like_count || 0) + (foundPost.comments_count || 0)
-                };
             }
 
-            // 4. Armar respuesta final
+            // Step 2: Try video_views for VIDEO/REEL only (won't break other metrics if fails)
+            const mediaType2 = foundPost.media_type;
+            const mediaProductType2 = foundPost.media_product_type;
+            if (mediaType2 === 'VIDEO' || mediaProductType2 === 'REELS') {
+                try {
+                    const videoRes = await axios.get(
+                        `https://graph.facebook.com/v19.0/${foundPost.id}/insights?metric=video_views&access_token=${accessToken}`
+                    );
+                    const vData = videoRes.data.data;
+                    const vViews = vData.find(x => x.name === 'video_views');
+                    if (vViews && vViews.values[0].value > 0) {
+                        detailedMetrics.views = vViews.values[0].value;
+                        console.log(`✅ video_views from insights: ${detailedMetrics.views}`);
+                    }
+                } catch (vErr) {
+                    console.warn('video_views insight unavailable, using video_view_count fallback:', vErr.message);
+                }
+            }
+
+            // 4. Build final response
             const metrics = {
                 likes: foundPost.like_count || 0,
                 comments: foundPost.comments_count || 0,
