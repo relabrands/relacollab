@@ -62,7 +62,7 @@ export function HowItWorks() {
   const steps = activeView === "brand" ? brandSteps : creatorSteps;
 
   return (
-    <section className="py-24 bg-background">
+    <section className="py-24 bg-background" id="how-it-works">
       <div className="container px-4">
         <motion.div
           className="text-center mb-12"
@@ -115,10 +115,10 @@ export function HowItWorks() {
               <div className="text-center p-4">
                 <div
                   className={`w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center ${step.color === "primary"
-                      ? "bg-gradient-primary"
-                      : step.color === "accent"
-                        ? "bg-gradient-accent"
-                        : "bg-gradient-success"
+                    ? "bg-gradient-primary"
+                    : step.color === "accent"
+                      ? "bg-gradient-accent"
+                      : "bg-gradient-success"
                     }`}
                 >
                   <step.icon className="w-7 h-7 text-primary-foreground" />

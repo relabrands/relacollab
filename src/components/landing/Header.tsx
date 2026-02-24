@@ -22,10 +22,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const navLinks = [
-  { label: "Inicio", href: "/" },
-  { label: "Cómo funciona", href: "/#how-it-works" },
-  { label: "Para marcas", href: "/#brands" },
-  { label: "Para creadores", href: "/apply" },
+  { label: "Home", href: "/", sectionId: null },
+  { label: "How It Works", href: "/#how-it-works", sectionId: "how-it-works" },
+  { label: "For Brands", href: "/#for-brands", sectionId: "for-brands" },
+  { label: "For Creators", href: "/apply", sectionId: null },
 ];
 
 export function Header() {
@@ -45,6 +45,24 @@ export function Header() {
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, link: typeof navLinks[0]) => {
+    if (!link.sectionId) return; // normal navigation
+    e.preventDefault();
+    if (location.pathname === "/") {
+      // Already on home — smooth scroll to section
+      const el = document.getElementById(link.sectionId);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      // Navigate to home then scroll after mount
+      navigate("/");
+      setTimeout(() => {
+        const el = document.getElementById(link.sectionId!);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
+    }
+    setMobileOpen(false);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -84,6 +102,7 @@ export function Header() {
               <Link
                 key={link.href}
                 to={link.href}
+                onClick={(e) => handleNavClick(e, link)}
                 className={`relative px-4 py-2 text-sm font-medium transition-colors rounded-md ${location.pathname === link.href
                   ? "text-foreground bg-muted"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
@@ -235,7 +254,7 @@ export function Header() {
                         ? "bg-primary/10 text-primary"
                         : "text-foreground hover:bg-muted"
                         }`}
-                      onClick={() => setMobileOpen(false)}
+                      onClick={(e) => handleNavClick(e, link)}
                     >
                       {link.label}
                       <ChevronRight className="w-4 h-4 opacity-40" />
