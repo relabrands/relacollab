@@ -101,6 +101,16 @@ export default function Opportunities() {
 
             const { score } = calculateMatchScore(campaignData, creatorProfile);
 
+            let effectiveScore = score;
+            try {
+              const matchRef = doc(db, "campaigns", invData.campaignId, "matches", user.uid);
+              const matchSnap = await getDoc(matchRef);
+              if (matchSnap.exists()) {
+                const aiPct = matchSnap.data()?.aiAnalysis?.matchPercentage;
+                if (typeof aiPct === "number") effectiveScore = aiPct;
+              }
+            } catch (_) { /* fallback to rule-based */ }
+
             return {
               id: invData.campaignId,
               invitationId: invDoc.id,
@@ -108,7 +118,8 @@ export default function Opportunities() {
               brandName: campaignData.brandName || brandData.displayName || "Unknown Brand",
               title: campaignData.name || "Untitled Campaign",
               isInvited: true,
-              matchScore: score,
+              matchScore: effectiveScore,
+              effectiveScore: effectiveScore,
               rewardType: campaignData.reward === 'paid' ? 'paid' : (campaignData.reward === 'experience' ? 'experience' : 'hybrid'),
               brandProfile: brandData
             };
@@ -173,7 +184,7 @@ export default function Opportunities() {
                   if (typeof aiPct === "number") effectiveScore = aiPct;
                 }
               } catch (_) { /* fallback to rule-based */ }
-              return { ...op, effectiveScore };
+              return { ...op, effectiveScore, matchScore: effectiveScore };
             })
         );
 

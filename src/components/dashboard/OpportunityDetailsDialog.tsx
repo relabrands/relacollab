@@ -53,6 +53,18 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                     </div>
                 </DialogHeader>
 
+                {/* Cover Image */}
+                {opportunity.coverImage && (
+                    <div className="w-full h-48 rounded-xl overflow-hidden mb-4 relative">
+                        <img
+                            src={opportunity.coverImage}
+                            alt={opportunity.title}
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    </div>
+                )}
+
                 {/* Campaign Stats Bar */}
                 <div className="flex gap-4 mb-2 overflow-x-auto pb-2">
                     <div className="flex items-center gap-2 text-sm bg-muted/50 px-3 py-1.5 rounded-lg whitespace-nowrap">
@@ -96,7 +108,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                 <div className="space-y-2 pb-2 border-b border-border/50">
                                     <div className="flex justify-between text-sm text-muted-foreground">
                                         <span>Presupuesto de la Campaña:</span>
-                                        <span>${(opportunity.totalBudgetPerCreator || opportunity.creatorPayment || 0).toLocaleString()}</span>
+                                        <span>${(opportunity.totalBudgetPerCreator || opportunity.creatorPayment || opportunity.budget || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-muted-foreground">
                                         <span className="flex items-center gap-1">
@@ -114,11 +126,29 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                 <div className="flex justify-between items-end">
                                     <span className="font-semibold text-lg">Tu Pago Neto:</span>
                                     <span className="text-2xl font-bold text-success">
-                                        ${(opportunity.creatorPayment || 0).toLocaleString()}
+                                        ${(opportunity.creatorPayment || opportunity.budget || 0).toLocaleString()}
                                     </span>
                                 </div>
                                 <div className="flex gap-2">
                                     <Badge variant="secondary">Proyecto Pagado</Badge>
+                                </div>
+                            </div>
+                        ) : opportunity.compensationType === 'hybrid' ? (
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-end mb-2">
+                                    <span className="font-semibold text-lg">Tu Pago Neto:</span>
+                                    <span className="text-2xl font-bold text-success">
+                                        ${(opportunity.creatorPayment || opportunity.budget || 0).toLocaleString()}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col space-y-2">
+                                    <p className="font-medium text-sm text-muted-foreground">Más intercambio de producto:</p>
+                                    <p className="font-medium">
+                                        {opportunity.exchangeDetails || "Detalles de intercambio no especificados"}
+                                    </p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Badge variant="secondary">Pago Mixto</Badge>
                                 </div>
                             </div>
                         ) : (
@@ -136,7 +166,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                             </div>
                         )}
 
-                        {opportunity.matchScore && (
+                        {opportunity.matchScore !== undefined && (
                             <div className="text-right mt-2 pt-2 border-t border-dashed border-border/50">
                                 <div className="text-sm font-medium text-success">{opportunity.matchScore}% Match Score</div>
                             </div>
