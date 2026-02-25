@@ -244,13 +244,19 @@ export default function CampaignDetails() {
                                     {campaign.compensationType && (
                                         <div className="bg-muted/30 p-4 rounded-lg space-y-2">
                                             <p className="text-sm text-muted-foreground mb-1">Tipo de Compensación</p>
-                                            <p className="font-medium capitalize">
-                                                {isMonetary ? "💰 Pago Monetario" : "🎁 Intercambio"}
+                                            <p className="font-medium">
+                                                {campaign.compensationType === "hybrid"
+                                                    ? "💵🎁 Híbrido (Pago + Intercambio)"
+                                                    : isMonetary
+                                                        ? "💰 Pago Monetario"
+                                                        : "🎁 Intercambio"}
                                             </p>
-                                            {!isMonetary && campaign.exchangeDetails && (
-                                                <p className="text-sm text-muted-foreground">{campaign.exchangeDetails}</p>
+                                            {/* Exchange details (hybrid or exchange) */}
+                                            {(campaign.compensationType === "exchange" || campaign.compensationType === "hybrid") && campaign.exchangeDetails && (
+                                                <p className="text-sm text-muted-foreground">🎁 {campaign.exchangeDetails}</p>
                                             )}
-                                            {isMonetary && (
+                                            {/* Monetary details (monetary or hybrid) */}
+                                            {(isMonetary || campaign.compensationType === "hybrid") && (
                                                 <div className="mt-2 pt-2 border-t border-border/40 space-y-1.5 text-sm">
                                                     <div className="flex justify-between">
                                                         <span className="text-muted-foreground">Por creator (bruto)</span>
