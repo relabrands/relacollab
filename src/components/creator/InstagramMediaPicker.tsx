@@ -83,11 +83,11 @@ export function InstagramMediaPicker({
 
                 setMedia(mediaData);
             } else {
-                toast.error(response.data.error || "Failed to load Instagram media");
+                toast.error(response.data.error || "Error al cargar contenido de Instagram");
             }
         } catch (error) {
             console.error("Error fetching Instagram media:", error);
-            toast.error("Could not load Instagram posts. Token might be expired.");
+            toast.error("No se pudieron cargar las publicaciones de Instagram. El token podría haber expirado.");
         } finally {
             setLoading(false);
         }
@@ -112,7 +112,7 @@ export function InstagramMediaPicker({
                 <DialogHeader className="pb-4">
                     <DialogTitle className="flex items-center gap-2">
                         <Instagram className="w-5 h-5 text-[#E1306C]" />
-                        Select from Instagram
+                        Seleccionar de Instagram
                         {filterType && (
                             <Badge variant="secondary">
                                 {filterType === "Post" && "📸"}
@@ -120,12 +120,12 @@ export function InstagramMediaPicker({
                                 {filterType === "Carousel" && "🖼️"}
                                 {filterType === "Video" && "🎥"}
                                 {filterType === "Story" && "📱"}
-                                {" "}{filterType}s Only
+                                {" "}Solo {filterType}s
                             </Badge>
                         )}
                     </DialogTitle>
                     <DialogDescription>
-                        Choose a post from your connected Instagram account
+                        Elige una publicación de tu cuenta de Instagram conectada
                     </DialogDescription>
                 </DialogHeader>
 
@@ -134,7 +134,7 @@ export function InstagramMediaPicker({
                     <div className="relative sticky top-0 z-10 bg-background pb-2">
                         <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search captions..."
+                            placeholder="Buscar en descripciones..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10"
@@ -151,12 +151,12 @@ export function InstagramMediaPicker({
                             <Instagram className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                             <p className="text-muted-foreground">
                                 {filterType
-                                    ? `No ${filterType.toLowerCase()}s found associated with this account.`
-                                    : "No posts found"}
+                                    ? `No se encontraron ${filterType.toLowerCase()}s asociados a esta cuenta.`
+                                    : "No se encontraron publicaciones"}
                             </p>
                             {filterType === 'Story' && (
                                 <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
-                                    Note: Instagram Stories disappear after 24 hours and may not be retrievable via the API.
+                                    Nota: Las historias de Instagram desaparecen después de 24 horas y puede que no sean recuperables a través de la API.
                                 </p>
                             )}
                         </div>
@@ -201,10 +201,10 @@ export function InstagramMediaPicker({
                                     {/* Type Badge */}
                                     <div className="absolute top-2 right-2">
                                         <Badge variant="secondary" className="text-xs">
-                                            {item.media_type === "IMAGE" && "Photo"}
+                                            {item.media_type === "IMAGE" && "Foto"}
                                             {item.media_type === "VIDEO" && "Video"}
                                             {item.media_type === "REELS" && "Reel"}
-                                            {item.media_type === "CAROUSEL_ALBUM" && "Carousel"}
+                                            {item.media_type === "CAROUSEL_ALBUM" && "Carrusel"}
                                         </Badge>
                                     </div>
 
@@ -251,20 +251,20 @@ export function InstagramMediaPicker({
                                             rel="noopener noreferrer"
                                             className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
                                         >
-                                            View on Instagram
+                                            Ver en Instagram
                                             <ExternalLink className="w-3 h-3" />
                                         </a>
                                     </div>
                                     <p className="text-sm text-muted-foreground line-clamp-2">
-                                        {selectedMedia.caption || "No caption"}
+                                        {selectedMedia.caption || "Sin descripción"}
                                     </p>
                                     {(selectedMedia.like_count || selectedMedia.comments_count) && (
                                         <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
                                             {selectedMedia.like_count && (
-                                                <span>❤️ {selectedMedia.like_count.toLocaleString()} likes</span>
+                                                <span>❤️ {selectedMedia.like_count.toLocaleString()} me gusta</span>
                                             )}
                                             {selectedMedia.comments_count && (
-                                                <span>💬 {selectedMedia.comments_count} comments</span>
+                                                <span>💬 {selectedMedia.comments_count} comentarios</span>
                                             )}
                                         </div>
                                     )}
@@ -276,14 +276,14 @@ export function InstagramMediaPicker({
 
                 <DialogFooter className="pt-4 border-t">
                     <Button variant="outline" onClick={onClose}>
-                        Cancel
+                        Cancelar
                     </Button>
                     <Button
                         variant="hero"
                         onClick={handleSelect}
                         disabled={!selectedMedia}
                     >
-                        Select Post
+                        Seleccionar Publicación
                     </Button>
                 </DialogFooter>
             </DialogContent>

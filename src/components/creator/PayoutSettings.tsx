@@ -74,7 +74,7 @@ export function PayoutSettings({ open, onOpenChange, onSuccess }: PayoutSettings
             }
         } catch (error) {
             console.error("Error fetching bank details:", error);
-            toast.error("Failed to load bank details.");
+            toast.error("Error al cargar los datos bancarios.");
         } finally {
             setIsLoading(false);
         }
@@ -85,7 +85,7 @@ export function PayoutSettings({ open, onOpenChange, onSuccess }: PayoutSettings
         if (!user) return;
 
         if (!formData.bankName || !formData.accountType || !formData.accountNumber || !formData.identityDocument || !formData.accountHolder) {
-            toast.error("Please fill in all fields.");
+            toast.error("Por favor completa todos los campos.");
             return;
         }
 
@@ -97,12 +97,12 @@ export function PayoutSettings({ open, onOpenChange, onSuccess }: PayoutSettings
                     updatedAt: new Date().toISOString()
                 }
             });
-            toast.success("Bank details saved successfully.");
+            toast.success("Datos bancarios guardados exitosamente.");
             onOpenChange(false);
             if (onSuccess) onSuccess();
         } catch (error) {
             console.error("Error saving bank details:", error);
-            toast.error("Failed to save bank details.");
+            toast.error("Error al guardar los datos bancarios.");
         } finally {
             setIsSaving(false);
         }
@@ -112,9 +112,9 @@ export function PayoutSettings({ open, onOpenChange, onSuccess }: PayoutSettings
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Configure Payout Method</DialogTitle>
+                    <DialogTitle>Configurar Método de Pago</DialogTitle>
                     <DialogDescription>
-                        Enter your local bank details to receive payments.
+                        Ingresa los datos de tu banco local para recibir pagos.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -126,14 +126,14 @@ export function PayoutSettings({ open, onOpenChange, onSuccess }: PayoutSettings
                     <form onSubmit={handleSubmit} className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="bankName" className="flex items-center gap-2">
-                                <Building2 className="w-4 h-4" /> Bank Name
+                                <Building2 className="w-4 h-4" /> Nombre del Banco
                             </Label>
                             <Select
                                 value={formData.bankName}
                                 onValueChange={(value) => setFormData({ ...formData, bankName: value })}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select your bank" />
+                                    <SelectValue placeholder="Selecciona tu banco" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {BANKS.map(bank => (
@@ -145,25 +145,25 @@ export function PayoutSettings({ open, onOpenChange, onSuccess }: PayoutSettings
 
                         <div className="space-y-2">
                             <Label htmlFor="accountType" className="flex items-center gap-2">
-                                <CreditCard className="w-4 h-4" /> Account Type
+                                <CreditCard className="w-4 h-4" /> Tipo de Cuenta
                             </Label>
                             <Select
                                 value={formData.accountType}
                                 onValueChange={(value) => setFormData({ ...formData, accountType: value })}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select type" />
+                                    <SelectValue placeholder="Selecciona el tipo" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="savings">Savings (Ahorros)</SelectItem>
-                                    <SelectItem value="checking">Checking (Corriente)</SelectItem>
+                                    <SelectItem value="savings">Ahorros</SelectItem>
+                                    <SelectItem value="checking">Corriente</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="accountNumber" className="flex items-center gap-2">
-                                <CreditCard className="w-4 h-4" /> Account Number
+                                <CreditCard className="w-4 h-4" /> Número de Cuenta
                             </Label>
                             <Input
                                 id="accountNumber"
@@ -175,7 +175,7 @@ export function PayoutSettings({ open, onOpenChange, onSuccess }: PayoutSettings
 
                         <div className="space-y-2">
                             <Label htmlFor="identityDocument" className="flex items-center gap-2">
-                                <FileText className="w-4 h-4" /> Identity Document (RNC/Cedula)
+                                <FileText className="w-4 h-4" /> Documento de Identidad (RNC/Cédula)
                             </Label>
                             <Input
                                 id="identityDocument"
@@ -187,21 +187,21 @@ export function PayoutSettings({ open, onOpenChange, onSuccess }: PayoutSettings
 
                         <div className="space-y-2">
                             <Label htmlFor="accountHolder" className="flex items-center gap-2">
-                                <UserSquare2 className="w-4 h-4" /> Account Holder Name
+                                <UserSquare2 className="w-4 h-4" /> Nombre del Titular de la Cuenta
                             </Label>
                             <Input
                                 id="accountHolder"
-                                placeholder="Full Name"
+                                placeholder="Nombre Completo"
                                 value={formData.accountHolder}
                                 onChange={(e) => setFormData({ ...formData, accountHolder: e.target.value })}
                             />
                         </div>
 
                         <DialogFooter className="mt-4">
-                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
                             <Button type="submit" disabled={isServing}>
                                 {isServing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Save Details
+                                Guardar Datos
                             </Button>
                         </DialogFooter>
                     </form>

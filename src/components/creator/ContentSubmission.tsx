@@ -140,7 +140,7 @@ export function ContentSubmission() {
       setCampaigns(campaignData);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
-      toast.error("Failed to load campaigns");
+      toast.error("Error al cargar campañas");
     } finally {
       setLoading(false);
     }
@@ -172,22 +172,22 @@ export function ContentSubmission() {
 
   const handleDeleteSubmission = async (submissionId: string) => {
     if (!submissionId) {
-      toast.error("Cannot delete: submission ID missing");
+      toast.error("No se puede eliminar: falta el ID del contenido");
       return;
     }
 
-    if (!confirm("Are you sure you want to delete this submission? This cannot be undone.")) {
+    if (!confirm("¿Estás seguro de que quieres eliminar este contenido? Esta acción no se puede deshacer.")) {
       return;
     }
 
     try {
       await deleteDoc(doc(db, "content_submissions", submissionId));
-      toast.success("Submission deleted successfully");
+      toast.success("Contenido eliminado exitosamente");
       // Refresh the campaigns list
       fetchActiveCampaigns();
     } catch (error) {
-      console.error("Error deleting submission:", error);
-      toast.error("Failed to delete submission");
+      console.error("Error al eliminar contenido:", error);
+      toast.error("Error al eliminar contenido");
     }
   };
 
@@ -207,7 +207,7 @@ export function ContentSubmission() {
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading campaigns...</p>
+          <p className="text-muted-foreground">Cargando campañas...</p>
         </div>
       </div>
     );
@@ -218,9 +218,9 @@ export function ContentSubmission() {
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Upload className="w-12 h-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No Active Campaigns</h3>
+          <h3 className="text-lg font-semibold mb-2">Sin Campañas Activas</h3>
           <p className="text-muted-foreground text-center">
-            You don't have any approved campaigns yet. Apply to opportunities to get started!
+            Aún no tienes campañas aprobadas. ¡Aplica a oportunidades para empezar!
           </p>
         </CardContent>
       </Card>
@@ -245,30 +245,30 @@ export function ContentSubmission() {
                     {allRequiredComplete && (
                       <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
                         <CheckCircle className="w-3 h-3 mr-1" />
-                        Complete
+                        Completado
                       </Badge>
                     )}
                     {needsRevision > 0 && (
                       <Badge variant="destructive">
                         <AlertCircle className="w-3 h-3 mr-1" />
-                        {needsRevision} Needs Revision
+                        {needsRevision} Requiere Revisión
                       </Badge>
                     )}
                     {/* Display Net Payment */}
                     {campaign.netPayment && (
                       <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
                         <DollarSign className="w-3 h-3 mr-1" />
-                        Earn: ${campaign.netPayment.toLocaleString()}
+                        Ganancia: ${campaign.netPayment.toLocaleString()}
                       </Badge>
                     )}
                   </div>
                   <CardDescription>
-                    by {campaign.brandName} • {totalApproved}/{totalRequired} Required Deliverables Approved
+                    por {campaign.brandName} • {totalApproved}/{totalRequired} Entregables Requeridos Aprobados
                   </CardDescription>
 
                   <div className="mt-4">
                     <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-muted-foreground">Progress</span>
+                      <span className="text-muted-foreground">Progreso</span>
                       <span className="font-medium">{Math.round(progressPercentage)}%</span>
                     </div>
                     <Progress value={progressPercentage} className="h-2" />
@@ -283,7 +283,7 @@ export function ContentSubmission() {
                   className="w-full md:w-auto shrink-0"
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {needsRevision > 0 ? "Resubmit Content" : "Submit Content"}
+                  {needsRevision > 0 ? "Reenviar Contenido" : "Enviar Contenido"}
                 </Button>
               </div>
             </CardHeader>
@@ -295,12 +295,12 @@ export function ContentSubmission() {
                     {isExpanded ? (
                       <>
                         <ChevronUp className="w-4 h-4 mr-2" />
-                        Hide Details
+                        Ocultar Detalles
                       </>
                     ) : (
                       <>
                         <ChevronDown className="w-4 h-4 mr-2" />
-                        View Deliverables ({totalSubmitted} submitted)
+                        Ver Entregables ({totalSubmitted} enviados)
                       </>
                     )}
                   </Button>
@@ -378,7 +378,7 @@ export function ContentSubmission() {
                                   </div>
                                   <div className="flex items-center gap-2 mt-1">
                                     <Badge variant={deliverable.required ? "default" : "outline"} className="text-xs">
-                                      {deliverable.required ? "Required" : "Optional"}
+                                      {deliverable.required ? "Requerido" : "Opcional"}
                                     </Badge>
                                     {submission && (
                                       <Badge
@@ -407,7 +407,7 @@ export function ContentSubmission() {
                                   {submission?.revisionHistory && submission.revisionHistory.length > 0 && (
                                     <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded border border-orange-200">
                                       <p className="text-xs font-medium text-orange-800 dark:text-orange-300">
-                                        ✏️ Edits Requested:
+                                        ✏️ Cambios Solicitados:
                                       </p>
                                       <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
                                         {submission.revisionHistory[submission.revisionHistory.length - 1].notes}
@@ -420,7 +420,7 @@ export function ContentSubmission() {
                                           onClick={() => handleResubmit(campaign, submission)}
                                         >
                                           <Upload className="w-3 h-3 mr-1" />
-                                          Resubmit Content
+                                          Reenviar Contenido
                                         </Button>
                                       )}
                                     </div>

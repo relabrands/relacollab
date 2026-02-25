@@ -168,7 +168,7 @@ export function DeliverableSubmissionDialog({
                 newMap.set(currentDeliverable.key, media);
                 return newMap;
             });
-            toast.success(`Selected ${currentDeliverable.type} from Instagram`);
+            toast.success(`Se seleccionó ${currentDeliverable.type} de Instagram`);
         }
         setShowInstagramPicker(false);
         setCurrentDeliverable(null);
@@ -186,7 +186,7 @@ export function DeliverableSubmissionDialog({
                 });
                 return newMap;
             });
-            toast.success(`Selected ${currentDeliverable.type} from TikTok`);
+            toast.success(`Se seleccionó ${currentDeliverable.type} de TikTok`);
         }
         setShowTikTokPicker(false);
         setCurrentDeliverable(null);
@@ -194,7 +194,7 @@ export function DeliverableSubmissionDialog({
 
     const handleSubmitSelected = async () => {
         if (selectedDeliverables.size === 0) {
-            toast.error("Please select at least one deliverable to submit");
+            toast.error("Por favor selecciona al menos un contenido para enviar");
             return;
         }
 
@@ -205,7 +205,7 @@ export function DeliverableSubmissionDialog({
                 const [key, media] = Array.from(selectedDeliverables.entries())[0]; // Get first selected media
 
                 if (!media) {
-                    toast.error("Please select content to resubmit");
+                    toast.error("Por favor selecciona contenido para reenviar");
                     setLoading(false);
                     return;
                 }
@@ -290,7 +290,7 @@ export function DeliverableSubmissionDialog({
                     console.error("Error initiating metric fetch for resubmission:", e);
                 }
 
-                toast.success("Content resubmitted successfully!");
+                toast.success("¡Contenido reenviado exitosamente!");
                 setSelectedDeliverables(new Map());
                 onSuccess();
                 onClose();
@@ -398,13 +398,13 @@ export function DeliverableSubmissionDialog({
             });
 
             await Promise.all(submissionPromises);
-            toast.success(`Submitted ${selectedDeliverables.size} deliverable(s)`);
+            toast.success(`Se enviaron ${selectedDeliverables.size} entregable(s)`);
             setSelectedDeliverables(new Map());
             onSuccess();
             onClose();
         } catch (error) {
             console.error("Error submitting deliverables:", error);
-            toast.error("Failed to submit content");
+            toast.error("Error al enviar el contenido");
         } finally {
             setLoading(false);
         }
@@ -415,12 +415,12 @@ export function DeliverableSubmissionDialog({
             <Dialog open={open} onOpenChange={onClose}>
                 <DialogContent className="w-[95vw] md:max-w-3xl max-h-[85vh] p-4 md:p-6 overflow-hidden flex flex-col">
                     <DialogHeader className="flex-shrink-0">
-                        <DialogTitle>Submit Campaign Deliverables</DialogTitle>
+                        <DialogTitle>Enviar Contenido de la Campaña</DialogTitle>
                         <DialogDescription>
-                            Campaign: <span className="font-medium">{campaign.name}</span>
+                            Campaña: <span className="font-medium">{campaign.name}</span>
                             {missingRequired > 0 && (
                                 <span className="block md:inline text-orange-600 md:ml-2 mt-1 md:mt-0">
-                                    • {missingRequired} required deliverable(s) remaining
+                                    • Faltan {missingRequired} entregable(s) requerido(s)
                                 </span>
                             )}
                         </DialogDescription>
@@ -488,7 +488,7 @@ export function DeliverableSubmissionDialog({
                                                     </div>
                                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                         <Badge variant={slot.required ? "default" : "outline"} className="text-[10px] md:text-xs">
-                                                            {slot.required ? "Required" : "Optional"}
+                                                            {slot.required ? "Requerido" : "Opcional"}
                                                         </Badge>
                                                         {slot.submitted && (
                                                             <Badge
@@ -545,7 +545,7 @@ export function DeliverableSubmissionDialog({
                                                                 onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
                                                                 className="w-full md:w-auto"
                                                             >
-                                                                Resubmit
+                                                                Reenviar
                                                             </Button>
                                                         )}
                                                     </div>
@@ -561,12 +561,12 @@ export function DeliverableSubmissionDialog({
                                                             {selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? (
                                                                 <>
                                                                     <Check className="w-4 h-4 mr-2" />
-                                                                    Change IG
+                                                                    Cambiar IG
                                                                 </>
                                                             ) : (
                                                                 <>
                                                                     <Upload className="w-4 h-4 mr-2" />
-                                                                    Select Instagram
+                                                                    Seleccionar Instagram
                                                                 </>
                                                             )}
                                                         </Button>
@@ -583,12 +583,12 @@ export function DeliverableSubmissionDialog({
                                                                 {selectedMedia && (selectedMedia as any).platform === 'tiktok' ? (
                                                                     <>
                                                                         <Check className="w-4 h-4 mr-2" />
-                                                                        Change TikTok
+                                                                        Cambiar TikTok
                                                                     </>
                                                                 ) : (
                                                                     <>
                                                                         <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg>
-                                                                        Select TikTok
+                                                                        Seleccionar TikTok
                                                                     </>
                                                                 )}
                                                             </Button>
@@ -605,11 +605,11 @@ export function DeliverableSubmissionDialog({
 
                     <div className="flex flex-col-reverse md:flex-row items-center justify-between gap-4 pt-4 border-t flex-shrink-0">
                         <div className="text-sm text-muted-foreground text-center md:text-left">
-                            {selectedDeliverables.size} deliverable(s) selected
+                            {selectedDeliverables.size} entregable(s) seleccionado(s)
                         </div>
                         <div className="flex flex-col-reverse md:flex-row gap-2 w-full md:w-auto">
                             <Button variant="ghost" onClick={onClose} disabled={loading} className="w-full md:w-auto">
-                                Close
+                                Cerrar
                             </Button>
                             <Button
                                 variant="hero"
@@ -618,7 +618,7 @@ export function DeliverableSubmissionDialog({
                                 className="w-full md:w-auto"
                             >
                                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                                Submit Selected
+                                Enviar Seleccionados
                             </Button>
                         </div>
                     </div>

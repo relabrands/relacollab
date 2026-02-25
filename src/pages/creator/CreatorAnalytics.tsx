@@ -140,9 +140,9 @@ export default function CreatorAnalytics() {
         try {
             const res = await axios.post("https://us-central1-rella-collab.cloudfunctions.net/getInstagramMedia", { userId: user?.uid });
             if (res.data.success) setPosts(res.data.data);
-            else setPostError(res.data.error || "Failed to load posts");
+            else setPostError(res.data.error || "Error al cargar las publicaciones");
         } catch {
-            setPostError("Could not load posts. Instagram token might be expired.");
+            setPostError("No se pudieron cargar las publicaciones. El token de Instagram podría haber expirado.");
         } finally {
             setLoadingPosts(false);
         }
@@ -188,14 +188,14 @@ export default function CreatorAnalytics() {
 
     // Build insight rows from raw metrics
     const metricRows = currentMetrics ? (selectedPlatform === "instagram" ? [
-        { label: "Followers", value: currentMetrics.followers >= 1000 ? `${(currentMetrics.followers / 1000).toFixed(1)}K` : String(currentMetrics.followers || 0), trend: "up" as const, note: "Seguidores activos" },
-        { label: "Eng. Rate", value: `${currentMetrics.engagementRate || 0}%`, trend: (currentMetrics.engagementRate >= 3 ? "up" : "down") as "up" | "down", note: parseFloat(currentMetrics.engagementRate) >= 3 ? "✅ Por encima del promedio" : "⚠️ Por debajo del promedio" },
-        { label: "Avg. Likes", value: String(currentMetrics.avgLikes || 0), trend: "neutral" as const, note: `${((currentMetrics.avgLikes || 0) / (currentMetrics.followers || 1) * 100).toFixed(1)}% de seguidores` },
-        { label: "Avg. Comments", value: String(currentMetrics.avgComments || 0), trend: "neutral" as const, note: "Conversaciones por post" },
+        { label: "Seguidores", value: currentMetrics.followers >= 1000 ? `${(currentMetrics.followers / 1000).toFixed(1)}K` : String(currentMetrics.followers || 0), trend: "up" as const, note: "Seguidores activos" },
+        { label: "Tasa Inter.", value: `${currentMetrics.engagementRate || 0}%`, trend: (currentMetrics.engagementRate >= 3 ? "up" : "down") as "up" | "down", note: parseFloat(currentMetrics.engagementRate) >= 3 ? "✅ Por encima del promedio" : "⚠️ Por debajo del promedio" },
+        { label: "Prom. Likes", value: String(currentMetrics.avgLikes || 0), trend: "neutral" as const, note: `${((currentMetrics.avgLikes || 0) / (currentMetrics.followers || 1) * 100).toFixed(1)}% de seguidores` },
+        { label: "Prom. Comentarios", value: String(currentMetrics.avgComments || 0), trend: "neutral" as const, note: "Conversaciones por post" },
     ] : [
-        { label: "Followers", value: currentMetrics.followers >= 1000 ? `${(currentMetrics.followers / 1000).toFixed(1)}K` : String(currentMetrics.followers || 0), trend: "up" as const, note: "Seguidores TikTok" },
-        { label: "Eng. Rate", value: `${currentMetrics.engagementRate || 0}%`, trend: (currentMetrics.engagementRate >= 10 ? "up" : "down") as "up" | "down", note: parseFloat(currentMetrics.engagementRate) >= 10 ? "🔥 Sobre el promedio" : "⚠️ En crecimiento" },
-        { label: "Total Likes", value: currentMetrics.likes >= 1000 ? `${(currentMetrics.likes / 1000).toFixed(1)}K` : String(currentMetrics.likes || 0), trend: "neutral" as const, note: "Likes totales en la cuenta" },
+        { label: "Seguidores", value: currentMetrics.followers >= 1000 ? `${(currentMetrics.followers / 1000).toFixed(1)}K` : String(currentMetrics.followers || 0), trend: "up" as const, note: "Seguidores TikTok" },
+        { label: "Tasa Inter.", value: `${currentMetrics.engagementRate || 0}%`, trend: (currentMetrics.engagementRate >= 10 ? "up" : "down") as "up" | "down", note: parseFloat(currentMetrics.engagementRate) >= 10 ? "🔥 Sobre el promedio" : "⚠️ En crecimiento" },
+        { label: "Likes Totales", value: currentMetrics.likes >= 1000 ? `${(currentMetrics.likes / 1000).toFixed(1)}K` : String(currentMetrics.likes || 0), trend: "neutral" as const, note: "Likes totales en la cuenta" },
         { label: "Videos", value: String(currentMetrics.videoCount || tiktokPosts.length || 0), trend: "neutral" as const, note: "Videos publicados" },
     ]) : [];
 
@@ -206,8 +206,8 @@ export default function CreatorAnalytics() {
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader
-                    title="AI Profile Analysis"
-                    subtitle="Deep dive into your social performance and AI insights"
+                    title="Análisis de Perfil IA"
+                    subtitle="Conoce a fondo tu rendimiento social y recomendaciones de IA"
                 />
 
                 {/* Platform Toggle */}
@@ -274,7 +274,7 @@ export default function CreatorAnalytics() {
                                         </svg>
                                         <span className="absolute inset-0 flex items-center justify-center font-black text-sm">{analysis.score}</span>
                                     </div>
-                                    <span className="text-xs text-muted-foreground mt-1">Score IA</span>
+                                    <span className="text-xs text-muted-foreground mt-1">Puntuación IA</span>
                                 </div>
                             )}
                             {isAiLoading && !analysis && (
@@ -414,7 +414,7 @@ export default function CreatorAnalytics() {
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
                                 {selectedPlatform === "instagram" ? <Instagram className="w-5 h-5 text-[#E1306C]" /> : <TikTokIcon className="w-5 h-5" />}
-                                Recent Content
+                                Contenido Reciente
                             </h3>
                             {(selectedPlatform === "instagram" ? loadingPosts : loadingTikTokPosts) ? (
                                 <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
@@ -449,7 +449,7 @@ export default function CreatorAnalytics() {
                                 </div>
                             ) : (
                                 <div className="text-center py-12 bg-muted/30 rounded-xl border border-dashed">
-                                    <p className="text-muted-foreground">{postError || "No posts found."}</p>
+                                    <p className="text-muted-foreground">{postError || "No se encontraron publicaciones."}</p>
                                 </div>
                             )}
                         </div>

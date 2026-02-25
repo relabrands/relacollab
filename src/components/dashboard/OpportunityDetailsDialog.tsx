@@ -30,13 +30,13 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                             {isInvited && (
                                 <Badge variant="default" className="mb-2 bg-gradient-brand border-none">
                                     <Sparkles className="w-3 h-3 mr-1" />
-                                    Personal Invitation
+                                    Invitación Personal
                                 </Badge>
                             )}
                             <DialogTitle className="text-2xl">{opportunity.title}</DialogTitle>
                             <div className="flex items-center gap-2 text-muted-foreground mt-1">
                                 <Building2 className="w-4 h-4" />
-                                <span>{opportunity.brandName || opportunity.brandProfile?.displayName || "Unknown Brand"}</span>
+                                <span>{opportunity.brandName || opportunity.brandProfile?.displayName || "Marca Desconocida"}</span>
                                 {opportunity.brandProfile?.instagram && (
                                     <a
                                         href={`https://instagram.com/${opportunity.brandProfile.instagram.replace('@', '')}`}
@@ -57,11 +57,11 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                 <div className="flex gap-4 mb-2 overflow-x-auto pb-2">
                     <div className="flex items-center gap-2 text-sm bg-muted/50 px-3 py-1.5 rounded-lg whitespace-nowrap">
                         <Users className="w-4 h-4 text-primary" />
-                        <span className="font-medium">{opportunity.applicationCount || 0}</span> Applications
+                        <span className="font-medium">{opportunity.applicationCount || 0}</span> Solicitudes
                     </div>
                     <div className="flex items-center gap-2 text-sm bg-muted/50 px-3 py-1.5 rounded-lg whitespace-nowrap">
                         <UserCheck className="w-4 h-4 text-success" />
-                        <span className="font-medium">{opportunity.approvedCount || 0} / {opportunity.creatorCount || "?"}</span> Spots Filled
+                        <span className="font-medium">{opportunity.approvedCount || 0} / {opportunity.creatorCount || "?"}</span> Cupos Llenos
                     </div>
                 </div>
 
@@ -71,16 +71,16 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                         <div className="p-4 rounded-xl bg-muted/50">
                             <div className="flex items-center gap-2 text-muted-foreground mb-1">
                                 <MapPin className="w-4 h-4" />
-                                <span className="text-sm font-medium">Location</span>
+                                <span className="text-sm font-medium">Ubicación</span>
                             </div>
-                            <p>{opportunity.location || "Remote"}</p>
+                            <p>{opportunity.location || "Remoto"}</p>
                         </div>
                         <div className="p-4 rounded-xl bg-muted/50">
                             <div className="flex items-center gap-2 text-muted-foreground mb-1">
                                 <Calendar className="w-4 h-4" />
-                                <span className="text-sm font-medium">Deadline</span>
+                                <span className="text-sm font-medium">Fecha Límite</span>
                             </div>
-                            <p>{opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString() : (opportunity.endDate ? new Date(opportunity.endDate).toLocaleDateString() : "Open Duration")}</p>
+                            <p>{opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString() : (opportunity.endDate ? new Date(opportunity.endDate).toLocaleDateString() : "Duración Abierta")}</p>
                         </div>
                     </div>
 
@@ -88,7 +88,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                     <div className="p-4 rounded-xl border border-border">
                         <h4 className="font-semibold mb-3 flex items-center gap-2">
                             <Gift className="w-4 h-4 text-primary" />
-                            Compensation & Perks
+                            Compensación y Beneficios
                         </h4>
 
                         {(opportunity.compensationType === 'monetary' || opportunity.rewardType === 'paid') ? (
@@ -118,7 +118,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                     </span>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Badge variant="secondary">Paid Project</Badge>
+                                    <Badge variant="secondary">Proyecto Pagado</Badge>
                                 </div>
                             </div>
                         ) : (
@@ -127,10 +127,10 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                     <p className="font-medium text-lg">
                                         {opportunity.compensationType === 'exchange'
                                             ? opportunity.exchangeDetails
-                                            : (opportunity.reward || opportunity.budget || "Negotiable")}
+                                            : (opportunity.reward || opportunity.budget || "Negociable")}
                                     </p>
                                     <div className="flex gap-2">
-                                        <Badge variant="secondary">Product Exchange</Badge>
+                                        <Badge variant="secondary">Intercambio de Producto</Badge>
                                     </div>
                                 </div>
                             </div>
@@ -146,23 +146,23 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                     {/* Brand & Campaign Description */}
                     <div className="space-y-4">
                         <div>
-                            <h4 className="font-semibold mb-2">About the Brand</h4>
+                            <h4 className="font-semibold mb-2">Sobre la Marca</h4>
                             <p className="text-muted-foreground leading-relaxed">
-                                {opportunity.brandProfile?.description || opportunity.brandDescription || "A leading brand in the active lifestyle space."}
+                                {opportunity.brandProfile?.description || opportunity.brandDescription || "Una marca líder."}
                             </p>
                         </div>
 
                         <div>
-                            <h4 className="font-semibold mb-2">About the Campaign</h4>
+                            <h4 className="font-semibold mb-2">Sobre la Campaña</h4>
                             <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                                {opportunity.description || "No description provided."}
+                                {opportunity.description || "No se proporcionó descripción."}
                             </p>
                         </div>
 
                         {/* Campaign Goals/Objectives */}
                         {opportunity.goal && (
                             <div>
-                                <h4 className="font-semibold mb-2">Campaign Objectives</h4>
+                                <h4 className="font-semibold mb-2">Objetivos de la Campaña</h4>
                                 <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
                                     {opportunity.goal}
                                 </p>
@@ -200,7 +200,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                     {/* Requirements/Vibes */}
                     {opportunity.vibes && opportunity.vibes.length > 0 && (
                         <div>
-                            <h4 className="font-semibold mb-2">Vibe & Style</h4>
+                            <h4 className="font-semibold mb-2">Vibe y Estilo</h4>
                             <div className="flex flex-wrap gap-2">
                                 {opportunity.vibes.map((vibe: string) => (
                                     <Badge key={vibe} variant="outline" className="px-3 py-1">
@@ -214,7 +214,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
 
                 <DialogFooter className="gap-2 sm:gap-0">
                     <Button variant="outline" onClick={onClose}>
-                        Close
+                        Cerrar
                     </Button>
                     {!isActive && (
                         <Button
@@ -224,8 +224,8 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                             disabled={!isInvited && (opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999)}
                         >
                             {isInvited
-                                ? "Accept Invitation"
-                                : ((opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999) ? "Campaign Full" : "Apply to Campaign")
+                                ? "Aceptar Invitación"
+                                : ((opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999) ? "Campaña Llena" : "Aplicar a la Campaña")
                             }
                         </Button>
                     )}

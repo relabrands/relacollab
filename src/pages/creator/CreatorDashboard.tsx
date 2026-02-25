@@ -25,23 +25,23 @@ export default function CreatorDashboard() {
     iconColor: "primary" | "accent" | "success";
   }[]>([
     {
-      title: "New Opportunities",
+      title: "Nuevas Oportunidades",
       value: 0,
-      change: "0 today",
+      change: "0 hoy",
       changeType: "neutral",
       icon: Inbox,
       iconColor: "primary",
     },
     {
-      title: "Active Campaigns",
+      title: "Campañas Activas",
       value: 0,
-      change: "In progress",
+      change: "En progreso",
       changeType: "neutral",
       icon: CheckCircle,
       iconColor: "accent",
     },
     {
-      title: "Avg. Match Score",
+      title: "Score de Match Prom.",
       value: "0%",
       change: "+0%",
       changeType: "neutral",
@@ -49,9 +49,9 @@ export default function CreatorDashboard() {
       iconColor: "success",
     },
     {
-      title: "This Month",
+      title: "Este Mes",
       value: "$0",
-      change: "Pending: $0",
+      change: "Pendiente: $0",
       changeType: "neutral",
       icon: DollarSign,
       iconColor: "primary",
@@ -182,10 +182,10 @@ export default function CreatorDashboard() {
 
         // Update stats
         setStats(prev => [
-          { ...prev[0], value: matchedOpportunities.length, change: `${topOpportunities.length} top matches` },
-          { ...prev[1], value: activeCount, change: activeCount > 0 ? "In progress" : "No active campaigns" },
-          { ...prev[2], value: `${avgMatchScore}%`, change: avgMatchScore >= 70 ? "Great fit!" : "Find your match" },
-          { ...prev[3], value: `$${totalEarned.toLocaleString()}`, change: `Pending: $${pendingEarnings.toLocaleString()}` }
+          { ...prev[0], value: matchedOpportunities.length, change: `${topOpportunities.length} mejores matches` },
+          { ...prev[1], value: activeCount, change: activeCount > 0 ? "En progreso" : "Sin campañas activas" },
+          { ...prev[2], value: `${avgMatchScore}%`, change: avgMatchScore >= 70 ? "¡Excelente match!" : "Encuentra tu match" },
+          { ...prev[3], value: `$${totalEarned.toLocaleString()}`, change: `Pendiente: $${pendingEarnings.toLocaleString()}` }
         ]);
 
       } catch (error) {
@@ -213,8 +213,8 @@ export default function CreatorDashboard() {
 
       <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <DashboardHeader
-          title={`Welcome back, ${user?.displayName || 'Creator'}`}
-          subtitle="Here are your personalized opportunities"
+          title={`Bienvenido de nuevo, ${user?.displayName || 'Creador'}`}
+          subtitle="Aquí están tus oportunidades personalizadas"
         />
 
         {/* Stats Grid */}
@@ -226,10 +226,10 @@ export default function CreatorDashboard() {
 
         {/* Top Opportunities */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Top Matches for You</h2>
+          <h2 className="text-xl font-semibold">Mejores Matches para Ti</h2>
           <Link to="/creator/opportunities">
             <Button variant="ghost">
-              View All
+              Ver Todas
               <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>
@@ -243,7 +243,7 @@ export default function CreatorDashboard() {
           </div>
         ) : (
           <div className="p-8 text-center border rounded-lg bg-white mb-8">
-            <p className="text-muted-foreground">No active opportunities found at the moment.</p>
+            <p className="text-muted-foreground">No se encontraron oportunidades activas en este momento.</p>
           </div>
         )}
 
@@ -252,19 +252,19 @@ export default function CreatorDashboard() {
           <div className="glass-card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-lg mb-1">Complete Your Profile</h3>
+                <h3 className="font-semibold text-lg mb-1">Completa tu Perfil</h3>
                 <p className="text-muted-foreground text-sm">
-                  A complete profile helps us find better matches for you
+                  Un perfil completo nos ayuda a encontrar mejores matches para ti
                 </p>
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-right">
                   <div className="text-2xl font-bold text-primary">{profileCompletion}%</div>
-                  <div className="text-sm text-muted-foreground">Complete</div>
+                  <div className="text-sm text-muted-foreground">Completado</div>
                 </div>
                 <Link to="/creator/profile">
                   <Button variant="hero">
-                    Complete Profile
+                    Completar Perfil
                   </Button>
                 </Link>
               </div>

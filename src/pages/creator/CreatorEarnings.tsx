@@ -119,7 +119,7 @@ export default function CreatorEarnings() {
 
         if (!hasBankDetails) {
             setIsSettingsOpen(true);
-            toast.info("Please configure your bank details first.");
+            toast.info("Por favor configura tus datos bancarios primero.");
             return;
         }
 
@@ -137,11 +137,11 @@ export default function CreatorEarnings() {
             });
 
             await batch.commit();
-            toast.success("Payout request submitted successfully!");
+            toast.success("¡Solicitud de pago enviada exitosamente!");
             fetchEarnings(); // Refresh data
         } catch (error) {
             console.error("Error requesting payout:", error);
-            toast.error("Failed to request payout.");
+            toast.error("Error al solicitar el pago.");
         } finally {
             setIsRequesting(false);
         }
@@ -154,12 +154,12 @@ export default function CreatorEarnings() {
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader
-                    title="Earnings"
-                    subtitle="Track your income and manage payouts"
+                    title="Ganancias"
+                    subtitle="Rastrea tus ingresos y administra tus pagos"
                 >
                     <Button variant="outline" onClick={() => setIsSettingsOpen(true)} className="gap-2">
                         <Settings className="w-4 h-4" />
-                        Payout Settings
+                        Configuración de Pagos
                     </Button>
                 </DashboardHeader>
 
@@ -173,25 +173,25 @@ export default function CreatorEarnings() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <Card className="glass-card">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Pending Balance</CardTitle>
+                                    <CardTitle className="text-sm font-medium">Saldo Pendiente</CardTitle>
                                     <Clock className="h-4 w-4 text-warning" />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">${stats.pending.toLocaleString()}</div>
-                                    <p className="text-xs text-muted-foreground">From active campaigns</p>
+                                    <p className="text-xs text-muted-foreground">De campañas activas</p>
                                 </CardContent>
                             </Card>
 
                             <Card className="glass-card bg-primary/5 border-primary/20">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Available for Payout</CardTitle>
+                                    <CardTitle className="text-sm font-medium">Disponible para Retiro</CardTitle>
                                     <Wallet className="h-4 w-4 text-primary" />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">${stats.available.toLocaleString()}</div>
                                     {stats.requested > 0 && (
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            +${stats.requested.toLocaleString()} processing
+                                            +${stats.requested.toLocaleString()} en proceso
                                         </p>
                                     )}
                                     <Button
@@ -201,11 +201,11 @@ export default function CreatorEarnings() {
                                         onClick={handleRequestPayout}
                                     >
                                         {isRequesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Request Payout
+                                        Solicitar Pago
                                     </Button>
                                     {!hasBankDetails && stats.available > 0 && (
                                         <p className="text-[10px] text-destructive mt-1 text-center cursor-pointer hover:underline" onClick={() => setIsSettingsOpen(true)}>
-                                            * Setup bank details to withdraw
+                                            * Configura los datos bancarios para retirar
                                         </p>
                                     )}
                                 </CardContent>
@@ -213,12 +213,12 @@ export default function CreatorEarnings() {
 
                             <Card className="glass-card">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
+                                    <CardTitle className="text-sm font-medium">Total Pagado</CardTitle>
                                     <DollarSign className="h-4 w-4 text-success" />
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-2xl font-bold">${stats.totalEarned.toLocaleString()}</div>
-                                    <p className="text-xs text-muted-foreground">Lifetime earnings</p>
+                                    <p className="text-xs text-muted-foreground">Ganancias totales</p>
                                 </CardContent>
                             </Card>
                         </div>
@@ -228,13 +228,13 @@ export default function CreatorEarnings() {
                             <CardHeader>
                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div>
-                                        <CardTitle>Transaction History</CardTitle>
-                                        <CardDescription>Recent payments and activity</CardDescription>
+                                        <CardTitle>Historial de Transacciones</CardTitle>
+                                        <CardDescription>Pagos recientes y actividad</CardDescription>
                                     </div>
                                     <div className="flex gap-2 w-full md:w-auto">
                                         <div className="relative flex-1 md:flex-initial md:w-64">
                                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                            <Input placeholder="Search transactions..." className="pl-8" />
+                                            <Input placeholder="Buscar transacciones..." className="pl-8" />
                                         </div>
                                         <Button variant="outline" size="icon">
                                             <Download className="h-4 w-4" />
@@ -251,7 +251,7 @@ export default function CreatorEarnings() {
                                                 <div key={payment.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border/50 hover:bg-muted/70 transition-colors">
                                                     <div className="flex items-center gap-4">
                                                         <div className={`p-2 rounded-full ${isExchange ? 'bg-purple-500/10' :
-                                                                payment.status === 'paid' ? 'bg-green-500/10' : 'bg-muted'
+                                                            payment.status === 'paid' ? 'bg-green-500/10' : 'bg-muted'
                                                             }`}>
                                                             {isExchange ? (
                                                                 <Gift className="h-4 w-4 text-purple-500" />
@@ -262,7 +262,7 @@ export default function CreatorEarnings() {
                                                             )}
                                                         </div>
                                                         <div>
-                                                            <p className="font-medium">{payment.campaignName || "Campaign Payment"}</p>
+                                                            <p className="font-medium">{payment.campaignName || "Pago de Campaña"}</p>
                                                             {isExchange ? (
                                                                 <p className="text-sm text-purple-600 font-medium">
                                                                     🎁 {payment.exchangeDetails || "Intercambio"}
@@ -270,7 +270,7 @@ export default function CreatorEarnings() {
                                                             ) : (
                                                                 <p className="text-sm text-muted-foreground">
                                                                     {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString("es-DO") : "N/A"}
-                                                                    {payment.feeAmount > 0 && ` • Fee: $${payment.feeAmount}`}
+                                                                    {payment.feeAmount > 0 && ` • Tarifa: $${payment.feeAmount}`}
                                                                 </p>
                                                             )}
                                                         </div>
@@ -298,8 +298,8 @@ export default function CreatorEarnings() {
                                             <DollarSign className="w-8 h-8 text-muted-foreground" />
                                         </div>
                                         <div>
-                                            <p className="font-medium">No transactions yet</p>
-                                            <p className="text-sm text-muted-foreground">When you complete campaigns, payments will appear here.</p>
+                                            <p className="font-medium">Aún no hay transacciones</p>
+                                            <p className="text-sm text-muted-foreground">Cuando completes campañas, los pagos aparecerán aquí.</p>
                                         </div>
                                     </div>
                                 )}
@@ -314,7 +314,7 @@ export default function CreatorEarnings() {
                 onOpenChange={setIsSettingsOpen}
                 onSuccess={() => {
                     checkBankDetails();
-                    toast.success("Details updated check!");
+                    toast.success("¡Datos actualizados!");
                 }}
             />
         </div>

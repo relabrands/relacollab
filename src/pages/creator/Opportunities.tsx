@@ -291,8 +291,8 @@ export default function Opportunities() {
         });
       }
 
-      toast.success(campaign.isInvited ? "Invitation Accepted!" : "Application Sent!", {
-        description: campaign.isInvited ? "You are now collaborating on this campaign." : "The brand has been notified of your interest.",
+      toast.success(campaign.isInvited ? "¡Invitación Aceptada!" : "¡Solicitud Enviada!", {
+        description: campaign.isInvited ? "Ahora estás colaborando en esta campaña." : "La marca ha sido notificada de tu interés.",
       });
 
       // Update local state to remove from list
@@ -301,8 +301,8 @@ export default function Opportunities() {
       setIsDialogOpen(false);
 
     } catch (error) {
-      console.error("Error applying:", error);
-      toast.error("Failed to submit application");
+      console.error("Error al aplicar:", error);
+      toast.error("Error al enviar la solicitud");
     } finally {
       setProcessingId(null);
     }
@@ -355,8 +355,8 @@ export default function Opportunities() {
 
       <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <DashboardHeader
-          title="Opportunities"
-          subtitle="Campaigns matched to your profile and style"
+          title="Oportunidades"
+          subtitle="Campañas que coinciden con tu perfil y estilo"
         />
 
         {/* AI Info */}
@@ -370,10 +370,10 @@ export default function Opportunities() {
               <Sparkles className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg mb-2">Personalized Matches</h3>
+              <h3 className="font-semibold text-lg mb-2">Matches Personalizados</h3>
               <p className="text-muted-foreground">
-                These opportunities are curated based on your content style, engagement quality, and audience demographics.
-                Higher match scores mean better alignment with brand requirements.
+                Estas oportunidades están curadas según tu estilo de contenido, calidad de engagement y demografía de tu audiencia.
+                Scores más altos significan mejor alineación con los requerimientos de la marca.
               </p>
             </div>
           </div>
@@ -388,7 +388,7 @@ export default function Opportunities() {
               onClick={() => setActiveTab('all')}
               className="whitespace-nowrap"
             >
-              All ({opportunities.length})
+              Todas ({opportunities.length})
             </Button>
             <Button
               variant={activeTab === 'paid' ? "default" : "ghost"}
@@ -396,7 +396,7 @@ export default function Opportunities() {
               onClick={() => setActiveTab('paid')}
               className="whitespace-nowrap"
             >
-              Paid Only
+              Solo Pagadas
             </Button>
             <Button
               variant={activeTab === 'experience' ? "default" : "ghost"}
@@ -404,7 +404,7 @@ export default function Opportunities() {
               onClick={() => setActiveTab('experience')}
               className="whitespace-nowrap"
             >
-              Experience
+              Intercambio
             </Button>
             <Button
               variant={activeTab === 'pending' ? "default" : "ghost"}
@@ -412,7 +412,7 @@ export default function Opportunities() {
               onClick={() => setActiveTab('pending')}
               className="whitespace-nowrap relative"
             >
-              Pending
+              Pendientes
               {pendingApplications.length > 0 && (
                 <span className="ml-1 bg-warning text-warning-foreground text-xs px-1.5 rounded-full">
                   {pendingApplications.length}
@@ -425,7 +425,7 @@ export default function Opportunities() {
             <div className="relative flex-1 md:w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search campaigns..."
+                placeholder="Buscar campañas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 !h-9 bg-background"
@@ -436,26 +436,26 @@ export default function Opportunities() {
               <SheetTrigger asChild>
                 <Button variant="outline" size="sm" className="h-9 whitespace-nowrap">
                   <SlidersHorizontal className="w-4 h-4 mr-2" />
-                  Filters
+                  Filtros
                 </Button>
               </SheetTrigger>
               <SheetContent className="w-[300px] sm:w-[400px]">
                 <SheetHeader>
-                  <SheetTitle>Filter Opportunities</SheetTitle>
+                  <SheetTitle>Filtrar Oportunidades</SheetTitle>
                   <SheetDescription>
-                    Narrow down campaigns to find your perfect match.
+                    Reduce las campañas para encontrar tu match perfecto.
                   </SheetDescription>
                 </SheetHeader>
                 <div className="py-6 space-y-6">
                   <div className="space-y-3">
-                    <Label>Location</Label>
+                    <Label>Ubicación</Label>
                     <Select value={filterLocation} onValueChange={setFilterLocation}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Any location" />
+                        <SelectValue placeholder="Cualquier ubicación" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Any Location</SelectItem>
-                        <SelectItem value="remote">Remote</SelectItem>
+                        <SelectItem value="all">Cualquier Ubicación</SelectItem>
+                        <SelectItem value="remote">Remoto</SelectItem>
                         {uniqueLocations
                           .filter(loc => loc !== "Remote")
                           .map((loc) => (
@@ -468,15 +468,15 @@ export default function Opportunities() {
                   </div>
 
                   <div className="space-y-3">
-                    <Label>Match Score</Label>
+                    <Label>Score de Match</Label>
                     <Select value={filterScore} onValueChange={setFilterScore}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Any score" />
+                        <SelectValue placeholder="Cualquier score" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Any Match Score</SelectItem>
-                        <SelectItem value="high">High Match ({">"}80%)</SelectItem>
-                        <SelectItem value="medium">Medium Match ({">"}50%)</SelectItem>
+                        <SelectItem value="all">Cualquier Score de Match</SelectItem>
+                        <SelectItem value="high">Match Alto ({">"}80%)</SelectItem>
+                        <SelectItem value="medium">Match Medio ({">"}50%)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -490,7 +490,7 @@ export default function Opportunities() {
                       setSearchQuery("");
                     }}
                   >
-                    Reset Filters
+                    Restablecer Filtros
                   </Button>
                 </div>
               </SheetContent>
@@ -508,7 +508,7 @@ export default function Opportunities() {
             {activeTab === 'pending' && (
               <div className="mb-4 p-4 bg-warning/10 border border-warning/20 rounded-lg">
                 <p className="text-sm text-warning-foreground">
-                  <strong>⏳ Awaiting Brand Approval:</strong> These are campaigns you've applied to. The brand will review your profile and notify you of their decision.
+                  <strong>⏳ Esperando Aprobación de la Marca:</strong> Estas son campañas a las que has aplicado. La marca revisará tu perfil y te notificará su decisión.
                 </p>
               </div>
             )}
@@ -536,7 +536,7 @@ export default function Opportunities() {
                     {opportunity.isPending && (
                       <div className="absolute top-2 right-2 bg-warning text-warning-foreground text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        Pending Approval
+                        Aprobación Pendiente
                       </div>
                     )}
                   </div>
@@ -548,8 +548,8 @@ export default function Opportunities() {
           <div className="text-center py-12 border rounded-xl bg-white/5">
             <p className="text-muted-foreground">
               {activeTab === 'pending'
-                ? "No pending applications. Apply to campaigns to see them here!"
-                : "No active opportunities found at the moment."}
+                ? "No hay solicitudes pendientes. ¡Aplica a campañas para verlas aquí!"
+                : "No se encontraron oportunidades activas en este momento."}
             </p>
           </div>
         )}

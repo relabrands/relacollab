@@ -64,7 +64,7 @@ export default function CreatorSettings() {
                 }
             } catch (error) {
                 console.error("Error fetching settings:", error);
-                toast.error("Error loading settings");
+                toast.error("Error al cargar la configuración");
             } finally {
                 setLoading(false);
             }
@@ -83,10 +83,10 @@ export default function CreatorSettings() {
                 privacySettings,
                 updatedAt: new Date().toISOString()
             });
-            toast.success("Settings saved successfully");
+            toast.success("Configuración guardada exitosamente");
         } catch (error) {
             console.error("Error saving settings:", error);
-            toast.error("Failed to save settings");
+            toast.error("Error al guardar la configuración");
         } finally {
             setSaving(false);
         }
@@ -99,8 +99,8 @@ export default function CreatorSettings() {
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader
-                    title="Settings"
-                    subtitle="Manage your account preferences and notifications"
+                    title="Configuración"
+                    subtitle="Administra las preferencias de tu cuenta y notificaciones"
                 />
 
                 {loading ? (
@@ -114,23 +114,23 @@ export default function CreatorSettings() {
                             <CardHeader>
                                 <div className="flex items-center gap-2">
                                     <Lock className="w-5 h-5 text-primary" />
-                                    <CardTitle>Account Information</CardTitle>
+                                    <CardTitle>Información de la Cuenta</CardTitle>
                                 </div>
-                                <CardDescription>Your basic account details</CardDescription>
+                                <CardDescription>Tus datos básicos de cuenta</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="displayName">Display Name</Label>
+                                    <Label htmlFor="displayName">Nombre a Mostrar</Label>
                                     <Input
                                         id="displayName"
                                         value={accountData.displayName}
                                         onChange={(e) => setAccountData(prev => ({ ...prev, displayName: e.target.value }))}
-                                        placeholder="Your name"
+                                        placeholder="Tu nombre"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="email">Email</Label>
+                                    <Label htmlFor="email">Correo Electrónico</Label>
                                     <Input
                                         id="email"
                                         type="email"
@@ -139,19 +139,19 @@ export default function CreatorSettings() {
                                         className="bg-muted cursor-not-allowed"
                                     />
                                     <p className="text-xs text-muted-foreground">
-                                        Email cannot be changed. Contact support if needed.
+                                        El correo electrónico no puede ser cambiado. Contacta a soporte si es necesario.
                                     </p>
                                 </div>
 
                                 <Separator className="my-4" />
 
                                 <div className="pt-2">
-                                    <p className="text-sm font-medium mb-2">Professional Information</p>
+                                    <p className="text-sm font-medium mb-2">Información Profesional</p>
                                     <p className="text-sm text-muted-foreground">
-                                        To edit your bio, content formats, vibes, and other professional details,
-                                        go to{" "}
+                                        Para editar tu biografía, formatos de contenido, estilo y otros detalles profesionales,
+                                        ve a{" "}
                                         <a href="/creator/profile" className="text-primary hover:underline font-medium">
-                                            My Profile
+                                            Mi Perfil
                                         </a>
                                     </p>
                                 </div>
@@ -163,15 +163,15 @@ export default function CreatorSettings() {
                             <CardHeader>
                                 <div className="flex items-center gap-2">
                                     <Mail className="w-5 h-5 text-primary" />
-                                    <CardTitle>Email Notifications</CardTitle>
+                                    <CardTitle>Notificaciones por Correo</CardTitle>
                                 </div>
-                                <CardDescription>Choose what updates you receive via email</CardDescription>
+                                <CardDescription>Elige qué actualizaciones recibes por correo electrónico</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="emailNotifications">Email Notifications</Label>
-                                        <p className="text-sm text-muted-foreground">Receive all email notifications</p>
+                                        <Label htmlFor="emailNotifications">Notificaciones por Correo</Label>
+                                        <p className="text-sm text-muted-foreground">Recibir todas las notificaciones por correo</p>
                                     </div>
                                     <Switch
                                         id="emailNotifications"
@@ -187,8 +187,8 @@ export default function CreatorSettings() {
                                 <div className="space-y-4 opacity-100">
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
-                                            <Label htmlFor="campaignMatches">Campaign Matches</Label>
-                                            <p className="text-sm text-muted-foreground">New campaigns that match your profile</p>
+                                            <Label htmlFor="campaignMatches">Coincidencias de Campañas</Label>
+                                            <p className="text-sm text-muted-foreground">Nuevas campañas que coinciden con tu perfil</p>
                                         </div>
                                         <Switch
                                             id="campaignMatches"
@@ -202,8 +202,8 @@ export default function CreatorSettings() {
 
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
-                                            <Label htmlFor="campaignUpdates">Campaign Updates</Label>
-                                            <p className="text-sm text-muted-foreground">Status changes on your applications</p>
+                                            <Label htmlFor="campaignUpdates">Actualizaciones de Campañas</Label>
+                                            <p className="text-sm text-muted-foreground">Cambios de estado en tus aplicaciones</p>
                                         </div>
                                         <Switch
                                             id="campaignUpdates"
@@ -217,8 +217,8 @@ export default function CreatorSettings() {
 
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
-                                            <Label htmlFor="deliverableReminders">Deliverable Reminders</Label>
-                                            <p className="text-sm text-muted-foreground">Reminders for pending submissions</p>
+                                            <Label htmlFor="deliverableReminders">Recordatorios de Entregables</Label>
+                                            <p className="text-sm text-muted-foreground">Recordatorios para envíos pendientes</p>
                                         </div>
                                         <Switch
                                             id="deliverableReminders"
@@ -232,8 +232,8 @@ export default function CreatorSettings() {
 
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
-                                            <Label htmlFor="paymentNotifications">Payment Notifications</Label>
-                                            <p className="text-sm text-muted-foreground">Payment confirmations and updates</p>
+                                            <Label htmlFor="paymentNotifications">Notificaciones de Pago</Label>
+                                            <p className="text-sm text-muted-foreground">Confirmaciones y actualizaciones de pago</p>
                                         </div>
                                         <Switch
                                             id="paymentNotifications"
@@ -253,16 +253,16 @@ export default function CreatorSettings() {
                             <CardHeader>
                                 <div className="flex items-center gap-2">
                                     <Bell className="w-5 h-5 text-primary" />
-                                    <CardTitle>Push Notifications</CardTitle>
+                                    <CardTitle>Notificaciones Push</CardTitle>
                                 </div>
-                                <CardDescription>Browser notifications for real-time updates</CardDescription>
+                                <CardDescription>Notificaciones del navegador para actualizaciones en tiempo real</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="pushNotifications">Enable Push Notifications</Label>
+                                        <Label htmlFor="pushNotifications">Habilitar Notificaciones Push</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            Get instant updates in your browser
+                                            Obtén actualizaciones instantáneas en tu navegador
                                         </p>
                                     </div>
                                     <Switch
@@ -281,16 +281,16 @@ export default function CreatorSettings() {
                             <CardHeader>
                                 <div className="flex items-center gap-2">
                                     <Shield className="w-5 h-5 text-primary" />
-                                    <CardTitle>Privacy & Visibility</CardTitle>
+                                    <CardTitle>Privacidad y Visibilidad</CardTitle>
                                 </div>
-                                <CardDescription>Control who can see your information</CardDescription>
+                                <CardDescription>Controla quién puede ver tu información</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="publicProfile">Public Profile</Label>
+                                        <Label htmlFor="publicProfile">Perfil Público</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            Allow brands to discover and view your profile
+                                            Permitir que las marcas descubran y vean tu perfil
                                         </p>
                                     </div>
                                     <Switch
@@ -308,12 +308,12 @@ export default function CreatorSettings() {
                                     <div className="space-y-0.5">
                                         <Label htmlFor="showMetrics">
                                             <div className="flex items-center gap-2">
-                                                <span>Show Metrics</span>
+                                                <span>Mostrar Métricas</span>
                                                 <Eye className="w-4 h-4" />
                                             </div>
                                         </Label>
                                         <p className="text-sm text-muted-foreground">
-                                            Display follower count and engagement rate to brands
+                                            Mostrar recuento de seguidores y tasa de interacción a las marcas
                                         </p>
                                     </div>
                                     <Switch
@@ -329,9 +329,9 @@ export default function CreatorSettings() {
 
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="allowBrandMessages">Allow Brand Messages</Label>
+                                        <Label htmlFor="allowBrandMessages">Permitir Mensajes de Marcas</Label>
                                         <p className="text-sm text-muted-foreground">
-                                            Brands can send you direct messages for collaborations
+                                            Las marcas pueden enviarte mensajes directos para colaboraciones
                                         </p>
                                     </div>
                                     <Switch
@@ -354,7 +354,7 @@ export default function CreatorSettings() {
                                 className="min-w-[150px]"
                             >
                                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                                Save Changes
+                                Guardar Cambios
                             </Button>
                         </div>
                     </div>

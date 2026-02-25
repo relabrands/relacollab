@@ -38,20 +38,20 @@ import { InstagramConnectModal } from "@/components/creator/InstagramConnectModa
 const CONTENT_FORMATS = [
   { id: "posts", label: "Posts", emoji: "📸" },
   { id: "reels", label: "Reels", emoji: "🎬" },
-  { id: "stories", label: "Stories", emoji: "📱" },
-  { id: "carousels", label: "Carousels", emoji: "🖼️" },
+  { id: "stories", label: "Historias", emoji: "📱" },
+  { id: "carousels", label: "Carruseles", emoji: "🖼️" },
   { id: "videos", label: "Videos", emoji: "🎥" },
 ];
 
 const CREATOR_VIBES = [
-  { id: "romantic", label: "Romantic", emoji: "💕" },
-  { id: "party", label: "Party", emoji: "🎉" },
-  { id: "family", label: "Family", emoji: "👨‍👩‍👧" },
-  { id: "healthy", label: "Healthy", emoji: "🥗" },
+  { id: "romantic", label: "Romántico", emoji: "💕" },
+  { id: "party", label: "Fiesta", emoji: "🎉" },
+  { id: "family", label: "Familiar", emoji: "👨‍👩‍👧" },
+  { id: "healthy", label: "Saludable", emoji: "🥗" },
   { id: "premium", label: "Premium", emoji: "👑" },
-  { id: "adventure", label: "Adventure", emoji: "🏔️" },
-  { id: "minimal", label: "Minimal", emoji: "⚪" },
-  { id: "vibrant", label: "Vibrant", emoji: "🌈" },
+  { id: "adventure", label: "Aventura", emoji: "🏔️" },
+  { id: "minimal", label: "Minimalista", emoji: "⚪" },
+  { id: "vibrant", label: "Vibrante", emoji: "🌈" },
 ];
 
 const CONTENT_CATEGORIES = [
@@ -177,7 +177,7 @@ export default function CreatorProfile() {
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
-        toast.error("Failed to load profile data");
+        toast.error("Error al cargar los datos del perfil");
       } finally {
         setIsLoading(false);
       }
@@ -193,7 +193,7 @@ export default function CreatorProfile() {
     const errorDescription = params.get("error_description");
 
     if (error) {
-      toast.error(`Instagram Connection Failed: ${errorDescription || error}`);
+      toast.error(`La conexión de Instagram falló: ${errorDescription || error}`);
       window.history.replaceState({}, document.title, window.location.pathname);
       return;
     }
@@ -234,13 +234,13 @@ export default function CreatorProfile() {
               }
             }));
 
-            toast.success("Instagram connected successfully!");
+            toast.success("¡Instagram conectado exitosamente!");
 
             // Clear params
             window.history.replaceState({}, document.title, window.location.pathname);
           } catch (error) {
             console.error("Error saving Instagram data:", error);
-            toast.error("Failed to save Instagram connection");
+            toast.error("Error al guardar la conexión de Instagram");
           }
         };
         updateInstagramData();
@@ -274,7 +274,7 @@ export default function CreatorProfile() {
   const handleTikTokDisconnect = async () => {
     if (!user) return;
 
-    if (!confirm("Are you sure you want to disconnect TikTok?")) {
+    if (!confirm("¿Estás seguro de que deseas desconectar TikTok?")) {
       return;
     }
 
@@ -295,10 +295,10 @@ export default function CreatorProfile() {
       }));
       setSocialHandles(prev => ({ ...prev, tiktok: "" }));
 
-      toast.success("TikTok disconnected.");
+      toast.success("TikTok desconectado.");
     } catch (error) {
       console.error("Error disconnecting TikTok:", error);
-      toast.error("Failed to disconnect TikTok.");
+      toast.error("Error al desconectar TikTok.");
     }
   };
 
@@ -306,7 +306,7 @@ export default function CreatorProfile() {
     if (!user) return;
 
     // Add confirmation
-    if (!confirm("Are you sure you want to disconnect Instagram? You'll lose access to your metrics and won't appear in brand matches.")) {
+    if (!confirm("¿Estás seguro de que deseas desconectar Instagram? Perderás acceso a tus métricas y no aparecerás en las coincidencias de marcas.")) {
       return;
     }
 
@@ -328,10 +328,10 @@ export default function CreatorProfile() {
       }));
       setSocialHandles(prev => ({ ...prev, instagram: "" }));
 
-      toast.success("Instagram disconnected.");
+      toast.success("Instagram desconectado.");
     } catch (error) {
       console.error("Error disconnecting:", error);
-      toast.error("Failed to disconnect. Please try again.");
+      toast.error("Error al desconectar. Por favor intenta de nuevo.");
     }
   };
 
@@ -359,10 +359,10 @@ export default function CreatorProfile() {
         hasBrandExperience: professionalData.hasBrandExperience,
         updatedAt: new Date().toISOString(),
       });
-      toast.success("Profile saved successfully!");
+      toast.success("¡Perfil guardado exitosamente!");
     } catch (error) {
       console.error("Error saving profile:", error);
-      toast.error("Failed to save profile changes");
+      toast.error("Error al guardar los cambios del perfil");
     } finally {
       setIsSaving(false);
     }
@@ -380,7 +380,7 @@ export default function CreatorProfile() {
     const cleanHandle = tempHandle.trim().replace(/^@/, '');
 
     if (!cleanHandle) {
-      toast.error("Please enter a username");
+      toast.error("Por favor ingresa un nombre de usuario");
       return;
     }
 
@@ -388,7 +388,7 @@ export default function CreatorProfile() {
     setSocialHandles(newHandles);
     setConnectDialog({ isOpen: false, platform: null });
     setTempHandle("");
-    toast.success(`${connectDialog.platform === 'instagram' ? 'Instagram' : 'TikTok'} connected! Remember to save changes.`);
+    toast.success(`¡${connectDialog.platform === 'instagram' ? 'Instagram' : 'TikTok'} conectado! Recuerda guardar los cambios.`);
   };
 
   const handleCategoryToggle = (category: string) => {
@@ -404,15 +404,15 @@ export default function CreatorProfile() {
     if (!file || !user) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file");
+      toast.error("Por favor sube un archivo de imagen");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size must be less than 5MB");
+      toast.error("El tamaño del archivo debe ser menor a 5MB");
       return;
     }
 
-    const toastId = toast.loading("Uploading photo...");
+    const toastId = toast.loading("Subiendo foto...");
 
     try {
       const storageRef = ref(storage, `profile_photos/${user.uid}/${Date.now()}_${file.name}`);
@@ -433,10 +433,10 @@ export default function CreatorProfile() {
       // 3. Update Local State (for immediate feedback)
       setProfile((prev: any) => ({ ...prev, photoURL: downloadURL }));
 
-      toast.success("Profile photo updated!", { id: toastId });
+      toast.success("¡Foto de perfil actualizada!", { id: toastId });
     } catch (error) {
       console.error("Error uploading photo:", error);
-      toast.error("Failed to upload photo", { id: toastId });
+      toast.error("Error al subir foto", { id: toastId });
     }
   };
 
@@ -459,8 +459,8 @@ export default function CreatorProfile() {
 
       <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <DashboardHeader
-          title="My Profile"
-          subtitle="Manage your creator profile and connected accounts"
+          title="Mi Perfil"
+          subtitle="Administra tu perfil de creador y cuentas conectadas"
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -472,7 +472,7 @@ export default function CreatorProfile() {
               animate={{ opacity: 1, y: 0 }}
               className="glass-card p-6"
             >
-              <h2 className="text-lg font-semibold mb-6">Basic Information</h2>
+              <h2 className="text-lg font-semibold mb-6">Información Básica</h2>
 
               <div className="flex items-center gap-6 mb-6">
                 <img
@@ -482,7 +482,7 @@ export default function CreatorProfile() {
                 />
                 <div>
                   <Button variant="outline" size="sm" onClick={handleChangePhoto}>
-                    Change Photo
+                    Cambiar Foto
                   </Button>
                   <input
                     type="file"
@@ -496,7 +496,7 @@ export default function CreatorProfile() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">Nombre Completo</Label>
                   <Input
                     id="name"
                     value={profile.name}
@@ -505,7 +505,7 @@ export default function CreatorProfile() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Correo Electrónico</Label>
                   <Input
                     id="email"
                     type="email"
@@ -515,17 +515,17 @@ export default function CreatorProfile() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="location">Location</Label>
+                  <Label htmlFor="location">Ubicación</Label>
                   <Input
                     id="location"
                     value={profile.location}
                     onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                    placeholder="e.g. Santo Domingo, DR"
+                    placeholder="ej. Santo Domingo, RD"
                     className="mt-2"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">Teléfono</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -538,21 +538,21 @@ export default function CreatorProfile() {
               </div>
 
               <div className="mt-4">
-                <Label htmlFor="bio">Bio</Label>
+                <Label htmlFor="bio">Biografía</Label>
                 <Textarea
                   id="bio"
                   value={profile.bio}
                   onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  placeholder="Tell brands a little bit about yourself..."
+                  placeholder="Cuéntale a las marcas un poco sobre ti..."
                   className="mt-2 min-h-[100px]"
                 />
               </div>
 
               {/* Content Formats */}
               <div className="mt-6">
-                <Label>Content Formats</Label>
+                <Label>Formatos de Contenido</Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  What type of content do you create?
+                  ¿Qué tipo de contenido creas?
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {CONTENT_FORMATS.map((format) => (
@@ -586,9 +586,9 @@ export default function CreatorProfile() {
 
               {/* Vibes */}
               <div className="mt-6">
-                <Label>Content Vibes</Label>
+                <Label>Estilo de Contenido</Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  What's your content style? (Optional)
+                  ¿Cuál es tu estilo de contenido? (Opcional)
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {CREATOR_VIBES.map((vibe) => (
@@ -620,9 +620,9 @@ export default function CreatorProfile() {
 
               {/* Who Appears */}
               <div className="mt-6">
-                <Label>Who Appears in Your Content</Label>
+                <Label>Quién Aparece en tu Contenido</Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Select all that apply
+                  Selecciona todas las que apliquen
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   {WHO_APPEARS.map((option) => (
@@ -661,7 +661,7 @@ export default function CreatorProfile() {
               <div className="grid md:grid-cols-2 gap-6 mt-6">
                 {/* Experience Time */}
                 <div>
-                  <Label>Content Creation Experience</Label>
+                  <Label>Experiencia en Creación de Contenido</Label>
                   <RadioGroup
                     value={professionalData.experienceTime}
                     onValueChange={(value) => setProfessionalData(prev => ({ ...prev, experienceTime: value }))}
@@ -689,7 +689,7 @@ export default function CreatorProfile() {
 
                 {/* Collaboration Preference */}
                 <div>
-                  <Label>Collaboration Preference</Label>
+                  <Label>Preferencia de Colaboración</Label>
                   <RadioGroup
                     value={professionalData.collaborationPreference}
                     onValueChange={(value) => setProfessionalData(prev => ({ ...prev, collaborationPreference: value }))}
@@ -718,7 +718,7 @@ export default function CreatorProfile() {
 
               {/* Brand Experience */}
               <div className="mt-6">
-                <Label>Brand Experience</Label>
+                <Label>Experiencia con Marcas</Label>
                 <div className="flex items-center gap-4 mt-3">
                   <div
                     onClick={() => setProfessionalData(prev => ({ ...prev, hasBrandExperience: true }))}
@@ -730,7 +730,7 @@ export default function CreatorProfile() {
                       }
                     `}
                   >
-                    <span className="text-sm font-medium">Yes, I have experience</span>
+                    <span className="text-sm font-medium">Sí, tengo experiencia</span>
                   </div>
                   <div
                     onClick={() => setProfessionalData(prev => ({ ...prev, hasBrandExperience: false }))}
@@ -742,7 +742,7 @@ export default function CreatorProfile() {
                       }
                     `}
                   >
-                    <span className="text-sm font-medium">No, I'm new to this</span>
+                    <span className="text-sm font-medium">No, soy nuevo en esto</span>
                   </div>
                 </div>
               </div>
@@ -754,7 +754,7 @@ export default function CreatorProfile() {
                 disabled={isSaving}
               >
                 {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Save Changes
+                Guardar Cambios
               </Button>
             </motion.div>
 
@@ -765,13 +765,13 @@ export default function CreatorProfile() {
               transition={{ delay: 0.1 }}
               className="glass-card p-6"
             >
-              <h2 className="text-lg font-semibold mb-4">Content Categories</h2>
+              <h2 className="text-lg font-semibold mb-4">Categorías de Contenido</h2>
               <p className="text-muted-foreground text-sm mb-4">
-                Select the topics you create content about
+                Selecciona los temas sobre los que creas contenido
               </p>
 
               <div className="flex flex-wrap gap-2">
-                {["Wellness", "Fitness", "Food", "Lifestyle", "Travel", "Beauty", "Fashion", "Tech", "Family", "Pets"].map(
+                {["Bienestar", "Fitness", "Comida", "Estilo de vida", "Viajes", "Belleza", "Moda", "Tecnología", "Familia", "Mascotas"].map(
                   (category) => (
                     <Badge
                       key={category}
@@ -789,10 +789,10 @@ export default function CreatorProfile() {
                 <Badge
                   variant="outline"
                   className="cursor-pointer hover:bg-muted"
-                  onClick={() => toast.info("Add custom category coming soon!")}
+                  onClick={() => toast.info("¡Agregar categoría personalizada próximamente!")}
                 >
                   <Plus className="w-3 h-3 mr-1" />
-                  Add
+                  Agregar
                 </Badge>
               </div>
             </motion.div>
@@ -804,7 +804,7 @@ export default function CreatorProfile() {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Globe className="w-5 h-5 text-primary" />
-                Social Connections
+                Conexiones Sociales
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
@@ -839,25 +839,25 @@ export default function CreatorProfile() {
                       if (isConnected && !isExpired) {
                         return (
                           <div className="text-sm">
-                            <p className="text-muted-foreground mb-3 text-xs">Username <span className="text-foreground font-medium">@{socialHandles.instagram}</span></p>
+                            <p className="text-muted-foreground mb-3 text-xs">Usuario <span className="text-foreground font-medium">@{socialHandles.instagram}</span></p>
                             <Button variant="outline" size="sm" className="w-full hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30" onClick={handleInstagramDisconnect}>
-                              Disconnect
+                              Desconectar
                             </Button>
                           </div>
                         );
                       } else if (isExpired) {
                         return (
                           <div className="text-sm">
-                            <p className="text-warning font-medium mb-2 text-xs">Session Expired</p>
+                            <p className="text-warning font-medium mb-2 text-xs">Sesión Expirada</p>
                             <Button variant="outline" size="sm" className="w-full border-warning text-warning hover:bg-warning/10" onClick={handleInstagramConnect}>
-                              Reconnect Instagram
+                              Reconectar Instagram
                             </Button>
                           </div>
                         );
                       } else {
                         return (
                           <Button variant="default" size="sm" className="w-full bg-[#E1306C] hover:bg-[#C13584] text-white border-0" onClick={handleInstagramConnect}>
-                            Connect Instagram
+                            Conectar Instagram
                           </Button>
                         );
                       }
@@ -882,10 +882,10 @@ export default function CreatorProfile() {
                     </div>
                     {profile.tiktokConnected ? (
                       <span className="text-xs bg-success/10 text-success border border-success/20 px-2 py-1 rounded-full flex items-center gap-1 font-medium">
-                        <Check className="w-3 h-3" /> Connected
+                        <Check className="w-3 h-3" /> Conectado
                       </span>
                     ) : (
-                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">Not connected</span>
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">No conectado</span>
                     )}
                   </div>
 
@@ -894,16 +894,16 @@ export default function CreatorProfile() {
                       if (profile.tiktokConnected) {
                         return (
                           <div className="text-sm">
-                            <p className="text-muted-foreground mb-3 text-xs">Username <span className="text-foreground font-medium">@{socialHandles.tiktok}</span></p>
+                            <p className="text-muted-foreground mb-3 text-xs">Usuario <span className="text-foreground font-medium">@{socialHandles.tiktok}</span></p>
                             <Button variant="outline" size="sm" className="w-full hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30" onClick={handleTikTokDisconnect}>
-                              Disconnect
+                              Desconectar
                             </Button>
                           </div>
                         );
                       } else {
                         return (
                           <Button variant="default" size="sm" className="w-full bg-black hover:bg-gray-800 text-white dark:bg-white dark:text-black dark:hover:bg-gray-200 border-0" onClick={handleTikTokConnect}>
-                            Connect TikTok
+                            Conectar TikTok
                           </Button>
                         );
                       }
@@ -919,15 +919,15 @@ export default function CreatorProfile() {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-primary" />
-                AI Profile Analysis
+                Análisis de Perfil con IA
               </h3>
               <div className="glass-card p-6 bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">View your AI Insights</h4>
-                  <p className="text-sm text-muted-foreground">Deep dive into your performance, content analysis, and audience metrics.</p>
+                  <h4 className="font-medium">Ver tus Insights con IA</h4>
+                  <p className="text-sm text-muted-foreground">Explora a fondo tu rendimiento, análisis de contenido y métricas de audiencia.</p>
                 </div>
                 <Button asChild>
-                  <a href="/creator/analytics">View Analytics</a>
+                  <a href="/creator/analytics">Ver Analíticas</a>
                 </Button>
               </div>
             </div>
@@ -937,14 +937,14 @@ export default function CreatorProfile() {
         <Dialog open={connectDialog.isOpen} onOpenChange={(open) => !open && setConnectDialog({ ...connectDialog, isOpen: false })}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Connect {connectDialog.platform === 'instagram' ? 'Instagram' : 'TikTok'}</DialogTitle>
+              <DialogTitle>Conectar {connectDialog.platform === 'instagram' ? 'Instagram' : 'TikTok'}</DialogTitle>
               <DialogDescription>
-                Enter your username to connect your account.
+                Ingresa tu usuario para conectar tu cuenta.
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
               <div className="grid gap-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">Usuario</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-2.5 text-muted-foreground">@</span>
                   <Input
@@ -952,14 +952,14 @@ export default function CreatorProfile() {
                     value={tempHandle}
                     onChange={(e) => setTempHandle(e.target.value)}
                     className="pl-7"
-                    placeholder="username"
+                    placeholder="usuario"
                   />
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setConnectDialog({ ...connectDialog, isOpen: false })}>Cancel</Button>
-              <Button onClick={handleConnectSubmit}>Connect</Button>
+              <Button variant="outline" onClick={() => setConnectDialog({ ...connectDialog, isOpen: false })}>Cancelar</Button>
+              <Button onClick={handleConnectSubmit}>Conectar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

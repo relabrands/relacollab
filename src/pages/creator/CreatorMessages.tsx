@@ -75,7 +75,7 @@ export default function CreatorMessages() {
                         campaignId: appData.campaignId,
                         campaignTitle: campaignData.name,
                         brandId: campaignData.brandId,
-                        brandName: brandData.displayName || "Brand",
+                        brandName: brandData.displayName || "Marca",
                         brandAvatar: brandData.photoURL || "",
                         status: appData.status,
                         unreadCount: 0
@@ -132,7 +132,7 @@ export default function CreatorMessages() {
             await addDoc(collection(db, "messages"), {
                 collaborationId: selectedCollab.id,
                 senderId: user.uid,
-                senderName: user.displayName || "Creator",
+                senderName: user.displayName || "Creador",
                 senderRole: "creator",
                 text: newMessage.trim(),
                 type: "text",
@@ -143,7 +143,7 @@ export default function CreatorMessages() {
             setNewMessage("");
         } catch (error) {
             console.error("Error sending message:", error);
-            toast.error("Failed to send message");
+            toast.error("Error al enviar el mensaje");
         }
     };
 
@@ -167,8 +167,8 @@ export default function CreatorMessages() {
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader
-                    title="Messages"
-                    subtitle="Chat with brands you're collaborating with"
+                    title="Mensajes"
+                    subtitle="Chatea con las marcas con las que estás colaborando"
                 />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
@@ -188,7 +188,7 @@ export default function CreatorMessages() {
                             <div className="space-y-2">
                                 {filteredCollabs.length === 0 ? (
                                     <div className="text-center py-12 text-muted-foreground">
-                                        <p>No active collaborations</p>
+                                        <p>No hay colaboraciones activas</p>
                                     </div>
                                 ) : (
                                     filteredCollabs.map((collab) => (
@@ -196,8 +196,8 @@ export default function CreatorMessages() {
                                             key={collab.id}
                                             onClick={() => setSelectedCollab(collab)}
                                             className={`w-full p-3 rounded-lg text-left transition-all ${selectedCollab?.id === collab.id
-                                                    ? "bg-primary/10 border-2 border-primary"
-                                                    : "hover:bg-muted/50 border-2 border-transparent"
+                                                ? "bg-primary/10 border-2 border-primary"
+                                                : "hover:bg-muted/50 border-2 border-transparent"
                                                 }`}
                                         >
                                             <div className="flex items-center gap-3">
@@ -246,10 +246,10 @@ export default function CreatorMessages() {
                                             >
                                                 <div
                                                     className={`max-w-[70%] rounded-2xl px-4 py-2 ${msg.type === "system"
-                                                            ? "bg-muted/50 text-muted-foreground text-sm italic"
-                                                            : msg.senderId === user?.uid
-                                                                ? "bg-primary text-primary-foreground"
-                                                                : "bg-muted"
+                                                        ? "bg-muted/50 text-muted-foreground text-sm italic"
+                                                        : msg.senderId === user?.uid
+                                                            ? "bg-primary text-primary-foreground"
+                                                            : "bg-muted"
                                                         }`}
                                                 >
                                                     <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -266,7 +266,7 @@ export default function CreatorMessages() {
                                 <div className="p-4 border-t">
                                     <div className="flex gap-2">
                                         <Input
-                                            placeholder="Type a message..."
+                                            placeholder="Escribe un mensaje..."
                                             value={newMessage}
                                             onChange={(e) => setNewMessage(e.target.value)}
                                             onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
@@ -279,7 +279,7 @@ export default function CreatorMessages() {
                             </>
                         ) : (
                             <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                                <p>Select a conversation to start messaging</p>
+                                <p>Selecciona una conversación para empezar a chatear</p>
                             </div>
                         )}
                     </div>

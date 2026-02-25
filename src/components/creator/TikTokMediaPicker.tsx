@@ -56,11 +56,11 @@ export function TikTokMediaPicker({
             if (response.data.success) {
                 setMedia(response.data.data);
             } else {
-                toast.error(response.data.error || "Failed to load TikTok media");
+                toast.error(response.data.error || "Error al cargar contenido de TikTok");
             }
         } catch (error) {
             console.error("Error fetching TikTok media:", error);
-            toast.error("Could not load TikTok videos. Token might be expired.");
+            toast.error("No se pudieron cargar los videos de TikTok. El token podría haber expirado.");
         } finally {
             setLoading(false);
         }
@@ -85,10 +85,10 @@ export function TikTokMediaPicker({
                 <DialogHeader className="pb-4">
                     <DialogTitle className="flex items-center gap-2">
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg>
-                        Select from TikTok
+                        Seleccionar de TikTok
                     </DialogTitle>
                     <DialogDescription>
-                        Choose a video from your connected TikTok account
+                        Elige un video de tu cuenta de TikTok conectada
                     </DialogDescription>
                 </DialogHeader>
 
@@ -97,7 +97,7 @@ export function TikTokMediaPicker({
                     <div className="relative sticky top-0 z-10 bg-background pb-2">
                         <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search captions..."
+                            placeholder="Buscar en descripciones..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10"
@@ -113,7 +113,7 @@ export function TikTokMediaPicker({
                         <div className="text-center py-12">
                             <svg className="w-12 h-12 text-muted-foreground mx-auto mb-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg>
                             <p className="text-muted-foreground">
-                                No videos found associated with this account.
+                                No se encontraron videos asociados a esta cuenta.
                             </p>
                         </div>
                     ) : (
@@ -129,7 +129,7 @@ export function TikTokMediaPicker({
                                 >
                                     <img
                                         src={item.thumbnail_url}
-                                        alt={item.caption || "TikTok video"}
+                                        alt={item.caption || "Video de TikTok"}
                                         className="w-full h-full object-cover"
                                         onError={(e) => {
                                             e.currentTarget.src = "https://placehold.co/400x700?text=No+Preview";
@@ -176,17 +176,17 @@ export function TikTokMediaPicker({
                                             rel="noopener noreferrer"
                                             className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
                                         >
-                                            View on TikTok
+                                            Ver en TikTok
                                             <ExternalLink className="w-3 h-3" />
                                         </a>
                                     </div>
                                     <p className="text-sm text-muted-foreground line-clamp-2">
-                                        {selectedMedia.caption || "No caption"}
+                                        {selectedMedia.caption || "Sin descripción"}
                                     </p>
                                     <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                                        <span>👀 {selectedMedia.view_count.toLocaleString()} views</span>
-                                        <span>❤️ {selectedMedia.like_count.toLocaleString()} likes</span>
-                                        <span>💬 {selectedMedia.comments_count.toLocaleString()} comments</span>
+                                        <span>👀 {selectedMedia.view_count.toLocaleString()} vistas</span>
+                                        <span>❤️ {selectedMedia.like_count.toLocaleString()} me gusta</span>
+                                        <span>💬 {selectedMedia.comments_count.toLocaleString()} comentarios</span>
                                     </div>
                                 </div>
                             </div>
@@ -196,14 +196,14 @@ export function TikTokMediaPicker({
 
                 <DialogFooter className="pt-4 border-t">
                     <Button variant="outline" onClick={onClose}>
-                        Cancel
+                        Cancelar
                     </Button>
                     <Button
                         variant="hero"
                         onClick={handleSelect}
                         disabled={!selectedMedia}
                     >
-                        Select Video
+                        Seleccionar Video
                     </Button>
                 </DialogFooter>
             </DialogContent>

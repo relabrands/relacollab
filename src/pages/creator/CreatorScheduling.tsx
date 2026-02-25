@@ -55,8 +55,8 @@ export default function CreatorScheduling() {
 
                     // Fetch campaign & brand info if needed (or just use stored fields if they exist)
                     // Assuming visitData has campaignId/brandId
-                    let campaignTitle = "Campaign Visit";
-                    let brandName = "Brand";
+                    let campaignTitle = "Visita de Campaña";
+                    let brandName = "Marca";
 
                     if (visitData.campaignId) {
                         const cDoc = await getDoc(doc(db, "campaigns", visitData.campaignId));
@@ -64,17 +64,17 @@ export default function CreatorScheduling() {
                     }
                     if (visitData.brandId) {
                         const bDoc = await getDoc(doc(db, "users", visitData.brandId));
-                        if (bDoc.exists()) brandName = bDoc.data().displayName || bDoc.data().brandName || "Brand";
+                        if (bDoc.exists()) brandName = bDoc.data().displayName || bDoc.data().brandName || "Marca";
                     }
 
                     newEvents.push({
                         id: visitDoc.id,
                         type: "visit",
-                        title: `${campaignTitle} (Visit)`,
+                        title: `${campaignTitle} (Visita)`,
                         brandName: brandName,
                         date: new Date(visitData.scheduledDate),
                         status: visitData.status,
-                        location: visitData.location?.city || "Location",
+                        location: visitData.location?.city || "Ubicación",
                         time: visitData.scheduledTime,
                         duration: visitData.duration,
                         campaignId: visitData.campaignId
@@ -113,7 +113,7 @@ export default function CreatorScheduling() {
                                 }
 
                                 // Fetch brand name
-                                let brandName = campaignData.brandName || "Brand";
+                                let brandName = campaignData.brandName || "Marca";
                                 if (!brandName && campaignData.brandId) {
                                     const bDoc = await getDoc(doc(db, "users", campaignData.brandId));
                                     if (bDoc.exists()) brandName = bDoc.data().displayName || bDoc.data().brandName;
@@ -122,7 +122,7 @@ export default function CreatorScheduling() {
                                 newEvents.push({
                                     id: `deadline_${campaignId}`,
                                     type: "deadline",
-                                    title: `${campaignData.name} (Deadline)`,
+                                    title: `${campaignData.name} (Fecha Límite)`,
                                     brandName: brandName,
                                     date: deadlineDate,
                                     status: "active",
@@ -165,10 +165,10 @@ export default function CreatorScheduling() {
             });
             // Update local state
             setEvents(prevEvents => prevEvents.map(e => e.id === visitId ? { ...e, status: "confirmed" } : e));
-            toast.success("Visit confirmed!");
+            toast.success("¡Visita confirmada!");
         } catch (error) {
             console.error("Error confirming visit:", error);
-            toast.error("Failed to confirm visit");
+            toast.error("Error al confirmar la visita");
         }
     };
 
@@ -187,8 +187,8 @@ export default function CreatorScheduling() {
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader
-                    title="My Schedule"
-                    subtitle="Manage visits and track campaign deadlines"
+                    title="Mi Horario"
+                    subtitle="Administra visitas y haz seguimiento de las fechas límite"
                 />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -222,14 +222,14 @@ export default function CreatorScheduling() {
                                 <CardContent className="p-4 flex flex-col items-center justify-center text-center">
                                     <MapPin className="w-6 h-6 text-blue-500 mb-2" />
                                     <span className="text-2xl font-bold">{visitsCount}</span>
-                                    <span className="text-xs text-muted-foreground">Total Visits</span>
+                                    <span className="text-xs text-muted-foreground">Visitas Totales</span>
                                 </CardContent>
                             </Card>
                             <Card>
                                 <CardContent className="p-4 flex flex-col items-center justify-center text-center">
                                     <Clock className="w-6 h-6 text-orange-500 mb-2" />
                                     <span className="text-2xl font-bold">{deadlinesCount}</span>
-                                    <span className="text-xs text-muted-foreground">Active Deadlines</span>
+                                    <span className="text-xs text-muted-foreground">Entregas Activas</span>
                                 </CardContent>
                             </Card>
                         </div>
@@ -242,7 +242,7 @@ export default function CreatorScheduling() {
                         <div>
                             <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
                                 <CalendarIcon className="w-5 h-5 text-primary" />
-                                {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Select a date"}
+                                {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Selecciona una fecha"}
                             </h2>
 
                             {selectedDateEvents.length > 0 ? (
@@ -257,9 +257,9 @@ export default function CreatorScheduling() {
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <Badge variant={event.type === 'visit' ? "default" : "secondary"}
                                                                 className={event.type === 'visit' ? "bg-blue-500 hover:bg-blue-600" : "bg-orange-500 hover:bg-orange-600 text-white"}>
-                                                                {event.type === 'visit' ? "Visit" : "Deadline"}
+                                                                {event.type === 'visit' ? "Visita" : "Fecha Límite"}
                                                             </Badge>
-                                                            {event.status === 'confirmed' && <Badge variant="success" className="text-xs">Confirmed</Badge>}
+                                                            {event.status === 'confirmed' && <Badge className="bg-green-500 hover:bg-green-600 border-transparent text-white text-xs">Confirmada</Badge>}
                                                             <span className="text-sm text-muted-foreground">{event.brandName}</span>
                                                         </div>
                                                         <h3 className="font-semibold text-lg">{event.title}</h3>
@@ -283,24 +283,23 @@ export default function CreatorScheduling() {
                                                             <>
                                                                 <Button
                                                                     size="sm"
-                                                                    variant="success"
                                                                     onClick={() => handleConfirmVisit(event.id)}
-                                                                    className="flex-1 md:flex-none"
+                                                                    className="flex-1 md:flex-none bg-green-500 hover:bg-green-600 text-white"
                                                                 >
                                                                     <CheckCircle className="w-4 h-4 mr-2" />
-                                                                    Confirm
+                                                                    Confirmar
                                                                 </Button>
                                                                 <Link to="/creator/messages" className="flex-1 md:flex-none">
                                                                     <Button variant="outline" size="sm" className="w-full">
                                                                         <Clock className="w-4 h-4 mr-2" />
-                                                                        Reschedule
+                                                                        Reprogramar
                                                                     </Button>
                                                                 </Link>
                                                             </>
                                                         )}
                                                         <Link to={`/creator/active`}>
                                                             <Button variant="outline" size="sm" className="w-full md:w-auto">
-                                                                Go to Campaign
+                                                                Ir a la Campaña
                                                             </Button>
                                                         </Link>
                                                     </div>
@@ -312,14 +311,14 @@ export default function CreatorScheduling() {
                             ) : (
                                 <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/20">
                                     <CalendarIcon className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                                    <p className="text-muted-foreground">No events scheduled for this day</p>
+                                    <p className="text-muted-foreground">No hay eventos programados para este día</p>
                                 </div>
                             )}
                         </div>
 
                         {/* Upcoming Events List */}
                         <div className="pt-6 border-t">
-                            <h2 className="text-lg font-semibold mb-3">All Upcoming</h2>
+                            <h2 className="text-lg font-semibold mb-3">Próximos Eventos</h2>
                             <div className="space-y-3">
                                 {upcomingEvents.length > 0 ? (
                                     upcomingEvents.map(event => (
@@ -335,12 +334,12 @@ export default function CreatorScheduling() {
                                                 </p>
                                             </div>
                                             <Badge variant="outline" className="ml-2">
-                                                {event.type === 'visit' ? 'Visit' : 'Deadline'}
+                                                {event.type === 'visit' ? 'Visita' : 'Fecha Límite'}
                                             </Badge>
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-sm text-muted-foreground">No upcoming events</p>
+                                    <p className="text-sm text-muted-foreground">No hay próximos eventos</p>
                                 )}
                             </div>
                         </div>

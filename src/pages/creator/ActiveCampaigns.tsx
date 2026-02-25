@@ -59,7 +59,7 @@ export default function ActiveCampaigns() {
                                 const brandDoc = await getDoc(doc(db, "users", brandId));
                                 if (brandDoc.exists()) {
                                     const brandData = brandDoc.data();
-                                    brandName = brandData.brandName || brandData.displayName || "Unknown Brand";
+                                    brandName = brandData.brandName || brandData.displayName || "Marca Desconocida";
                                     brandLogo = brandData.photoURL || brandData.avatar || brandLogo;
                                     brandProfile = brandData;
                                 }
@@ -78,7 +78,7 @@ export default function ActiveCampaigns() {
                             brandLogo: brandLogo, // Correct brand logo
                             applicationId: appDoc.id,
                             matchScore: score, // Real calculated score
-                            title: campaignData.title || campaignData.name || "Untitled Campaign",
+                            title: campaignData.title || campaignData.name || "Campaña sin Título",
                             brandDescription: campaignData.brandDescription || campaignData.description || "",
                             brandProfile: brandProfile
                         });
@@ -108,8 +108,8 @@ export default function ActiveCampaigns() {
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader
-                    title="Active Campaigns"
-                    subtitle="Campaigns you are currently participating in"
+                    title="Campañas Activas"
+                    subtitle="Campañas en las que estás participando actualmente"
                 />
 
                 {loading ? (
@@ -132,7 +132,7 @@ export default function ActiveCampaigns() {
                                         onViewDetails={() => handleViewDetails(campaign)}
                                     />
                                     <div className="absolute top-2 right-2 bg-success text-white text-xs px-2 py-1 rounded-full font-medium">
-                                        Active
+                                        Activa
                                     </div>
                                 </div>
                             </motion.div>
@@ -143,13 +143,13 @@ export default function ActiveCampaigns() {
                         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                             <PlusCircle className="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">No active campaigns yet</h3>
+                        <h3 className="text-lg font-semibold mb-2">Aún no tienes campañas activas</h3>
                         <p className="text-muted-foreground mb-6">
-                            Start applying to opportunities to get your first collaboration!
+                            ¡Empieza a aplicar a oportunidades para conseguir tu primera colaboración!
                         </p>
                         <Link to="/creator/opportunities">
                             <Button variant="hero">
-                                Browse Opportunities
+                                Explorar Oportunidades
                             </Button>
                         </Link>
                     </div>

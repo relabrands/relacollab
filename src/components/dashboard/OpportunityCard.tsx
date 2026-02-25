@@ -51,8 +51,8 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
     if (onAccept) {
       onAccept(opportunity.id);
     }
-    toast.success(opportunity.isInvited ? `Accepted invitation for "${opportunity.title}"` : `Applied to "${opportunity.title}"`, {
-      description: `${opportunity.brandName} will be notified.`,
+    toast.success(opportunity.isInvited ? `Invitación aceptada para "${opportunity.title}"` : `Solicitud enviada a "${opportunity.title}"`, {
+      description: `${opportunity.brandName} será notificado(a).`,
     });
   };
 
@@ -87,7 +87,7 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
       {opportunity.isInvited && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-violet-600/90 backdrop-blur text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-1 z-10 w-max max-w-[90%] border border-white/20">
           <Gift className="w-3.5 h-3.5 text-white" />
-          Personal Invitation
+          Invitación Personal
         </div>
       )}
 
@@ -115,7 +115,7 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
               {/* Product/Exchange part */}
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max max-w-[200px] sm:max-w-xs">
                 <span className="text-orange-400">🎁</span>
-                <span className="truncate">{opportunity.exchangeDetails || "Product Exchange"}</span>
+                <span className="truncate">{opportunity.exchangeDetails || "Intercambio de Producto"}</span>
               </div>
             </>
           ) : (
@@ -129,8 +129,8 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
                 {opportunity.compensationType === 'monetary'
                   ? `$${opportunity.creatorPayment}`
                   : (opportunity.compensationType === 'exchange'
-                    ? (opportunity.exchangeDetails || "Product Exchange")
-                    : (opportunity.reward || "Negotiable"))}
+                    ? (opportunity.exchangeDetails || "Intercambio de Producto")
+                    : (opportunity.reward || "Negociable"))}
               </span>
             </div>
           )}
@@ -157,12 +157,12 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
         <div className="flex items-center gap-4 text-[13px] text-white/70 mb-4 drop-shadow-sm font-medium">
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5" />
-            <span className="truncate max-w-[120px]">{opportunity.location || "Remote"}</span>
+            <span className="truncate max-w-[120px]">{opportunity.location || "Remoto"}</span>
           </div>
           <div className="text-white/40">•</div>
           <div className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
-            <span>{opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString() : (opportunity.endDate ? new Date(opportunity.endDate).toLocaleDateString() : "Open")}</span>
+            <span>{opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString() : (opportunity.endDate ? new Date(opportunity.endDate).toLocaleDateString() : "Abierto")}</span>
           </div>
         </div>
 
@@ -172,7 +172,7 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
             <Link to="/creator/content" className="w-full">
               <Button className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20 font-medium backdrop-blur-sm">
                 <Upload className="w-4 h-4 mr-2" />
-                Submit Content
+                Enviar Contenido
               </Button>
             </Link>
           ) : (
@@ -185,7 +185,7 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
               )}
               onClick={handleApply}
             >
-              {opportunity.isInvited ? "Accept Invitation" : "Apply Now"}
+              {opportunity.isInvited ? "Aceptar Invitación" : "Aplicar Ahora"}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           )}
