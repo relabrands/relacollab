@@ -57,9 +57,9 @@ export default function Apply() {
     ];
 
     const estadisticas = [
-        { value: "Gratis", label: "Para creadores" },
-        { value: "Premium", label: "Marcas aliadas" },
-        { value: "Seguros", label: "Pagos garantizados" },
+        { value: "$0", label: "Para creadores" },
+        { value: "Top", label: "Marcas aliadas" },
+        { value: "100%", label: "Pagos garantizados" },
         { value: "IA", label: "Match inteligente" }
     ];
 
@@ -152,7 +152,7 @@ export default function Apply() {
                                     transition={{ delay: 0.3 + index * 0.1 }}
                                     className="text-center"
                                 >
-                                    <div className="text-4xl md:text-5xl font-bold text-gradient mb-1">
+                                    <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-gradient mb-1">
                                         {stat.value}
                                     </div>
                                     <div className="text-sm text-muted-foreground">{stat.label}</div>
