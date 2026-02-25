@@ -171,7 +171,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                         {/* Deliverables */}
                         {opportunity.deliverables && opportunity.deliverables.length > 0 && (
                             <div>
-                                <h4 className="font-semibold mb-3">Required Content</h4>
+                                <h4 className="font-semibold mb-3">Contenido Requerido</h4>
                                 <div className="grid grid-cols-2 gap-3">
                                     {opportunity.deliverables.map((item: any, i: number) => (
                                         <div key={i} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
@@ -184,10 +184,10 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                             </div>
                                             <div>
                                                 <div className="font-medium">
-                                                    {item.quantity}x {item.type}
+                                                    {item.quantity}x {item.type}{item.platform ? ` ${item.platform.toLowerCase() === 'tiktok' ? 'TikTok' : 'Instagram'}` : ''}
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
-                                                    {item.required ? "Required" : "Optional"}
+                                                    {item.required ? "Requerido" : "Opcional"}
                                                 </div>
                                             </div>
                                         </div>
