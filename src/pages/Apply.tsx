@@ -57,10 +57,10 @@ export default function Apply() {
     ];
 
     const estadisticas = [
-        { value: "10K+", label: "Creadores activos" },
-        { value: "500+", label: "Marcas aliadas" },
-        { value: "$2M+", label: "Pagado a creadores" },
-        { value: "98%", label: "Satisfacción" }
+        { value: "Gratis", label: "Para creadores" },
+        { value: "Premium", label: "Marcas aliadas" },
+        { value: "Seguros", label: "Pagos garantizados" },
+        { value: "IA", label: "Match inteligente" }
     ];
 
     const comoFunciona = [
@@ -112,7 +112,7 @@ export default function Apply() {
                     >
                         <Badge className="px-4 py-1.5 text-sm font-medium gap-1.5">
                             <Star className="w-3 h-3 fill-current" />
-                            Únete a +10,000 creadores que ya ganan
+                            Únete a los creadores fundadores de RELA
                         </Badge>
 
                         <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight">
