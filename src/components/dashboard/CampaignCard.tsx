@@ -20,6 +20,8 @@ interface CampaignCardProps {
     totalBudgetPerCreator?: number;
     compensationType?: "monetary" | "exchange" | "hybrid";
     exchangeDetails?: string;
+    minReward?: number;
+    maxReward?: number;
   };
   onClick?: () => void;
   onShare?: () => void;
@@ -101,9 +103,15 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
               <span className="text-green-400">💵</span> + <span className="text-orange-400">🎁</span>
               Híbrido
             </div>
-            <div className="font-semibold text-sm truncate" title={`$${totalBudget.toLocaleString()} + ${campaign.exchangeDetails || "Intercambio"}`}>
-              ${totalBudget.toLocaleString()} + {campaign.exchangeDetails || "Intercambio"}
-            </div>
+            {campaign.minReward && campaign.maxReward ? (
+              <div className="font-semibold text-sm truncate" title={`$${(campaign.minReward * (campaign.creatorCount || 1)).toLocaleString()} – $${(campaign.maxReward * (campaign.creatorCount || 1)).toLocaleString()} + ${campaign.exchangeDetails || "Intercambio"}`}>
+                ${(campaign.minReward * (campaign.creatorCount || 1)).toLocaleString()} – ${(campaign.maxReward * (campaign.creatorCount || 1)).toLocaleString()} <span className="text-[10px] text-muted-foreground font-normal">+ {campaign.exchangeDetails || "Regalo"}</span>
+              </div>
+            ) : (
+              <div className="font-semibold text-sm truncate" title={`$${totalBudget.toLocaleString()} + ${campaign.exchangeDetails || "Intercambio"}`}>
+                ${totalBudget.toLocaleString()} + {campaign.exchangeDetails || "Intercambio"}
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-muted/30 p-3 rounded-lg">
@@ -111,9 +119,15 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
               <DollarSign className="w-3 h-3" />
               Presupuesto
             </div>
-            <div className="font-semibold text-sm">
-              ${totalBudget.toLocaleString()}
-            </div>
+            {campaign.minReward && campaign.maxReward ? (
+              <div className="font-semibold text-sm">
+                ${(campaign.minReward * (campaign.creatorCount || 1)).toLocaleString()} – ${(campaign.maxReward * (campaign.creatorCount || 1)).toLocaleString()}
+              </div>
+            ) : (
+              <div className="font-semibold text-sm">
+                ${totalBudget.toLocaleString()}
+              </div>
+            )}
           </div>
         )}
 

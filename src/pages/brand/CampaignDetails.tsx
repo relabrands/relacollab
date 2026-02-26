@@ -258,19 +258,39 @@ export default function CampaignDetails() {
                                             {/* Monetary details (monetary or hybrid) */}
                                             {(isMonetary || campaign.compensationType === "hybrid") && (
                                                 <div className="mt-2 pt-2 border-t border-border/40 space-y-1.5 text-sm">
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Por creator (bruto)</span>
-                                                        <span className="font-medium">${perCreatorGross.toLocaleString()}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Neto al creator</span>
-                                                        <span className="text-green-600 font-medium">
-                                                            ${(campaign.creatorPayment || perCreatorGross).toLocaleString()}
-                                                        </span>
-                                                    </div>
+                                                    {campaign.minReward && campaign.maxReward ? (
+                                                        <>
+                                                            <div className="p-3 mb-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs leading-relaxed text-amber-800 dark:text-amber-400">
+                                                                * Retenemos el presupuesto máximo (${campaign.maxReward.toLocaleString()}) en <strong>Escrow</strong> por seguridad. Asignarás el pago final (entre ${campaign.minReward.toLocaleString()} y ${campaign.maxReward.toLocaleString()}) según la calidad del video. El sobrante quedará como crédito a favor.
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">Rango por creador (bruto)</span>
+                                                                <span className="font-semibold">${campaign.minReward.toLocaleString()} – ${campaign.maxReward.toLocaleString()}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">Neto al creator</span>
+                                                                <span className="text-green-600 font-medium whitespace-nowrap">
+                                                                    ${(campaign.minReward * 0.9).toLocaleString()} – ${(campaign.maxReward * 0.9).toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">Por creator (bruto)</span>
+                                                                <span className="font-medium">${perCreatorGross.toLocaleString()}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">Neto al creator</span>
+                                                                <span className="text-green-600 font-medium">
+                                                                    ${(campaign.creatorPayment || perCreatorGross).toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                     {neededCount > 1 && (
-                                                        <div className="flex justify-between font-semibold pt-1 border-t border-border/40">
-                                                            <span>Total ({neededCount} creadores)</span>
+                                                        <div className="flex justify-between font-semibold pt-1 border-t border-border/40 mt-1">
+                                                            <span>Escrow Total ({neededCount} creadores)</span>
                                                             <span className="text-primary">${totalBudget.toLocaleString()}</span>
                                                         </div>
                                                     )}
@@ -368,12 +388,14 @@ export default function CampaignDetails() {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <DollarSign className="w-4 h-4" />
-                                        <span>Presupuesto</span>
+                                        <span>Presupuesto (Escrow)</span>
                                     </div>
                                     {isMonetary ? (
                                         <div className="text-right">
                                             <span className="font-bold text-primary text-lg">${totalBudget.toLocaleString()}</span>
-                                            <p className="text-[10px] text-muted-foreground">{neededCount} creador{neededCount > 1 ? "es" : ""} × ${perCreatorGross.toLocaleString()}</p>
+                                            <p className="text-[10px] text-muted-foreground">
+                                                {neededCount} creador{neededCount > 1 ? "es" : ""} × ${perCreatorGross.toLocaleString()} {campaign.minReward && campaign.maxReward ? "(máx)" : ""}
+                                            </p>
                                         </div>
                                     ) : (
                                         <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
@@ -387,10 +409,17 @@ export default function CampaignDetails() {
                                             <span>Comisión RELA</span>
                                             <span className="text-destructive">-${totalFee.toLocaleString()}</span>
                                         </div>
-                                        <div className="flex justify-between font-medium text-foreground">
-                                            <span>Creadores reciben</span>
-                                            <span className="text-green-600">${totalNet.toLocaleString()}</span>
-                                        </div>
+                                        {campaign.minReward && campaign.maxReward ? (
+                                            <div className="flex justify-between font-medium text-foreground">
+                                                <span>Creadores reciben</span>
+                                                <span className="text-green-600">${(campaign.minReward * 0.9 * neededCount).toLocaleString()} – ${(campaign.maxReward * 0.9 * neededCount).toLocaleString()}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex justify-between font-medium text-foreground">
+                                                <span>Creadores reciben</span>
+                                                <span className="text-green-600">${totalNet.toLocaleString()}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>

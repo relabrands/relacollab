@@ -82,8 +82,8 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
           alt={opportunity.title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        {/* Dark overay to make text pop */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-black/90" />
+        {/* Dark overlay to make text pop, only at the bottom */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent h-2/3 mt-auto" />
       </div>
 
       {opportunity.isInvited && (
