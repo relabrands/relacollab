@@ -35,6 +35,8 @@ interface CampaignInvoice {
     campaignName: string;
     campaignId: string;
     creatorCount: number;
+    minReward?: number;
+    maxReward?: number;
     perCreatorGross: number;
     totalGross: number;
     totalFee: number;
@@ -418,13 +420,24 @@ function InvoiceRow({
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Users className="w-3 h-3" />
-                    <span>{invoice.creatorCount} creador{invoice.creatorCount > 1 ? "es" : ""} × ${invoice.perCreatorGross.toLocaleString()} c/u</span>
+                    {invoice.minReward && invoice.maxReward ? (
+                        <span>
+                            {invoice.creatorCount} creador{invoice.creatorCount > 1 ? "es" : ""} &times; <strong>${invoice.minReward.toLocaleString()} – ${invoice.maxReward.toLocaleString()}</strong> c/u
+                        </span>
+                    ) : (
+                        <span>{invoice.creatorCount} creador{invoice.creatorCount > 1 ? "es" : ""} &times; ${invoice.perCreatorGross.toLocaleString()} c/u</span>
+                    )}
                 </div>
-                <div className="flex gap-4 text-sm mt-1">
-                    <span>Total: <strong className="text-foreground">${invoice.totalGross.toLocaleString()}</strong></span>
+                <div className="flex gap-4 text-sm mt-1 flex-wrap">
+                    <span>Total Escrow: <strong className="text-foreground">${invoice.totalGross.toLocaleString()}</strong></span>
                     <span className="text-muted-foreground">Fee RELA ({invoice.feePercent}%): ${invoice.totalFee.toLocaleString()}</span>
                     <span className="text-green-600 font-medium">Creadores reciben: ${invoice.totalNet.toLocaleString()}</span>
                 </div>
+                {invoice.minReward && invoice.maxReward && (
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                        ⚠️ El monto transferido (${invoice.totalGross.toLocaleString()}) garantiza el Escrow basado en el pago máximo. El pago final asignado podrá ser menor.
+                    </p>
+                )}
                 <p className="text-[10px] text-muted-foreground">
                     {new Date(invoice.createdAt).toLocaleDateString("es-DO", { day: "2-digit", month: "long", year: "numeric" })}
                 </p>

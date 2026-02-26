@@ -268,10 +268,17 @@ export default function CreatorEarnings() {
                                                                     🎁 {payment.exchangeDetails || "Intercambio"}
                                                                 </p>
                                                             ) : (
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString("es-DO") : "N/A"}
-                                                                    {payment.feeAmount > 0 && ` • Tarifa: $${payment.feeAmount}`}
-                                                                </p>
+                                                                <>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString("es-DO") : "N/A"}
+                                                                        {payment.feeAmount > 0 && ` • Tarifa: $${payment.feeAmount}`}
+                                                                    </p>
+                                                                    {payment.minReward && payment.maxReward && (
+                                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                                            Rango inicial: <span className="font-medium">${payment.minReward.toLocaleString()} – ${payment.maxReward.toLocaleString()}</span>
+                                                                        </p>
+                                                                    )}
+                                                                </>
                                                             )}
                                                         </div>
                                                     </div>

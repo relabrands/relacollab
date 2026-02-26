@@ -117,27 +117,43 @@ export default function ActiveCampaigns() {
                         <Loader2 className="w-10 h-10 animate-spin text-primary" />
                     </div>
                 ) : activeCampaigns.length > 0 ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {activeCampaigns.map((campaign, index) => (
-                            <motion.div
-                                key={campaign.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                            >
-                                <div className="relative">
-                                    <OpportunityCard
-                                        opportunity={campaign}
-                                        isActive={true}
-                                        onViewDetails={() => handleViewDetails(campaign)}
-                                    />
-                                    <div className="absolute top-2 right-2 bg-success text-white text-xs px-2 py-1 rounded-full font-medium">
-                                        Activa
-                                    </div>
+                    <>
+                        {/* Incentive banner — shown when any campaign has a reward range */}
+                        {activeCampaigns.some((c: any) => c.minReward && c.maxReward) && (
+                            <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-400/20 flex items-start gap-3">
+                                <span className="text-2xl">🏆</span>
+                                <div>
+                                    <p className="font-semibold text-amber-700 dark:text-amber-400 text-sm">¡Tu pago final está en tus manos!</p>
+                                    <p className="text-sm text-muted-foreground mt-0.5">
+                                        La marca asignará el pago entre el mínimo y el máximo al aprobar tu video. Los contenidos con mayor
+                                        engagement, mejor edición y mayor impacto suelen recibir el <strong>pago máximo</strong>.
+                                        ¡Esfuérzate en cada detalle!
+                                    </p>
                                 </div>
-                            </motion.div>
-                        ))}
-                    </div>
+                            </div>
+                        )}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {activeCampaigns.map((campaign, index) => (
+                                <motion.div
+                                    key={campaign.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.1 }}
+                                >
+                                    <div className="relative">
+                                        <OpportunityCard
+                                            opportunity={campaign}
+                                            isActive={true}
+                                            onViewDetails={() => handleViewDetails(campaign)}
+                                        />
+                                        <div className="absolute top-2 right-2 bg-success text-white text-xs px-2 py-1 rounded-full font-medium">
+                                            Activa
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </>
                 ) : (
                     <div className="text-center py-16 border rounded-xl bg-muted/20">
                         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
@@ -166,3 +182,4 @@ export default function ActiveCampaigns() {
         </div>
     );
 }
+

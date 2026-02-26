@@ -23,7 +23,9 @@ interface OpportunityCardProps {
     brandDescription?: string;
     goal?: string;
     compensationType?: string;
-    creatorPayment?: string;
+    creatorPayment?: string | number;
+    minReward?: number;
+    maxReward?: number;
     exchangeDetails?: string;
     coverImage?: string;
     deliverables?: Array<{ type: string; quantity: number; required: boolean; platform?: string }>;
@@ -103,15 +105,17 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
         <div className="mb-3 flex flex-wrap gap-2">
           {opportunity.compensationType === "hybrid" ? (
             <>
-              {/* Cash part */}
+              {/* Cash part - show range if available */}
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max">
                 <span className="text-green-400">💵</span>
-                <span>${opportunity.creatorPayment}</span>
+                <span>
+                  {opportunity.minReward && opportunity.maxReward
+                    ? `$${opportunity.minReward} – $${opportunity.maxReward}`
+                    : `$${opportunity.creatorPayment}`}
+                </span>
               </div>
               {/* Plus sign */}
-              <div className="inline-flex items-center justify-center font-bold text-white/80">
-                +
-              </div>
+              <div className="inline-flex items-center justify-center font-bold text-white/80">+</div>
               {/* Product/Exchange part */}
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max max-w-[200px] sm:max-w-xs">
                 <span className="text-orange-400">🎁</span>
@@ -119,19 +123,29 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
               </div>
             </>
           ) : (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max">
-              {opportunity.compensationType === "monetary" || opportunity.rewardType === "paid" ? (
-                <span className="text-green-400">💵</span>
-              ) : (
-                <span className="text-orange-400">🎁</span>
+            <div className="flex flex-col gap-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max">
+                {opportunity.compensationType === "monetary" || opportunity.rewardType === "paid" ? (
+                  <span className="text-green-400">💵</span>
+                ) : (
+                  <span className="text-orange-400">🎁</span>
+                )}
+                <span>
+                  {opportunity.compensationType === 'monetary'
+                    ? (opportunity.minReward && opportunity.maxReward
+                      ? `$${opportunity.minReward.toLocaleString()} – $${opportunity.maxReward.toLocaleString()} USD`
+                      : `$${opportunity.creatorPayment}`)
+                    : (opportunity.compensationType === 'exchange'
+                      ? (opportunity.exchangeDetails || "Intercambio de Producto")
+                      : (opportunity.reward || "Negociable"))}
+                </span>
+              </div>
+              {/* Incentive badge for paid / hybrid */}
+              {(opportunity.compensationType === 'monetary' || opportunity.compensationType === 'hybrid') && opportunity.minReward && opportunity.maxReward && (
+                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 backdrop-blur-md border border-amber-400/20 text-[11px] font-medium text-amber-300 w-max">
+                  ✨ Basado en calidad y performance
+                </div>
               )}
-              <span>
-                {opportunity.compensationType === 'monetary'
-                  ? `$${opportunity.creatorPayment}`
-                  : (opportunity.compensationType === 'exchange'
-                    ? (opportunity.exchangeDetails || "Intercambio de Producto")
-                    : (opportunity.reward || "Negociable"))}
-              </span>
             </div>
           )}
         </div>
@@ -167,14 +181,22 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 w-full mt-2">
+        <div className="flex flex-col gap-2 w-full mt-2">
           {isActive ? (
-            <Link to="/creator/content" className="w-full">
-              <Button className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20 font-medium backdrop-blur-sm">
-                <Upload className="w-4 h-4 mr-2" />
-                Enviar Contenido
-              </Button>
-            </Link>
+            <>
+              <Link to="/creator/content" className="w-full">
+                <Button className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20 font-medium backdrop-blur-sm">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Enviar Contenido
+                </Button>
+              </Link>
+              {/* Motivational reminder for active campaigns with range */}
+              {opportunity.minReward && opportunity.maxReward && (
+                <p className="text-[11px] text-amber-300/90 text-center leading-snug px-1">
+                  Los videos con mayor engagement suelen recibir el pago máximo (${opportunity.maxReward.toLocaleString()}) 🚀
+                </p>
+              )}
+            </>
           ) : (
             <Button
               className={cn(

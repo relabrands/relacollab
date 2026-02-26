@@ -68,7 +68,8 @@ export default function CreateCampaign() {
     ageRange: "18-35",
     compensationType: "",
     exchangeDetails: "",
-    creatorPayment: "",
+    minReward: "",
+    maxReward: "",
     creditCost: "1",
     budget: "",
     startDate: "",
@@ -234,8 +235,18 @@ export default function CreateCampaign() {
           return false;
         }
         if (formData.compensationType === "monetary" || formData.compensationType === "hybrid") {
-          if (!formData.creatorPayment || parseFloat(formData.creatorPayment) <= 0) {
-            toast.error("El monto de pago al creador es requerido");
+          const minVal = parseFloat(formData.minReward);
+          const maxVal = parseFloat(formData.maxReward);
+          if (!formData.minReward || minVal <= 0) {
+            toast.error("El pago mínimo garantizado es requerido");
+            return false;
+          }
+          if (!formData.maxReward || maxVal <= 0) {
+            toast.error("El pago máximo es requerido");
+            return false;
+          }
+          if (maxVal < minVal) {
+            toast.error("El pago máximo debe ser mayor o igual al pago mínimo");
             return false;
           }
           // Credit cost fixed at 1 per creator
@@ -288,12 +299,14 @@ export default function CreateCampaign() {
         console.warn("Could not fetch brand name:", e);
       }
 
-      // Calculate final amounts (Model: Gross - Fee = Net)
-      const grossAmount = Number(formData.creatorPayment) || 0;
+      // Calculate final amounts using maxReward as Escrow base
+      const minRewardVal = Number(formData.minReward) || 0;
+      const maxRewardVal = Number(formData.maxReward) || 0;
       const creatorCount = parseInt(formData.creatorCount) || 1;
       const feePercent = config.serviceFeePercent || 10;
-      const perCreatorFee = grossAmount * (feePercent / 100);
-      const perCreatorNet = grossAmount - perCreatorFee;
+      // Invoice is always based on maxReward (Escrow)
+      const perCreatorFee = maxRewardVal * (feePercent / 100);
+      const perCreatorNet = maxRewardVal - perCreatorFee;
 
       const campaignData = {
         ...formData,
@@ -302,13 +315,15 @@ export default function CreateCampaign() {
         status: "active",
         createdAt: new Date().toISOString(),
 
-        // Fee & Payment Data
-        creatorPayment: perCreatorNet,    // Net amount creator receives per person
+        // Reward Range
+        minReward: minRewardVal,
+        maxReward: maxRewardVal,
+        // Legacy / compat fields — use maxReward as base
+        creatorPayment: perCreatorNet,       // Net creator receives (based on max, pre-approval)
         platformFeePercent: feePercent,
-        platformFeeAmount: perCreatorFee, // Fee per creator
-        totalBudgetPerCreator: grossAmount, // Gross per creator
+        platformFeeAmount: perCreatorFee,
+        totalBudgetPerCreator: maxRewardVal, // Gross per creator (Escrow)
 
-        // Legacy fields
         budget: parseFloat(formData.budget) || 0,
         creatorCount: creatorCount,
         creditCost: 1,
@@ -319,9 +334,9 @@ export default function CreateCampaign() {
 
       const campaignRef = await addDoc(collection(db, "campaigns"), campaignData);
 
-      // ✅ Auto-generate brand invoice for monetary or hybrid campaigns
-      if ((formData.compensationType === "monetary" || formData.compensationType === "hybrid") && grossAmount > 0) {
-        const totalGross = grossAmount * creatorCount;
+      // ✅ Auto-generate brand invoice for monetary or hybrid campaigns (based on maxReward Escrow)
+      if ((formData.compensationType === "monetary" || formData.compensationType === "hybrid") && maxRewardVal > 0) {
+        const totalGross = maxRewardVal * creatorCount;
         const totalFee = perCreatorFee * creatorCount;
         const totalNet = perCreatorNet * creatorCount;
 
@@ -333,17 +348,19 @@ export default function CreateCampaign() {
             campaignId: campaignRef.id,
             campaignName: formData.name,
             creatorCount: creatorCount,
-            perCreatorGross: grossAmount,
+            minReward: minRewardVal,
+            maxReward: maxRewardVal,
+            perCreatorGross: maxRewardVal, // Escrow = max
             perCreatorFee: perCreatorFee,
             perCreatorNet: perCreatorNet,
-            totalGross: totalGross,    // Total brand must pay RELA
-            totalFee: totalFee,        // RELA platform revenue
-            totalNet: totalNet,        // Total that will go to creators
+            totalGross: totalGross,
+            totalFee: totalFee,
+            totalNet: totalNet,
             feePercent: feePercent,
             status: "pending",
             createdAt: new Date().toISOString(),
           });
-          console.log("✅ Invoice created:", totalGross, "for", creatorCount, "creators");
+          console.log("✅ Invoice created:", totalGross, "for", creatorCount, "creators (Escrow based on maxReward)");
         } catch (invoiceErr) {
           console.error("❌ Invoice creation failed:", invoiceErr);
           toast.error("Campaña creada, pero la factura no pudo generarse. Contacta soporte.");
@@ -867,72 +884,102 @@ export default function CreateCampaign() {
                   {/* Monetary Details (if monetary or hybrid selected) */}
                   {(formData.compensationType === "monetary" || formData.compensationType === "hybrid") && (
                     <div className="bg-muted/30 p-4 rounded-xl space-y-4">
-                      <div>
-                        <Label htmlFor="creatorPayment">Pago al Creator (por persona)</Label>
-                        <div className="relative mt-2">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                            $
-                          </span>
-                          <Input
-                            id="creatorPayment"
-                            type="number"
-                            placeholder="500"
-                            value={formData.creatorPayment}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                creatorPayment: e.target.value,
-                              }))
-                            }
-                            className="pl-8"
-                          />
+                      {/* Range info banner */}
+                      <div className="p-3 bg-primary/5 border border-primary/15 rounded-lg text-sm text-primary">
+                        <strong>💡 Rango de Pago por Creador:</strong> Define un mínimo garantizado y un máximo.
+                        La marca asignará el pago final al aprobar el contenido, basado en calidad e impacto.
+                      </div>
+
+                      {/* Two-column: min / max */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="minReward">Pago Mínimo Garantizado <span className="text-green-600 font-semibold">★</span></Label>
+                          <div className="relative mt-2">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                            <Input
+                              id="minReward"
+                              type="number"
+                              min="0"
+                              placeholder="75"
+                              value={formData.minReward}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, minReward: e.target.value }))}
+                              className="pl-8"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">El creador recibirá al menos este monto si su contenido es aprobado.</p>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Monto bruto que pagarás a RELA por cada creator aprobado.
-                        </p>
+                        <div>
+                          <Label htmlFor="maxReward">Pago Máximo <span className="text-amber-500 font-semibold">🏆</span></Label>
+                          <div className="relative mt-2">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                            <Input
+                              id="maxReward"
+                              type="number"
+                              min="0"
+                              placeholder="150"
+                              value={formData.maxReward}
+                              onChange={(e) => setFormData((prev) => ({ ...prev, maxReward: e.target.value }))}
+                              className="pl-8"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Pago máximo por contenido de alta calidad e impacto. También define el Escrow.</p>
+                        </div>
+                      </div>
 
-                        {/* Fee Calculation Display — shows per-creator AND total */}
-                        {formData.creatorPayment && (() => {
-                          const gross = Number(formData.creatorPayment);
-                          const count = parseInt(formData.creatorCount) || 1;
-                          const fee = gross * (config.serviceFeePercent / 100);
-                          const net = gross - fee;
-                          const totalG = gross * count;
-                          const totalF = fee * count;
-                          const totalN = net * count;
+                      {/* Validation warning */}
+                      {formData.minReward && formData.maxReward && parseFloat(formData.maxReward) < parseFloat(formData.minReward) && (
+                        <p className="text-xs text-destructive font-medium">⚠️ El pago máximo debe ser mayor o igual al mínimo.</p>
+                      )}
 
-                          return (
-                            <div className="mt-4 rounded-xl border border-border/60 overflow-hidden">
-                              {/* Total invoice line — most prominent */}
-                              <div className="px-4 py-3 bg-primary/10 border-b border-border/50 flex justify-between items-center">
-                                <span className="font-bold text-sm">
-                                  Total Factura ({count} creador{count !== 1 ? "es" : ""})
-                                </span>
-                                <span className="text-primary font-black text-xl">${totalG.toLocaleString()}</span>
+                      {/* Fee Calculation Display — based on maxReward (Escrow) */}
+                      {formData.maxReward && (() => {
+                        const minVal = Number(formData.minReward) || 0;
+                        const maxVal = Number(formData.maxReward);
+                        if (maxVal <= 0) return null;
+                        const count = parseInt(formData.creatorCount) || 1;
+                        const fee = maxVal * (config.serviceFeePercent / 100);
+                        const net = maxVal - fee;
+                        const totalG = maxVal * count;
+                        const totalF = fee * count;
+                        const totalN = net * count;
+
+                        return (
+                          <div className="rounded-xl border border-border/60 overflow-hidden">
+                            {/* Summary range */}
+                            <div className="px-4 py-2 bg-muted/60 border-b border-border/50 flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground">Rango por creador</span>
+                              <span className="font-semibold text-sm">
+                                ${minVal > 0 ? minVal.toLocaleString() : "?"} – ${maxVal.toLocaleString()} USD
+                              </span>
+                            </div>
+                            {/* Total invoice — Escrow based on max */}
+                            <div className="px-4 py-3 bg-primary/10 border-b border-border/50 flex justify-between items-center">
+                              <div>
+                                <span className="font-bold text-sm">Total Factura ({count} creador{count !== 1 ? "es" : ""})</span>
+                                <p className="text-[10px] text-muted-foreground">Basado en pago máximo (Escrow garantizado)</p>
                               </div>
-
-                              {/* Per-creator breakdown */}
-                              <div className="px-4 py-3 bg-muted/40 space-y-1.5 text-sm">
-                                <div className="flex justify-between text-muted-foreground">
-                                  <span>Por creador × {count}</span>
-                                  <span>${gross.toLocaleString()} × {count} = <strong className="text-foreground">${totalG.toLocaleString()}</strong></span>
-                                </div>
-                                <div className="flex justify-between text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    Fee RELA ({config.serviceFeePercent}% × {count})
-                                    <span className="text-[9px] bg-destructive/10 text-destructive px-1 rounded">Deducido</span>
-                                  </span>
-                                  <span className="text-destructive">-${totalF.toLocaleString()} (${fee.toLocaleString()}/c.u.)</span>
-                                </div>
-                                <div className="flex justify-between font-semibold pt-1 border-t border-border/40">
-                                  <span>Creadores reciben en total</span>
-                                  <span className="text-green-600">${totalN.toLocaleString()} (${net.toLocaleString()}/c.u.)</span>
-                                </div>
+                              <span className="text-primary font-black text-xl">${totalG.toLocaleString()}</span>
+                            </div>
+                            <div className="px-4 py-3 bg-muted/40 space-y-1.5 text-sm">
+                              <div className="flex justify-between text-muted-foreground">
+                                <span>Máx. por creador × {count}</span>
+                                <span>${maxVal.toLocaleString()} × {count} = <strong className="text-foreground">${totalG.toLocaleString()}</strong></span>
+                              </div>
+                              <div className="flex justify-between text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  Fee RELA ({config.serviceFeePercent}%)
+                                  <span className="text-[9px] bg-destructive/10 text-destructive px-1 rounded">Deducido</span>
+                                </span>
+                                <span className="text-destructive">-${totalF.toLocaleString()} (${fee.toFixed(2)}/c.u.)</span>
+                              </div>
+                              <div className="flex justify-between font-semibold pt-1 border-t border-border/40">
+                                <span>Creadores reciben (si asignan max)</span>
+                                <span className="text-green-600">${totalN.toLocaleString()} (${net.toFixed(2)}/c.u.)</span>
                               </div>
                             </div>
-                          );
-                        })()}
-                      </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 

@@ -106,22 +106,44 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                         {(opportunity.compensationType === 'monetary' || opportunity.rewardType === 'paid') ? (
                             <div className="space-y-3">
                                 <div className="space-y-2 pb-2 border-b border-border/50">
-                                    <div className="flex justify-between text-sm text-muted-foreground">
-                                        <span>Presupuesto de la Campaña:</span>
-                                        <span>${(opportunity.totalBudgetPerCreator || opportunity.creatorPayment || opportunity.budget || 0).toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm text-muted-foreground">
-                                        <span className="flex items-center gap-1">
-                                            Fee de Servicio RELA ({opportunity.platformFeePercent || 0}%)
-                                            <span className="group relative">
-                                                <div className="cursor-help w-4 h-4 rounded-full bg-muted flex items-center justify-center text-[10px] border border-border">?</div>
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                                                    Este fee se deduce del presupuesto total para cubrir el uso de la plataforma y garantía de pago seguro.
-                                                </div>
-                                            </span>
-                                        </span>
-                                        <span className="text-destructive">-${(opportunity.platformFeeAmount || 0).toLocaleString()}</span>
-                                    </div>
+                                    {/* Show range if available, otherwise fallback to fixed */}
+                                    {opportunity.minReward && opportunity.maxReward ? (
+                                        <>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-muted-foreground">Rango de Pago por Creador:</span>
+                                                <span className="font-bold text-lg text-primary">
+                                                    ${opportunity.minReward.toLocaleString()} – ${opportunity.maxReward.toLocaleString()} USD
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between text-sm text-muted-foreground">
+                                                <span>Mínimo garantizado (si aprueba):</span>
+                                                <span className="text-green-600 font-medium">${opportunity.minReward.toLocaleString()} USD</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm text-muted-foreground">
+                                                <span>Fee de Servicio RELA ({opportunity.platformFeePercent || 0}%):</span>
+                                                <span className="text-destructive">-${(opportunity.platformFeeAmount || 0).toLocaleString()}</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="flex justify-between text-sm text-muted-foreground">
+                                                <span>Presupuesto de la Campaña:</span>
+                                                <span>${(opportunity.totalBudgetPerCreator || opportunity.creatorPayment || opportunity.budget || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm text-muted-foreground">
+                                                <span className="flex items-center gap-1">
+                                                    Fee de Servicio RELA ({opportunity.platformFeePercent || 0}%)
+                                                    <span className="group relative">
+                                                        <div className="cursor-help w-4 h-4 rounded-full bg-muted flex items-center justify-center text-[10px] border border-border">?</div>
+                                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                                            Este fee se deduce del presupuesto total para cubrir el uso de la plataforma y garantía de pago seguro.
+                                                        </div>
+                                                    </span>
+                                                </span>
+                                                <span className="text-destructive">-${(opportunity.platformFeeAmount || 0).toLocaleString()}</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 <div className="flex justify-between items-end">
                                     <span className="font-semibold text-lg">Tu Pago Neto:</span>
@@ -129,9 +151,19 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                         ${(opportunity.creatorPayment || opportunity.budget || 0).toLocaleString()}
                                     </span>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 flex-wrap">
                                     <Badge variant="secondary">Proyecto Pagado</Badge>
+                                    {opportunity.minReward && opportunity.maxReward && (
+                                        <Badge variant="outline" className="border-amber-300 text-amber-600">
+                                            ✨ Basado en calidad y performance
+                                        </Badge>
+                                    )}
                                 </div>
+                                {opportunity.minReward && opportunity.maxReward && (
+                                    <p className="text-xs text-muted-foreground bg-muted/40 p-2 rounded-lg">
+                                        La marca asignará el pago final entre <strong>${opportunity.minReward.toLocaleString()}</strong> y <strong>${opportunity.maxReward.toLocaleString()}</strong> al aprobar tu contenido. El mínimo garantizado es <strong>${opportunity.minReward.toLocaleString()} USD</strong>.
+                                    </p>
+                                )}
                             </div>
                         ) : opportunity.compensationType === 'hybrid' ? (
                             <div className="space-y-3">

@@ -5,12 +5,15 @@ import { MatchScore } from "@/components/dashboard/MatchScore";
 import {
     Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2,
     ExternalLink, Check, Eye, Music2, ThumbsUp, ThumbsDown,
-    Target, BarChart2, MessageSquare, Zap, AlertTriangle
+    Target, BarChart2, MessageSquare, Zap, AlertTriangle, DollarSign
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, collection, addDoc, updateDoc, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { Input } from "@/components/ui/input";
 
 interface CreatorDetails {
     id: string;
@@ -108,6 +111,7 @@ const getMatchLabel = (pct: number) => {
 };
 
 export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isApplicant, isCollaborating, onApprove }: MatchDetailsDialogProps) {
+    const { user } = useAuth();
     const [loadingPosts, setLoadingPosts] = useState(false);
     const [posts, setPosts] = useState<InstagramMedia[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -116,14 +120,25 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
     const [loadingAnalysis, setLoadingAnalysis] = useState(false);
     const [activePlatform, setActivePlatform] = useState<"instagram" | "tiktok">("instagram");
 
+    // Final payment assignment state (brand side, collaborating mode)
+    const hasRange = isCollaborating && campaign?.minReward && campaign?.maxReward;
+    const [finalPayment, setFinalPayment] = useState<number>(campaign?.maxReward || 0);
+    const [isApprovingPayment, setIsApprovingPayment] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        // Reset final payment to maxReward whenever dialog opens for a collaborating campaign
+        if (isCollaborating && campaign?.maxReward) {
+            setFinalPayment(campaign.maxReward);
+        }
+    }, [isOpen, campaign?.maxReward, isCollaborating]);
+
     useEffect(() => {
         if (!isOpen || !creator.id || !campaign?.id) return;
 
         // Reset
         setActivePlatform("instagram");
         fetchCreatorPosts("instagram");
-
-        // If creator already brought pre-loaded analysis, use it
         if (creator.aiAnalysis?.matchPercentage !== undefined) {
             setAiAnalysis(creator.aiAnalysis);
             setLoadingAnalysis(false);
@@ -603,23 +618,176 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                         )}
                     </div>
 
+                    {/* ─── Final Payment Assignment (brand, collaborating mode) ─── */}
+                    {hasRange && campaign.minReward && campaign.maxReward && (
+                        <div className="rounded-2xl border border-primary/20 overflow-hidden">
+                            <div className="px-5 py-3 bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/10 flex items-center gap-2">
+                                <DollarSign className="w-4 h-4 text-primary" />
+                                <h3 className="font-semibold text-sm">Asignar Pago Final</h3>
+                            </div>
+                            <div className="px-5 py-4 space-y-4">
+                                <p className="text-sm text-muted-foreground">
+                                    Asigna el pago final basado en la calidad y el impacto del contenido entregado.
+                                </p>
+                                {/* Slider */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                        <span>Mínimo: <strong>${campaign.minReward.toLocaleString()}</strong></span>
+                                        <span>Máximo: <strong>${campaign.maxReward.toLocaleString()}</strong></span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min={campaign.minReward}
+                                        max={campaign.maxReward}
+                                        step={1}
+                                        value={finalPayment}
+                                        onChange={(e) => setFinalPayment(Number(e.target.value))}
+                                        className="w-full accent-primary"
+                                    />
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm text-muted-foreground">Pago asignado:</span>
+                                        <div className="relative flex-1 max-w-[140px]">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                                            <Input
+                                                type="number"
+                                                min={campaign.minReward}
+                                                max={campaign.maxReward}
+                                                value={finalPayment}
+                                                onChange={(e) => {
+                                                    const v = Math.min(campaign.maxReward, Math.max(campaign.minReward, Number(e.target.value)));
+                                                    setFinalPayment(v);
+                                                }}
+                                                className="pl-6 h-9 font-bold text-lg"
+                                            />
+                                        </div>
+                                        <span className="text-2xl font-black text-primary">${finalPayment.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                                {/* Credit note */}
+                                {finalPayment < campaign.maxReward && (
+                                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-400">
+                                        💳 Los <strong>${(campaign.maxReward - finalPayment).toLocaleString()}</strong> sobrantes quedarán como <strong>Crédito a Favor</strong> para tu próxima campaña o factura.
+                                    </div>
+                                )}
+                                {finalPayment === campaign.maxReward && (
+                                    <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-sm text-green-700 dark:text-green-400">
+                                        🏆 ¡Estás asignando el pago máximo! Esto reconoce la excelencia del contenido del creador.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* ─── Action Buttons ─── */}
                     <div className="flex gap-3 pt-2">
                         <Button className="flex-1" variant="outline" onClick={onClose}>
-                            Close
+                            Cerrar
                         </Button>
-                        <Button
-                            className="flex-1"
-                            variant={isCollaborating ? "outline" : "default"}
-                            onClick={onApprove}
-                        >
-                            {isCollaborating ? (
-                                <Eye className="w-4 h-4 mr-2" />
-                            ) : (
-                                <Check className="w-4 h-4 mr-2" />
-                            )}
-                            {isApplicant ? "Approve Application" : isCollaborating ? "View Content" : "Send Proposal"}
-                        </Button>
+                        {hasRange ? (
+                            <Button
+                                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                disabled={isApprovingPayment}
+                                onClick={async () => {
+                                    if (!campaign?.id || !creator.id || !user) return;
+                                    setIsApprovingPayment(true);
+                                    try {
+                                        const creditAmount = (campaign.maxReward || 0) - finalPayment;
+                                        const feePercent = campaign.platformFeePercent || 10;
+                                        const netAmount = finalPayment * (1 - feePercent / 100);
+
+                                        // 1. Update the content submission with finalPayment
+                                        const submissionsQ = query(
+                                            collection(db, "content_submissions"),
+                                            where("campaignId", "==", campaign.id),
+                                            where("userId", "==", creator.id)
+                                        );
+                                        const submSnap = await getDocs(submissionsQ);
+                                        if (!submSnap.empty) {
+                                            await updateDoc(submSnap.docs[0].ref, {
+                                                status: "approved",
+                                                finalPayment: finalPayment,
+                                                creditAmount: creditAmount,
+                                                approvedAt: new Date().toISOString(),
+                                                approvedByBrandId: user.uid,
+                                            });
+                                        }
+
+                                        // 2. Create payout record for creator
+                                        await addDoc(collection(db, "payouts"), {
+                                            creatorId: creator.id,
+                                            brandId: user.uid,
+                                            campaignId: campaign.id,
+                                            campaignName: campaign.name || "Campaña",
+                                            grossAmount: finalPayment,
+                                            feeAmount: finalPayment * (feePercent / 100),
+                                            netAmount: netAmount,
+                                            feePercent: feePercent,
+                                            minReward: campaign.minReward,
+                                            maxReward: campaign.maxReward,
+                                            status: "ready_to_withdraw",
+                                            createdAt: new Date().toISOString(),
+                                        });
+
+                                        // 3. If credit, update brandCredits
+                                        if (creditAmount > 0) {
+                                            const creditRef = doc(db, "brandCredits", user.uid);
+                                            await setDoc(creditRef, {
+                                                brandId: user.uid,
+                                                balance: creditAmount,
+                                                lastUpdated: new Date().toISOString(),
+                                            }, { merge: true });
+                                        }
+
+                                        // 4. Send notification to creator
+                                        await addDoc(collection(db, "notifications"), {
+                                            userId: creator.id,
+                                            type: "payment_assigned",
+                                            title: "🎉 ¡Pago asignado!",
+                                            message: `La marca ha aprobado tu contenido y te ha asignado un pago de $${finalPayment.toLocaleString()} USD. ¡Excelente trabajo!`,
+                                            campaignId: campaign.id,
+                                            campaignName: campaign.name || "Campaña",
+                                            amount: finalPayment,
+                                            read: false,
+                                            createdAt: new Date().toISOString(),
+                                        });
+
+                                        toast.success(`¡Pago de $${finalPayment.toLocaleString()} asignado exitosamente!`, {
+                                            description: creditAmount > 0
+                                                ? `$${creditAmount.toLocaleString()} quedaron como crédito a favor.`
+                                                : "El creador recibió el pago máximo."
+                                        });
+
+                                        onApprove?.();
+                                        onClose();
+                                    } catch (err) {
+                                        console.error("Error assigning payment:", err);
+                                        toast.error("Error al asignar el pago. Intenta de nuevo.");
+                                    } finally {
+                                        setIsApprovingPayment(false);
+                                    }
+                                }}
+                            >
+                                {isApprovingPayment ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Check className="w-4 h-4 mr-2" />
+                                )}
+                                Aprobar y Asignar Pago
+                            </Button>
+                        ) : (
+                            <Button
+                                className="flex-1"
+                                variant={isCollaborating ? "outline" : "default"}
+                                onClick={onApprove}
+                            >
+                                {isCollaborating ? (
+                                    <Eye className="w-4 h-4 mr-2" />
+                                ) : (
+                                    <Check className="w-4 h-4 mr-2" />
+                                )}
+                                {isApplicant ? "Approve Application" : isCollaborating ? "View Content" : "Send Proposal"}
+                            </Button>
+                        )}
                     </div>
                 </div>
             </DialogContent>
