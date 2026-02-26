@@ -206,7 +206,7 @@ export default function CreatorAnalytics() {
 
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader
-                    title="Análisis de Perfil IA"
+                    title="AI Profile Analysis"
                     subtitle="Conoce a fondo tu rendimiento social y recomendaciones de IA"
                 />
 

@@ -99,14 +99,14 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
       </div>
 
       {/* Content Container positioned at the bottom */}
-      <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col justify-end text-white z-10">
+      <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col justify-end text-white z-10">
 
         {/* Value/Compensation Badge */}
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="mb-2 flex flex-wrap gap-1.5">
           {opportunity.compensationType === "hybrid" ? (
             <>
               {/* Cash part - show range if available */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max">
+              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-white w-max">
                 <span className="text-green-400">💵</span>
                 <span>
                   {opportunity.minReward && opportunity.maxReward
@@ -115,16 +115,16 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
                 </span>
               </div>
               {/* Plus sign */}
-              <div className="inline-flex items-center justify-center font-bold text-white/80">+</div>
+              <div className="inline-flex items-center justify-center font-bold text-white/80 text-xs">+</div>
               {/* Product/Exchange part */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max max-w-[200px] sm:max-w-xs">
+              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-white w-max max-w-[150px] sm:max-w-[200px]">
                 <span className="text-orange-400">🎁</span>
-                <span className="truncate">{opportunity.exchangeDetails || "Intercambio de Producto"}</span>
+                <span className="truncate">{opportunity.exchangeDetails || "Intercambio"}</span>
               </div>
             </>
           ) : (
-            <div className="flex flex-col gap-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-sm font-semibold text-white w-max">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-xs font-semibold text-white w-max">
                 {opportunity.compensationType === "monetary" || opportunity.rewardType === "paid" ? (
                   <span className="text-green-400">💵</span>
                 ) : (
@@ -142,8 +142,8 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
               </div>
               {/* Incentive badge for paid / hybrid */}
               {(opportunity.compensationType === 'monetary' || opportunity.compensationType === 'hybrid') && opportunity.minReward && opportunity.maxReward && (
-                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 backdrop-blur-md border border-amber-400/20 text-[11px] font-medium text-amber-300 w-max">
-                  ✨ Basado en calidad y performance
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-md border border-amber-400/20 text-[10px] font-medium text-amber-300 w-max">
+                  ✨ Por Calidad
                 </div>
               )}
             </div>
@@ -151,31 +151,31 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
         </div>
 
         {/* Title */}
-        <h3 className="font-bold text-2xl mb-1 text-white leading-tight drop-shadow-md">
+        <h3 className="font-bold text-xl mb-1 text-white leading-tight drop-shadow-md line-clamp-2">
           {opportunity.title}
         </h3>
 
         {/* Details Line 1: Brand / Description / Goal */}
-        <p className="text-white/80 text-sm font-medium mb-2 drop-shadow-sm line-clamp-1">
+        <p className="text-white/80 text-[13px] font-medium mb-1 drop-shadow-sm line-clamp-1">
           {opportunity.brandName} {opportunity.goal ? ` • ${opportunity.goal}` : ''}
         </p>
 
         {/* Deliverables String - mapping what we need */}
         {hasDeliverables && (
-          <p className="text-white/90 text-[13px] mb-2 font-medium drop-shadow-sm">
+          <p className="text-white/90 text-[12px] mb-1.5 font-medium drop-shadow-sm line-clamp-1">
             {formatDeliverables(opportunity.deliverables)}
           </p>
         )}
 
         {/* Details Line 2: Stats / Location / Deadline */}
-        <div className="flex items-center gap-4 text-[13px] text-white/70 mb-4 drop-shadow-sm font-medium">
-          <div className="flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5" />
-            <span className="truncate max-w-[120px]">{opportunity.location || "Remoto"}</span>
+        <div className="flex items-center gap-3 text-[11px] text-white/70 mb-3 drop-shadow-sm font-medium">
+          <div className="flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            <span className="truncate max-w-[100px]">{opportunity.location || "Remoto"}</span>
           </div>
           <div className="text-white/40">•</div>
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
             <span>{opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString() : (opportunity.endDate ? new Date(opportunity.endDate).toLocaleDateString() : "Abierto")}</span>
           </div>
         </div>

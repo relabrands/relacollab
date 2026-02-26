@@ -887,7 +887,7 @@ export default function CreateCampaign() {
                       {/* Range info banner */}
                       <div className="p-3 bg-primary/5 border border-primary/15 rounded-lg text-sm text-primary">
                         <strong>💡 Rango de Pago por Creador:</strong> Define un mínimo garantizado y un máximo.
-                        La marca asignará el pago final al aprobar el contenido, basado en calidad e impacto.
+                        Asignarás el pago final al aprobar el contenido, basado en calidad e impacto.
                       </div>
 
                       {/* Two-column: min / max */}

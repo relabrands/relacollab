@@ -20,7 +20,6 @@ interface Plan {
     name: string;
     price: number;
     credits: number;
-    credits: number;
     features: string[];
     interval: "month" | "year";
     isFree?: boolean;
