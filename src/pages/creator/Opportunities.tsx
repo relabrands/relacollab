@@ -523,7 +523,7 @@ export default function Opportunities() {
                 </p>
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full overflow-hidden">
               {displayItems.map((opportunity, index) => (
                 <motion.div
                   key={opportunity.id}
@@ -531,16 +531,16 @@ export default function Opportunities() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   onClick={() => handleCardClick(opportunity)}
-                  className="cursor-pointer"
+                  className="cursor-pointer w-full"
                 >
-                  <div className="relative">
+                  <div className="relative w-full">
                     <OpportunityCard
                       opportunity={opportunity}
                       onAccept={(id) => handleApply(id)}
                     />
                     {/* Block interaction if applying */}
                     {processingId === opportunity.id && (
-                      <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-xl z-10">
+                      <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-xl z-10 w-full h-full">
                         <Loader2 className="animate-spin" />
                       </div>
                     )}
@@ -556,7 +556,7 @@ export default function Opportunities() {
             </div>
           </div>
         ) : (
-          <div className="text-center py-12 border rounded-xl bg-white/5">
+          <div className="text-center py-12 border rounded-xl bg-white/5 mx-2 w-full">
             <p className="text-muted-foreground">
               {activeTab === 'pending'
                 ? "No hay solicitudes pendientes. ¡Aplica a campañas para verlas aquí!"

@@ -110,17 +110,18 @@ export default function BrandCampaigns() {
 
                 {/* Campaigns Grid */}
                 {!loading && filteredCampaigns.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full overflow-hidden">
                         {filteredCampaigns.map((campaign) => (
-                            <CampaignCard
-                                key={campaign.id}
-                                campaign={campaign}
-                                onShare={() => handleShareCampaign(campaign)}
-                            />
+                            <div key={campaign.id} className="w-full">
+                                <CampaignCard
+                                    campaign={campaign}
+                                    onShare={() => handleShareCampaign(campaign)}
+                                />
+                            </div>
                         ))}
                     </div>
                 ) : !loading && (
-                    <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed">
+                    <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed mx-2 w-full">
                         <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
                             <Filter className="w-6 h-6 text-muted-foreground" />
                         </div>
