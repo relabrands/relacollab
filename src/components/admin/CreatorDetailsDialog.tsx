@@ -68,7 +68,7 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
                 <DialogHeader className="p-6 pb-4 border-b">
                     <div className="flex items-center gap-4">
                         <Avatar className="w-16 h-16">
-                            <AvatarImage src={creator.avatar} objectFit="cover" />
+                            <AvatarImage src={creator.avatar} className="object-cover" />
                             <AvatarFallback>{creator.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>
@@ -293,7 +293,7 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
 
                     </div>
                 </ScrollArea>
-            </DialogContent>
-        </Dialog>
+            </DialogContent >
+        </Dialog >
     );
 }

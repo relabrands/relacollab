@@ -286,12 +286,12 @@ export default function BrandBilling() {
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs text-muted-foreground">Tipo de Cuenta</p>
-                                <p className="font-medium">Corriente (Checking)</p>
+                                <p className="font-medium">Corriente (en RD$)</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs text-muted-foreground">Número de Cuenta</p>
                                 <div className="flex items-center justify-between">
-                                    <p className="font-mono text-lg font-bold">789-555-123</p>
+                                    <p className="font-mono text-lg font-bold">843410317-</p>
                                     <Button variant="ghost" size="icon" onClick={() => copyToClipboard("789555123")}>
                                         <Copy className="w-4 h-4" />
                                     </Button>
@@ -299,11 +299,11 @@ export default function BrandBilling() {
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs text-muted-foreground">Beneficiario</p>
-                                <p className="font-medium">RELA Collab, S.R.L.</p>
+                                <p className="font-medium">RELA Brand, S.R.L.</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs text-muted-foreground">RNC</p>
-                                <p className="font-medium">1-32-00000-1</p>
+                                <p className="font-medium">1-33-06436-7</p>
                             </div>
                         </div>
                         <div className="flex gap-2 items-start p-3 bg-blue-50 text-blue-800 rounded-lg text-sm">

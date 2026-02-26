@@ -167,12 +167,34 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                             </div>
                         ) : opportunity.compensationType === 'hybrid' ? (
                             <div className="space-y-3">
-                                <div className="flex justify-between items-end mb-2">
-                                    <span className="font-semibold text-lg">Tu Pago Neto:</span>
-                                    <span className="text-2xl font-bold text-success">
-                                        ${(opportunity.creatorPayment || opportunity.budget || 0).toLocaleString()}
-                                    </span>
-                                </div>
+                                {opportunity.minReward && opportunity.maxReward ? (
+                                    <div className="space-y-2 pb-2 border-b border-border/50">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-muted-foreground">Rango de Pago por Creador:</span>
+                                            <span className="font-bold text-lg text-primary">
+                                                ${opportunity.minReward.toLocaleString()} – ${opportunity.maxReward.toLocaleString()} USD
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between text-sm text-muted-foreground">
+                                            <span>Mínimo garantizado (si aprueba):</span>
+                                            <span className="text-green-600 font-medium">${opportunity.minReward.toLocaleString()} USD</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm text-muted-foreground">
+                                            <span>Fee de Servicio RELA ({opportunity.platformFeePercent || 0}%):</span>
+                                            <span className="text-destructive">-${(opportunity.platformFeeAmount || 0).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2 pb-2 border-b border-border/50">
+                                        <div className="flex justify-between items-end mb-2">
+                                            <span className="font-semibold text-lg">Tu Pago Neto:</span>
+                                            <span className="text-2xl font-bold text-success">
+                                                ${(opportunity.creatorPayment || opportunity.budget || 0).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex flex-col space-y-2">
                                     <p className="font-medium text-sm text-muted-foreground">Más intercambio de producto:</p>
                                     <p className="font-medium">
@@ -182,6 +204,11 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                 <div className="flex gap-2">
                                     <Badge variant="secondary">Pago Mixto</Badge>
                                 </div>
+                                {opportunity.minReward && opportunity.maxReward && (
+                                    <p className="text-xs text-muted-foreground bg-muted/40 p-2 rounded-lg">
+                                        La marca asignará el pago final entre <strong>${opportunity.minReward.toLocaleString()}</strong> y <strong>${opportunity.maxReward.toLocaleString()}</strong> al aprobar tu contenido. ¡Los mejores contenidos alcanzan el máximo!
+                                    </p>
+                                )}
                             </div>
                         ) : (
                             <div className="flex items-center justify-between">

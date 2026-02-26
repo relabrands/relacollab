@@ -140,8 +140,8 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
                       : (opportunity.reward || "Negociable"))}
                 </span>
               </div>
-              {/* Incentive badge for paid / hybrid */}
-              {(opportunity.compensationType === 'monetary' || opportunity.compensationType === 'hybrid') && opportunity.minReward && opportunity.maxReward && (
+              {/* Incentive badge for paid only (not hybrid as requested) */}
+              {opportunity.compensationType === 'monetary' && opportunity.minReward && opportunity.maxReward && (
                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-md border border-amber-400/20 text-[10px] font-medium text-amber-300 w-max">
                   ✨ Por Calidad
                 </div>

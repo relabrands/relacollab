@@ -43,7 +43,7 @@ export default function BrandMatches() {
   const [completedCreators, setCompletedCreators] = useState<any[]>([]);
   const [activePlatform, setActivePlatform] = useState<string>("instagram");
   const [allApplications, setAllApplications] = useState<any[]>([]); // Debugging state
-  const [viewMode, setViewMode] = useState<'matches' | 'invited' | 'applicants' | 'collaborating' | 'completed'>('matches');
+  const [viewMode, setViewMode] = useState<'matches' | 'invited' | 'applicants' | 'collaborating' | 'completed' | 'discarded'>('matches');
 
   // Dialog State
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
@@ -234,16 +234,13 @@ export default function BrandMatches() {
         const aiMap: Record<string, any> = {};
         aiResults.forEach(r => { if (r.aiAnalysis) aiMap[r.id] = r.aiAnalysis; });
 
-        // Merge AI data, re-sort by AI score, and apply final 50% filter using best available score
+        // Merge AI data, re-sort by AI score
         matchedCreators = matchedCreators.map((c: any) => ({
           ...c,
           aiAnalysis: aiMap[c.id] || null,
           // displayScore = AI % if available, otherwise rule-based score
           displayScore: aiMap[c.id]?.matchPercentage ?? c.matchScore,
-        }))
-          // ✅ Final gate: use AI score when available, fallback to rule-based — both must be ≥50%
-          .filter((c: any) => c.displayScore >= 50)
-          .sort((a: any, b: any) => b.displayScore - a.displayScore);
+        })).sort((a: any, b: any) => b.displayScore - a.displayScore);
 
         console.log("Final Matched Creators:", matchedCreators.length, "with AI preloaded:", Object.keys(aiMap).length);
 
@@ -314,9 +311,11 @@ export default function BrandMatches() {
     }
   };
 
-  const handleReject = (id: string) => {
-    setRejectedIds((prev) => [...prev, id]);
-    // In a real app we might update DB too, currently just hiding from view
+  const handleReject = (creator: any) => {
+    setRejectedIds((prev) => [...prev, creator.id]);
+    toast.info("Creador descartado", {
+      description: `${creator.name} ha sido movido a la pestaña de Descartados.`
+    });
   };
 
   const handleRejectApplicant = async (creator: any) => {
@@ -330,7 +329,13 @@ export default function BrandMatches() {
         status: "rejected"
       });
       setApplicants(prev => prev.filter(a => a.id !== creator.id));
-      toast.info("Solicitud rechazada");
+
+      toast.info("Solicitud rechazada", {
+        description: `${creator.name} ha sido movido a la pestaña de Descartados.`
+      });
+
+      // Also track locally so they appear in discarded
+      setRejectedIds((prev) => [...prev, creator.id]);
     } catch (error) {
       console.error("Error rejecting:", error);
       toast.error("Error al rechazar la solicitud. Por favor, inténtalo de nuevo.");
@@ -344,9 +349,11 @@ export default function BrandMatches() {
       : viewMode === 'applicants'
         ? applicants
         : creators.filter((c) => {
-          if (viewMode === 'matches') {
-            return !approvedIds.includes(c.id) && !rejectedIds.includes(c.id) && !applicants.find(a => a.id === c.id) && !collaborators.find(col => col.id === c.id) && !completedCreators.find(col => col.id === c.id);
-          } else {
+          if (viewMode === 'discarded') {
+            return c.displayScore < 50 || rejectedIds.includes(c.id);
+          } else if (viewMode === 'matches') {
+            return c.displayScore >= 50 && !approvedIds.includes(c.id) && !rejectedIds.includes(c.id) && !applicants.find(a => a.id === c.id) && !collaborators.find(col => col.id === c.id) && !completedCreators.find(col => col.id === c.id);
+          } else { // invited
             return approvedIds.includes(c.id) && !collaborators.find(col => col.id === c.id) && !completedCreators.find(col => col.id === c.id);
           }
         });
@@ -500,6 +507,15 @@ export default function BrandMatches() {
               <UserCheck className="w-4 h-4 mr-2" />
               Invitados ({approvedIds.filter(id => !collaborators.some(c => c.id === id) && !completedCreators.some(c => c.id === id)).length})
             </Button>
+            <Button
+              variant={viewMode === 'discarded' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode('discarded')}
+              className={viewMode === 'discarded' ? "" : "text-muted-foreground hover:text-foreground"}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+              Descartados
+            </Button>
           </div>
         </div>
 
@@ -520,7 +536,7 @@ export default function BrandMatches() {
                 onApprove={async (id) => {
                   if (viewMode === 'applicants') {
                     await handleApproveApplicant(creator);
-                  } else if (viewMode === 'matches') {
+                  } else if (viewMode === 'matches' || viewMode === 'discarded') {
                     await handleSendProposal(id, creator.name);
                   } else if (viewMode === 'collaborating') {
                     handleViewContent(creator);
@@ -530,11 +546,11 @@ export default function BrandMatches() {
                   if (viewMode === 'applicants') {
                     handleRejectApplicant(creator);
                   } else {
-                    handleReject(id);
+                    handleReject(creator);
                   }
                 }}
-                hideActions={viewMode === 'invited' || viewMode === 'collaborating'} // Allow view content for collaborating
-                isInvite={viewMode === 'matches'}
+                hideActions={viewMode === 'invited' || viewMode === 'collaborating' || viewMode === 'discarded'} // Allow view content for collaborating
+                isInvite={viewMode === 'matches' || viewMode === 'discarded'}
                 isApplicant={viewMode === 'applicants'} // Pass this prop to modify card button text
                 isCollaborating={viewMode === 'collaborating'}
                 campaignId={activeCampaign?.id}
