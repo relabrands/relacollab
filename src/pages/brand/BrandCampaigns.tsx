@@ -55,7 +55,7 @@ export default function BrandCampaigns() {
             <DashboardSidebar type="brand" />
             <MobileNav type="brand" />
 
-            <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
+            <main className="flex-1 min-w-0 w-full ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8 overflow-x-hidden">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <DashboardHeader
                         title="Campañas"

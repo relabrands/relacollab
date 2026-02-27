@@ -364,7 +364,7 @@ export default function Opportunities() {
       <DashboardSidebar type="creator" />
       <MobileNav type="creator" />
 
-      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
+      <main className="flex-1 min-w-0 w-full ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8 overflow-x-hidden">
         <DashboardHeader
           title="Oportunidades"
           subtitle="Campañas que coinciden con tu perfil y estilo"

@@ -69,7 +69,7 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
   return (
     <div
       className={cn(
-        "group relative w-full aspect-[3/4] max-h-[600px] overflow-hidden rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
+        "group relative w-full h-[400px] sm:h-[450px] max-w-full overflow-hidden rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
         opportunity.isInvited && "ring-2 ring-primary ring-offset-2 ring-offset-background",
         !onViewDetails && "cursor-default"
       )}

@@ -74,10 +74,10 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
   const totalBudget = (campaign.totalBudgetPerCreator || 0) * (campaign.creatorCount || 1) || campaign.budget || 0;
 
   return (
-    <div className="glass-card p-6 hover-lift cursor-pointer group" onClick={handleClick}>
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">{campaign.name}</h3>
+    <div className="glass-card p-6 hover-lift cursor-pointer group w-full max-w-full overflow-hidden" onClick={handleClick}>
+      <div className="flex items-start justify-between mb-4 gap-2">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors truncate">{campaign.name}</h3>
           <p className="text-sm text-muted-foreground capitalize">{campaign.goal}</p>
         </div>
         <Badge className={cn("font-medium border", statusColors[campaign.status])}>
