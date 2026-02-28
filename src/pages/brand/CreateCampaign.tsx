@@ -293,7 +293,7 @@ export default function CreateCampaign() {
       try {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
-          brandName = userDoc.data().displayName || userDoc.data().name || brandName;
+          brandName = userDoc.data().brandName || userDoc.data().displayName || userDoc.data().name || brandName;
         }
       } catch (e) {
         console.warn("Could not fetch brand name:", e);

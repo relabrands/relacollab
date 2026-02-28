@@ -75,7 +75,7 @@ export default function CreatorMessages() {
                         campaignId: appData.campaignId,
                         campaignTitle: campaignData.name,
                         brandId: campaignData.brandId,
-                        brandName: brandData.displayName || "Marca",
+                        brandName: brandData.brandName || brandData.displayName || "Marca",
                         brandAvatar: brandData.photoURL || "",
                         status: appData.status,
                         unreadCount: 0
