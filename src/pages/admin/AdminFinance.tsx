@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { Search, DollarSign, FileText, CheckCircle, Download, ExternalLink, Loader2 as Loader, Eye, Upload, CreditCard, Building2, User } from "lucide-react";
 import { toast } from "sonner";
-import { collection, query, getDocs, doc, updateDoc, orderBy, getDoc, where, writeBatch } from "firebase/firestore";
+import { collection, query, getDocs, doc, updateDoc, orderBy, getDoc, where, writeBatch, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 // Types
@@ -51,6 +51,7 @@ interface SubscriptionInvoice {
     brandId: string;
     planId: string;
     planName: string;
+    planCredits?: number;
     amount: number;
     interval: string;
     status: "verifying" | "paid";
@@ -235,10 +236,11 @@ export default function AdminFinance() {
                 paidAt: now
             });
 
-            // 2. Activate plan for brand
+            // 2. Activate plan for brand and add credits
             batch.update(doc(db, "users", invoice.brandId), {
                 plan: invoice.planName,
                 subscriptionStatus: "active",
+                credits: increment(invoice.planCredits || 0),
                 updatedAt: now
             });
 

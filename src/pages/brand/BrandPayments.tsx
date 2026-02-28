@@ -149,6 +149,7 @@ export default function BrandPayments() {
                 brandId: user.uid,
                 planId: selectedPlanForPayment.id,
                 planName: selectedPlanForPayment.name,
+                planCredits: selectedPlanForPayment.credits || 0,
                 amount: selectedPlanForPayment.price,
                 interval: selectedPlanForPayment.interval,
                 receiptUrl,

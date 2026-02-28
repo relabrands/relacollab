@@ -32,6 +32,7 @@ interface Brand {
   name: string;
   email: string;
   plan: string;
+  credits: number;
   status: "active" | "pending" | "inactive";
   campaigns: number;
   joined: string;
@@ -115,6 +116,7 @@ export default function AdminBrands() {
           name: data.brandName || data.displayName || "Unknown Brand",
           email: data.email || "",
           plan: data.plan || "Free",
+          credits: data.credits || 0,
           status: data.status || "active", // Default to active if missing
           campaigns: campaignCounts[doc.id] || 0,
           joined: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : "N/A",
@@ -158,10 +160,11 @@ export default function AdminBrands() {
       await updateDoc(doc(db, "users", selectedBrand.id), {
         brandName: selectedBrand.name,
         email: selectedBrand.email, // Note: Changing email in Firestore doesn't change Auth email
-        plan: selectedBrand.plan
+        plan: selectedBrand.plan,
+        credits: parseFloat(selectedBrand.credits.toString()) || 0
       });
 
-      setBrands(brands.map((b) => (b.id === selectedBrand.id ? selectedBrand : b)));
+      setBrands(brands.map((b) => (b.id === selectedBrand.id ? { ...selectedBrand, credits: parseFloat(selectedBrand.credits.toString()) || 0 } : b)));
       setIsEditOpen(false);
       toast.success(`${selectedBrand.name} has been updated`);
     } catch (error) {
@@ -334,6 +337,7 @@ export default function AdminBrands() {
                 <th className="text-left p-4 font-medium text-muted-foreground">Brand</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Email</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Plan</th>
+                <th className="text-left p-4 font-medium text-muted-foreground">Credits</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Campaigns</th>
                 <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
@@ -372,6 +376,7 @@ export default function AdminBrands() {
                       </SelectContent>
                     </Select>
                   </td>
+                  <td className="p-4 font-semibold text-primary">{brand.credits}</td>
                   <td className="p-4">
                     <Select
                       value={brand.status}
@@ -465,6 +470,19 @@ export default function AdminBrands() {
                     value={selectedBrand.email}
                     onChange={(e) =>
                       setSelectedBrand({ ...selectedBrand, email: e.target.value })
+                    }
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-credits">Campaign Credits</Label>
+                  <Input
+                    id="edit-credits"
+                    type="number"
+                    min="0"
+                    value={selectedBrand.credits}
+                    onChange={(e) =>
+                      setSelectedBrand({ ...selectedBrand, credits: parseFloat(e.target.value) || 0 })
                     }
                     className="mt-2"
                   />
