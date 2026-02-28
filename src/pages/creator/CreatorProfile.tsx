@@ -22,6 +22,7 @@ import {
   Sparkles,
   Plus,
   Loader2,
+  X,
 } from "lucide-react";
 import {
   Dialog,
@@ -112,6 +113,16 @@ export default function CreatorProfile() {
   });
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [customCategory, setCustomCategory] = useState("");
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+
+  const handleAddCustomCategory = () => {
+    if (customCategory.trim() && !selectedCategories.includes(customCategory.trim())) {
+      setSelectedCategories([...selectedCategories, customCategory.trim()]);
+      setCustomCategory("");
+      setIsAddingCategory(false);
+    }
+  };
 
   const [isInstagramModalOpen, setIsInstagramModalOpen] = useState(false);
 
@@ -771,7 +782,7 @@ export default function CreatorProfile() {
               </p>
 
               <div className="flex flex-wrap gap-2">
-                {["Bienestar", "Fitness", "Comida", "Estilo de vida", "Viajes", "Belleza", "Moda", "Tecnología", "Familia", "Mascotas"].map(
+                {Array.from(new Set([...CONTENT_CATEGORIES, ...selectedCategories])).map(
                   (category) => (
                     <Badge
                       key={category}
@@ -786,14 +797,31 @@ export default function CreatorProfile() {
                     </Badge>
                   )
                 )}
-                <Badge
-                  variant="outline"
-                  className="cursor-pointer hover:bg-muted"
-                  onClick={() => toast.info("¡Agregar categoría personalizada próximamente!")}
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  Agregar
-                </Badge>
+                {isAddingCategory ? (
+                  <div className="flex items-center gap-2 mt-1 w-full max-w-xs">
+                    <Input
+                      placeholder="Nueva categoría..."
+                      value={customCategory}
+                      onChange={(e) => setCustomCategory(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddCustomCategory()}
+                      autoFocus
+                      className="h-8 text-sm"
+                    />
+                    <Button size="sm" onClick={handleAddCustomCategory}>Agregar</Button>
+                    <Button size="icon" variant="ghost" onClick={() => setIsAddingCategory(false)} className="h-8 w-8">
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="cursor-pointer hover:bg-muted"
+                    onClick={() => setIsAddingCategory(true)}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Agregar
+                  </Badge>
+                )}
               </div>
             </motion.div>
           </div>
