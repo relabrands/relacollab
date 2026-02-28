@@ -49,7 +49,7 @@ export default function BrandSettings() {
                         industry: data.industry || "",
                         location: data.location || "",
                         description: data.description || "",
-                        instagram: data.instagram || "",
+                        instagram: data.socialLinks?.instagram || data.instagram || "",
                         photoURL: data.photoURL || user.photoURL || ""
                     });
                 }
@@ -115,11 +115,18 @@ export default function BrandSettings() {
         if (!user) return;
         setLoading(true);
         try {
-            await updateDoc(doc(db, "users", user.uid), {
+            const updatePayload = {
                 ...formData,
-                displayName: formData.brandName, // Sync display name
+                displayName: formData.brandName,
+                socialLinks: {
+                    instagram: formData.instagram
+                },
                 updatedAt: new Date().toISOString()
-            });
+            };
+            // Clean up root instagram if we're moving it into socialLinks
+            delete updatePayload.instagram;
+
+            await updateDoc(doc(db, "users", user.uid), updatePayload);
             toast.success("Configuración actualizada exitosamente");
         } catch (error) {
             console.error("Error saving settings:", error);
@@ -237,10 +244,14 @@ export default function BrandSettings() {
                                         <SelectItem value="fashion">Moda</SelectItem>
                                         <SelectItem value="beauty">Belleza</SelectItem>
                                         <SelectItem value="tech">Tecnología</SelectItem>
-                                        <SelectItem value="food">Alimentos y Bebidas</SelectItem>
+                                        <SelectItem value="food">Alimentos & Bebidas</SelectItem>
                                         <SelectItem value="fitness">Fitness</SelectItem>
                                         <SelectItem value="lifestyle">Estilo de Vida</SelectItem>
                                         <SelectItem value="travel">Viajes</SelectItem>
+                                        <SelectItem value="hospitality">Hospitalidad</SelectItem>
+                                        <SelectItem value="retail">Retail</SelectItem>
+                                        <SelectItem value="health">Salud</SelectItem>
+                                        <SelectItem value="entertainment">Entretenimiento</SelectItem>
                                         <SelectItem value="other">Otro</SelectItem>
                                     </SelectContent>
                                 </Select>
