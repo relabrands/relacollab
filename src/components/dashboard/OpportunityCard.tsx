@@ -201,14 +201,25 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
             <Button
               className={cn(
                 "w-full font-medium transition-colors",
-                opportunity.isInvited
-                  ? "bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/30"
-                  : "bg-white text-black hover:bg-white/90"
+                opportunity.isPending
+                  ? "bg-orange-500/20 text-orange-300 border border-orange-500/30 hover:bg-orange-500/30"
+                  : opportunity.isInvited
+                    ? "bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/30"
+                    : "bg-white text-black hover:bg-white/90"
               )}
-              onClick={handleApply}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (opportunity.isPending && onViewDetails) {
+                  onViewDetails();
+                } else {
+                  handleApply(e);
+                }
+              }}
             >
-              {opportunity.isInvited ? "Aceptar Invitación" : "Aplicar Ahora"}
-              <ArrowRight className="w-4 h-4 ml-2" />
+              {opportunity.isPending
+                ? "Aprobación Pendiente"
+                : (opportunity.isInvited ? "Aceptar Invitación" : "Aplicar Ahora")}
+              {!opportunity.isPending && <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
           )}
         </div>
