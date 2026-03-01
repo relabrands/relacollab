@@ -14,7 +14,6 @@ import {
     FileText,
     Users,
     BarChart3,
-    ChevronDown,
     Loader2,
     TrendingUp,
     CheckCircle2,
@@ -171,7 +170,7 @@ export default function BrandReports() {
             const headers = ["Campaña", "Estado", "Tipo", "Presupuesto (USD)", "Creadores Requeridos", "Aplicaciones", "Aprobados", "Fecha Inicio", "Fecha Fin"];
             const rows = campToReport.map((c) => {
                 const apps = applications.filter((a) => a.campaignId === c.id);
-                const appr = apps.filter((a) => a.status === "approved" || a.status === "active").length;
+                const appr = apps.filter((a) => ["approved", "accepted", "no_content", "content_submitted", "completed"].includes(a.richStatus || a.status)).length;
                 return [
                     c.title || "",
                     STATUS_LABEL[c.status] || c.status || "",
@@ -198,14 +197,21 @@ export default function BrandReports() {
             const headers = ["Creador", "Instagram", "TikTok", "Campaña", "Estado", "Fecha Aplicación", "Pago Neto (USD)"];
             const rows = filteredApps.map((a) => {
                 const creator = creators[a.creatorId] || {};
-                const campTitle = campaigns.find((c) => c.id === a.campaignId)?.title || a.campaignTitle || a.campaignId || "";
+                const campTitle = a.campaignTitle || campaigns.find((c) => c.id === a.campaignId)?.title || "";
+                const statusKey = a.richStatus || a.status;
+                // Handle Firestore Timestamp or plain date string
+                let fechaStr = "";
+                if (a.createdAt) {
+                    const ts = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+                    fechaStr = ts.toLocaleDateString();
+                }
                 return [
-                    creator.displayName || creator.name || a.creatorName || a.creatorId || "N/A",
-                    creator.socialHandles?.instagram || creator.instagramUsername || "",
-                    creator.socialHandles?.tiktok || "",
+                    creator.displayName || creator.name || a.creatorId || "N/A",
+                    creator.socialHandles?.instagram ? `@${creator.socialHandles.instagram}` : creator.instagramUsername ? `@${creator.instagramUsername}` : "",
+                    creator.socialHandles?.tiktok ? `@${creator.socialHandles.tiktok}` : "",
                     campTitle,
-                    STATUS_LABEL[a.status] || a.status || "",
-                    a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "",
+                    STATUS_LABEL[statusKey] || statusKey || "",
+                    fechaStr,
                     String(a.paidAmount || a.creatorPayment || 0),
                 ];
             });
