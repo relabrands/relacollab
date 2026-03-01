@@ -32,6 +32,7 @@ import CampaignDetails from "./pages/brand/CampaignDetails";
 import BrandCampaigns from "./pages/brand/BrandCampaigns";
 import BrandScheduling from "./pages/brand/BrandScheduling";
 import BrandMessages from "./pages/brand/Messages";
+import BrandReports from "./pages/brand/BrandReports";
 
 // Creator pages
 import CreatorDashboard from "./pages/creator/CreatorDashboard";
@@ -142,6 +143,11 @@ const App = () => (
             <Route path="/brand/messages" element={
               <ProtectedRoute allowedRoles={['brand']}>
                 <BrandMessages />
+              </ProtectedRoute>
+            } />
+            <Route path="/brand/reports" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <BrandReports />
               </ProtectedRoute>
             } />
 

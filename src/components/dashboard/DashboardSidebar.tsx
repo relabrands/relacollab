@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Calendar,
   Menu,
+  ClipboardList,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ const brandMoreItems = [
   { icon: MessageSquare, label: "Messages", path: "/brand/messages" },
   { icon: Calendar, label: "Schedule", path: "/brand/schedule" },
   { icon: BarChart3, label: "Analytics", path: "/brand/analytics" },
+  { icon: ClipboardList, label: "Reportes", path: "/brand/reports" },
   { icon: Settings, label: "Settings", path: "/brand/settings" },
 ];
 

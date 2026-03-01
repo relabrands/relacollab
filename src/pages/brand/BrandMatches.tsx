@@ -135,6 +135,21 @@ export default function BrandMatches() {
             const creatorData = creatorDoc.data();
             const { score, reasons, breakdown } = calculateMatchScore(activeCampaign, creatorData);
 
+            // ── Fetch existing AI analysis from the matches subcollection ──
+            let aiAnalysis: any = null;
+            try {
+              const matchRef = doc(db, "campaigns", activeCampaign.id, "matches", appDoc.id.includes(appData.creatorId) ? appData.creatorId : appData.creatorId);
+              const matchSnap = await getDoc(matchRef);
+              if (matchSnap.exists()) {
+                const mData = matchSnap.data();
+                if (mData.aiAnalysis?.matchPercentage !== undefined) {
+                  aiAnalysis = mData.aiAnalysis;
+                }
+              }
+            } catch (e) {
+              // AI analysis not available – fall back to calculated score
+            }
+
             // Find submission for this creator
             const submission = submissions.find((s: any) => s.userId === creatorData.id || s.userId === appData.creatorId);
 
@@ -143,6 +158,8 @@ export default function BrandMatches() {
               id: creatorDoc.id, // Creator ID
               applicationId: appDoc.id, // Application Ref
               matchScore: score,
+              displayScore: aiAnalysis?.matchPercentage ?? score,
+              aiAnalysis,
               matchReason: appData.status === 'approved' || appData.status === 'accepted' ? "Colaboración Activa" : "Aplicó a tu campaña",
               matchBreakdown: breakdown,
               name: creatorData.displayName || "Creador Desconocido",
