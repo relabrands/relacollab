@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MapPin, TrendingUp, Check, X, Eye, Sparkles, Instagram, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -30,7 +31,7 @@ interface CreatorCardProps {
     campaignName?: string;
   };
   onApprove?: (id: string) => void;
-  onReject?: (id: string) => void;
+  onReject?: (id: string, isPermanent?: boolean) => void;
   isInvite?: boolean;
   isApplicant?: boolean;
   hideActions?: boolean;
@@ -64,9 +65,9 @@ export function CreatorCard({
     if (onApprove) onApprove(creator.id);
   };
 
-  const handleReject = (e: React.MouseEvent) => {
+  const handleReject = (e: React.MouseEvent, isPermanent?: boolean) => {
     e.stopPropagation();
-    if (onReject) onReject(creator.id);
+    if (onReject) onReject(creator.id, isPermanent);
     else toast.info("Skipped");
   };
 
@@ -181,15 +182,39 @@ export function CreatorCard({
       <div className="px-5 pt-4 pb-5 mt-auto">
         {!hideActions ? (
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 text-muted-foreground hover:text-destructive hover:border-destructive/50 hover:bg-destructive/5 transition-colors"
-              onClick={handleReject}
-            >
-              <X className="w-3.5 h-3.5 mr-1.5" />
-              Skip
-            </Button>
+            {!isApplicant && !isCollaborating && isInvite ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-muted-foreground hover:text-destructive hover:border-destructive/50 hover:bg-destructive/5 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <X className="w-3.5 h-3.5 mr-1.5" />
+                    Skip
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuItem onClick={(e) => handleReject(e, false)}>
+                    Descartar Temporalmente
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => handleReject(e, true)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                    Descartar Permanentemente
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-muted-foreground hover:text-destructive hover:border-destructive/50 hover:bg-destructive/5 transition-colors"
+                onClick={(e) => handleReject(e, true)}
+              >
+                <X className="w-3.5 h-3.5 mr-1.5" />
+                Skip
+              </Button>
+            )}
             <Button
               size="sm"
               className="flex-2 flex-grow bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all"

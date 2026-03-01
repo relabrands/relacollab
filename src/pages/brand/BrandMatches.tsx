@@ -35,6 +35,7 @@ export default function BrandMatches() {
 
   const [approvedIds, setApprovedIds] = useState<string[]>([]);
   const [rejectedIds, setRejectedIds] = useState<string[]>([]);
+  const [permanentRejectedIds, setPermanentRejectedIds] = useState<string[]>([]);
 
   // Applicants State
 
@@ -100,8 +101,12 @@ export default function BrandMatches() {
           where("campaignId", "==", activeCampaign.id)
         );
         const invitationsSnapshot = await getDocs(invitationsQuery);
-        const invitedCreatorIds = invitationsSnapshot.docs.map(doc => doc.data().creatorId);
+        const allInvitations = invitationsSnapshot.docs.map(doc => doc.data());
+        const invitedCreatorIds = allInvitations.filter(inv => inv.status !== 'discarded').map(inv => inv.creatorId);
+        const permDiscardedIds = allInvitations.filter(inv => inv.status === 'discarded').map(inv => inv.creatorId);
+
         setApprovedIds(invitedCreatorIds);
+        setPermanentRejectedIds(permDiscardedIds);
 
         // Submissions (Content)
         const submissionsQuery = query(
@@ -328,11 +333,31 @@ export default function BrandMatches() {
     }
   };
 
-  const handleReject = (creator: any) => {
-    setRejectedIds((prev) => [...prev, creator.id]);
-    toast.info("Creador descartado", {
-      description: `${creator.name} ha sido movido a la pestaña de Descartados.`
-    });
+  const handleReject = async (creator: any, isPermanent?: boolean) => {
+    if (isPermanent) {
+      if (!activeCampaign || !user) return;
+      try {
+        await addDoc(collection(db, "invitations"), {
+          campaignId: activeCampaign.id,
+          brandId: user.uid,
+          creatorId: creator.id,
+          status: "discarded",
+          createdAt: new Date().toISOString()
+        });
+        setPermanentRejectedIds((prev) => [...prev, creator.id]);
+        toast.info("Creador descartado permanentemente", {
+          description: `${creator.name} no volverá a aparecer en esta campaña.`
+        });
+      } catch (error) {
+        console.error("Error al descartar permanentemente:", error);
+        toast.error("Error al descartar al creador.");
+      }
+    } else {
+      setRejectedIds((prev) => [...prev, creator.id]);
+      toast.info("Creador descartado temporalmente", {
+        description: `${creator.name} ha sido movido a la pestaña de Descartados.`
+      });
+    }
   };
 
   const handleRejectApplicant = async (creator: any) => {
@@ -367,9 +392,9 @@ export default function BrandMatches() {
         ? applicants
         : creators.filter((c) => {
           if (viewMode === 'discarded') {
-            return c.displayScore < 50 || rejectedIds.includes(c.id);
+            return c.displayScore < 50 || rejectedIds.includes(c.id) || permanentRejectedIds.includes(c.id);
           } else if (viewMode === 'matches') {
-            return c.displayScore >= 50 && !approvedIds.includes(c.id) && !rejectedIds.includes(c.id) && !applicants.find(a => a.id === c.id) && !collaborators.find(col => col.id === c.id) && !completedCreators.find(col => col.id === c.id);
+            return c.displayScore >= 50 && !approvedIds.includes(c.id) && !rejectedIds.includes(c.id) && !permanentRejectedIds.includes(c.id) && !applicants.find(a => a.id === c.id) && !collaborators.find(col => col.id === c.id) && !completedCreators.find(col => col.id === c.id);
           } else { // invited
             return approvedIds.includes(c.id) && !collaborators.find(col => col.id === c.id) && !completedCreators.find(col => col.id === c.id);
           }
@@ -559,11 +584,11 @@ export default function BrandMatches() {
                     handleViewContent(creator);
                   }
                 }}
-                onReject={(id) => {
+                onReject={(id, isPermanent) => {
                   if (viewMode === 'applicants') {
                     handleRejectApplicant(creator);
                   } else {
-                    handleReject(creator);
+                    handleReject(creator, isPermanent);
                   }
                 }}
                 hideActions={viewMode === 'invited' || viewMode === 'collaborating' || viewMode === 'discarded'} // Allow view content for collaborating
