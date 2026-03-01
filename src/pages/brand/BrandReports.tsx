@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, getDoc, doc as fsDoc } from "firebase/firestore";
 import {
     Download,
     FileText,
@@ -47,10 +47,13 @@ function downloadCSV(filename: string, rows: string[][], headers: string[]) {
 
 const STATUS_LABEL: Record<string, string> = {
     pending: "Pendiente",
-    approved: "Aprobado",
+    approved: "Colaborando",
+    accepted: "Colaborando",
     rejected: "Rechazado",
     active: "Activo",
     completed: "Completado",
+    no_content: "Sin Contenido Enviado",
+    content_submitted: "Contenido Enviado",
 };
 
 export default function BrandReports() {
@@ -62,48 +65,77 @@ export default function BrandReports() {
     const [isLoading, setIsLoading] = useState(true);
     const [isDownloading, setIsDownloading] = useState(false);
 
-    // ─── Fetch campaigns ───────────────────────────────────────────
+    // ─── Fetch campaigns + applications + submissions ────────────────
     useEffect(() => {
         const load = async () => {
             if (!user) return;
             setIsLoading(true);
             try {
-                // Campaigns
+                // 1. All campaigns for this brand
                 const cSnap = await getDocs(
                     query(collection(db, "campaigns"), where("brandId", "==", user.uid), orderBy("createdAt", "desc"))
                 );
-                const campaignsData = cSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                const campaignsData: any[] = cSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
                 setCampaigns(campaignsData);
 
-                // Applications (sub-collection per campaign, or root collection)
                 const allApps: any[] = [];
+                const creatorMap: Record<string, any> = {};
+
                 for (const camp of campaignsData) {
-                    const appSnap = await getDocs(collection(db, "campaigns", camp.id, "applications"));
-                    appSnap.docs.forEach((d) => allApps.push({ id: d.id, campaignId: camp.id, campaignTitle: (camp as any).title, ...d.data() }));
+                    // 2. Fetch applications from root collection by campaignId
+                    const appsSnap = await getDocs(
+                        query(collection(db, "applications"), where("campaignId", "==", camp.id))
+                    );
+
+                    // 3. Fetch content submissions for this campaign
+                    const subsSnap = await getDocs(
+                        query(collection(db, "content_submissions"), where("campaignId", "==", camp.id))
+                    );
+                    const submissions = subsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+                    for (const appDoc of appsSnap.docs) {
+                        const appData = appDoc.data();
+                        const creatorId = appData.creatorId;
+                        if (!creatorId) continue;
+
+                        // Fetch creator profile once per unique creator
+                        if (!creatorMap[creatorId]) {
+                            try {
+                                const cDoc = await getDoc(fsDoc(db, "users", creatorId));
+                                if (cDoc.exists()) creatorMap[creatorId] = { id: creatorId, ...cDoc.data() };
+                            } catch { }
+                        }
+
+                        // Determine content submission status
+                        const submission = submissions.find(
+                            (s: any) => s.userId === creatorId || s.creatorId === creatorId
+                        );
+                        const submissionStatus = submission?.status || null;
+
+                        // Compute rich status label
+                        let richStatus = appData.status;
+                        if (appData.status === "approved" || appData.status === "accepted") {
+                            if (submissionStatus === "approved") richStatus = "completed";
+                            else if (submission) richStatus = "content_submitted";
+                            else richStatus = "no_content";
+                        }
+
+                        allApps.push({
+                            id: appDoc.id,
+                            campaignId: camp.id,
+                            campaignTitle: camp.title || "—",
+                            creatorId,
+                            status: appData.status,
+                            richStatus,
+                            submissionStatus,
+                            paidAmount: appData.paidAmount || 0,
+                            creatorPayment: appData.creatorPayment || 0,
+                            createdAt: appData.createdAt || null,
+                        });
+                    }
                 }
 
-                // Also check root applications collection
-                const rootAppsSnap = await getDocs(
-                    query(collection(db, "applications"), where("brandId", "==", user.uid))
-                );
-                rootAppsSnap.docs.forEach((d) => {
-                    const exists = allApps.find((a) => a.id === d.id);
-                    if (!exists) allApps.push({ id: d.id, ...d.data() });
-                });
-
                 setApplications(allApps);
-
-                // Fetch creator profiles for all unique creatorIds
-                const creatorIds = [...new Set(allApps.map((a) => a.creatorId).filter(Boolean))];
-                const creatorMap: Record<string, any> = {};
-                await Promise.all(
-                    creatorIds.map(async (cid) => {
-                        try {
-                            const snap = await getDocs(query(collection(db, "users"), where("__name__", "==", cid)));
-                            if (!snap.empty) creatorMap[cid] = { id: cid, ...snap.docs[0].data() };
-                        } catch { }
-                    })
-                );
                 setCreators(creatorMap);
             } catch (err) {
                 console.error(err);
@@ -125,10 +157,10 @@ export default function BrandReports() {
 
     // ─── Summary stats ─────────────────────────────────────────────
     const totalApplicants = filteredApps.length;
-    const approved = filteredApps.filter((a) => a.status === "approved" || a.status === "active").length;
-    const pending = filteredApps.filter((a) => a.status === "pending").length;
+    const approved = filteredApps.filter((a) => ["approved", "accepted", "no_content", "content_submitted", "completed"].includes(a.richStatus || a.status)).length;
+    const pending = filteredApps.filter((a) => (a.richStatus || a.status) === "pending").length;
     const totalPaid = filteredApps
-        .filter((a) => a.status === "completed")
+        .filter((a) => (a.richStatus || a.status) === "completed")
         .reduce((acc, a) => acc + (a.paidAmount || a.creatorPayment || 0), 0);
 
     // ─── Download handlers ─────────────────────────────────────────
@@ -353,26 +385,30 @@ export default function BrandReports() {
                                         <tbody>
                                             {filteredApps.slice(0, 20).map((app, i) => {
                                                 const creator = creators[app.creatorId] || {};
-                                                const campTitle = campaigns.find((c) => c.id === app.campaignId)?.title || app.campaignTitle || "—";
+                                                const campTitle = app.campaignTitle || campaigns.find((c) => c.id === app.campaignId)?.title || "—";
+                                                const statusKey = app.richStatus || app.status;
                                                 const statusColors: Record<string, string> = {
                                                     pending: "bg-orange-400/15 text-orange-400",
-                                                    approved: "bg-success/15 text-success",
-                                                    active: "bg-primary/15 text-primary",
+                                                    approved: "bg-primary/15 text-primary",
+                                                    accepted: "bg-primary/15 text-primary",
+                                                    no_content: "bg-yellow-500/15 text-yellow-500",
+                                                    content_submitted: "bg-blue-500/15 text-blue-400",
+                                                    completed: "bg-success/15 text-success",
                                                     rejected: "bg-destructive/15 text-destructive",
-                                                    completed: "bg-muted text-muted-foreground",
+                                                    active: "bg-primary/15 text-primary",
                                                 };
                                                 return (
                                                     <tr key={app.id || i} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                                                         <td className="py-3 pr-4 font-medium">
-                                                            {creator.displayName || creator.name || app.creatorName || "N/A"}
+                                                            {creator.displayName || creator.name || "N/A"}
                                                         </td>
                                                         <td className="py-3 pr-4 text-muted-foreground">
-                                                            {creator.socialHandles?.instagram ? `@${creator.socialHandles.instagram}` : "—"}
+                                                            {creator.socialHandles?.instagram ? `@${creator.socialHandles.instagram}` : creator.instagramUsername ? `@${creator.instagramUsername}` : "—"}
                                                         </td>
                                                         <td className="py-3 pr-4 text-muted-foreground truncate max-w-[180px]">{campTitle}</td>
                                                         <td className="py-3 pr-4">
-                                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[app.status] || "bg-muted text-muted-foreground"}`}>
-                                                                {STATUS_LABEL[app.status] || app.status || "—"}
+                                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[statusKey] || "bg-muted text-muted-foreground"}`}>
+                                                                {STATUS_LABEL[statusKey] || statusKey || "—"}
                                                             </span>
                                                         </td>
                                                         <td className="py-3 text-right font-mono">
