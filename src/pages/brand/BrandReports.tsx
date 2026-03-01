@@ -71,11 +71,17 @@ export default function BrandReports() {
             if (!user) return;
             setIsLoading(true);
             try {
-                // 1. All campaigns for this brand
+                // 1. All campaigns for this brand (no orderBy to avoid needing a composite index)
                 const cSnap = await getDocs(
-                    query(collection(db, "campaigns"), where("brandId", "==", user.uid), orderBy("createdAt", "desc"))
+                    query(collection(db, "campaigns"), where("brandId", "==", user.uid))
                 );
-                const campaignsData: any[] = cSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                const campaignsData: any[] = cSnap.docs
+                    .map((d) => ({ id: d.id, ...d.data() }))
+                    .sort((a: any, b: any) => {
+                        const ta = a.createdAt?.toMillis?.() || new Date(a.createdAt || 0).getTime();
+                        const tb = b.createdAt?.toMillis?.() || new Date(b.createdAt || 0).getTime();
+                        return tb - ta;
+                    });
                 setCampaigns(campaignsData);
 
                 const allApps: any[] = [];
@@ -109,8 +115,8 @@ export default function BrandReports() {
                         // Determine content submission status
                         const submission = submissions.find(
                             (s: any) => s.userId === creatorId || s.creatorId === creatorId
-                        );
-                        const submissionStatus = submission?.status || null;
+                        ) as any;
+                        const submissionStatus: string | null = submission?.status ?? null;
 
                         // Compute rich status label
                         let richStatus = appData.status;
