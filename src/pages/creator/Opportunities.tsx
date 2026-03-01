@@ -520,9 +520,9 @@ export default function Opportunities() {
         ) : displayItems.length > 0 ? (
           <div>
             {activeTab === 'pending' && (
-              <div className="mb-4 p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                <p className="text-sm text-warning-foreground">
-                  <strong>⏳ Esperando Aprobación de la Marca:</strong> Estas son campañas a las que has aplicado. La marca revisará tu perfil y te notificará su decisión.
+              <div className="mb-4 p-4 bg-muted/60 border border-border rounded-lg backdrop-blur-sm">
+                <p className="text-sm text-muted-foreground">
+                  <strong className="text-foreground">⏳ Esperando Aprobación de la Marca:</strong> Estas son campañas a las que has aplicado. La marca revisará tu perfil y te notificará su decisión.
                 </p>
               </div>
             )}
