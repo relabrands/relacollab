@@ -4,12 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { MatchScore } from "@/components/dashboard/MatchScore";
 import {
     Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2,
-    ExternalLink, Check, Eye, Music2, ThumbsUp, ThumbsDown,
+    ExternalLink, Check, Eye, Music2, ThumbsUp, ThumbsDown, Star, MessageSquareShare,
     Target, BarChart2, MessageSquare, Zap, AlertTriangle, DollarSign
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { doc, onSnapshot, setDoc, collection, addDoc, updateDoc, query, where, getDocs } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, collection, addDoc, updateDoc, query, where, getDocs, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -23,6 +23,8 @@ interface CreatorDetails {
     followers: string;
     engagement: string;
     matchScore: number;
+    averageRating?: number;
+    reviewCount?: number;
     tags: string[];
     matchReason: string;
     bio: string;
@@ -125,11 +127,18 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
     const [finalPayment, setFinalPayment] = useState<number>(campaign?.maxReward || 0);
     const [isApprovingPayment, setIsApprovingPayment] = useState(false);
 
+    // Rating State
+    const [rating, setRating] = useState<number>(5);
+    const [hoveredRating, setHoveredRating] = useState<number>(0);
+    const [reviewText, setReviewText] = useState("");
+
     useEffect(() => {
         if (!isOpen) return;
         // Reset final payment to maxReward whenever dialog opens for a collaborating campaign
         if (isCollaborating && campaign?.maxReward) {
             setFinalPayment(campaign.maxReward);
+            setRating(5);
+            setReviewText("");
         }
     }, [isOpen, campaign?.maxReward, isCollaborating]);
 
@@ -267,9 +276,24 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                             <DialogDescription className="text-base mt-0.5">
                                 {creator.bio || "No bio available"}
                             </DialogDescription>
-                            <div className="flex items-center gap-1.5 mt-1.5 text-sm text-muted-foreground">
-                                <MapPin className="w-3.5 h-3.5" />
-                                {creator.location}
+
+                            <div className="flex items-center gap-4 mt-2">
+                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                    <MapPin className="w-3.5 h-3.5" />
+                                    {creator.location}
+                                </div>
+
+                                {creator.averageRating !== undefined && creator.averageRating > 0 && (
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[13px] font-bold text-yellow-500 flex items-center gap-0.5">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                                <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clipRule="evenodd" />
+                                            </svg>
+                                            {creator.averageRating.toFixed(1)}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">({creator.reviewCount} reseñas)</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         {/* Score badge */}
@@ -678,6 +702,58 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                         </div>
                     )}
 
+                    {/* ─── Calificar al Creador ─── */}
+                    {hasRange && campaign.minReward && campaign.maxReward && (
+                        <div className="rounded-2xl border border-primary/20 overflow-hidden mt-4">
+                            <div className="px-5 py-3 bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/10 flex items-center gap-2">
+                                <Star className="w-4 h-4 text-primary" />
+                                <h3 className="font-semibold text-sm">Calificar al Creador</h3>
+                            </div>
+                            <div className="px-5 py-4 space-y-4">
+                                <p className="text-sm text-muted-foreground">
+                                    Comparte tu experiencia trabajando con {creator.name}. Tu calificación aparecerá en su perfil y será pública.
+                                </p>
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="flex items-center gap-1 mb-2">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <button
+                                                    key={star}
+                                                    type="button"
+                                                    onMouseEnter={() => setHoveredRating(star)}
+                                                    onMouseLeave={() => setHoveredRating(0)}
+                                                    onClick={() => setRating(star)}
+                                                    className={`p-1 transition-transform hover:scale-110 ${(hoveredRating || rating) >= star
+                                                        ? "text-yellow-400"
+                                                        : "text-muted-foreground/30"
+                                                        }`}
+                                                >
+                                                    <Star className="w-8 h-8 fill-current" />
+                                                </button>
+                                            ))}
+                                            <span className="ml-3 text-sm font-semibold text-foreground">
+                                                {rating} de 5 estrellas
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                                            <MessageSquareShare className="w-4 h-4" />
+                                            Reseña (Opcional)
+                                        </label>
+                                        <textarea
+                                            value={reviewText}
+                                            onChange={(e) => setReviewText(e.target.value)}
+                                            placeholder={`¿Qué te pareció el contenido creado por ${creator.name}?`}
+                                            className="w-full min-h-[100px] p-3 rounded-xl bg-background border border-input text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* ─── Action Buttons ─── */}
                     <div className="flex gap-3 pt-2">
                         <Button className="flex-1" variant="outline" onClick={onClose}>
@@ -750,6 +826,35 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                                             read: false,
                                             createdAt: new Date().toISOString(),
                                         });
+
+                                        // 5. Update creator rating
+                                        const creatorDocRef = doc(db, "users", creator.id);
+                                        const creatorDoc = await getDoc(creatorDocRef);
+                                        if (creatorDoc.exists()) {
+                                            const cData = creatorDoc.data();
+                                            const currentTotal = (cData.averageRating || 5) * (cData.reviewCount || 0);
+                                            const newTotal = currentTotal + rating;
+                                            const newCount = (cData.reviewCount || 0) + 1;
+                                            const newAverage = newTotal / newCount;
+
+                                            // Ensure average is rounded to 1 decimal place (e.g., 4.5)
+                                            const roundedAvg = Math.round(newAverage * 10) / 10;
+
+                                            await updateDoc(creatorDocRef, {
+                                                averageRating: roundedAvg,
+                                                reviewCount: newCount
+                                            });
+
+                                            // Save the review
+                                            await addDoc(collection(db, "reviews"), {
+                                                creatorId: creator.id,
+                                                brandId: user.uid,
+                                                campaignId: campaign.id,
+                                                rating: rating,
+                                                comment: reviewText.trim() || null,
+                                                createdAt: new Date().toISOString()
+                                            });
+                                        }
 
                                         toast.success(`¡Pago de $${finalPayment.toLocaleString()} asignado exitosamente!`, {
                                             description: creditAmount > 0

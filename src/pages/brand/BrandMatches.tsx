@@ -175,6 +175,8 @@ export default function BrandMatches() {
               engagement: (creatorData.instagramMetrics?.engagementRate || creatorData.tiktokMetrics?.engagementRate || 0) + "%",
               instagramMetrics: creatorData.instagramMetrics,
               location: creatorData.location || "Desconocido",
+              averageRating: creatorData.averageRating,
+              reviewCount: creatorData.reviewCount,
               submissionUrl: submission?.postUrl || null,
               submissionStatus: submission?.status || null
             };
@@ -231,6 +233,8 @@ export default function BrandMatches() {
             tiktokUsername: creator.socialHandles?.tiktok,
             instagramUsername: creator.instagramUsername || creator.socialHandles?.instagram,
             location: creator.location || "Desconocido",
+            averageRating: creator.averageRating,
+            reviewCount: creator.reviewCount,
             aiAnalysis: null as any,
           };
         })
