@@ -506,7 +506,7 @@ export default function CreatorProfile() {
                     accept="image/*"
                     onChange={handleFileChange}
                   />
-                  {profile.averageRating > 0 && (
+                  {profile.averageRating > 0 ? (
                     <div className="flex items-center gap-1 mt-3 bg-muted/50 px-3 py-1.5 rounded-full inline-flex w-fit">
                       <span className="text-sm font-bold text-yellow-500 flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -515,6 +515,10 @@ export default function CreatorProfile() {
                         {profile.averageRating.toFixed(1)}
                       </span>
                       <span className="text-xs text-muted-foreground">({profile.reviewCount} reseñas)</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 mt-3 bg-muted/50 px-3 py-1.5 rounded-full inline-flex w-fit">
+                      <span className="text-sm text-muted-foreground italic">Sin reseñas aún</span>
                     </div>
                   )}
                 </div>

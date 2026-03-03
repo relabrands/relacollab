@@ -25,7 +25,9 @@ import {
   RefreshCw,
   Bookmark,
   BarChart2,
-  Edit
+  Edit,
+  Star,
+  MessageSquareShare
 } from "lucide-react";
 import { toast } from "sonner";
 import { addDoc, updateDoc, getDocs } from "firebase/firestore";
@@ -63,11 +65,12 @@ interface ContentItem {
 interface ContentCardProps {
   content: ContentItem;
   onStatusChange?: (id: string, status: "approved" | "rejected") => void;
+  onApproveClick?: (content: ContentItem) => void;
   onRefreshMetrics?: (content: ContentItem) => void;
   onRequestEdit?: (content: ContentItem) => void;
 }
 
-function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit }: ContentCardProps) {
+function ContentCard({ content, onStatusChange, onApproveClick, onRefreshMetrics, onRequestEdit }: ContentCardProps) {
   const statusColors = {
     pending: "bg-warning/20 text-warning border-warning/30",
     approved: "bg-primary/20 text-primary border-primary/30",
@@ -173,7 +176,7 @@ function ContentCard({ content, onStatusChange, onRefreshMetrics, onRequestEdit 
                 className="bg-success/80 hover:bg-success text-white"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onStatusChange?.(content.id, "approved");
+                  onApproveClick?.(content);
                 }}
                 title="Aprobar Contenido"
               >
@@ -277,6 +280,14 @@ export default function ContentLibrary() {
   const [contentToEdit, setContentToEdit] = useState<ContentItem | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
+  // Rating Dialog State
+  const [contentToRate, setContentToRate] = useState<ContentItem | null>(null);
+  const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [hoveredRating, setHoveredRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [isApproving, setIsApproving] = useState(false);
+
   useEffect(() => {
     const fetchContent = async () => {
       if (!user) return;
@@ -321,6 +332,7 @@ export default function ContentLibrary() {
 
             return {
               id: sub.id,
+              campaignId: sub.campaignId || "",
               creatorId: sub.creatorId || sub.userId,
               creatorName: creatorData.displayName || "Creador Desconocido",
               creatorAvatar: creatorData.photoURL || creatorData.avatar || "https://via.placeholder.com/150",
@@ -391,7 +403,7 @@ export default function ContentLibrary() {
   if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   // Handler for status updates
-  const handleStatusChange = async (id: string, newStatus: "approved" | "rejected") => {
+  const handleStatusChange = async (id: string, newStatus: "approved" | "rejected", providedRating?: number, providedReview?: string) => {
     try {
       const submission = contentList.find(c => c.id === id);
 
@@ -536,13 +548,52 @@ export default function ContentLibrary() {
         item.id === id ? { ...item, status: newStatus } : item
       ));
 
-      toast.success(newStatus === "approved" ? "¡Contenido aprobado! Registro de ganancias creado para el creador." : "Cambios solicitados");
+      // ─── Save Rating ───
+      if (newStatus === "approved" && providedRating && submission?.creatorId && user) {
+        try {
+          const creatorDocRef = doc(db, "users", submission.creatorId);
+          const creatorDoc = await getDoc(creatorDocRef);
+          if (creatorDoc.exists()) {
+            const cData = creatorDoc.data();
+            const currentTotal = (cData.averageRating || 5) * (cData.reviewCount || 0);
+            const newTotal = currentTotal + providedRating;
+            const newCount = (cData.reviewCount || 0) + 1;
+            const newAverage = newTotal / newCount;
+            const roundedAvg = Math.round(newAverage * 10) / 10;
+
+            await updateDoc(creatorDocRef, {
+              averageRating: roundedAvg,
+              reviewCount: newCount
+            });
+
+            await addDoc(collection(db, "reviews"), {
+              creatorId: submission.creatorId,
+              brandId: user.uid,
+              campaignId: submission?.campaignId || null,
+              rating: providedRating,
+              comment: providedReview?.trim() || null,
+              createdAt: new Date().toISOString()
+            });
+          }
+        } catch (ratingErr) {
+          console.error("Error saving rating:", ratingErr);
+        }
+      }
+
+      toast.success(newStatus === "approved" ? "¡Contenido aprobado!" : "Cambios solicitados");
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Error al actualizar el estado");
     }
   };
 
+  const handleApproveClick = (content: ContentItem) => {
+    setContentToRate(content);
+    setRating(5);
+    setHoveredRating(0);
+    setReviewText("");
+    setIsRatingDialogOpen(true);
+  };
 
   // Handler for requesting edits
   const handleRequestEdit = (content: ContentItem) => {
@@ -730,6 +781,7 @@ export default function ContentLibrary() {
               key={content.id}
               content={content}
               onStatusChange={handleStatusChange}
+              onApproveClick={handleApproveClick}
               onRefreshMetrics={handleRefreshMetrics}
               onRequestEdit={handleRequestEdit}
             />
@@ -770,6 +822,76 @@ export default function ContentLibrary() {
           }}
         />
       )}
+
+      {/* Approve & Rate Creator Dialog */}
+      <Dialog open={isRatingDialogOpen} onOpenChange={setIsRatingDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Aprobar y Calificar</DialogTitle>
+            <DialogDescription>
+              Apunto de aprobar el contenido de {contentToRate?.creatorName}. Opcionalmente, puedes dejarle una calificación.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-4">
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-sm font-medium">¿Qué tal fue trabajar con este creador?</span>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onMouseEnter={() => setHoveredRating(star)}
+                    onMouseLeave={() => setHoveredRating(0)}
+                    onClick={() => setRating(star)}
+                    className={`p-1 transition-transform hover:scale-110 ${(hoveredRating || rating) >= star
+                      ? "text-yellow-400"
+                      : "text-muted-foreground/30"
+                      }`}
+                  >
+                    <Star className="w-8 h-8 fill-current" />
+                  </button>
+                ))}
+              </div>
+              <span className="text-sm font-semibold text-foreground">
+                {rating} de 5 estrellas
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <MessageSquareShare className="w-4 h-4" />
+                Reseña (Opcional)
+              </label>
+              <textarea
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                placeholder={`¿Qué te pareció el contenido creado por ${contentToRate?.creatorName}?`}
+                className="w-full min-h-[100px] p-3 rounded-xl bg-background border border-input text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3 justify-end mt-4">
+            <Button variant="outline" onClick={() => setIsRatingDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              disabled={isApproving}
+              onClick={async () => {
+                if (!contentToRate) return;
+                setIsApproving(true);
+                await handleStatusChange(contentToRate.id, "approved", rating, reviewText);
+                setIsApproving(false);
+                setIsRatingDialogOpen(false);
+                setContentToRate(null);
+              }}
+            >
+              {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+              Confirmar Aprobación
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
