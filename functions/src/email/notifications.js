@@ -275,12 +275,56 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             visit_scheduled: { subject: "📅 Visita — {{campaignTitle}}", variables: ["creatorName", "brandName", "campaignTitle", "visitDate", "visitTime", "location", "duration", "contentDeadline", "scheduleUrl"], html: w("📅 Visita Programada", "Revisa los detalles", "<p>Hola <strong>{{creatorName}}</strong>, tu visita con <strong>{{brandName}}</strong> para <strong>{{campaignTitle}}</strong> está confirmada.</p><div class='hl'><div class='lb'>Fecha y Hora</div>{{visitDate}} · {{visitTime}}</div><div class='hl'><div class='lb'>Ubicación</div>{{location}}</div><div class='hl'><div class='lb'>Duración</div>{{duration}} minutos</div><div class='hl'><div class='lb'>Fecha límite</div>{{contentDeadline}}</div>", "Ver Agenda", "{{scheduleUrl}}") },
             withdrawal_requested: { subject: "💸 Solicitud de retiro recibida — {{amount}}", variables: ["creatorName", "amount", "earningsUrl"], html: w("💸 Solicitud de Retiro", "Hemos recibido tu solicitud", "<p>Hola <strong>{{creatorName}}</strong>, recibimos tu solicitud de retiro por <strong>{{amount}}</strong>. La procesaremos en un plazo de 2–5 días hábiles.</p><div class='hl'><div class='lb'>Monto solicitado</div>{{amount}}</div>", "Ver mis Ganancias", "{{earningsUrl}}") },
             withdrawal_approved: { subject: "✅ Retiro enviado — {{amount}}", variables: ["creatorName", "amount", "earningsUrl"], html: w("✅ Retiro Procesado", "Tu pago fue enviado", "<p>Hola <strong>{{creatorName}}</strong>, tu retiro de <strong>{{amount}}</strong> fue aprobado y enviado a tu cuenta bancaria registrada. Puede tardar 1–3 días hábiles en reflejarse.</p><div class='hl'><div class='lb'>Monto enviado</div>{{amount}}</div>", "Ver mis Ganancias", "{{earningsUrl}}") },
+            new_opportunity: { subject: "✨ ¡Nueva Oportunidad! {{matchScore}} Match con {{brandName}}", variables: ["creatorName", "brandName", "campaignTitle", "matchScore", "dashboardUrl"], html: w("✨ ¡Nueva Oportunidad!", "Descubrimos un match perfecto para ti", "<p>Hola <strong>{{creatorName}}</strong>, nuestra IA encontró una campaña de <strong>{{brandName}}</strong> que hace un <strong>{{matchScore}}</strong> de match con tu perfil y audiencia.</p><div class='hl'><div class='lb'>Campaña</div>{{campaignTitle}}</div><p>Revisa los detalles y aplica antes de que se agoten los cupos.</p>", "Ver Oportunidad", "{{dashboardUrl}}") },
         };
         const batch = db.batch();
         for (const [id, d] of Object.entries(tpls)) batch.set(db.doc(`emailTemplates/${id}`), { ...d, updatedAt: new Date().toISOString() }, { merge: true });
         await batch.commit();
         return res.json({ success: true, templatesSeeded: Object.keys(tpls).length });
     }));
+
+    // 12. Creator receives new opportunity match
+    exportsObj.onMatchCreated = onDocumentCreated("campaigns/{campaignId}/matches/{creatorId}", async (event) => {
+        const match = event.data?.data();
+        if (!match || !match.aiAnalysis || !match.aiAnalysis.matchPercentage) return;
+
+        // Only notify if it's a strongly matched opportunity (>= 75%)
+        if (match.aiAnalysis.matchPercentage < 75) return;
+
+        try {
+            const { campaignId, creatorId } = event.params;
+
+            const [creatorDoc, campaignDoc] = await Promise.all([
+                admin.firestore().doc(`users/${creatorId}`).get(),
+                admin.firestore().doc(`campaigns/${campaignId}`).get(),
+            ]);
+
+            const creator = creatorDoc.data();
+            const campaign = campaignDoc.data();
+            if (!creator?.email || !campaign) return;
+
+            const brandDoc = await admin.firestore().doc(`users/${campaign.brandId}`).get();
+            const brand = brandDoc.data();
+
+            // Ensure they haven't already applied to avoid duplicate confusion
+            const applicationSnap = await admin.firestore().collection("applications")
+                .where("creatorId", "==", creatorId)
+                .where("campaignId", "==", campaignId)
+                .get();
+
+            if (!applicationSnap.empty) return;
+
+            await sendEmail(creator.email, "new_opportunity", {
+                creatorName: creator.displayName || "Creator",
+                brandName: brand?.brandName || brand?.displayName || "Brand",
+                campaignTitle: campaign.name || "Campaign",
+                matchScore: `${match.aiAnalysis.matchPercentage}%`,
+                dashboardUrl: `${BASE_URL}/creator/opportunities`,
+            });
+        } catch (err) {
+            console.error("[Email] onMatchCreated error:", err);
+        }
+    });
 }
 
 module.exports = { registerEmailNotifications };

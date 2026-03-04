@@ -33,6 +33,7 @@ const TEMPLATE_LABELS: Record<string, { name: string; description: string; badge
     visit_scheduled: { name: "Visita Programada", description: "Al confirmar una visita presencial", badge: "Creador" },
     withdrawal_requested: { name: "Solicitud de Retiro", description: "El creador solicita retirar sus ganancias", badge: "Creador" },
     withdrawal_approved: { name: "Retiro Enviado", description: "El retiro fue aprobado y enviado", badge: "Creador" },
+    new_opportunity: { name: "Nueva Oportunidad", description: "El creador recibe un nuevo match de campaña", badge: "Creador" },
 };
 
 export default function AdminEmailTemplates() {
@@ -121,6 +122,7 @@ export default function AdminEmailTemplates() {
                     location: "Av. 27 de Febrero, Santo Domingo",
                     duration: "60",
                     contentDeadline: "01/03/2026",
+                    matchScore: "95%",
                 },
             });
             if (result.data?.success) {
@@ -157,6 +159,7 @@ export default function AdminEmailTemplates() {
                 visit_scheduled: { subject: "📅 Visita — {{campaignTitle}}", variables: ["creatorName", "brandName", "campaignTitle", "visitDate", "visitTime", "location", "duration", "contentDeadline", "scheduleUrl"], html: w("📅 Visita Programada", "Revisa los detalles", "<p>Hola <strong>{{creatorName}}</strong>, tu visita con <strong>{{brandName}}</strong> para <strong>{{campaignTitle}}</strong> está confirmada.</p><div class='hl'><div class='lb'>Fecha y Hora</div>{{visitDate}} · {{visitTime}}</div><div class='hl'><div class='lb'>Ubicación</div>{{location}}</div><div class='hl'><div class='lb'>Duración</div>{{duration}} minutos</div><div class='hl'><div class='lb'>Fecha límite</div>{{contentDeadline}}</div>", "Ver Agenda", "{{scheduleUrl}}") },
                 withdrawal_requested: { subject: "💸 Solicitud de retiro recibida — {{amount}}", variables: ["creatorName", "amount", "earningsUrl"], html: w("💸 Solicitud de Retiro", "Hemos recibido tu solicitud", "<p>Hola <strong>{{creatorName}}</strong>, recibimos tu solicitud de retiro por <strong>{{amount}}</strong>. La procesaremos en un plazo de 2–5 días hábiles.</p><div class='hl'><div class='lb'>Monto solicitado</div>{{amount}}</div>", "Ver mis Ganancias", "{{earningsUrl}}") },
                 withdrawal_approved: { subject: "✅ Retiro enviado — {{amount}}", variables: ["creatorName", "amount", "earningsUrl"], html: w("✅ Retiro Procesado", "Tu pago fue enviado", "<p>Hola <strong>{{creatorName}}</strong>, tu retiro de <strong>{{amount}}</strong> fue aprobado y enviado a tu cuenta bancaria registrada. Puede tardar 1–3 días hábiles en reflejarse.</p><div class='hl'><div class='lb'>Monto enviado</div>{{amount}}</div>", "Ver mis Ganancias", "{{earningsUrl}}") },
+                new_opportunity: { subject: "✨ ¡Nueva Oportunidad! {{matchScore}} Match con {{brandName}}", variables: ["creatorName", "brandName", "campaignTitle", "matchScore", "dashboardUrl"], html: w("✨ ¡Nueva Oportunidad!", "Descubrimos un match perfecto para ti", "<p>Hola <strong>{{creatorName}}</strong>, nuestra IA encontró una campaña de <strong>{{brandName}}</strong> que hace un <strong>{{matchScore}}</strong> de match con tu perfil y audiencia.</p><div class='hl'><div class='lb'>Campaña</div>{{campaignTitle}}</div>", "Ver Oportunidad", "{{dashboardUrl}}") },
             };
 
             const batch = writeBatch(db);

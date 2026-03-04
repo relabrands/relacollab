@@ -479,6 +479,20 @@ export const seedEmailTemplates = functions.https.onRequest((req, res) => {
         ),
         variables: ["creatorName", "brandName", "campaignTitle", "visitDate", "visitTime", "location", "duration", "contentDeadline", "scheduleUrl"],
       },
+      new_opportunity: {
+        subject: "✨ ¡Nueva Oportunidad! {{matchScore}} Match con {{brandName}}",
+        html: makeHtml(
+          "✨ ¡Nueva Oportunidad!",
+          "Descubrimos un match perfecto para ti",
+          `<p>Hola <strong>{{creatorName}}</strong>,</p>
+           <p>Nuestra IA encontró una campaña de <strong>{{brandName}}</strong> que hace un <strong>{{matchScore}}</strong> de match con tu perfil y audiencia.</p>
+           <div class="highlight"><div class="label">Campaña</div>{{campaignTitle}}</div>
+           <p>Revisa los detalles y aplica antes de que se agoten los cupos.</p>`,
+          "Ver Oportunidad",
+          "{{dashboardUrl}}"
+        ),
+        variables: ["creatorName", "brandName", "campaignTitle", "matchScore", "dashboardUrl"],
+      },
     };
 
     const batch = admin.firestore().batch();
@@ -490,3 +504,48 @@ export const seedEmailTemplates = functions.https.onRequest((req, res) => {
     return res.json({ success: true, templatesSeeded: Object.keys(templates).length });
   });
 });
+
+// ─── 12. Creator receives new opportunity match ───────────────────────────────
+export const onMatchCreated = functions.firestore
+  .document("campaigns/{campaignId}/matches/{creatorId}")
+  .onCreate(async (snap, context) => {
+    const match = snap.data();
+    if (!match.aiAnalysis || !match.aiAnalysis.matchPercentage) return;
+
+    // Only notify if it's a strongly matched opportunity (>= 75%)
+    // This prevents spamming creators with low-match opportunities
+    if (match.aiAnalysis.matchPercentage < 75) return;
+
+    try {
+      const { campaignId, creatorId } = context.params;
+
+      const [creatorDoc, campaignDoc] = await Promise.all([
+        admin.firestore().doc(`users/${creatorId}`).get(),
+        admin.firestore().doc(`campaigns/${campaignId}`).get(),
+      ]);
+
+      const creator = creatorDoc.data();
+      const campaign = campaignDoc.data();
+      if (!creator?.email || !campaign) return;
+
+      const brandDoc = await admin.firestore().doc(`users/${campaign.brandId}`).get();
+      const brand = brandDoc.data();
+
+      // Ensure they haven't already applied to avoid duplicate confusion
+      const applicationRef = admin.firestore().collection("applications")
+        .where("creatorId", "==", creatorId)
+        .where("campaignId", "==", campaignId);
+      const applicationSnap = await applicationRef.get();
+      if (!applicationSnap.empty) return;
+
+      await sendEmail(creator.email, "new_opportunity", {
+        creatorName: creator.displayName || "Creator",
+        brandName: brand?.brandName || brand?.displayName || "Brand",
+        campaignTitle: campaign.name || "Campaign",
+        matchScore: `${match.aiAnalysis.matchPercentage}%`,
+        dashboardUrl: `${BASE_URL}/creator/opportunities`,
+      });
+    } catch (err) {
+      console.error("[Email] onMatchCreated error:", err);
+    }
+  });
