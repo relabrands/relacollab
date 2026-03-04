@@ -35,7 +35,44 @@ function registerEmailNotifications(functions, admin, exportsObj) {
         const user = event.data?.data();
         if (!user?.email) return;
         const templateId = user.role === "creator" ? "welcome_creator" : "welcome_brand";
-        await sendEmail(user.email, templateId, { name: user.displayName || "Usuario", email: user.email, dashboardUrl: `${BASE_URL}/${user.role}` });
+        await sendEmail(user.email, templateId, {
+            name: user.displayName || "Usuario",
+            email: user.email,
+            dashboardUrl: `${BASE_URL}/${user.role}`,
+            loginUrl: `${BASE_URL}/login`
+        });
+    });
+
+    // 1.5 Creator & Brand Status Changes (Pending / Activated)
+    exportsObj.onUserStatusChanged = onDocumentUpdated("users/{userId}", async (event) => {
+        const before = event.data?.before.data();
+        const after = event.data?.after.data();
+        if (!before || !after) return;
+        if (!after.email) return;
+
+        try {
+            const role = after.role; // "creator" or "brand"
+            const name = after.displayName || (role === "creator" ? "Creador" : "Marca");
+
+            // Trigger 2: Finished onboarding and is pending review
+            if (after.onboardingCompleted === true && before.onboardingCompleted !== true) {
+                const template = role === "creator" ? "creator_pending" : "brand_pending";
+                await sendEmail(after.email, template, {
+                    name,
+                    email: after.email
+                });
+            } 
+            // Trigger 3: Admin activates account
+            else if (after.status === "active" && before.status !== "active") {
+                const template = role === "creator" ? "creator_activated" : "brand_activated";
+                await sendEmail(after.email, template, {
+                    name,
+                    dashboardUrl: `${BASE_URL}/${role}`
+                });
+            }
+        } catch (err) {
+            console.error("[Email] onUserStatusChanged:", err);
+        }
     });
 
     // 2. Brand: new application
@@ -262,8 +299,12 @@ function registerEmailNotifications(functions, admin, exportsObj) {
         const s = `body{font-family:'Segoe UI',sans-serif;margin:0;padding:0;background:#f4f4f7}.container{max-width:600px;margin:0 auto}.header{background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:40px 30px;text-align:center;border-radius:12px 12px 0 0}.header h1{color:#fff;margin:0;font-size:26px}.header p{color:rgba(255,255,255,.85);margin:8px 0 0;font-size:14px}.body{background:#fff;padding:40px 30px}.body p{color:#444;line-height:1.7;margin:0 0 16px}.hl{background:#f3f0ff;border-left:4px solid #7c3aed;padding:16px 20px;border-radius:0 8px 8px 0;margin:24px 0}.hl .lb{font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}.btn{display:inline-block;background:#7c3aed;color:#fff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;margin-top:24px}.footer{background:#f4f4f7;padding:20px;text-align:center;border-radius:0 0 12px 12px}.footer p{color:#999;font-size:12px;margin:4px 0}`;
         const w = (h, sh, b, bt, bu) => `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${s}</style></head><body><div class="container"><div class="header"><h1>${h}</h1><p>${sh}</p></div><div class="body">${b}<a href="${bu}" class="btn">${bt}</a></div><div class="footer"><p>© 2026 RELA Collab · relacollab.com</p></div></div></body></html>`;
         const tpls = {
-            welcome_creator: { subject: "🎉 Bienvenido, {{name}}!", variables: ["name", "email", "dashboardUrl"], html: w("🎉 ¡Bienvenido!", "Tu cuenta de creador está activa", "<p>Hola <strong>{{name}}</strong>, ya puedes explorar campañas y conectar tus redes sociales.</p>", "Ver Oportunidades", "{{dashboardUrl}}") },
-            welcome_brand: { subject: "🚀 ¡Cuenta de Marca lista, {{name}}!", variables: ["name", "email", "dashboardUrl"], html: w("🚀 ¡Bienvenido!", "Conecta con los mejores creadores", "<p>Hola <strong>{{name}}</strong>, crea tu primera campaña y la IA encontrará tus matches perfectos.</p>", "Crear Campaña", "{{dashboardUrl}}") },
+            welcome_creator: { subject: "🎉 Bienvenido, {{name}}!", variables: ["name", "email", "loginUrl"], html: w("🎉 ¡Bienvenido!", "Completa tu perfil para empezar", "<p>Hola <strong>{{name}}</strong>, gracias por unirte a RELA Collab. Para poder conectar con las mejores marcas, es necesario que completes tu perfil y vincules tus redes sociales.</p>", "Completar mi Perfil", "{{loginUrl}}") },
+            creator_pending: { subject: "⏳ Perfil en revisión", variables: ["name", "email"], html: w("⏳ Perfil Recibido", "Estamos revisando tus datos", "<p>Hola <strong>{{name}}</strong>, hemos recibido tu información. Nuestro equipo está revisando tu perfil para asegurarse de mantener el nivel de calidad de la comunidad.</p><p>Te avisaremos tan pronto tu cuenta sea activada.</p>", "Ver RELA Collab", "https://relacollab.com") },
+            creator_activated: { subject: "🚀 ¡Cuenta Activada, {{name}}!", variables: ["name", "dashboardUrl"], html: w("🚀 ¡Cuenta Activada!", "Ya puedes participar en campañas", "<p>Hola <strong>{{name}}</strong>, ¡felicidades! Tu perfil ha sido aprobado y tu cuenta está activa. Ya puedes aplicar a campañas y recibir invitaciones de marcas.</p>", "Explorar Oportunidades", "{{dashboardUrl}}") },
+            welcome_brand: { subject: "🚀 ¡Bienvenido a RELA Collab, {{name}}!", variables: ["name", "email", "loginUrl"], html: w("🚀 ¡Bienvenido!", "Completa el perfil de tu empresa", "<p>Hola <strong>{{name}}</strong>, gracias por registrarte en RELA Collab. Para empezar a crear campañas y conectar con creadores, por favor completa la información de tu empresa.</p>", "Completar mi Perfil", "{{loginUrl}}") },
+            brand_pending: { subject: "⏳ Cuenta de Marca en revisión", variables: ["name", "email"], html: w("⏳ Perfil Recibido", "Estamos verificando los datos de tu empresa", "<p>Hola <strong>{{name}}</strong>, hemos recibido la información de tu marca. Nuestro equipo la está revisando para garantizar la seguridad de nuestra comunidad.</p><p>Te notificaremos en cuanto tu cuenta esté activa para crear campañas.</p>", "Ir a RELA Collab", "https://relacollab.com") },
+            brand_activated: { subject: "✅ ¡Cuenta de Marca Activada!", variables: ["name", "dashboardUrl"], html: w("✅ ¡Cuenta Activada!", "Crea tu primera campaña hoy", "<p>Hola <strong>{{name}}</strong>, tu cuenta de empresa ha sido aprobada exitosamente. Ya puedes empezar a crear campañas y hacer match con los creadores ideales.</p>", "Crear Campaña", "{{dashboardUrl}}") },
             application_received: { subject: "📩 {{creatorName}} aplicó a {{campaignTitle}}", variables: ["brandName", "creatorName", "campaignTitle", "matchesUrl"], html: w("📩 Nueva Aplicación", "Un creador quiere colaborar", "<p>Hola <strong>{{brandName}}</strong>, <strong>{{creatorName}}</strong> aplicó a <strong>{{campaignTitle}}</strong>.</p>", "Revisar Aplicación", "{{matchesUrl}}") },
             invitation_received: { subject: "🎯 ¡Invitación a {{campaignTitle}}!", variables: ["creatorName", "brandName", "campaignTitle", "compensation", "opportunitiesUrl"], html: w("🎯 Nueva Invitación", "Una marca te seleccionó", "<p>Hola <strong>{{creatorName}}</strong>, <strong>{{brandName}}</strong> te invitó a <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Compensación</div>{{compensation}}</div>", "Ver Invitación", "{{opportunitiesUrl}}") },
             application_approved: { subject: "✅ ¡Aprobado en {{campaignTitle}}!", variables: ["creatorName", "brandName", "campaignTitle", "contentUrl"], html: w("✅ ¡Aprobado!", "Ya puedes empezar", "<p>Hola <strong>{{creatorName}}</strong>, <strong>{{brandName}}</strong> aprobó tu aplicación para <strong>{{campaignTitle}}</strong>.</p>", "Ver Campaña", "{{contentUrl}}") },
