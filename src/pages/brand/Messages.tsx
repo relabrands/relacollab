@@ -21,6 +21,7 @@ interface Collaboration {
     creatorName: string;
     creatorAvatar: string;
     status: string;
+    allowBrandMessages?: boolean;
     unreadCount?: number;
 }
 
@@ -76,6 +77,7 @@ export default function BrandMessages() {
                         creatorName: creatorData.displayName || "Creador",
                         creatorAvatar: creatorData.photoURL || "",
                         status: appData.status,
+                        allowBrandMessages: creatorData.privacySettings?.allowBrandMessages !== false, // default allow
                         unreadCount: 0
                     });
                 }
@@ -266,17 +268,23 @@ export default function BrandMessages() {
 
                                 {/* Message Input */}
                                 <div className="p-4 border-t">
-                                    <div className="flex gap-2">
-                                        <Input
-                                            placeholder="Escribe un mensaje..."
-                                            value={newMessage}
-                                            onChange={(e) => setNewMessage(e.target.value)}
-                                            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                                        />
-                                        <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
-                                            <Send className="w-4 h-4" />
-                                        </Button>
-                                    </div>
+                                    {selectedCollab.allowBrandMessages === false ? (
+                                        <div className="bg-muted/50 rounded-lg p-3 text-center text-sm text-muted-foreground italic">
+                                            Este creador ha desactivado los mensajes directos de marcas.
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="Escribe un mensaje..."
+                                                value={newMessage}
+                                                onChange={(e) => setNewMessage(e.target.value)}
+                                                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                                            />
+                                            <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                                                <Send className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         ) : (

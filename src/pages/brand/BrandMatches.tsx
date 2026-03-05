@@ -207,7 +207,9 @@ export default function BrandMatches() {
           // Must have a display name
           .filter((c: any) => c.displayName)
           // Must have at least 1 connected social account
-          .filter((c: any) => c.instagramConnected === true || c.tiktokConnected === true);
+          .filter((c: any) => c.instagramConnected === true || c.tiktokConnected === true)
+          // Respect privacy: skip creators who explicitly set publicProfile to false
+          .filter((c: any) => c.privacySettings?.publicProfile !== false);
 
         console.log("Valid Creators (with social accounts):", validCreators.length);
 
@@ -235,6 +237,7 @@ export default function BrandMatches() {
             location: creator.location || "Desconocido",
             averageRating: creator.averageRating,
             reviewCount: creator.reviewCount,
+            showMetrics: creator.privacySettings?.showMetrics !== false, // default show unless explicitly false
             aiAnalysis: null as any,
           };
         })

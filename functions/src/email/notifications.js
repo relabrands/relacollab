@@ -30,6 +30,27 @@ function registerEmailNotifications(functions, admin, exportsObj) {
         } catch (err) { console.error(`[Email] Error ${templateId}:`, err); }
     }
 
+    /**
+     * Check if a user has enabled the given notification category.
+     * category: 'campaignMatches' | 'campaignUpdates' | 'deliverableReminders' | 'paymentNotifications'
+     * Always succeeds for account/system emails (welcome, pending, activated).
+     */
+    async function canSendEmail(userId, category) {
+        try {
+            const snap = await admin.firestore().doc(`users/${userId}`).get();
+            if (!snap.exists) return true; // default allow
+            const ns = snap.data().notificationSettings || {};
+            // Master toggle
+            if (ns.emailNotifications === false) return false;
+            // Category toggle
+            if (category && ns[category] === false) return false;
+            return true;
+        } catch (e) {
+            console.warn('[Email] canSendEmail check failed:', e.message);
+            return true; // fail open
+        }
+    }
+
     // 1. Welcome on registration
     exportsObj.onUserCreated = onDocumentCreated("users/{userId}", async (event) => {
         const user = event.data?.data();
@@ -89,6 +110,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             const brandSnap = await admin.firestore().doc(`users/${camp.brandId}`).get();
             const brand = brandSnap.data();
             if (!brand?.email) return;
+            // Brand doesn't have campaignUpdates pref gate — it's their own platform activity (always send)
             const isAcceptedInvite = app.isInvitation === true || app.status === "approved";
             const templateId = isAcceptedInvite ? "invitation_accepted" : "application_received";
 
@@ -113,6 +135,12 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             const creator = creatorSnap.data();
             const camp = campSnap.data();
             if (!creator?.email || !camp) return;
+
+            // Respect creator notification settings
+            if (!(await canSendEmail(inv.creatorId, 'campaignMatches'))) {
+                console.log(`[Email] Creator ${inv.creatorId} has disabled campaignMatches notifications. Skipping invitation_received.`);
+                return;
+            }
 
             // Build compensation string based on compensationType
             let compensationStr = "";
@@ -152,6 +180,13 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             const creator = creatorSnap.data();
             if (!creator?.email) return;
             const camp = campSnap.data();
+
+            // Respect creator notification settings
+            if (!(await canSendEmail(after.creatorId, 'campaignUpdates'))) {
+                console.log(`[Email] Creator ${after.creatorId} has disabled campaignUpdates. Skipping.`);
+                return;
+            }
+
             if (after.status === "approved") {
                 await sendEmail(creator.email, "application_approved", { creatorName: creator.displayName || "Creator", campaignTitle: camp?.name || "Campaign", brandName: camp?.brandName || "Brand", contentUrl: `${BASE_URL}/creator/content` });
             } else if (after.status === "rejected") {
@@ -190,6 +225,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             ]);
             const creator = creatorSnap.data();
             if (!creator?.email) return;
+            if (!(await canSendEmail(after.userId, 'deliverableReminders'))) return;
             await sendEmail(creator.email, "content_revision", { creatorName: creator.displayName || "Creator", campaignTitle: campSnap.data()?.name || "Campaign", feedback: after.brandFeedback || "La marca ha solicitado cambios.", contentUrl: `${BASE_URL}/creator/content` });
         } catch (err) { console.error("[Email] onContentRevisionRequested:", err); }
     });
@@ -207,6 +243,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             const creator = creatorSnap.data();
             const camp = campSnap.data();
             if (!creator?.email || !camp) return;
+            if (!(await canSendEmail(after.userId, 'deliverableReminders'))) return;
 
             // Calculate pending deliverables logic
             let pendingItemsText = "";
@@ -221,7 +258,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
 
             const approvedSubmissionsQuery = await admin.firestore().collection("content_submissions")
                                             .where("campaignId", "==", after.campaignId)
-                                            .where("userId", "==", after.userId) // filter specifically by this creator
+                                            .where("userId", "==", after.userId)
                                             .where("status", "==", "approved")
                                             .get();
             
@@ -290,6 +327,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             const creatorSnap = await admin.firestore().doc(`users/${after.userId || after.creatorId}`).get();
             const creator = creatorSnap.data();
             if (!creator?.email) return;
+            if (!(await canSendEmail(after.userId || after.creatorId, 'paymentNotifications'))) return;
             await sendEmail(creator.email, "withdrawal_requested", {
                 creatorName: creator.displayName || "Creator",
                 amount: after.netAmount ? `$${after.netAmount}` : (after.amount ? `$${after.amount}` : ""),
@@ -308,6 +346,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             const creatorSnap = await admin.firestore().doc(`users/${after.userId || after.creatorId}`).get();
             const creator = creatorSnap.data();
             if (!creator?.email) return;
+            if (!(await canSendEmail(after.userId || after.creatorId, 'paymentNotifications'))) return;
             await sendEmail(creator.email, "withdrawal_approved", {
                 creatorName: creator.displayName || "Creator",
                 amount: after.amount ? `$${after.amount}` : "",

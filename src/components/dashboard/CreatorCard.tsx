@@ -16,6 +16,7 @@ interface CreatorCardProps {
     displayScore?: number;
     averageRating?: number;
     reviewCount?: number;
+    showMetrics?: boolean;
     aiAnalysis?: any | null;
     matchBreakdown?: {
       compensation?: boolean;
@@ -148,22 +149,30 @@ export function CreatorCard({
       </div>
 
       {/* ── Stats row ── */}
-      <div className="px-5 grid grid-cols-2 gap-2 mb-4">
-        <div className="bg-muted/40 rounded-xl p-3 text-center">
-          <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
-            <Users className="w-3 h-3" />
-            <span className="text-[10px] uppercase tracking-wider font-medium">Followers</span>
+      {creator.showMetrics !== false ? (
+        <div className="px-5 grid grid-cols-2 gap-2 mb-4">
+          <div className="bg-muted/40 rounded-xl p-3 text-center">
+            <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
+              <Users className="w-3 h-3" />
+              <span className="text-[10px] uppercase tracking-wider font-medium">Followers</span>
+            </div>
+            <div className="font-bold text-sm">{creator.followers}</div>
           </div>
-          <div className="font-bold text-sm">{creator.followers}</div>
-        </div>
-        <div className="bg-muted/40 rounded-xl p-3 text-center">
-          <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
-            <TrendingUp className="w-3 h-3" />
-            <span className="text-[10px] uppercase tracking-wider font-medium">Engagement</span>
+          <div className="bg-muted/40 rounded-xl p-3 text-center">
+            <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
+              <TrendingUp className="w-3 h-3" />
+              <span className="text-[10px] uppercase tracking-wider font-medium">Engagement</span>
+            </div>
+            <div className={`font-bold text-sm ${text}`}>{creator.engagement}</div>
           </div>
-          <div className={`font-bold text-sm ${text}`}>{creator.engagement}</div>
         </div>
-      </div>
+      ) : (
+        <div className="px-5 mb-4">
+          <div className="bg-muted/30 rounded-xl p-3 text-center border border-dashed border-border/50">
+            <p className="text-[11px] text-muted-foreground italic">Métricas privadas</p>
+          </div>
+        </div>
+      )}
 
       {/* ── AI Summary (if available) or match reason ── */}
       <div className="px-5 flex-1">
