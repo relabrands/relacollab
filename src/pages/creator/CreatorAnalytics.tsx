@@ -238,11 +238,17 @@ export default function CreatorAnalytics() {
                         <div className="flex items-center gap-4 p-4 rounded-xl bg-background/50 border border-border/50">
                             <img
                                 src={selectedPlatform === "instagram"
-                                    ? (profile.instagramProfilePicture || profile.photoURL || `https://ui-avatars.com/api/?name=${profile.name}`)
-                                    : (profile.tiktokAvatar || profile.photoURL || `https://ui-avatars.com/api/?name=${profile.name}`)
+                                    ? (profile.instagramProfilePicture || profile.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}`)
+                                    : (profile.tiktokAvatar || profile.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}`)
                                 }
                                 alt={profile.name}
                                 className="w-16 h-16 rounded-full object-cover border-2 border-primary/20"
+                                onError={(e) => {
+                                    const fallback = profile.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}`;
+                                    if (e.currentTarget.src !== fallback) {
+                                        e.currentTarget.src = fallback;
+                                    }
+                                }}
                             />
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-3 flex-wrap">

@@ -197,6 +197,26 @@ async function getInstagramMediaInternal(userId) {
 
     if (!accessToken || !igUserId) throw new Error("Instagram not connected");
 
+    // 1.5 Auto-Refresh Profile Picture and Name
+    try {
+        const userDetailsRes = await axios.get(
+            `https://graph.facebook.com/v19.0/${igUserId}?fields=profile_picture_url,name,username&access_token=${accessToken}`
+        );
+        const { profile_picture_url, name, username } = userDetailsRes.data;
+        if (profile_picture_url) {
+            await db.collection("users").doc(userId).update({
+                instagramProfilePicture: profile_picture_url,
+                instagramName: name || username || userData.instagramName,
+                socialHandles: {
+                    ...userData.socialHandles,
+                    instagram: username || userData.socialHandles?.instagram
+                }
+            });
+        }
+    } catch (err) {
+        console.warn(`[getInstagramMedia] Failed to auto-refresh profile picture for ${userId}: ${err.message}`);
+    }
+
     // 2. Obtener Lista Básica (+ video_view_count como campo directo del media)
     const response = await axios.get(
         `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count,video_view_count&limit=18&access_token=${accessToken}`
@@ -612,6 +632,27 @@ async function getTikTokMediaInternal(userId, cursor) {
             console.error("Failed to refresh token:", refreshErr.message);
             throw new Error("TikTok token expired and refresh failed");
         }
+    }
+
+    // 1.5 Auto-Refresh Avatar and Name
+    try {
+        const userFields = "display_name,avatar_url";
+        const userRes = await axios.get(`https://open.tiktokapis.com/v2/user/info/?fields=${userFields}`, {
+            headers: { "Authorization": `Bearer ${accessToken}` }
+        });
+        const ttUser = userRes.data.data?.user;
+        if (ttUser && ttUser.avatar_url) {
+            await db.collection("users").doc(userId).update({
+                tiktokAvatar: ttUser.avatar_url,
+                tiktokName: ttUser.display_name || userData.tiktokName,
+                socialHandles: {
+                    ...userData.socialHandles,
+                    tiktok: ttUser.display_name || userData.socialHandles?.tiktok
+                }
+            });
+        }
+    } catch (err) {
+        console.warn(`[getTikTokMedia] Failed to auto-refresh avatar for ${userId}: ${err.message}`);
     }
 
     const videoFields = "id,title,cover_image_url,share_url,video_description,view_count,like_count,comment_count,share_count,create_time";
