@@ -205,8 +205,41 @@ function registerEmailNotifications(functions, admin, exportsObj) {
                 admin.firestore().doc(`campaigns/${after.campaignId}`).get(),
             ]);
             const creator = creatorSnap.data();
-            if (!creator?.email) return;
-            await sendEmail(creator.email, "content_approved", { creatorName: creator.displayName || "Creator", campaignTitle: campSnap.data()?.name || "Campaign", earningsUrl: `${BASE_URL}/creator/earnings` });
+            const camp = campSnap.data();
+            if (!creator?.email || !camp) return;
+
+            // Calculate pending deliverables logic
+            let pendingItemsText = "";
+            let totalRequired = 0;
+            if (Array.isArray(camp.deliverables)) {
+                totalRequired = camp.deliverables.reduce((acc, current) => {
+                    return acc + (current.required ? Number(current.quantity) || 1 : 0);
+                }, 0);
+            } else {
+                 totalRequired = 1; // Default
+            }
+
+            const approvedSubmissionsQuery = await admin.firestore().collection("content_submissions")
+                                            .where("campaignId", "==", after.campaignId)
+                                            .where("userId", "==", after.userId) // filter specifically by this creator
+                                            .where("status", "==", "approved")
+                                            .get();
+            
+            const approvedCount = approvedSubmissionsQuery.size;
+
+            if (approvedCount < totalRequired) {
+                const remaining = totalRequired - approvedCount;
+                pendingItemsText = `Aún falta(n) ${remaining} entregable(s) por subir o ser aprobado(s) para completar tu participación en esta campaña.`;
+            } else {
+                pendingItemsText = "¡Todos los entregables requeridos para tu participación en esta campaña han sido aprobados!";
+            }
+
+            await sendEmail(creator.email, "content_approved", { 
+                creatorName: creator.displayName || "Creator", 
+                campaignTitle: camp.name || "Campaign", 
+                earningsUrl: `${BASE_URL}/creator/earnings`,
+                pendingItemsText: pendingItemsText 
+            });
         } catch (err) { console.error("[Email] onContentApproved:", err); }
     });
 
