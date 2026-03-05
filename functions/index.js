@@ -996,7 +996,31 @@ RESPONDE SOLO con este JSON raw (sin markdown):
     }
 });
 
-
+// Temporary cloud function to patch the content_approved template
+exports.updateContentApprovedTemplate = functions.https.onRequest(async (req, res) => {
+    return cors(req, res, async () => {
+        try {
+            const docRef = db.collection("emailTemplates").doc("content_approved"); 
+            const doc = await docRef.get();
+            if (!doc.exists) { return res.send("No doc"); }
+            const data = doc.data();
+            let vars = data.variables || [];
+            if (!vars.includes("pendingItemsText")) vars.push("pendingItemsText");
+            let newHtml = data.html;
+            if (!newHtml.includes("{{pendingItemsText}}")) {
+                if (newHtml.includes("fue aprobado.</p>")) {
+                     newHtml = newHtml.replace("fue aprobado.</p>", "fue aprobado.</p><p style='margin-bottom:15px; color:#555;'><strong>{{pendingItemsText}}</strong></p>");
+                } else {
+                     newHtml = newHtml.replace("</div><a href=", "</div><p><strong>{{pendingItemsText}}</strong></p><a href=");
+                }
+            }
+            await docRef.update({ variables: vars, html: newHtml });
+            res.send("Updated content_approved template safely.");
+        } catch (e) {
+            res.status(500).send(e.message);
+        }
+    });
+});
 // ─── Email Notifications (Resend) ─────────────────────────────────────────────
 const { registerEmailNotifications } = require("./src/email/notifications");
 registerEmailNotifications(functions, admin, exports);
