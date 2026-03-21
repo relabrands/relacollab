@@ -1164,3 +1164,174 @@ RESPONDE ÚNICAMENTE con el JSON raw (sin markdown, sin bloques de código, sin 
     });
 });
 
+// ==========================================
+// AUTO-UPDATE CREATOR METRICS (WEEKLY CRON)
+// ==========================================
+
+async function refreshInstagramMetricsForUser(userId, igUserId, longLivedAccessToken) {
+    try {
+        const userDetailsResponse = await axios.get(
+            `https://graph.facebook.com/v19.0/${igUserId}?fields=followers_count,username,name,profile_picture_url&access_token=${longLivedAccessToken}`
+        );
+        const userData = userDetailsResponse.data;
+
+        const mediaResponse = await axios.get(
+            `https://graph.facebook.com/v19.0/${igUserId}/media?fields=like_count,comments_count&limit=10&access_token=${longLivedAccessToken}`
+        );
+        const mediaItems = mediaResponse.data.data || [];
+        
+        let totalEngagement = 0;
+        let totalLikes = 0;
+        let totalComments = 0;
+        mediaItems.forEach(item => {
+            totalEngagement += (item.like_count || 0) + (item.comments_count || 0);
+            totalLikes += (item.like_count || 0);
+            totalComments += (item.comments_count || 0);
+        });
+        
+        const followers = parseInt(userData.followers_count || "1");
+        const avgEngagement = mediaItems.length > 0 ? totalEngagement / mediaItems.length : 0;
+        const avgLikes = mediaItems.length > 0 ? Math.round(totalLikes / mediaItems.length) : 0;
+        const avgComments = mediaItems.length > 0 ? Math.round(totalComments / mediaItems.length) : 0;
+        const engagementRate = ((avgEngagement / followers) * 100).toFixed(2);
+
+        const updateData = {
+            instagramUsername: userData.username,
+            instagramName: userData.name || userData.username,
+            instagramProfilePicture: userData.profile_picture_url,
+            "socialHandles.instagram": userData.username,
+            instagramMetrics: {
+                followers: parseInt(userData.followers_count || "0"),
+                engagementRate: parseFloat(engagementRate || "0"),
+                avgLikes: avgLikes,
+                avgComments: avgComments,
+                lastUpdated: new Date().toISOString()
+            }
+        };
+
+        await db.collection("users").doc(userId).set(updateData, { merge: true });
+        console.log(`[MetricsUpdate] Successfully updated Instagram for ${userId}`);
+    } catch (error) {
+        console.warn(`[MetricsUpdate] Failed to update Instagram for ${userId}:`, error.message);
+    }
+}
+
+async function refreshTikTokMetricsForUser(userId, openId, accessToken, refreshToken, tokenExpiresAt, userDocData) {
+    try {
+        let validAccessToken = accessToken;
+        
+        // Refresh token if expired or expiring in next 5 minutes
+        if (tokenExpiresAt && Date.now() + 300000 > tokenExpiresAt) {
+            if (refreshToken) {
+                try {
+                    console.log(`[MetricsUpdate] Refreshing TikTok token for ${userId}...`);
+                    validAccessToken = await refreshTikTokAccessToken(userId, refreshToken);
+                } catch (rErr) {
+                    console.error(`[MetricsUpdate] TikTok token refresh failed for ${userId}:`, rErr.message);
+                    return; // Can't fetch without valid token
+                }
+            } else {
+                console.warn(`[MetricsUpdate] No refresh token for ${userId}, skipping TikTok metrics update.`);
+                return;
+            }
+        }
+
+        const userFields = "display_name,avatar_url,follower_count,following_count,likes_count";
+        const userResponse = await axios.get(`https://open.tiktokapis.com/v2/user/info/?fields=${userFields}`, {
+            headers: { "Authorization": `Bearer ${validAccessToken}` }
+        });
+
+        const userData = userResponse.data.data?.user || {};
+
+        let engagementRate = userDocData?.tiktokMetrics?.engagementRate || 0;
+        try {
+            const videoFields = "id,view_count,like_count,comment_count,share_count";
+            const videoResponse = await axios.post("https://open.tiktokapis.com/v2/video/list/?fields=" + videoFields, {
+                max_count: 20
+            }, {
+                headers: {
+                    "Authorization": `Bearer ${validAccessToken}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const videos = videoResponse.data.data?.videos || [];
+
+            if (videos.length > 0) {
+                let totalEngagement = 0;
+                videos.forEach(v => {
+                    totalEngagement += (v.like_count || 0) + (v.comment_count || 0) + (v.share_count || 0);
+                });
+                const avgEngagement = totalEngagement / videos.length;
+                const followers = userData.follower_count || 1;
+                engagementRate = ((avgEngagement / followers) * 100).toFixed(2);
+            }
+        } catch (vidErr) {
+            console.warn(`[MetricsUpdate] Error fetching TikTok videos for ${userId}:`, vidErr.message);
+        }
+
+        const updateData = {
+            tiktokName: userData.display_name,
+            tiktokAvatar: userData.avatar_url,
+            "socialHandles.tiktok": userData.display_name,
+            tiktokMetrics: {
+                followers: userData.follower_count || 0,
+                likes: userData.likes_count || 0,
+                engagementRate: parseFloat(engagementRate),
+                lastUpdated: new Date().toISOString()
+            }
+        };
+
+        await db.collection("users").doc(userId).set(updateData, { merge: true });
+        console.log(`[MetricsUpdate] Successfully updated TikTok for ${userId}`);
+    } catch (error) {
+        console.warn(`[MetricsUpdate] Failed to update TikTok for ${userId}:`, error.message);
+    }
+}
+
+exports.updateCreatorMetricsDaily = functions
+    .runWith({ timeoutSeconds: 540, memory: '1GB' })
+    .pubsub.schedule('0 0 * * *') // Runs every day at midnight 
+    .timeZone('America/New_York')
+    .onRun(async (context) => {
+        console.log("[MetricsUpdate] Starting weekly creator metrics update...");
+        try {
+            const snapshot = await db.collection("users").where("role", "==", "creator").get();
+            console.log(`[MetricsUpdate] Found ${snapshot.size} creators to process.`);
+            
+            let processed = 0;
+            for (const doc of snapshot.docs) {
+                const user = doc.data();
+                const userId = doc.id;
+                let metricsUpdated = false;
+
+                if (user.instagramConnected && user.instagramId && user.instagramAccessToken) {
+                    await refreshInstagramMetricsForUser(userId, user.instagramId, user.instagramAccessToken);
+                    metricsUpdated = true;
+                }
+
+                if (user.tiktokConnected && user.tiktokOpenId && user.tiktokAccessToken) {
+                    await refreshTikTokMetricsForUser(
+                        userId, 
+                        user.tiktokOpenId, 
+                        user.tiktokAccessToken, 
+                        user.tiktokRefreshToken, 
+                        user.tiktokTokenExpiresAt,
+                        user
+                    );
+                    metricsUpdated = true;
+                }
+
+                if (metricsUpdated) {
+                    processed++;
+                    // Delay to prevent rate limiting issues
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+
+            console.log(`[MetricsUpdate] Completed! Processed metrics for ${processed} creators.`);
+        } catch (error) {
+            console.error("[MetricsUpdate] General error in scheduled update:", error);
+        }
+    });
+
