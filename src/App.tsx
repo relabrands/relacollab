@@ -18,6 +18,7 @@ import InstagramCallback from "./pages/auth/InstagramCallback";
 import TikTokCallback from "./pages/auth/TikTokCallback";
 import Apply from "./pages/Apply";
 import PendingApproval from "./pages/PendingApproval";
+import Business from "./pages/Business";
 
 // Brand pages
 import BrandDashboard from "./pages/brand/BrandDashboard";
@@ -76,6 +77,7 @@ const App = () => (
             <Route path="/auth/facebook/callback" element={<InstagramCallback />} />
             <Route path="/auth/tiktok/callback" element={<TikTokCallback />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
+            <Route path="/business" element={<Business />} />
 
             {/* Onboarding Routes */}
             <Route path="/onboarding" element={<OnboardingLayout />}>

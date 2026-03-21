@@ -57,8 +57,13 @@ const creatorSteps = [
   },
 ];
 
-export function HowItWorks() {
-  const [activeView, setActiveView] = useState<"brand" | "creator">("brand");
+interface HowItWorksProps {
+  initialView?: "brand" | "creator";
+  hideToggle?: boolean;
+}
+
+export function HowItWorks({ initialView = "brand", hideToggle = false }: HowItWorksProps = {}) {
+  const [activeView, setActiveView] = useState<"brand" | "creator">(initialView);
   const steps = activeView === "brand" ? brandSteps : creatorSteps;
 
   return (
@@ -77,24 +82,26 @@ export function HowItWorks() {
           </p>
 
           {/* Toggle */}
-          <div className="inline-flex items-center gap-2 p-1 rounded-xl bg-muted border border-border">
-            <Button
-              variant={activeView === "brand" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveView("brand")}
-              className="px-6"
-            >
-              Soy una Marca
-            </Button>
-            <Button
-              variant={activeView === "creator" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveView("creator")}
-              className="px-6"
-            >
-              Soy un Creador
-            </Button>
-          </div>
+          {!hideToggle && (
+            <div className="inline-flex items-center gap-2 p-1 rounded-xl bg-muted border border-border">
+              <Button
+                variant={activeView === "brand" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveView("brand")}
+                className="px-6"
+              >
+                Soy una Marca
+              </Button>
+              <Button
+                variant={activeView === "creator" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveView("creator")}
+                className="px-6"
+              >
+                Soy un Creador
+              </Button>
+            </div>
+          )}
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
