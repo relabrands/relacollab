@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Sparkles, Check, Loader2, X, Plus } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { addDoc, collection, doc, getDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
@@ -54,11 +54,14 @@ export default function CreateCampaign() {
   const { config } = usePlatformConfig();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { id } = useParams();
+  const [isEditing, setIsEditing] = useState(false);
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [credits, setCredits] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
+    brandName: "",
     description: "",
     coverImage: "",
     goal: "",
@@ -126,7 +129,7 @@ export default function CreateCampaign() {
   };
 
   useEffect(() => {
-    const fetchBrandProfile = async () => {
+    const fetchData = async () => {
       if (!user) return;
       try {
         const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -134,18 +137,38 @@ export default function CreateCampaign() {
           const userData = userDoc.data();
           setFormData(prev => ({
             ...prev,
-            location: userData.location || "",
-            brandName: userData.displayName || userData.name || ""
+            location: prev.location || userData.location || "",
+            brandName: prev.brandName || userData.displayName || userData.name || ""
           }));
           setCredits(userData.credits || 0);
         }
+
+        if (id) {
+          setIsEditing(true);
+          const campaignDoc = await getDoc(doc(db, "campaigns", id));
+          if (campaignDoc.exists()) {
+            const data = campaignDoc.data();
+            setFormData(prev => ({
+              ...prev,
+              ...data,
+              // Convert numbers back to strings for the form if needed
+              minReward: data.minReward?.toString() || "",
+              maxReward: data.maxReward?.toString() || "",
+              budget: data.budget?.toString() || "",
+              creatorCount: data.creatorCount?.toString() || "1",
+            }));
+          } else {
+            toast.error("Campaña no encontrada.");
+            navigate("/brand/campaigns");
+          }
+        }
       } catch (error) {
-        console.error("Error fetching brand profile:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
-    fetchBrandProfile();
-  }, [user]);
+    fetchData();
+  }, [user, id, navigate]);
 
   const handleVibeToggle = (vibeId: string) => {
     setFormData((prev) => ({
@@ -332,44 +355,54 @@ export default function CreateCampaign() {
         coverImage: formData.coverImage,
       };
 
-      const campaignRef = await addDoc(collection(db, "campaigns"), campaignData);
+      if (isEditing && id) {
+        // Just update the campaign doc, avoiding duplicating invoices or credits checks.
+        await updateDoc(doc(db, "campaigns", id), {
+          ...campaignData,
+          updatedAt: new Date().toISOString(),
+          // we do not change createdAt or status silently
+        });
+        toast.success("¡Campaña actualizada exitosamente!");
+        navigate(`/brand/campaigns/${id}`);
+      } else {
+        const campaignRef = await addDoc(collection(db, "campaigns"), campaignData);
 
-      // ✅ Auto-generate brand invoice for monetary or hybrid campaigns (based on maxReward Escrow)
-      if ((formData.compensationType === "monetary" || formData.compensationType === "hybrid") && maxRewardVal > 0) {
-        const totalGross = maxRewardVal * creatorCount;
-        const totalFee = perCreatorFee * creatorCount;
-        const totalNet = perCreatorNet * creatorCount;
+        // ✅ Auto-generate brand invoice for monetary or hybrid campaigns (based on maxReward Escrow)
+        if ((formData.compensationType === "monetary" || formData.compensationType === "hybrid") && maxRewardVal > 0) {
+          const totalGross = maxRewardVal * creatorCount;
+          const totalFee = perCreatorFee * creatorCount;
+          const totalNet = perCreatorNet * creatorCount;
 
-        try {
-          await addDoc(collection(db, "invoices"), {
-            type: "campaign_budget",
-            brandId: user.uid,
-            brandName: brandName,
-            campaignId: campaignRef.id,
-            campaignName: formData.name,
-            creatorCount: creatorCount,
-            minReward: minRewardVal,
-            maxReward: maxRewardVal,
-            perCreatorGross: maxRewardVal, // Escrow = max
-            perCreatorFee: perCreatorFee,
-            perCreatorNet: perCreatorNet,
-            totalGross: totalGross,
-            totalFee: totalFee,
-            totalNet: totalNet,
-            feePercent: feePercent,
-            status: "pending",
-            createdAt: new Date().toISOString(),
-          });
-          console.log("✅ Invoice created:", totalGross, "for", creatorCount, "creators (Escrow based on maxReward)");
-        } catch (invoiceErr) {
-          console.error("❌ Invoice creation failed:", invoiceErr);
-          toast.error("Campaña creada, pero la factura no pudo generarse. Contacta soporte.");
+          try {
+            await addDoc(collection(db, "invoices"), {
+              type: "campaign_budget",
+              brandId: user.uid,
+              brandName: brandName,
+              campaignId: campaignRef.id,
+              campaignName: formData.name,
+              creatorCount: creatorCount,
+              minReward: minRewardVal,
+              maxReward: maxRewardVal,
+              perCreatorGross: maxRewardVal, // Escrow = max
+              perCreatorFee: perCreatorFee,
+              perCreatorNet: perCreatorNet,
+              totalGross: totalGross,
+              totalFee: totalFee,
+              totalNet: totalNet,
+              feePercent: feePercent,
+              status: "pending",
+              createdAt: new Date().toISOString(),
+            });
+            console.log("✅ Invoice created:", totalGross, "for", creatorCount, "creators (Escrow based on maxReward)");
+          } catch (invoiceErr) {
+            console.error("❌ Invoice creation failed:", invoiceErr);
+            toast.error("Campaña creada, pero la factura no pudo generarse. Contacta soporte.");
+          }
         }
+
+        toast.success("¡Campaña creada exitosamente!");
+        navigate("/brand/matches");
       }
-
-
-      toast.success("¡Campaña creada exitosamente!");
-      navigate("/brand/matches");
     } catch (error) {
       console.error("Error creating campaign:", error);
       toast.error("Error al crear la campaña.");
@@ -398,8 +431,8 @@ export default function CreateCampaign() {
         </div>
 
         <DashboardHeader
-          title="Crear Campaña"
-          subtitle="Encontremos a tus creadores perfectos"
+          title={isEditing ? "Editar Campaña" : "Crear Campaña"}
+          subtitle={isEditing ? "Actualiza los detalles de tu campaña" : "Encontremos a tus creadores perfectos"}
         />
 
         {/* Progress Steps */}

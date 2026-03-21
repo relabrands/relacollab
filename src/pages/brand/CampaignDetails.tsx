@@ -32,11 +32,6 @@ export default function CampaignDetails() {
     const [approvedCount, setApprovedCount] = useState(0);
     const [collaboratingCount, setCollaboratingCount] = useState(0);
 
-    // Edit state
-    const [isEditOpen, setIsEditOpen] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [editForm, setEditForm] = useState<any>({});
-
     // Delete state
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -51,7 +46,6 @@ export default function CampaignDetails() {
                 if (docSnap.exists()) {
                     const campaignData = { id: docSnap.id, ...docSnap.data() };
                     setCampaign(campaignData);
-                    setEditForm(campaignData);
 
                     const appsQuery = query(collection(db, "applications"), where("campaignId", "==", id));
                     const appsSnapshot = await getDocs(appsQuery);
@@ -70,29 +64,6 @@ export default function CampaignDetails() {
         };
         fetchCampaignData();
     }, [id, user]);
-
-    const handleSaveEdit = async () => {
-        if (!id) return;
-        setIsSaving(true);
-        try {
-            await updateDoc(doc(db, "campaigns", id), {
-                name: editForm.name,
-                description: editForm.description,
-                startDate: editForm.startDate,
-                endDate: editForm.endDate,
-                location: editForm.location,
-                updatedAt: new Date().toISOString(),
-            });
-            setCampaign((prev: any) => ({ ...prev, ...editForm }));
-            setIsEditOpen(false);
-            toast.success("Campaña actualizada correctamente.");
-        } catch (error) {
-            console.error("Error updating campaign:", error);
-            toast.error("Error al guardar los cambios.");
-        } finally {
-            setIsSaving(false);
-        }
-    };
 
     const handleDelete = async () => {
         if (!id) return;
@@ -153,10 +124,12 @@ export default function CampaignDetails() {
                 <div className="flex items-start justify-between mb-8 gap-4">
                     <DashboardHeader title={campaign.name} subtitle="Detalles de la Campaña y Progreso" />
                     <div className="flex items-center gap-2 flex-shrink-0">
-                        <Button variant="outline" size="sm" onClick={() => { setEditForm(campaign); setIsEditOpen(true); }}>
-                            <Edit2 className="w-4 h-4 mr-1.5" />
-                            Editar
-                        </Button>
+                        <Link to={`/brand/campaigns/edit/${campaign.id}`}>
+                            <Button variant="outline" size="sm">
+                                <Edit2 className="w-4 h-4 mr-1.5" />
+                                Editar
+                            </Button>
+                        </Link>
                         <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10"
                             onClick={() => setIsDeleteOpen(true)}>
                             <Trash2 className="w-4 h-4 mr-1.5" />
@@ -427,59 +400,6 @@ export default function CampaignDetails() {
                     </div>
                 </div>
             </main>
-
-            {/* ── Edit Dialog ─────────────────────────────────────── */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>Editar Campaña</DialogTitle>
-                        <DialogDescription>Actualiza los detalles de la campaña.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
-                        <div className="space-y-1.5">
-                            <Label>Nombre de la Campaña</Label>
-                            <Input value={editForm.name || ""} onChange={e => setEditForm((p: any) => ({ ...p, name: e.target.value }))} />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label>Descripción</Label>
-                            <Textarea
-                                value={editForm.description || ""}
-                                onChange={e => setEditForm((p: any) => ({ ...p, description: e.target.value }))}
-                                rows={4}
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label>Fecha de Inicio</Label>
-                                <Input
-                                    type="date"
-                                    value={editForm.startDate || ""}
-                                    onChange={e => setEditForm((p: any) => ({ ...p, startDate: e.target.value }))}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label>Fecha de Fin</Label>
-                                <Input
-                                    type="date"
-                                    value={editForm.endDate || ""}
-                                    onChange={e => setEditForm((p: any) => ({ ...p, endDate: e.target.value }))}
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label>Ubicación</Label>
-                            <Input value={editForm.location || ""} onChange={e => setEditForm((p: any) => ({ ...p, location: e.target.value }))} />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleSaveEdit} disabled={isSaving}>
-                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Guardar Cambios
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* ── Delete Confirmation Dialog ────────────────────── */}
             <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

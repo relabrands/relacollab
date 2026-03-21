@@ -100,6 +100,11 @@ const App = () => (
                 <CreateCampaign />
               </ProtectedRoute>
             } />
+            <Route path="/brand/campaigns/edit/:id" element={
+              <ProtectedRoute allowedRoles={['brand']}>
+                <CreateCampaign />
+              </ProtectedRoute>
+            } />
             <Route path="/brand/campaigns/:id" element={
               <ProtectedRoute allowedRoles={['brand']}>
                 <CampaignDetails />
