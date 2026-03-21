@@ -493,6 +493,20 @@ export const seedEmailTemplates = functions.https.onRequest((req, res) => {
         ),
         variables: ["creatorName", "brandName", "campaignTitle", "matchScore", "dashboardUrl"],
       },
+      onboarding_reminder: {
+        subject: "⏳ Termina de configurar tu perfil, {{name}}!",
+        html: makeHtml(
+          "⏳ ¡Completa tu perfil!",
+          "Te quedaste a un paso de terminar",
+          `<p>Hola <strong>{{name}}</strong>,</p>
+           <p>Notamos que no has terminado de configurar tu perfil para empezar a colaborar.</p>
+           <div class="highlight"><div class="label">Paso Pendiente</div>{{stepMessage}}</div>
+           <p>Completar tu perfil es indispensable para empezar a aplicar a campañas con marcas que buscan creadores como tú.</p>`,
+          "Completar Onboarding",
+          "{{dashboardUrl}}"
+        ),
+        variables: ["name", "stepMessage", "dashboardUrl"],
+      },
     };
 
     const batch = admin.firestore().batch();

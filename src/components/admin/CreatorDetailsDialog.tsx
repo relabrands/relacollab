@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -5,11 +6,15 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, MapPin, Phone, Instagram, Globe, Calendar, DollarSign, Award, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { Mail, MapPin, Phone, Instagram, Globe, Calendar, DollarSign, Award, AlertCircle, CheckCircle2, Clock, Send } from "lucide-react";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "@/lib/firebase";
+import { toast } from "sonner";
 
 interface CreatorDetailsDialogProps {
     creator: any;
@@ -19,6 +24,8 @@ interface CreatorDetailsDialogProps {
 }
 
 export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = [] }: CreatorDetailsDialogProps) {
+    const [sendingReminder, setSendingReminder] = useState(false);
+
     if (!creator) return null;
 
     // Filter applications for this creator
@@ -61,6 +68,29 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
 
     const onboardingStatus = getOnboardingStep();
     const isOnboardingIncomplete = onboardingStatus !== null;
+
+    const handleSendReminder = async () => {
+        if (!onboardingStatus) return;
+        setSendingReminder(true);
+        try {
+            const sendTestEmailFn = httpsCallable(functions, "sendTestEmail");
+            await sendTestEmailFn({
+                templateId: "onboarding_reminder",
+                toEmail: creator.email,
+                vars: {
+                    name: creator.name || creator.displayName || "Creador",
+                    stepMessage: `Paso ${onboardingStatus.step} - ${onboardingStatus.message}`,
+                    dashboardUrl: "https://relacollab.com/creator",
+                }
+            });
+            toast.success("Recordatorio enviado al creador");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al enviar el recordatorio");
+        } finally {
+            setSendingReminder(false);
+        }
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -109,6 +139,18 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
                                             </div>
                                         )}
                                     </div>
+                                    {isOnboardingIncomplete && (
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline" 
+                                            className="ml-4 flex-shrink-0"
+                                            onClick={handleSendReminder}
+                                            disabled={sendingReminder}
+                                        >
+                                            <Send className="w-4 h-4 mr-2" />
+                                            {sendingReminder ? "Enviando..." : "Enviar Recordatorio"}
+                                        </Button>
+                                    )}
                                 </AlertDescription>
                             </Alert>
                         )}
