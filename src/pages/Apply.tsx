@@ -128,7 +128,7 @@ export default function Apply() {
 
                         {/* Subheadline */}
                         <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                            La plataforma de UGC más inteligente de Latinoamérica. Conecta con marcas top y cobra por lo que amas hacer.
+                            La plataforma de UGC más inteligente de República Dominicana. Conecta con marcas top y cobra por lo que amas hacer.
                         </p>
 
                         {/* Trust line */}

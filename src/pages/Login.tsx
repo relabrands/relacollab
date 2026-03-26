@@ -176,7 +176,7 @@ const Login = () => {
                     {/* Main copy */}
                     <div className="space-y-6 max-w-sm">
                         <p className="text-3xl xl:text-4xl font-bold leading-tight text-background/95">
-                            El marketplace de UGC más inteligente de Latinoamérica.
+                            El marketplace de UGC más inteligente de República Dominicana.
                         </p>
                         <ul className="space-y-3">
                             {[
@@ -219,7 +219,7 @@ const Login = () => {
                         <span className="font-bold text-lg tracking-tight">RELA Collab</span>
                     </Link>
                     <p className="text-sm text-muted-foreground max-w-[260px] leading-relaxed">
-                        El marketplace de UGC más inteligente de Latinoamérica.
+                        El marketplace de UGC más inteligente de República Dominicana.
                     </p>
                 </div>
 
