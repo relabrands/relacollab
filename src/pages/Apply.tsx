@@ -349,7 +349,7 @@ export default function Apply() {
                         <Card className="border-primary/20 overflow-hidden relative">
                             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent" />
                             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                            <CardContent className="p-12 text-center relative">
+                            <CardContent className="p-6 sm:p-10 md:p-12 text-center relative">
                                 <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
                                     <Users className="w-8 h-8 text-primary" />
                                 </div>
@@ -360,24 +360,24 @@ export default function Apply() {
                                     Únete a miles de creadores que ya monetizan su contenido con marcas que los valoran. Es gratis y toma menos de 3 minutos.
                                 </p>
 
-                                <Link to="/login">
-                                    <Button size="lg" className="text-lg px-12 h-14 group gap-2">
+                                <Link to="/login" className="block w-full sm:w-auto sm:inline-block">
+                                    <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-12 h-12 sm:h-14 group gap-2">
                                         Crear mi cuenta gratis
-                                        <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-12 transition-transform" />
                                     </Button>
                                 </Link>
 
-                                <div className="flex items-center justify-center gap-6 mt-8 text-sm text-muted-foreground">
+                                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mt-6 sm:mt-8 text-xs sm:text-sm text-muted-foreground">
                                     <span className="flex items-center gap-1.5">
-                                        <CheckCircle2 className="w-4 h-4 text-primary" />
+                                        <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
                                         Sin tarjeta de crédito
                                     </span>
                                     <span className="flex items-center gap-1.5">
-                                        <Clock className="w-4 h-4 text-primary" />
+                                        <Clock className="w-4 h-4 text-primary flex-shrink-0" />
                                         Aprobación en 24h
                                     </span>
                                     <span className="flex items-center gap-1.5">
-                                        <Shield className="w-4 h-4 text-primary" />
+                                        <Shield className="w-4 h-4 text-primary flex-shrink-0" />
                                         100% seguro
                                     </span>
                                 </div>
