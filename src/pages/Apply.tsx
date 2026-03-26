@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
 import {
     Sparkles,
     TrendingUp,
@@ -19,6 +20,8 @@ import {
     Play,
     Clock,
 } from "lucide-react";
+
+
 import { motion } from "framer-motion";
 import { Header } from "@/components/landing/Header";
 
@@ -97,65 +100,70 @@ export default function Apply() {
             <Header />
 
             {/* Hero Section */}
-            <section className="pt-28 pb-20 px-4 relative overflow-hidden">
-                {/* Background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-accent/5 to-background -z-10" />
-                <div className="absolute top-20 left-1/4 w-72 h-72 bg-primary/10 rounded-full blur-3xl -z-10" />
-                <div className="absolute bottom-10 right-1/4 w-48 h-48 bg-accent/10 rounded-full blur-3xl -z-10" />
+            <section className="pt-24 pb-16 md:pb-20 px-4 relative overflow-hidden">
+                {/* Subtle single orb — no floating animated blobs */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -translate-y-1/4 translate-x-1/4 pointer-events-none" />
 
-                <div className="container mx-auto max-w-5xl">
+                <div className="container mx-auto max-w-4xl relative z-10">
                     <motion.div
-                        initial={{ opacity: 0, y: 24 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="text-center space-y-6"
+                        transition={{ duration: 0.45 }}
+                        className="text-center space-y-5"
                     >
-                        <Badge className="px-4 py-1.5 text-sm font-medium gap-1.5">
-                            <Star className="w-3 h-3 fill-current" />
-                            Únete a los creadores fundadores de RELA
-                        </Badge>
+                        {/* Eyebrow */}
+                        <div className="flex justify-center">
+                            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/70 bg-background text-xs font-medium text-muted-foreground tracking-wide">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
+                                Creadores fundadores de RELA Collab
+                            </span>
+                        </div>
 
-                        <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight">
+                        {/* Headline */}
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight">
                             Convierte tu contenido
                             <br />
-                            <span className="text-gradient">en ingresos reales</span>
+                            <span className="gradient-text">en ingresos reales</span>
                         </h1>
 
-                        <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                            La plataforma de UGC más inteligente de Latinoamérica. Conecta con marcas top, crea contenido auténtico y cobra por lo que amas hacer.
+                        {/* Subheadline */}
+                        <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed">
+                            La plataforma de UGC más inteligente de Latinoamérica. Conecta con marcas top y cobra por lo que amas hacer.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                            <Link to="/login">
-                                <Button size="lg" className="text-lg px-8 h-14 group gap-2">
+                        {/* Trust line */}
+                        <p className="text-xs sm:text-sm text-muted-foreground/70">
+                            Sin costo · Sin tarjeta de crédito · Empieza en menos de 3 minutos
+                        </p>
+
+                        {/* CTAs */}
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                            <Link to="/login" className="w-full sm:w-auto">
+                                <Button size="lg" className="w-full sm:w-auto h-12 sm:h-14 text-base sm:text-lg px-6 sm:px-8 gap-2 group">
                                     Empezar a ganar hoy
-                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </Button>
                             </Link>
-                            <Button variant="outline" size="lg" className="text-lg px-8 h-14 gap-2">
+                            <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 sm:h-14 text-base sm:text-lg px-6 sm:px-8 gap-2">
                                 <Play className="w-4 h-4 fill-current" />
                                 Ver cómo funciona
                             </Button>
                         </div>
 
-                        <p className="text-sm text-muted-foreground">
-                            Sin costo · Sin tarjeta de crédito · Empieza en menos de 3 minutos
-                        </p>
-
                         {/* Stats */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-12 max-w-3xl mx-auto">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 pt-10 max-w-2xl mx-auto">
                             {estadisticas.map((stat, index) => (
                                 <motion.div
                                     key={stat.label}
-                                    initial={{ opacity: 0, y: 20 }}
+                                    initial={{ opacity: 0, y: 16 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.3 + index * 0.1 }}
+                                    transition={{ delay: 0.25 + index * 0.08 }}
                                     className="text-center"
                                 >
-                                    <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-gradient mb-1">
+                                    <div className="text-2xl sm:text-3xl md:text-4xl font-bold gradient-text mb-1">
                                         {stat.value}
                                     </div>
-                                    <div className="text-sm text-muted-foreground">{stat.label}</div>
+                                    <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
                                 </motion.div>
                             ))}
                         </div>
