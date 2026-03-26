@@ -1,105 +1,92 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowRight, Zap, DollarSign, Star, TrendingUp, Inbox, Award } from "lucide-react";
+import { ArrowRight, DollarSign, Zap, TrendingUp, Award } from "lucide-react";
 
 const creatorBenefits = [
     {
-        icon: Inbox,
-        title: "Las oportunidades llegan a ti",
-        description: "No más propuestas en frío ni perseguir marcas. Consigue matches con campañas que se ajusten naturalmente a tu estilo y audiencia.",
+        icon: Zap,
+        title: "Oportunidades que llegan a ti",
+        description: "No más propuestas en frío ni perder tiempo persiguiendo marcas. Recibe matches con campañas que encajan con tu estilo y audiencia.",
     },
     {
         icon: DollarSign,
-        title: "Pago real y transparente",
-        description: "Conoce exactamente cuánto ganarás antes de aplicar. Campañas pagadas, intercambios de productos o ambos: tú eliges.",
-    },
-    {
-        icon: Zap,
-        title: "Matching con IA, no asignaciones al azar",
-        description: "Nuestra IA califica tu perfil frente a cada campaña. Solo las oportunidades de alta coincidencia llegan a tu feed.",
+        title: "Pagos claros y garantizados",
+        description: "Sabe exactamente cuánto ganarás antes de aplicar. Las marcas financian la campaña antes de que empieces a crear. Sin ghosting.",
     },
     {
         icon: TrendingUp,
-        title: "Haz crecer tu negocio como creador",
-        description: "Construye un historial con campañas verificadas, acumula reseñas y desbloquea acuerdos mejor pagados.",
-    },
-    {
-        icon: Star,
-        title: "Muestra tu mejor trabajo",
-        description: "Tu biblioteca de contenido vive en tu perfil de creador, facilitando que las marcas descubran tu estilo.",
+        title: "Crece como profesional",
+        description: "Construye un historial con campañas verificadas, acumula reseñas y desbloquea acuerdos mejor pagados con el tiempo.",
     },
     {
         icon: Award,
-        title: "Pagos protegidos, siempre",
-        description: "Las marcas financian las campañas antes de que empieces a crear. Sin facturas pendientes, sin ghosting. Tus ganancias están aseguradas.",
+        title: "Solo marcas verificadas",
+        description: "Cada marca en RELA Collab está verificada. Colaboras con empresas reales, briefs claros y condiciones justas.",
     },
 ];
 
 export function ForCreators() {
     return (
-        <section className="py-24 bg-gradient-to-br from-accent/5 via-background to-background" id="for-creators">
+        <section className="py-20 md:py-28 bg-muted/20" id="for-creators">
             <div className="container px-4">
                 <div className="max-w-6xl mx-auto">
                     {/* Header */}
                     <motion.div
-                        className="text-center mb-16"
-                        initial={{ opacity: 0, y: 20 }}
+                        className="mb-14"
+                        initial={{ opacity: 0, y: 16 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.5 }}
+                        transition={{ duration: 0.4 }}
                     >
-                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-6">
-                            <Zap className="w-4 h-4" />
-                            Para Creadores
-                        </span>
-                        <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                        <span className="section-eyebrow">Para Creadores</span>
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mt-3 mb-4">
                             Convierte tu contenido en{" "}
-                            <span className="gradient-text">Ingresos consistentes</span>
+                            <span className="gradient-text">ingresos consistentes.</span>
                         </h2>
-                        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                            Deja de lidiar para conseguir acuerdos con marcas. RELA Collab te conecta con empresas que realmente encajan con tu nicho, audiencia y estilo.
+                        <p className="text-base md:text-lg text-muted-foreground max-w-xl">
+                            Deja de luchar para conseguir acuerdos con marcas. RELA Collab conecta contigo las empresas que realmente encajan con tu nicho.
                         </p>
                     </motion.div>
 
                     {/* Benefits Grid */}
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+                    <div className="grid sm:grid-cols-2 gap-4 md:gap-5 mb-12">
                         {creatorBenefits.map((benefit, index) => (
                             <motion.div
                                 key={benefit.title}
-                                className="glass-card p-6 hover-lift group"
-                                initial={{ opacity: 0, y: 20 }}
+                                className="flex gap-4 p-5 md:p-6 rounded-2xl border border-border/60 bg-background hover:border-border transition-colors duration-200"
+                                initial={{ opacity: 0, y: 16 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
-                                transition={{ duration: 0.4, delay: index * 0.08 }}
+                                transition={{ duration: 0.35, delay: index * 0.07 }}
                             >
-                                <div className="w-12 h-12 rounded-xl bg-gradient-accent flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <benefit.icon className="w-6 h-6 text-accent-foreground" />
+                                <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <benefit.icon className="w-5 h-5 text-background" />
                                 </div>
-                                <h3 className="font-semibold text-lg mb-2">{benefit.title}</h3>
-                                <p className="text-muted-foreground text-sm leading-relaxed">{benefit.description}</p>
+                                <div>
+                                    <h3 className="font-semibold text-base mb-1">{benefit.title}</h3>
+                                    <p className="text-muted-foreground text-sm leading-relaxed">{benefit.description}</p>
+                                </div>
                             </motion.div>
                         ))}
                     </div>
 
-                    {/* CTA Banner */}
+                    {/* CTA */}
                     <motion.div
-                        className="glass-card p-8 md:p-12 bg-gradient-to-br from-accent/10 to-primary/5 border border-accent/20 text-center"
-                        initial={{ opacity: 0, y: 20 }}
+                        className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-6 md:p-8 rounded-2xl border border-border/60 bg-background"
+                        initial={{ opacity: 0, y: 16 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.5 }}
+                        transition={{ duration: 0.4 }}
                     >
-                        <h3 className="text-2xl md:text-3xl font-bold mb-4">
-                            ¿Listo para trabajar con tus marcas ideales?
-                        </h3>
-                        <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-                            Aplica en minutos. Consigue matches al instante. Empieza a crear para marcas que valoran tu audiencia.
-                        </p>
-                        <Link to="/login">
-                            <Button variant="glass" size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+                        <div className="flex-1">
+                            <h3 className="text-xl md:text-2xl font-bold mb-1">¿Listo para trabajar con tus marcas ideales?</h3>
+                            <p className="text-muted-foreground text-sm">Aplica en minutos. Consigue matches al instante.</p>
+                        </div>
+                        <Link to="/apply" className="flex-shrink-0">
+                            <Button className="h-11 px-6 rounded-xl font-medium w-full sm:w-auto">
                                 Únete como Creador
-                                <ArrowRight className="w-5 h-5" />
+                                <ArrowRight className="w-4 h-4 ml-1" />
                             </Button>
                         </Link>
                     </motion.div>

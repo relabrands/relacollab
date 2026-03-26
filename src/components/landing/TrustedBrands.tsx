@@ -5,45 +5,42 @@ const brands = [
     { name: "Pilexil", logo: "https://relabrands.com/wp-content/uploads/2026/02/pilexil.png" },
     { name: "Secalia", logo: "https://relabrands.com/wp-content/uploads/2026/02/secalia.png" },
     { name: "Thrombocid", logo: "https://relabrands.com/wp-content/uploads/2026/02/thrombocid.png" },
-
 ];
 
 export function TrustedBrands() {
     return (
-        <section className="py-20 bg-background overflow-hidden border-y border-border/50">
+        <section className="py-12 bg-background border-y border-border/40 overflow-hidden">
             <div className="container px-4">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                <motion.p
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.5 }}
-                    className="text-center mb-12"
+                    transition={{ duration: 0.4 }}
+                    className="text-center text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground/60 mb-8"
                 >
-                    <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-                        Marcas top crecen con RELA Collab
-                    </h2>
-                </motion.div>
+                    Marcas que confían en nosotros
+                </motion.p>
 
-                {/* Infinite Carousel */}
+                {/* Infinite marquee */}
                 <div className="relative flex overflow-x-hidden group">
-                    <div className="animate-marquee flex space-x-12 min-w-full items-center justify-around group-hover:paused">
+                    <div className="animate-marquee flex gap-16 min-w-full items-center group-hover:[animation-play-state:paused]">
                         {brands.map((brand, i) => (
                             <img
                                 key={i}
                                 src={brand.logo}
                                 alt={brand.name}
-                                className="h-10 md:h-12 w-auto object-contain grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer"
+                                className="h-8 md:h-10 w-auto object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-80 transition-all duration-300 flex-shrink-0"
                             />
                         ))}
                     </div>
-                    {/* Duplicate for infinite effect */}
-                    <div className="animate-marquee flex space-x-12 min-w-full items-center justify-around group-hover:paused absolute top-0 left-full">
+                    {/* Duplicate for infinite loop */}
+                    <div className="animate-marquee flex gap-16 min-w-full items-center absolute top-0 left-full group-hover:[animation-play-state:paused]">
                         {brands.map((brand, i) => (
                             <img
                                 key={`dup-${i}`}
                                 src={brand.logo}
                                 alt={brand.name}
-                                className="h-10 md:h-12 w-auto object-contain grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer"
+                                className="h-8 md:h-10 w-auto object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-80 transition-all duration-300 flex-shrink-0"
                             />
                         ))}
                     </div>

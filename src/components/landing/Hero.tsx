@@ -1,76 +1,70 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Zap, TrendingUp, Shield, CheckCircle } from "lucide-react";
+import { ArrowRight, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useRef } from "react";
 
 export function Hero() {
-  return (
-    <section className="relative min-h-screen bg-mesh overflow-hidden">
-      {/* Floating elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-20 left-[10%] w-72 h-72 bg-primary/10 rounded-full blur-3xl"
-          animate={{ y: [0, -20, 0], scale: [1, 1.1, 1] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-[8%] w-96 h-96 bg-accent/10 rounded-full blur-3xl"
-          animate={{ y: [0, 20, 0], scale: [1, 1.05, 1] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute top-40 right-[20%] w-48 h-48 bg-success/10 rounded-full blur-2xl"
-          animate={{ y: [0, -10, 0], x: [0, 10, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
+  const video1Ref = useRef<HTMLVideoElement>(null);
+  const video2Ref = useRef<HTMLVideoElement>(null);
 
-      <div className="container relative z-10 px-4 pt-32 pb-20">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Badge */}
+  useEffect(() => {
+    if (video1Ref.current) video1Ref.current.play().catch(() => {});
+    if (video2Ref.current) video2Ref.current.play().catch(() => {});
+  }, []);
+
+  return (
+    <section className="relative min-h-screen bg-background overflow-hidden">
+      {/* Subtle gradient orb — top right only */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -translate-y-1/4 translate-x-1/4 pointer-events-none" />
+
+      <div className="container relative z-10 px-4 pt-28 pb-0 md:pt-32">
+        <div className="max-w-5xl mx-auto">
+          {/* Eyebrow */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.4 }}
+            className="flex justify-center mb-6"
           >
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
-              <Sparkles className="w-4 h-4" />
-              Plataforma de Matching de Creadores impulsada por IA
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/70 bg-background text-xs font-medium text-muted-foreground tracking-wide">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
+              Marketplace de UGC · Powered by AI
             </span>
           </motion.div>
 
-          {/* Main headline */}
+          {/* Headline */}
           <motion.h1
-            className="text-5xl md:text-7xl font-bold tracking-tight mb-6"
-            initial={{ opacity: 0, y: 20 }}
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-center leading-[1.05] mb-6"
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ duration: 0.45, delay: 0.08 }}
           >
-            <span className="block">Donde las marcas encuentran</span>
-            <span className="gradient-text">a su creador perfecto</span>
+            <span className="block text-foreground">Donde marcas</span>
+            <span className="block gradient-text">encuentran creadores</span>
+            <span className="block text-foreground">perfectos.</span>
           </motion.h1>
 
           {/* Subheadline */}
           <motion.p
-            className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-6"
-            initial={{ opacity: 0, y: 20 }}
+            className="text-lg md:text-xl text-muted-foreground text-center max-w-xl mx-auto mb-8 leading-relaxed"
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.4, delay: 0.16 }}
           >
-            El marketplace de UGC más inteligente. No solo listamos creadores: los{" "}
-            <span className="text-foreground font-semibold">conectamos con precisión</span> usando IA entrenada con resultados reales de campañas.
+            IA que analiza objetivos, audiencias y engagement para conectar marcas con el creador ideal. Sin suposiciones.
           </motion.p>
 
-          {/* Quick Value Props */}
+          {/* Value props — simple inline list */}
           <motion.div
-            className="flex flex-wrap justify-center gap-3 mb-10"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.25 }}
+            className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.22 }}
           >
-            {["Sin propuestas en frío", "Pagos seguros", "Analíticas en tiempo real", "Creadores verificados"].map((item) => (
-              <span key={item} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground px-3 py-1 rounded-full border border-border/60 bg-background/50">
-                <CheckCircle className="w-3.5 h-3.5 text-success" />
+            {["Creadores verificados", "Pagos seguros", "Analíticas en tiempo real"].map((item) => (
+              <span key={item} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                <CheckCircle className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                 {item}
               </span>
             ))}
@@ -78,88 +72,93 @@ export function Hero() {
 
           {/* CTA Buttons */}
           <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20"
-            initial={{ opacity: 0, y: 20 }}
+            className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-16 md:mb-20"
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ duration: 0.4, delay: 0.28 }}
           >
             <Link to="/login">
-              <Button variant="hero" size="xl">
+              <Button size="lg" className="h-12 px-8 text-base font-medium rounded-xl w-full sm:w-auto">
                 Soy una Marca
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </Link>
-            <Link to="/login">
-              <Button variant="glass" size="xl">
-                Soy un Creador
-                <Zap className="w-5 h-5" />
+            <Link to="/apply">
+              <Button variant="outline" size="lg" className="h-12 px-8 text-base font-medium rounded-xl w-full sm:w-auto">
+                Soy Creador de Contenido
               </Button>
             </Link>
-          </motion.div>
-
-          {/* Stats */}
-          <motion.div
-            className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">2.5K+</div>
-              <div className="text-muted-foreground text-xs md:text-sm">Creadores verificados</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">94%</div>
-              <div className="text-muted-foreground text-xs md:text-sm">Precisión de IA</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">500+</div>
-              <div className="text-muted-foreground text-xs md:text-sm">Marcas registradas</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">3x</div>
-              <div className="text-muted-foreground text-xs md:text-sm">Aumento de interacción</div>
-            </div>
           </motion.div>
         </div>
 
-        {/* Feature Cards Preview */}
+        {/* Video phones — hero visual */}
         <motion.div
-          className="mt-20 max-w-5xl mx-auto"
-          initial={{ opacity: 0, y: 40 }}
+          className="relative max-w-3xl mx-auto h-[340px] sm:h-[440px] md:h-[520px]"
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.5 }}
+          transition={{ duration: 0.55, delay: 0.38 }}
         >
-          <div className="glass-card p-8">
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="p-6 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 hover-lift">
-                <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-4">
-                  <Sparkles className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Motor de Matching con IA</h3>
-                <p className="text-muted-foreground text-sm">
-                  Análisis profundo de objetivos de campaña, datos de audiencia y patrones de interacción para un matching preciso.
-                </p>
-              </div>
+          {/* Glow under phones */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-20 bg-primary/10 rounded-full blur-2xl" />
 
-              <div className="p-6 rounded-xl bg-gradient-to-br from-accent/5 to-accent/10 hover-lift">
-                <div className="w-12 h-12 rounded-xl bg-gradient-accent flex items-center justify-center mb-4">
-                  <TrendingUp className="w-6 h-6 text-accent-foreground" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Seguimiento de rendimiento</h3>
-                <p className="text-muted-foreground text-sm">
-                  Métricas en tiempo real de cada entregable de la campaña. Conoce tu ROI antes de que termine.
-                </p>
+          {/* Phone 1 — left, tilted left */}
+          <div className="absolute left-1/2 -translate-x-[130%] md:-translate-x-[145%] bottom-0 -rotate-[6deg] z-10">
+            <div className="relative w-[140px] sm:w-[170px] md:w-[200px] h-[245px] sm:h-[300px] md:h-[350px] rounded-[1.75rem] overflow-hidden border border-black/10 shadow-2xl bg-black">
+              <video
+                ref={video1Ref}
+                src="https://relabrands.com/wp-content/uploads/2026/02/video2.mp4"
+                className="w-full h-full object-cover opacity-95"
+                autoPlay
+                loop
+                muted
+                playsInline
+                disablePictureInPicture
+                controlsList="nodownload nofullscreen noremoteplayback"
+              />
+              {/* Overlay badge */}
+              <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] font-semibold flex items-center gap-1 shadow-sm">
+                <span className="text-red-500">❤️</span> 14.2K
               </div>
+            </div>
+          </div>
 
-              <div className="p-6 rounded-xl bg-gradient-to-br from-success/5 to-success/10 hover-lift">
-                <div className="w-12 h-12 rounded-xl bg-gradient-success flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-success-foreground" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Pagos protegidos</h3>
-                <p className="text-muted-foreground text-sm">
-                  Pagos en custodia aseguran que los fondos solo se liberen cuando el contenido sea revisado y aprobado.
-                </p>
+          {/* Phone 2 — center, upright */}
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-0 z-20">
+            <div className="relative w-[160px] sm:w-[195px] md:w-[230px] h-[285px] sm:h-[345px] md:h-[405px] rounded-[2rem] overflow-hidden border border-black/10 shadow-2xl bg-black ring-1 ring-primary/20">
+              <video
+                ref={video2Ref}
+                src="https://relabrands.com/wp-content/uploads/2026/02/video1.mp4"
+                className="w-full h-full object-cover opacity-95"
+                autoPlay
+                loop
+                muted
+                playsInline
+                disablePictureInPicture
+                controlsList="nodownload nofullscreen noremoteplayback"
+              />
+              {/* Overlay badge */}
+              <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] font-semibold flex items-center gap-1 shadow-sm">
+                <span className="text-red-500">❤️</span> 18.5K
+              </div>
+            </div>
+          </div>
+
+          {/* Phone 3 — right, tilted right */}
+          <div className="absolute left-1/2 translate-x-[30%] md:translate-x-[45%] bottom-0 rotate-[6deg] z-10">
+            <div className="relative w-[140px] sm:w-[170px] md:w-[200px] h-[245px] sm:h-[300px] md:h-[350px] rounded-[1.75rem] overflow-hidden border border-black/10 shadow-2xl bg-black">
+              <video
+                src="https://relabrands.com/wp-content/uploads/2026/02/video2.mp4"
+                className="w-full h-full object-cover opacity-95 scale-x-[-1]"
+                autoPlay
+                loop
+                muted
+                playsInline
+                disablePictureInPicture
+                controlsList="nodownload nofullscreen noremoteplayback"
+              />
+              {/* Overlay badge */}
+              <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] font-semibold flex items-center gap-1 shadow-sm">
+                💬 45
               </div>
             </div>
           </div>
