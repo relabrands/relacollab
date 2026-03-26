@@ -8,7 +8,7 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <Link to="/" className="flex items-center gap-2">
             <img
-              src="https://relabrands.com/wp-content/uploads/2026/02/Favicon-1.jpg"
+              src="https://relabrands.com/wp-content/uploads/2026/03/Icono-rela-collab.png"
               alt="RELA Collab Logo"
               className="w-8 h-8 rounded-lg object-cover"
             />

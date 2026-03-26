@@ -274,9 +274,11 @@ export default function CreatorOnboarding() {
                         className="space-y-6"
                     >
                         <div className="text-center space-y-3">
-                            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-primary flex items-center justify-center">
-                                <Sparkles className="w-8 h-8 text-primary-foreground" />
-                            </div>
+                            <img
+                                src="https://relabrands.com/wp-content/uploads/2026/03/Icono-rela-collab.png"
+                                alt="RELA Collab Logo"
+                                className="w-20 h-20 mx-auto rounded-2xl object-cover"
+                            />
                             <h2 className="text-3xl font-bold">
                                 ¡Hola, {userName}! 👋
                             </h2>
