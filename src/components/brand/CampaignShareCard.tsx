@@ -58,7 +58,6 @@ export function CampaignShareCard({ campaign, campaignUrl }: CampaignShareCardPr
             link.click();
             toast.success("¡Story descargada exitosamente!");
         } catch (err) {
-            console.error("Download failed:", err);
             toast.error("Error al descargar. Intenta de nuevo.");
         } finally {
             setDownloading(false);

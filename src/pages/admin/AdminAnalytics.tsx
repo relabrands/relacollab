@@ -136,7 +136,6 @@ export default function AdminAnalytics() {
       });
 
     } catch (e) {
-      console.error("Error fetching analytics", e);
     } finally {
       setLoading(false);
     }

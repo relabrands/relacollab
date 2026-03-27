@@ -85,7 +85,6 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
             });
             toast.success("Recordatorio enviado al creador");
         } catch (error) {
-            console.error(error);
             toast.error("Error al enviar el recordatorio");
         } finally {
             setSendingReminder(false);

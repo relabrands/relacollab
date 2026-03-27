@@ -61,7 +61,6 @@ export default function CreatorEarnings() {
                 setHasBankDetails(false);
             }
         } catch (error) {
-            console.error("Error checking bank details:", error);
         }
     };
 
@@ -108,7 +107,6 @@ export default function CreatorEarnings() {
                 requested: requested
             });
         } catch (error) {
-            console.error("Error fetching earnings:", error);
         } finally {
             setIsLoading(false);
         }
@@ -140,7 +138,6 @@ export default function CreatorEarnings() {
             toast.success("¡Solicitud de pago enviada exitosamente!");
             fetchEarnings(); // Refresh data
         } catch (error) {
-            console.error("Error requesting payout:", error);
             toast.error("Error al solicitar el pago.");
         } finally {
             setIsRequesting(false);

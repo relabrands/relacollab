@@ -139,7 +139,6 @@ export function ContentSubmission() {
       const campaignData = (await Promise.all(campaignDataPromises)).filter(Boolean) as CampaignProgress[];
       setCampaigns(campaignData);
     } catch (error) {
-      console.error("Error fetching campaigns:", error);
       toast.error("Error al cargar campañas");
     } finally {
       setLoading(false);
@@ -186,7 +185,6 @@ export function ContentSubmission() {
       // Refresh the campaigns list
       fetchActiveCampaigns();
     } catch (error) {
-      console.error("Error al eliminar contenido:", error);
       toast.error("Error al eliminar contenido");
     }
   };

@@ -61,7 +61,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         setStatus(null);
                     }
                 } catch (error) {
-                    console.error("Error fetching user role:", error);
                     setRole(null);
                     setOnboardingCompleted(false);
                     setStatus(null);
@@ -105,7 +104,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
             return finalRole;
         } catch (error) {
-            console.error("Error signing in:", error);
             throw error;
         }
     };
@@ -122,7 +120,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
             return null;
         } catch (error) {
-            console.error("Error logging in:", error);
             throw error;
         }
     };
@@ -145,7 +142,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setRole(selectedRole);
             return selectedRole;
         } catch (error) {
-            console.error("Error registering:", error);
             throw error;
         }
     };
@@ -165,7 +161,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setRole(selectedRole);
             return selectedRole;
         } catch (error) {
-            console.error("Error updating role:", error);
             throw error;
         }
     };
@@ -177,7 +172,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUser(null);
             setStatus(null);
         } catch (error) {
-            console.error("Error signing out:", error);
         }
     };
 

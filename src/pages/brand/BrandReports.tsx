@@ -67,7 +67,6 @@ export default function BrandReports() {
         getDocs(query(collection(db, "campaigns"), where("brandId", "==", user.uid), orderBy("createdAt", "desc")))
             .then((snap) => setCampaigns(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
             .catch((err) => {
-                console.error("Campaigns fetch error:", err);
                 toast.error("Error al cargar campañas");
             })
             .finally(() => setIsCampaignLoading(false));
@@ -109,7 +108,6 @@ export default function BrandReports() {
                 setCreatorProfiles(profileMap);
             })
             .catch((err) => {
-                console.error("Submissions fetch error:", err);
                 toast.error("Error al cargar métricas");
             })
             .finally(() => setIsMetricsLoading(false));

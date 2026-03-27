@@ -173,7 +173,6 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                 } else if (!data.aiAnalysis || typeof data.aiAnalysis.matchPercentage === "undefined") {
                     // Old/legacy format or missing — trigger re-analysis
                     if (data.aiStatus !== "pending") {
-                        console.log("Triggering AI re-analysis...");
                         await setDoc(matchRef, { aiStatus: "pending", forceRetry: true }, { merge: true });
                         setLoadingAnalysis(true);
                     }
@@ -194,7 +193,6 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                     });
                     setLoadingAnalysis(true);
                 } catch (err) {
-                    console.error("Error creating match doc:", err);
                     setLoadingAnalysis(false);
                 }
             }
@@ -865,7 +863,6 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                                         onApprove?.();
                                         onClose();
                                     } catch (err) {
-                                        console.error("Error assigning payment:", err);
                                         toast.error("Error al asignar el pago. Intenta de nuevo.");
                                     } finally {
                                         setIsApprovingPayment(false);

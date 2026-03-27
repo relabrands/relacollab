@@ -38,7 +38,6 @@ export default function TikTokCallback() {
             // 2. Validate State (Anti-CSRF)
             const storedState = localStorage.getItem("tiktok_auth_state");
             if (state !== storedState) {
-                console.error("State mismatch", { received: state, stored: storedState });
                 toast.error("Security verification failed. Please try again.");
                 navigate("/creator/profile");
                 return;
@@ -72,7 +71,6 @@ export default function TikTokCallback() {
                 navigate("/creator/profile?tiktok_connected=true");
 
             } catch (err: any) {
-                console.error("TikTok Auth Error:", err);
                 toast.error(err.message || "Failed to connect TikTok");
                 navigate("/creator/profile");
             }

@@ -73,7 +73,6 @@ export function PayoutSettings({ open, onOpenChange, onSuccess }: PayoutSettings
                 }
             }
         } catch (error) {
-            console.error("Error fetching bank details:", error);
             toast.error("Error al cargar los datos bancarios.");
         } finally {
             setIsLoading(false);
@@ -101,7 +100,6 @@ export function PayoutSettings({ open, onOpenChange, onSuccess }: PayoutSettings
             onOpenChange(false);
             if (onSuccess) onSuccess();
         } catch (error) {
-            console.error("Error saving bank details:", error);
             toast.error("Error al guardar los datos bancarios.");
         } finally {
             setIsSaving(false);

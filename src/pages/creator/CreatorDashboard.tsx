@@ -189,7 +189,6 @@ export default function CreatorDashboard() {
         ]);
 
       } catch (error) {
-        console.error("Error loading dashboard:", error);
       } finally {
         setLoading(false);
       }

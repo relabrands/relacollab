@@ -76,7 +76,6 @@ export default function CreatorAnalytics() {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) setProfile(userDoc.data());
             } catch (error) {
-                console.error("Error fetching profile:", error);
             } finally {
                 setIsLoading(false);
             }

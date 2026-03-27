@@ -77,7 +77,6 @@ export default function BrandMatches() {
           setLoading(false); // No campaigns, stop loading
         }
       } catch (error) {
-        console.error("Error fetching campaigns:", error);
         setLoading(false);
       }
     };
@@ -193,8 +192,6 @@ export default function BrandMatches() {
         setCompletedCreators(allApplications.filter((a: any) => (a.status === 'approved' || a.status === 'accepted') && a.submissionStatus === 'approved'));
 
         // DEBUG LOGS
-        console.log("All Applications/Invites Fetched:", allApplications);
-        console.log("Collaborators Filtered:", allApplications.filter((a: any) => (a.status === 'approved' || a.status === 'accepted') && a.submissionStatus !== 'approved'));
 
 
 
@@ -211,7 +208,6 @@ export default function BrandMatches() {
           // Respect privacy: skip creators who explicitly set publicProfile to false
           .filter((c: any) => c.privacySettings?.publicProfile !== false);
 
-        console.log("Valid Creators (with social accounts):", validCreators.length);
 
         // 3. Match Logic
         let matchedCreators = validCreators.map((creator: any) => {
@@ -271,11 +267,9 @@ export default function BrandMatches() {
           displayScore: aiMap[c.id]?.matchPercentage ?? c.matchScore,
         })).sort((a: any, b: any) => b.displayScore - a.displayScore);
 
-        console.log("Final Matched Creators:", matchedCreators.length, "with AI preloaded:", Object.keys(aiMap).length);
 
         setCreators(matchedCreators);
       } catch (error) {
-        console.error("Error fetching match details:", error);
       } finally {
         setLoading(false);
       }
@@ -308,7 +302,6 @@ export default function BrandMatches() {
       setApprovedIds((prev) => [...prev, id]);
       toast.success(`¡Propuesta enviada a ${creatorName}!`);
     } catch (error) {
-      console.error("Error sending proposal:", error);
       toast.error("Error al enviar la propuesta.");
     }
   };
@@ -335,7 +328,6 @@ export default function BrandMatches() {
       // Remove from list locally
       setApplicants(prev => prev.filter(a => a.id !== creator.id));
     } catch (error) {
-      console.error("Error approving applicant:", error);
       toast.error("Error al aprobar al solicitante");
     }
   };
@@ -356,7 +348,6 @@ export default function BrandMatches() {
           description: `${creator.name} no volverá a aparecer en esta campaña.`
         });
       } catch (error) {
-        console.error("Error al descartar permanentemente:", error);
         toast.error("Error al descartar al creador.");
       }
     } else {
@@ -386,7 +377,6 @@ export default function BrandMatches() {
       // Also track locally so they appear in discarded
       setRejectedIds((prev) => [...prev, creator.id]);
     } catch (error) {
-      console.error("Error rejecting:", error);
       toast.error("Error al rechazar la solicitud. Por favor, inténtalo de nuevo.");
     }
   };

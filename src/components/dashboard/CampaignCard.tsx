@@ -56,7 +56,6 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
 
         setStats({ applications: total, approved });
       } catch (error) {
-        console.error("Error fetching campaign stats:", error);
       }
     };
 

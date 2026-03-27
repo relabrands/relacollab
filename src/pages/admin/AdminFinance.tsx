@@ -153,7 +153,6 @@ export default function AdminFinance() {
             setPayouts(payoutsData);
 
         } catch (error) {
-            console.error("Error fetching finance data:", error);
             toast.error("Failed to load finance data");
         } finally {
             setLoading(false);
@@ -212,7 +211,6 @@ export default function AdminFinance() {
             setPayouts(refreshed);
             setIsInvoiceDetailsOpen(false);
         } catch (error) {
-            console.error("Error confirming invoice:", error);
             toast.error("Failed to confirm invoice");
         }
     };
@@ -250,7 +248,6 @@ export default function AdminFinance() {
             setSubscriptionInvoices(prev => prev.map(i => i.id === invoice.id ? { ...i, status: "paid" } : i));
             setIsSubscriptionDetailsOpen(false);
         } catch (error) {
-            console.error("Error confirming subscription payment:", error);
             toast.error("Failed to confirm subscription payment");
         }
     };
@@ -274,7 +271,6 @@ export default function AdminFinance() {
                     }
                 }
             } catch (error) {
-                console.error("Error fetching bank details:", error);
                 toast.error("Could not load creator bank details");
             } finally {
                 setIsLoadingBankDetails(false);
@@ -301,7 +297,6 @@ export default function AdminFinance() {
             setPayouts(prev => prev.map(p => p.id === selectedPayout.id ? { ...p, status: "paid", receiptUrl: payoutReceiptUrl } : p));
             setIsPayoutDetailsOpen(false);
         } catch (error) {
-            console.error("Error updating payout:", error);
             toast.error("Failed to update payout");
         } finally {
             setIsSubmittingPayout(false);

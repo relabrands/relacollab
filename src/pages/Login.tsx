@@ -35,7 +35,6 @@ const Login = () => {
                 toast.error("Tu cuenta no tiene un rol asignado. Contacta a soporte.");
             }
         } catch (error) {
-            console.error(error);
             toast.error("Credenciales inválidas");
         } finally {
             setIsLoggingIn(false);

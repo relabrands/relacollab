@@ -163,7 +163,6 @@ export default function CreateCampaign() {
           }
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
       }
     };
 
@@ -319,7 +318,6 @@ export default function CreateCampaign() {
           brandName = userDoc.data().brandName || userDoc.data().displayName || userDoc.data().name || brandName;
         }
       } catch (e) {
-        console.warn("Could not fetch brand name:", e);
       }
 
       // Calculate final amounts using maxReward as Escrow base
@@ -393,9 +391,7 @@ export default function CreateCampaign() {
               status: "pending",
               createdAt: new Date().toISOString(),
             });
-            console.log("✅ Invoice created:", totalGross, "for", creatorCount, "creators (Escrow based on maxReward)");
           } catch (invoiceErr) {
-            console.error("❌ Invoice creation failed:", invoiceErr);
             toast.error("Campaña creada, pero la factura no pudo generarse. Contacta soporte.");
           }
         }
@@ -404,7 +400,6 @@ export default function CreateCampaign() {
         navigate("/brand/matches");
       }
     } catch (error) {
-      console.error("Error creating campaign:", error);
       toast.error("Error al crear la campaña.");
     } finally {
       setIsSubmitting(false);
@@ -558,7 +553,6 @@ export default function CreateCampaign() {
                                 setFormData(prev => ({ ...prev, coverImage: downloadURL }));
                                 toast.success("¡Imagen subida exitosamente!", { id: toastId });
                               } catch (error) {
-                                console.error("Error uploading image:", error);
                                 toast.error("Error al subir la imagen.", { id: toastId });
                               }
                             }}

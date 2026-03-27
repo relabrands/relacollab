@@ -106,7 +106,6 @@ export function DeliverableSubmissionDialog({
             const submissions = snapshot.docs.map(doc => doc.data() as SubmittedContent);
             setSubmittedContent(submissions);
         } catch (error) {
-            console.error("Error fetching submissions:", error);
         }
     };
 
@@ -246,7 +245,6 @@ export function DeliverableSubmissionDialog({
                         // TikTok metrics are already in the media object from selection (approx),
                         // but ideally we'd want to refresh them. For sandbox, we might not have a separate 'getSingleVideo' endpoint easily.
                         // We will trust the selection values for now.
-                        console.log("TikTok submission - using fresh selection metrics");
                         await updateDoc(submissionRef, {
                             "metrics.views": media.view_count || 0,
                             "metrics.likes": media.like_count || 0,
@@ -261,7 +259,6 @@ export function DeliverableSubmissionDialog({
                         const postId = match ? match[2] : null;
 
                         if (postId) {
-                            console.log("📡 Fetching metrics for resubmitted content:", postId);
                             fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
@@ -280,14 +277,11 @@ export function DeliverableSubmissionDialog({
                                             "metrics.comments": data.metrics.comments || 0,
                                             "metrics.updatedAt": new Date().toISOString()
                                         });
-                                        console.log("✅ Fetched metrics for resubmitted content");
                                     }
                                 }
-                            }).catch(err => console.error("Error fetching metrics for resubmission:", err));
                         }
                     }
                 } catch (e) {
-                    console.error("Error initiating metric fetch for resubmission:", e);
                 }
 
                 toast.success("¡Contenido reenviado exitosamente!");
@@ -335,10 +329,8 @@ export function DeliverableSubmissionDialog({
                     const match = media.permalink.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
                     const postId = match ? match[2] : null;
 
-                    console.log("🔍 Auto-fetch metrics:", { permalink: media.permalink, postId, hasMatch: !!match });
 
                     if ((media as any).platform === 'tiktok') {
-                        console.log("Using TikTok metrics from selection for new submission");
                         await updateDoc(docRef, {
                             "metrics.views": media.view_count || 0,
                             "metrics.likes": media.like_count || 0,
@@ -352,17 +344,14 @@ export function DeliverableSubmissionDialog({
                         // Instagram Logic
                         if (postId) {
                             // We use fetch here to call our cloud function
-                            console.log("📡 Calling getPostMetrics for postId:", postId);
                             fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ userId: user!.uid, postId })
                             }).then(async (res) => {
-                                console.log("📥 getPostMetrics response status:", res.status);
 
                                 if (res.ok) {
                                     const data = await res.json();
-                                    console.log("📊 getPostMetrics data:", data);
 
                                     if (data.success && data.metrics) {
                                         // Update the doc we just created with complete metrics
@@ -377,21 +366,15 @@ export function DeliverableSubmissionDialog({
                                             "metrics.updatedAt": new Date().toISOString(),
                                             metricsLastFetched: new Date().toISOString()
                                         });
-                                        console.log("✅ Automatically fetched detailed metrics for submission");
                                     } else {
-                                        console.warn("⚠️ getPostMetrics succeeded but no metrics:", data);
                                     }
                                 } else {
                                     const errorText = await res.text();
-                                    console.error("❌ getPostMetrics HTTP error:", res.status, errorText);
                                 }
-                            }).catch(err => console.error("❌ Error auto-fetching metrics:", err));
                         } else {
-                            console.warn("⚠️ Could not extract postId from permalink:", media.permalink);
                         }
                     }
                 } catch (e) {
-                    console.error("❌ Error initiating metric fetch", e);
                 }
 
                 return docRef;
@@ -403,7 +386,6 @@ export function DeliverableSubmissionDialog({
             onSuccess();
             onClose();
         } catch (error) {
-            console.error("Error submitting deliverables:", error);
             toast.error("Error al enviar el contenido");
         } finally {
             setLoading(false);

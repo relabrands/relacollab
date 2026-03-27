@@ -59,7 +59,6 @@ export function CampaignDetailsDialog({ campaign, isOpen, onClose }: CampaignDet
                         creatorData = userDoc.data();
                     }
                 } catch (e) {
-                    console.error("Error fetching creator", e);
                 }
 
                 return {
@@ -99,7 +98,6 @@ export function CampaignDetailsDialog({ campaign, isOpen, onClose }: CampaignDet
             });
 
         } catch (error) {
-            console.error("Error fetching campaign details:", error);
         } finally {
             setLoading(false);
         }

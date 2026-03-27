@@ -67,7 +67,6 @@ export function AICampaignGenerator({ brandName, onGenerated }: AICampaignGenera
             toast.success("✨ Campaña generada — revisa los campos y ajusta lo que necesites");
             setOpen(false); // Collapse after success
         } catch (err: any) {
-            console.error("AI Campaign error:", err);
             toast.error(err.message || "No se pudo generar la campaña. Intenta de nuevo.");
         } finally {
             clearInterval(interval);

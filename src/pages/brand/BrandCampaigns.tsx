@@ -32,7 +32,6 @@ export default function BrandCampaigns() {
                 const campaignsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setCampaigns(campaignsData);
             } catch (error) {
-                console.error("Error fetching campaigns:", error);
             } finally {
                 setLoading(false);
             }

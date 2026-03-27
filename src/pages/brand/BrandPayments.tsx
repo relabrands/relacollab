@@ -66,7 +66,6 @@ export default function BrandPayments() {
                 setCurrentPlan(userDoc.data().plan || null);
             }
         } catch (error) {
-            console.error("Error fetching user plan:", error);
         }
     };
 
@@ -80,7 +79,6 @@ export default function BrandPayments() {
             })) as Plan[];
             setPlans(fetchedPlans);
         } catch (error: any) {
-            console.error("Error fetching plans:", error);
             toast.error("Error al cargar los planes: " + (error.message || "Error desconocido"));
         } finally {
             setLoadingPlans(false);
@@ -98,7 +96,6 @@ export default function BrandPayments() {
             })) as Payment[];
             setPayments(fetchedPayments);
         } catch (error) {
-            console.error("Error fetching payments history:", error);
         } finally {
             setLoadingPayments(false);
         }
@@ -123,7 +120,6 @@ export default function BrandPayments() {
                 toast.success(`¡Suscrito a ${plan.name} exitosamente!`);
                 setCurrentPlan(plan.name);
             } catch (error) {
-                console.error("Error subscribing to free plan", error);
                 toast.error("Error al suscribirse");
             } finally {
                 setProcessingId(null);
@@ -164,7 +160,6 @@ export default function BrandPayments() {
 
             // Optionally update UI here to reflect pending state
         } catch (error) {
-            console.error("Error uploading subscription receipt:", error);
             toast.error("Error al enviar el comprobante.");
         } finally {
             setIsSubmittingReceipt(false);
@@ -400,7 +395,6 @@ export default function BrandPayments() {
                                             setReceiptUrl(downloadURL);
                                             toast.success("Archivo subido correctamente", { id: toastId });
                                         } catch (error) {
-                                            console.error("Upload error:", error);
                                             toast.error("Error al subir el archivo", { id: toastId });
                                         } finally {
                                             setIsSubmittingReceipt(false);

@@ -62,7 +62,6 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
             }));
             setCampaigns(campaignsData);
         } catch (error) {
-            console.error("Error fetching brand details:", error);
         } finally {
             setLoading(false);
         }

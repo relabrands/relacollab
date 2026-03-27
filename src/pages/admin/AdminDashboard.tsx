@@ -150,7 +150,6 @@ export default function AdminDashboard() {
         setPayouts(payoutSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
       } catch (error) {
-        console.error("Error fetching admin data:", error);
       } finally {
         setLoading(false);
       }
@@ -167,7 +166,6 @@ export default function AdminDashboard() {
       }, { merge: true });
       toast.success("Settings updated successfully");
     } catch (error) {
-      console.error("Error saving settings:", error);
       toast.error("Failed to update settings");
     } finally {
       setIsSavingSettings(false);
@@ -189,7 +187,6 @@ export default function AdminDashboard() {
       setPaymentReceiptUrl("");
       toast.success("✅ Payout marked as paid! Creator will see it in Earnings.");
     } catch (error) {
-      console.error("Error processing payout:", error);
       toast.error("Failed to process payout");
     } finally {
       setIsProcessingPayment(false);
@@ -247,7 +244,6 @@ export default function AdminDashboard() {
         }
 
         await Promise.all(batches);
-        console.log(`Deleted all documents in ${colName}`);
       }
 
       toast.success("Database reset successfully", {
@@ -259,7 +255,6 @@ export default function AdminDashboard() {
       setRecentBrands([]);
 
     } catch (error) {
-      console.error("Error resetting database:", error);
       toast.error("Failed to reset database");
     } finally {
       setIsResetting(false);

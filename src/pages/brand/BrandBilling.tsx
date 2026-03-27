@@ -75,7 +75,6 @@ export default function BrandBilling() {
             const snap = await getDocs(q);
             setInvoices(snap.docs.map(d => ({ id: d.id, ...d.data() })) as CampaignInvoice[]);
         } catch (error) {
-            console.error("Error fetching invoices:", error);
         } finally {
             setIsLoading(false);
         }
@@ -95,7 +94,6 @@ export default function BrandBilling() {
             setReceiptUrl("");
             fetchInvoices();
         } catch (error) {
-            console.error("Error uploading receipt:", error);
             toast.error("Error al enviar el comprobante.");
         } finally {
             setIsSubmitting(false);
@@ -366,7 +364,6 @@ export default function BrandBilling() {
                                             setReceiptUrl(downloadURL);
                                             toast.success("Archivo subido correctamente", { id: toastId });
                                         } catch (error) {
-                                            console.error("Upload error:", error);
                                             toast.error("Error al subir el archivo", { id: toastId });
                                         } finally {
                                             setIsSubmitting(false);

@@ -102,7 +102,6 @@ export default function CreatorOnboarding() {
                     setUserName(data.displayName || data.email?.split("@")[0] || "");
                 }
             } catch (error) {
-                console.error("Error fetching user data:", error);
             }
         };
         fetchUserName();
@@ -246,7 +245,6 @@ export default function CreatorOnboarding() {
             // Redirect to a "pending approval" page
             window.location.href = "/pending-approval";
         } catch (error) {
-            console.error(error);
             toast.error("Algo salió mal");
         } finally {
             setLoading(false);
@@ -258,7 +256,6 @@ export default function CreatorOnboarding() {
             await logout();
             navigate("/login");
         } catch (error) {
-            console.error("Error logging out:", error);
         }
     };
 

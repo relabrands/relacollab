@@ -87,7 +87,6 @@ export default function CreatorMessages() {
                     setSelectedCollab(collabs[0]);
                 }
             } catch (error) {
-                console.error("Error fetching collaborations:", error);
             } finally {
                 setLoading(false);
             }
@@ -142,7 +141,6 @@ export default function CreatorMessages() {
 
             setNewMessage("");
         } catch (error) {
-            console.error("Error sending message:", error);
             toast.error("Error al enviar el mensaje");
         }
     };

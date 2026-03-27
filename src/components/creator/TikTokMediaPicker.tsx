@@ -59,7 +59,6 @@ export function TikTokMediaPicker({
                 toast.error(response.data.error || "Error al cargar contenido de TikTok");
             }
         } catch (error) {
-            console.error("Error fetching TikTok media:", error);
             toast.error("No se pudieron cargar los videos de TikTok. El token podría haber expirado.");
         } finally {
             setLoading(false);

@@ -89,7 +89,6 @@ export default function AdminCampaigns() {
                             brandName = brandDoc.data().brandName || brandDoc.data().displayName || brandName;
                         }
                     } catch (e) {
-                        console.error("Error fetching brand for campaign", e);
                     }
                 }
 
@@ -109,7 +108,6 @@ export default function AdminCampaigns() {
 
             setCampaigns(campaignsData);
         } catch (error) {
-            console.error("Error fetching campaigns:", error);
             toast.error("Failed to load campaigns");
         } finally {
             setLoading(false);
@@ -128,7 +126,6 @@ export default function AdminCampaigns() {
             setCampaigns(campaigns.map((c) => (c.id === campaignId ? { ...c, status: newStatus as any } : c)));
             toast.success("Campaign status updated");
         } catch (error) {
-            console.error("Error updating status:", error);
             toast.error("Failed to update status");
         }
     };
@@ -142,7 +139,6 @@ export default function AdminCampaigns() {
             toast.success("Campaign deleted successfully");
             setIsDeleteDialogOpen(false);
         } catch (error) {
-            console.error("Error deleting campaign:", error);
             toast.error("Failed to delete campaign");
         }
     };

@@ -63,7 +63,6 @@ export default function CreatorSettings() {
                     }
                 }
             } catch (error) {
-                console.error("Error fetching settings:", error);
                 toast.error("Error al cargar la configuración");
             } finally {
                 setLoading(false);
@@ -85,7 +84,6 @@ export default function CreatorSettings() {
             });
             toast.success("Configuración guardada exitosamente");
         } catch (error) {
-            console.error("Error saving settings:", error);
             toast.error("Error al guardar la configuración");
         } finally {
             setSaving(false);

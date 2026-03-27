@@ -64,7 +64,6 @@ export default function ActiveCampaigns() {
                                     brandProfile = brandData;
                                 }
                             } catch (e) {
-                                console.log("Error fetching brand details", e);
                             }
                         }
 
@@ -87,7 +86,6 @@ export default function ActiveCampaigns() {
 
                 setActiveCampaigns(campaigns);
             } catch (error) {
-                console.error("Error fetching active campaigns:", error);
             } finally {
                 setLoading(false);
             }

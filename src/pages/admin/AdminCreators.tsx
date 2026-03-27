@@ -133,7 +133,6 @@ export default function AdminCreators() {
       });
       setCreators(creatorsData);
     } catch (error) {
-      console.error("Error fetching creators:", error);
       toast.error("Failed to load creators");
     } finally {
       setLoading(false);
@@ -159,7 +158,6 @@ export default function AdminCreators() {
       setCreators(creators.map((c) => (c.id === creatorId ? { ...c, status: newStatus as any } : c)));
       toast.success("Creator status updated");
     } catch (error) {
-      console.error("Error updating status:", error);
       toast.error("Failed to update status");
     }
   };
@@ -171,7 +169,6 @@ export default function AdminCreators() {
       setCreators(creators.map((c) => (c.id === creator.id ? { ...c, status: "suspended" } : c)));
       toast.success(`${creator.name} has been suspended`);
     } catch (error) {
-      console.error("Error suspending creator:", error);
       toast.error("Failed to suspend creator");
     }
   };
@@ -182,7 +179,6 @@ export default function AdminCreators() {
       setCreators(creators.map((c) => (c.id === creator.id ? { ...c, status: "active" } : c)));
       toast.success(`${creator.name} has been activated`);
     } catch (error) {
-      console.error("Error activating creator:", error);
       toast.error("Failed to activate creator");
     }
   };

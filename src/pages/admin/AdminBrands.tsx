@@ -90,7 +90,6 @@ export default function AdminBrands() {
       }));
       setAvailablePlans(plans);
     } catch (e) {
-      console.error("Error fetching plans", e);
     }
   };
 
@@ -133,7 +132,6 @@ export default function AdminBrands() {
 
       setBrands(brandsData);
     } catch (error) {
-      console.error("Error fetching brands:", error);
       toast.error("Failed to load brands");
     } finally {
       setLoading(false);
@@ -168,7 +166,6 @@ export default function AdminBrands() {
       setIsEditOpen(false);
       toast.success(`${selectedBrand.name} has been updated`);
     } catch (error) {
-      console.error("Error updating brand:", error);
       toast.error("Failed to update brand");
     }
   };
@@ -182,7 +179,6 @@ export default function AdminBrands() {
       setBrands(brands.filter((b) => b.id !== brand.id));
       toast.success(`${brand.name} has been removed`);
     } catch (error) {
-      console.error("Error deleting brand:", error);
       toast.error("Failed to delete brand");
     }
   };
@@ -213,7 +209,6 @@ export default function AdminBrands() {
         toast.info(`Credits updated to ${planDetails.credits}`);
       }
     } catch (error) {
-      console.error("Error updating plan:", error);
       toast.error("Failed to update subscription plan");
     }
   };
@@ -224,7 +219,6 @@ export default function AdminBrands() {
       setBrands(brands.map((b) => (b.id === brandId ? { ...b, status: newStatus as any } : b)));
       toast.success("Status updated");
     } catch (error) {
-      console.error("Error updating status:", error);
       toast.error("Failed to update status");
     }
   };

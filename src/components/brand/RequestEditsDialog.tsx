@@ -79,7 +79,6 @@ export function RequestEditsDialog({
             onSuccess();
             onClose();
         } catch (error) {
-            console.error("Error requesting edits:", error);
             toast.error("Failed to send edit request");
         } finally {
             setLoading(false);

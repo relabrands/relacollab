@@ -139,7 +139,6 @@ export default function CreatorScheduling() {
                 setDeadlinesCount(dCount);
 
             } catch (error) {
-                console.error("Error fetching schedule:", error);
             } finally {
                 setLoading(false);
             }
@@ -167,7 +166,6 @@ export default function CreatorScheduling() {
             setEvents(prevEvents => prevEvents.map(e => e.id === visitId ? { ...e, status: "confirmed" } : e));
             toast.success("¡Visita confirmada!");
         } catch (error) {
-            console.error("Error confirming visit:", error);
             toast.error("Error al confirmar la visita");
         }
     };

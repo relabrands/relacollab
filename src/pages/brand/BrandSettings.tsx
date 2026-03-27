@@ -54,7 +54,6 @@ export default function BrandSettings() {
                     });
                 }
             } catch (error) {
-                console.error("Error fetching settings:", error);
             } finally {
                 setFetching(false);
             }
@@ -102,7 +101,6 @@ export default function BrandSettings() {
 
             toast.success("¡Logo de la marca actualizado!", { id: toastId });
         } catch (error) {
-            console.error("Error uploading logo:", error);
             toast.error("Error al subir el logo", { id: toastId });
         }
     };
@@ -129,7 +127,6 @@ export default function BrandSettings() {
             await updateDoc(doc(db, "users", user.uid), updatePayload);
             toast.success("Configuración actualizada exitosamente");
         } catch (error) {
-            console.error("Error saving settings:", error);
             toast.error("Error al actualizar la configuración");
         } finally {
             setLoading(false);

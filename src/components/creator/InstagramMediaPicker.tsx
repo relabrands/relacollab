@@ -86,7 +86,6 @@ export function InstagramMediaPicker({
                 toast.error(response.data.error || "Error al cargar contenido de Instagram");
             }
         } catch (error) {
-            console.error("Error fetching Instagram media:", error);
             toast.error("No se pudieron cargar las publicaciones de Instagram. El token podría haber expirado.");
         } finally {
             setLoading(false);

@@ -191,7 +191,6 @@ export default function CreatorProfile() {
           });
         }
       } catch (error) {
-        console.error("Error fetching profile:", error);
         toast.error("Error al cargar los datos del perfil");
       } finally {
         setIsLoading(false);
@@ -254,7 +253,6 @@ export default function CreatorProfile() {
             // Clear params
             window.history.replaceState({}, document.title, window.location.pathname);
           } catch (error) {
-            console.error("Error saving Instagram data:", error);
             toast.error("Error al guardar la conexión de Instagram");
           }
         };
@@ -312,7 +310,6 @@ export default function CreatorProfile() {
 
       toast.success("TikTok desconectado.");
     } catch (error) {
-      console.error("Error disconnecting TikTok:", error);
       toast.error("Error al desconectar TikTok.");
     }
   };
@@ -345,7 +342,6 @@ export default function CreatorProfile() {
 
       toast.success("Instagram desconectado.");
     } catch (error) {
-      console.error("Error disconnecting:", error);
       toast.error("Error al desconectar. Por favor intenta de nuevo.");
     }
   };
@@ -376,7 +372,6 @@ export default function CreatorProfile() {
       });
       toast.success("¡Perfil guardado exitosamente!");
     } catch (error) {
-      console.error("Error saving profile:", error);
       toast.error("Error al guardar los cambios del perfil");
     } finally {
       setIsSaving(false);
@@ -450,7 +445,6 @@ export default function CreatorProfile() {
 
       toast.success("¡Foto de perfil actualizada!", { id: toastId });
     } catch (error) {
-      console.error("Error uploading photo:", error);
       toast.error("Error al subir foto", { id: toastId });
     }
   };

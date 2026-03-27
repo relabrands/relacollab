@@ -104,7 +104,6 @@ export default function AdminSubscriptions() {
       })) as Plan[];
       setPlans(fetchedPlans);
     } catch (error) {
-      console.error("Error fetching plans:", error);
       toast.error("Failed to load plans");
     } finally {
       setLoading(false);
@@ -155,7 +154,6 @@ export default function AdminSubscriptions() {
       setIsDialogOpen(false);
       fetchPlans();
     } catch (error) {
-      console.error("Error saving plan:", error);
       toast.error("Failed to save plan");
     }
   };
@@ -168,7 +166,6 @@ export default function AdminSubscriptions() {
       toast.success(`Plan ${plan.active ? "archived" : "activated"}`);
       fetchPlans();
     } catch (error) {
-      console.error("Error toggling plan:", error);
       toast.error("Failed to update status");
     }
   };

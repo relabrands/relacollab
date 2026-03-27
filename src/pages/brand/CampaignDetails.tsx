@@ -57,7 +57,6 @@ export default function CampaignDetails() {
                         ["approved", "active", "collaborating"].includes(a.status)).length);
                 }
             } catch (error) {
-                console.error("Error fetching campaign data:", error);
             } finally {
                 setLoading(false);
             }
@@ -73,7 +72,6 @@ export default function CampaignDetails() {
             toast.success("Campaña eliminada.");
             navigate("/brand");
         } catch (error) {
-            console.error("Error deleting campaign:", error);
             toast.error("Error al eliminar la campaña.");
         } finally {
             setIsDeleting(false);

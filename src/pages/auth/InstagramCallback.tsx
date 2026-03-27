@@ -68,7 +68,6 @@ export default function InstagramCallback() {
                     // Force navigation to profile
                     window.location.href = "/creator/profile?connected=true";
                 } else {
-                    console.error("Backend error:", response.data);
                     const errorMsg = response.data.error || "Unknown error";
                     const errorDetails = response.data.details || "";
 
@@ -79,7 +78,6 @@ export default function InstagramCallback() {
                     navigate(`/creator/profile?error=${encodeURIComponent(errorMsg)}&error_description=${encodeURIComponent(errorDetails)}`);
                 }
             } catch (error: any) {
-                console.error("Exchange error:", error);
                 const errorMessage = error.response?.data?.error || error.message;
                 const errorDetails = error.response?.data?.details || "";
 

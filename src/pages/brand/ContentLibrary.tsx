@@ -328,7 +328,6 @@ export default function ContentLibrary() {
                 }
               }
             } catch (e) {
-              console.error("Error fetching creator:", e);
             }
 
             return {
@@ -362,7 +361,6 @@ export default function ContentLibrary() {
 
         setContentList(enrichedContent);
       } catch (error) {
-        console.error("Error fetching content:", error);
       } finally {
         setLoading(false);
       }
@@ -511,7 +509,6 @@ export default function ContentLibrary() {
                       createdAt: new Date().toISOString(),
                     });
                   }
-                  console.log("✅ Payout/earning record created for", submission.creatorId);
                 }
               }
 
@@ -532,7 +529,6 @@ export default function ContentLibrary() {
                   status: "completed",
                   completedAt: new Date().toISOString()
                 });
-                console.log(`🎉 Campaign ${campaignId} auto-completed!`);
                 toast.success("¡Campaña autocompletada! Todos los creadores han finalizado sus entregables.", { duration: 5000 });
               }
             }
@@ -541,7 +537,6 @@ export default function ContentLibrary() {
           }
         } catch (payoutErr) {
           // Non-blocking — log but don't block the UI
-          console.error("Error creating payout:", payoutErr);
         }
       }
 
@@ -577,13 +572,11 @@ export default function ContentLibrary() {
             });
           }
         } catch (ratingErr) {
-          console.error("Error saving rating:", ratingErr);
         }
       }
 
       toast.success(newStatus === "approved" ? "¡Contenido aprobado!" : "Cambios solicitados");
     } catch (error) {
-      console.error("Error updating status:", error);
       toast.error("Error al actualizar el estado");
     }
   };
@@ -678,7 +671,6 @@ export default function ContentLibrary() {
         toast.error(`Error: ${errorMessage}`, { id: toastId });
       }
     } catch (error) {
-      console.error(error);
       toast.error("Error de red al intentar actualizar", { id: toastId });
     }
   };

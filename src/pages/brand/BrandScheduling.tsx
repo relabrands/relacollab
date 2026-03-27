@@ -137,7 +137,6 @@ export default function BrandScheduling() {
 
                 setEvents(newEvents);
             } catch (error) {
-                console.error("Error fetching schedule:", error);
             } finally {
                 setLoading(false);
             }

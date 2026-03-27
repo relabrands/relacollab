@@ -65,7 +65,6 @@ export default function BrandAnalytics() {
 
 
             } catch (error) {
-                console.error(error);
             } finally {
                 setLoading(false);
             }

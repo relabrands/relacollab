@@ -27,7 +27,6 @@ export function usePlatformConfig() {
             }
             setLoading(false);
         }, (error) => {
-            console.error("Error fetching platform config:", error);
             setLoading(false);
         });
 

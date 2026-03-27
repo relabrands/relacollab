@@ -71,7 +71,6 @@ export default function BrandOnboarding() {
                 const loaded: Plan[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Plan, "id">) }));
                 setPlans(loaded);
             } catch (err) {
-                console.error("Error loading plans:", err);
                 toast.error("No se pudieron cargar los planes");
             } finally {
                 setPlansLoading(false);
@@ -131,7 +130,6 @@ export default function BrandOnboarding() {
             toast.success("¡Perfil completado! Tu cuenta está siendo revisada.");
             window.location.href = "/pending-approval";
         } catch (error) {
-            console.error(error);
             toast.error("Algo salió mal. Inténtalo de nuevo.");
         } finally {
             setLoading(false);
@@ -139,7 +137,6 @@ export default function BrandOnboarding() {
     };
 
     const handleLogout = async () => {
-        try { await logout(); navigate("/login"); } catch (err) { console.error(err); }
     };
 
     // ─── Step labels ──────────────────────────────────────────────────────────

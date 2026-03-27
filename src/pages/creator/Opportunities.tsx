@@ -96,7 +96,6 @@ export default function Opportunities() {
                 brandData = brandDoc.data();
               }
             } catch (e) {
-              console.error("Error fetching brand details for invite", e);
             }
 
             const { score } = calculateMatchScore(campaignData, creatorProfile);
@@ -150,7 +149,6 @@ export default function Opportunities() {
               brandData = brandDoc.data();
             }
           } catch (e) {
-            console.error("Error fetching brand details for opportunity", e);
           }
 
           const { score } = calculateMatchScore(data, creatorProfile);
@@ -219,7 +217,6 @@ export default function Opportunities() {
                 brandData = brandDoc.data();
               }
             } catch (e) {
-              console.error("Error fetching brand details for pending app", e);
             }
 
             return {
@@ -242,7 +239,6 @@ export default function Opportunities() {
         setPendingApplications(resolvedPendingApps);
 
       } catch (error) {
-        console.error("Error fetching opportunities:", error);
       } finally {
         setLoading(false);
       }
@@ -315,7 +311,6 @@ export default function Opportunities() {
       setIsDialogOpen(false);
 
     } catch (error) {
-      console.error("Error al aplicar:", error);
       toast.error("Error al enviar la solicitud");
     } finally {
       setProcessingId(null);
