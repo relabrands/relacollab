@@ -279,6 +279,7 @@ export function DeliverableSubmissionDialog({
                                         });
                                     }
                                 }
+                            });
                         }
                     }
                 } catch (e) {
@@ -349,12 +350,9 @@ export function DeliverableSubmissionDialog({
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ userId: user!.uid, postId })
                             }).then(async (res) => {
-
                                 if (res.ok) {
                                     const data = await res.json();
-
                                     if (data.success && data.metrics) {
-                                        // Update the doc we just created with complete metrics
                                         await updateDoc(docRef, {
                                             "metrics.views": data.metrics.views || 0,
                                             "metrics.reach": data.metrics.reach || 0,
@@ -366,12 +364,9 @@ export function DeliverableSubmissionDialog({
                                             "metrics.updatedAt": new Date().toISOString(),
                                             metricsLastFetched: new Date().toISOString()
                                         });
-                                    } else {
                                     }
-                                } else {
-                                    const errorText = await res.text();
                                 }
-                        } else {
+                            });
                         }
                     }
                 } catch (e) {
