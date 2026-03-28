@@ -215,18 +215,14 @@ export function CampaignShareCard({ campaign, campaignUrl }: CampaignShareCardPr
                     {/* ── RELA Collab watermark ───────────────────────────── */}
                     <div style={{
                         position: "absolute", bottom: 28,
-                        display: "flex", alignItems: "center", gap: 8,
+                        display: "flex", alignItems: "center",
                     }}>
-                        <div style={{
-                            width: 22, height: 22, borderRadius: 6,
-                            background: "linear-gradient(135deg, #a855f7, #6366f1)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                        }}>
-                            <span style={{ fontSize: 10, fontWeight: 800, color: "white" }}>R</span>
-                        </div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(200,180,255,0.5)", letterSpacing: 0.5 }}>
-                            RELA Collab
-                        </span>
+                        <img
+                            src="https://relabrands.com/wp-content/uploads/2026/03/R_V2_colormorado-scaled.png"
+                            alt="RELA Collab"
+                            crossOrigin="anonymous"
+                            style={{ height: 18, width: "auto", objectFit: "contain", opacity: 0.6 }}
+                        />
                     </div>
                 </div>
                 {/* ── /inner card ─── */}

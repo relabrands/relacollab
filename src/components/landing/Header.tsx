@@ -87,13 +87,12 @@ export function Header() {
       >
         <div className="container px-4 h-16 flex items-center justify-between max-w-7xl mx-auto">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 shrink-0">
+          <Link to="/" className="flex items-center shrink-0">
             <img
-              src="https://relabrands.com/wp-content/uploads/2026/03/Icono-rela-collab.png"
-              alt="RELA Collab Logo"
-              className="w-8 h-8 rounded-lg object-cover"
+              src="https://relabrands.com/wp-content/uploads/2026/03/R_V2_colormorado-scaled.png"
+              alt="RELA Collab"
+              className="h-8 w-auto object-contain"
             />
-            <span className="font-bold text-xl tracking-tight">RELA Collab</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -223,11 +222,10 @@ export function Header() {
               <div className="flex items-center justify-between px-5 h-16 border-b border-border">
                 <Link to="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
                   <img
-                    src="https://relabrands.com/wp-content/uploads/2026/03/Icono-rela-collab.png"
-                    alt="RELA"
-                    className="w-7 h-7 rounded-md object-cover"
+                    src="https://relabrands.com/wp-content/uploads/2026/03/R_V2_colormorado-scaled.png"
+                    alt="RELA Collab"
+                    className="h-7 w-auto object-contain"
                   />
-                  <span className="font-bold">RELA Collab</span>
                 </Link>
                 <Button
                   variant="ghost"

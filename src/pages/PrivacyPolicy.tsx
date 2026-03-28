@@ -13,7 +13,11 @@ export default function PrivacyPolicy() {
                             Volver
                         </Button>
                     </Link>
-                    <div className="font-bold text-xl">RELA Collab</div>
+                    <img
+                        src="https://relabrands.com/wp-content/uploads/2026/03/R_V2_colormorado-scaled.png"
+                        alt="RELA Collab"
+                        className="h-7 w-auto object-contain"
+                    />
                     <div className="w-20" /> {/* Spacer for centering */}
                 </div>
             </nav>

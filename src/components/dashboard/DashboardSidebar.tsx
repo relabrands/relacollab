@@ -78,13 +78,12 @@ export function DashboardSidebar({ type }: DashboardSidebarProps) {
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar text-sidebar-foreground hidden md:flex flex-col">
       {/* Logo */}
-      <Link to="/" className="flex items-center gap-3 px-6 py-6">
+      <Link to="/" className="flex items-center px-6 py-6">
         <img
-          src="https://relabrands.com/wp-content/uploads/2026/03/Icono-rela-collab.png"
-          alt="RELA Collab Logo"
-          className="w-9 h-9 rounded-xl object-cover"
+          src="https://relabrands.com/wp-content/uploads/2026/03/R_V2_colormorado-scaled.png"
+          alt="RELA Collab"
+          className="h-8 w-auto object-contain"
         />
-        <span className="font-bold text-lg">RELA Collab</span>
       </Link>
 
       {/* Type badge */}

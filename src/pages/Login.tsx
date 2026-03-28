@@ -96,14 +96,13 @@ const Login = () => {
                 >
                     {/* Logo */}
                     <div className="flex justify-center mb-8">
-                        <Link to="/" className="flex items-center gap-2">
-                            <img
-                                src="https://relabrands.com/wp-content/uploads/2026/03/Icono-rela-collab.png"
-                                alt="RELA Collab"
-                                className="w-9 h-9 rounded-xl object-contain"
-                            />
-                            <span className="font-bold text-lg tracking-tight">RELA Collab</span>
-                        </Link>
+                        <Link to="/" className="flex items-center justify-center mb-8">
+                        <img
+                            src="https://relabrands.com/wp-content/uploads/2026/03/R_V2_colormorado-scaled.png"
+                            alt="RELA Collab"
+                            className="h-9 w-auto object-contain"
+                        />
+                    </Link>
                     </div>
 
                     <div className="bg-background border border-border rounded-2xl p-8 shadow-sm space-y-5">
@@ -155,13 +154,12 @@ const Login = () => {
                 <div className="relative z-10 flex flex-col justify-between h-full">
                     {/* Logo + back link */}
                     <div className="flex items-center justify-between">
-                        <Link to="/" className="flex items-center gap-2.5">
+                        <Link to="/" className="flex items-center">
                             <img
-                                src="https://relabrands.com/wp-content/uploads/2026/03/Icono-rela-collab.png"
+                                src="https://relabrands.com/wp-content/uploads/2026/03/R_V2_colormorado-scaled.png"
                                 alt="RELA Collab"
-                                className="w-9 h-9 rounded-xl object-contain"
+                                className="h-8 w-auto object-contain brightness-0 invert"
                             />
-                            <span className="font-bold text-lg text-background/90 tracking-tight">RELA Collab</span>
                         </Link>
                         <Link
                             to="/"
@@ -211,11 +209,10 @@ const Login = () => {
                 <div className="flex lg:hidden flex-col items-center text-center px-6 pt-6 pb-8 w-full">
                     <Link to="/" className="flex items-center gap-2 mb-3">
                         <img
-                            src="https://relabrands.com/wp-content/uploads/2026/03/Icono-rela-collab.png"
+                            src="https://relabrands.com/wp-content/uploads/2026/03/R_V2_colormorado-scaled.png"
                             alt="RELA Collab"
-                            className="w-10 h-10 rounded-xl object-contain"
+                            className="h-9 w-auto object-contain"
                         />
-                        <span className="font-bold text-lg tracking-tight">RELA Collab</span>
                     </Link>
                     <p className="text-sm text-muted-foreground max-w-[260px] leading-relaxed">
                         El marketplace de UGC más inteligente de República Dominicana.
