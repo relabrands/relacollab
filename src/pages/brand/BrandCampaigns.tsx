@@ -4,20 +4,25 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { CampaignCard } from "@/components/dashboard/CampaignCard";
 import { Plus, Loader2, Filter } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CampaignShareCard } from "@/components/brand/CampaignShareCard";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { UpgradePrompt } from "@/components/brand/UpgradePrompt";
 
 export default function BrandCampaigns() {
     const { user } = useAuth();
+    const navigate = useNavigate();
+    const { limits, isWithinLimit, recommendedUpgrade } = usePlanLimits();
     const [loading, setLoading] = useState(true);
     const [campaigns, setCampaigns] = useState<any[]>([]);
     const [filter, setFilter] = useState("all");
     const [selectedCampaignToShare, setSelectedCampaignToShare] = useState<any | null>(null);
+    const [upgradeOpen, setUpgradeOpen] = useState(false);
 
     useEffect(() => {
         const fetchCampaigns = async () => {
@@ -49,6 +54,18 @@ export default function BrandCampaigns() {
         setSelectedCampaignToShare(campaign);
     };
 
+    // ── Guard: verifica límite antes de crear campaña ─────────────────────────
+    const handleNewCampaign = () => {
+        const activeCampaigns = campaigns.filter(
+            (c) => c.status === "active" || c.status === "published"
+        ).length;
+        if (!isWithinLimit(activeCampaigns, limits.maxActiveCampaigns)) {
+            setUpgradeOpen(true);
+            return;
+        }
+        navigate("/brand/campaigns/new");
+    };
+
     return (
         <div className="flex min-h-screen bg-background">
             <DashboardSidebar type="brand" />
@@ -60,12 +77,10 @@ export default function BrandCampaigns() {
                         title="Campañas"
                         subtitle="Gestiona tus campañas activas y pasadas"
                     />
-                    <Link to="/brand/campaigns/new">
-                        <Button variant="hero">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Crear Campaña
-                        </Button>
-                    </Link>
+                    <Button variant="hero" onClick={handleNewCampaign}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Crear Campaña
+                    </Button>
                 </div>
 
                 {/* Filters */}
@@ -136,7 +151,7 @@ export default function BrandCampaigns() {
                 )}
             </main>
 
-            {/* Share Campaign Story Dialog */}
+            {/* Share Dialog */}
             <Dialog open={!!selectedCampaignToShare} onOpenChange={() => setSelectedCampaignToShare(null)}>
                 <DialogContent className="max-w-xl">
                     <DialogHeader>
@@ -156,6 +171,14 @@ export default function BrandCampaigns() {
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Upgrade Prompt */}
+            <UpgradePrompt
+                open={upgradeOpen}
+                onOpenChange={setUpgradeOpen}
+                reason={`Tu plan actual permite máximo ${limits.maxActiveCampaigns === 1 ? "1 campaña activa" : `${limits.maxActiveCampaigns} campañas activas`}. Actualiza tu plan para crear más campañas.`}
+                recommendedPlan={recommendedUpgrade()}
+            />
         </div>
     );
 }

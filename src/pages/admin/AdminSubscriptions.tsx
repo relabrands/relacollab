@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -36,11 +38,15 @@ import {
   Archive,
   RotateCcw,
   Shield,
-  Gift
+  Gift,
+  SlidersHorizontal,
+  Infinity,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
-import { collection, getDocs, addDoc, updateDoc, doc, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, doc, query, orderBy, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { DEFAULT_LIMITS, type PlanLimits } from "@/hooks/usePlanLimits";
 
 interface Plan {
   id: string;
@@ -77,9 +83,41 @@ const AVAILABLE_PERMISSIONS = [
   { id: "invite_team", label: "Invite Team Members" }
 ];
 
+const PLAN_KEYS = ["starter", "growth", "pro"] as const;
+type PlanKey = typeof PLAN_KEYS[number];
+
+const PLAN_LABELS: Record<PlanKey, { label: string; price: string; color: string }> = {
+  starter: { label: "Starter", price: "Gratis", color: "#6b7280" },
+  growth:  { label: "Growth",  price: "$89/mes", color: "#534AB7" },
+  pro:     { label: "Pro",     price: "$249/mes", color: "#0F6E56" },
+};
+
+const NUMERIC_LIMITS: { key: keyof PlanLimits; label: string; hint: string }[] = [
+  { key: "maxActiveCampaigns",     label: "Campañas activas",          hint: "-1 = ilimitado" },
+  { key: "maxTotalCampaigns",      label: "Campañas totales",          hint: "-1 = ilimitado" },
+  { key: "maxMatchesPerCampaign",  label: "Matches por campaña",       hint: "-1 = ilimitado" },
+  { key: "maxMonthlyApplications", label: "Aplicaciones / mes",        hint: "-1 = ilimitado" },
+];
+
+const BOOLEAN_LIMITS: { key: keyof PlanLimits; label: string }[] = [
+  { key: "aiMatchEnabled",          label: "IA Match habilitado" },
+  { key: "analyticsEnabled",        label: "Analytics avanzado" },
+  { key: "contentLibraryEnabled",   label: "Content Library" },
+  { key: "exportEnabled",           label: "Exportar datos (CSV/PDF)" },
+  { key: "prioritySupportEnabled",  label: "Soporte prioritario" },
+  { key: "teamMembersEnabled",      label: "Invitar miembros del equipo" },
+];
+
 export default function AdminSubscriptions() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Plan Limits state
+  const [limitsData, setLimitsData] = useState<Record<PlanKey, PlanLimits>>(
+    DEFAULT_LIMITS as Record<PlanKey, PlanLimits>
+  );
+  const [savingLimits, setSavingLimits] = useState(false);
+  const [activeTab, setActiveTab] = useState("plans");
 
   // Dialog State
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -91,6 +129,15 @@ export default function AdminSubscriptions() {
 
   useEffect(() => {
     fetchPlans();
+    // Suscribe a cambios en planLimits en tiempo real
+    const unsubs = PLAN_KEYS.map((key) =>
+      onSnapshot(doc(db, "planLimits", key), (snap) => {
+        if (snap.exists()) {
+          setLimitsData((prev) => ({ ...prev, [key]: snap.data() as PlanLimits }));
+        }
+      })
+    );
+    return () => unsubs.forEach((u) => u());
   }, []);
 
   const fetchPlans = async () => {
@@ -202,6 +249,33 @@ export default function AdminSubscriptions() {
     });
   };
 
+  // ─── Guardar límites ────────────────────────────────────────────────────────
+  const handleSaveLimits = async (planKey: PlanKey) => {
+    setSavingLimits(true);
+    try {
+      await setDoc(doc(db, "planLimits", planKey), limitsData[planKey]);
+      toast.success(`Límites de ${PLAN_LABELS[planKey].label} guardados`);
+    } catch {
+      toast.error("Error al guardar límites");
+    } finally {
+      setSavingLimits(false);
+    }
+  };
+
+  const updateNumericLimit = (planKey: PlanKey, field: keyof PlanLimits, value: number) => {
+    setLimitsData((prev) => ({
+      ...prev,
+      [planKey]: { ...prev[planKey], [field]: value },
+    }));
+  };
+
+  const updateBooleanLimit = (planKey: PlanKey, field: keyof PlanLimits, value: boolean) => {
+    setLimitsData((prev) => ({
+      ...prev,
+      [planKey]: { ...prev[planKey], [field]: value },
+    }));
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <AdminSidebar />
@@ -209,27 +283,38 @@ export default function AdminSubscriptions() {
       <main className="flex-1 ml-64 p-8">
         <DashboardHeader
           title="Plan & Pricing Configuration"
-          subtitle="Manage platform tiers, credit allocations, and permissions."
+          subtitle="Manage platform tiers, credit allocations, permissions, and plan limits."
         />
 
-        {/* Actions */}
-        <div className="flex justify-end mb-8">
-          <Button variant="hero" onClick={() => handleOpenDialog()}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create New Plan
-          </Button>
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+          <TabsList className="mb-8">
+            <TabsTrigger value="plans" className="gap-2">
+              <CreditCard className="w-4 h-4" /> Planes
+            </TabsTrigger>
+            <TabsTrigger value="limits" className="gap-2">
+              <SlidersHorizontal className="w-4 h-4" /> Límites por Plan
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Plans Grid */}
-        {loading ? (
-          <div className="text-center py-12">Loading plans...</div>
-        ) : plans.length === 0 ? (
-          <div className="text-center py-20 border-2 border-dashed rounded-xl">
-            <p className="text-muted-foreground mb-4">No subscription plans configured yet.</p>
-            <Button variant="outline" onClick={() => handleOpenDialog()}>Create First Plan</Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* ── TAB: Planes ── */}
+          <TabsContent value="plans">
+            <div className="flex justify-end mb-8">
+              <Button variant="hero" onClick={() => handleOpenDialog()}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create New Plan
+              </Button>
+            </div>
+
+            {/* Plans Grid */}
+            {loading ? (
+              <div className="text-center py-12">Loading plans...</div>
+            ) : plans.length === 0 ? (
+              <div className="text-center py-20 border-2 border-dashed rounded-xl">
+                <p className="text-muted-foreground mb-4">No subscription plans configured yet.</p>
+                <Button variant="outline" onClick={() => handleOpenDialog()}>Create First Plan</Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {plans.map((plan, index) => (
               <motion.div
                 key={plan.id}
@@ -313,10 +398,93 @@ export default function AdminSubscriptions() {
                 </div>
               </motion.div>
             ))}
-          </div>
-        )}
+              </div>
+            )}
+          </TabsContent>
 
-        {/* Edit/Create Dialog */}
+          {/* ── TAB: Límites ── */}
+          <TabsContent value="limits">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {PLAN_KEYS.map((planKey) => {
+                const meta = PLAN_LABELS[planKey];
+                const limits = limitsData[planKey];
+                return (
+                  <Card key={planKey} className="border-2" style={{ borderColor: `${meta.color}33` }}>
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{meta.label}</CardTitle>
+                          <CardDescription>{meta.price}</CardDescription>
+                        </div>
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center"
+                          style={{ background: `${meta.color}22` }}
+                        >
+                          <SlidersHorizontal className="w-4 h-4" style={{ color: meta.color }} />
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-5">
+                      {/* Límites numéricos */}
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Límites numéricos</p>
+                        {NUMERIC_LIMITS.map(({ key, label, hint }) => (
+                          <div key={key} className="space-y-1">
+                            <Label className="text-xs flex justify-between">
+                              <span>{label}</span>
+                              <span className="text-muted-foreground">{hint}</span>
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min={-1}
+                                value={(limits[key] as number)}
+                                onChange={(e) =>
+                                  updateNumericLimit(planKey, key, parseInt(e.target.value) || -1)
+                                }
+                                className="pr-10 h-9 text-sm"
+                              />
+                              {(limits[key] as number) === -1 && (
+                                <Infinity
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary"
+                                />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Funciones booleanas */}
+                      <div className="space-y-3 border-t pt-4">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Funcionalidades</p>
+                        {BOOLEAN_LIMITS.map(({ key, label }) => (
+                          <div key={key} className="flex items-center justify-between">
+                            <Label className="text-sm font-normal cursor-pointer">{label}</Label>
+                            <Switch
+                              checked={limits[key] as boolean}
+                              onCheckedChange={(val) => updateBooleanLimit(planKey, key, val)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      <Button
+                        className="w-full gap-2 text-white"
+                        style={{ background: meta.color }}
+                        disabled={savingLimits}
+                        onClick={() => handleSaveLimits(planKey)}
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        Guardar {meta.label}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+        </Tabs>
+
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>

@@ -105,11 +105,11 @@ export default function BrandDashboard() {
     fetchDashboardData();
   }, [user]);
 
-  // Abre el gate si no tiene suscripción activa (carga completa)
+  // Abre el gate solo si terminó de cargar y NO tiene suscripción activa.
+  // Si ya tiene plan activo, cierra el gate automáticamente.
   useEffect(() => {
-    if (!subLoading && !isActive) {
-      setGateOpen(true);
-    }
+    if (subLoading) return;
+    setGateOpen(!isActive);
   }, [subLoading, isActive]);
 
   if (loading) {
