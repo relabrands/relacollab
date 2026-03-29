@@ -218,7 +218,7 @@ export function CampaignShareCard({ campaign, campaignUrl }: CampaignShareCardPr
                         display: "flex", alignItems: "center",
                     }}>
                         <img
-                            src="https://relabrands.com/wp-content/uploads/2026/03/R_V2_colormorado-scaled.png"
+                            src="https://relabrands.com/wp-content/uploads/2026/03/Logo-Blanco-icono-color.png"
                             alt="RELA Collab"
                             crossOrigin="anonymous"
                             style={{ height: 18, width: "auto", objectFit: "contain", opacity: 0.6 }}

@@ -38,7 +38,7 @@ export function AdminSidebar() {
       {/* Logo */}
       <Link to="/" className="flex items-center px-6 py-6">
         <img
-          src="https://relabrands.com/wp-content/uploads/2026/03/R_V2_colormorado-scaled.png"
+          src="https://relabrands.com/wp-content/uploads/2026/03/Logo-Blanco-icono-color.png"
           alt="RELA Collab"
           className="h-8 w-auto object-contain"
         />
