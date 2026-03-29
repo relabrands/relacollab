@@ -57,10 +57,13 @@ export function useSubscription(): SubscriptionState {
         const subscription = data?.subscription;
 
         if (!subscription || subscription.status !== "active") {
-          // Sin suscripción activa → plan Starter por defecto
+          // Sin suscripción activa en Polar → el usuario está en Starter (gratis)
+          // Starter siempre se considera "activo" porque no requiere pago.
+          // El gate se mostrará solo si el campo `hasChosenPlan` es false/ausente.
+          const hasChosenPlan = data?.hasChosenPlan === true;
           setState({
             plan: "starter",
-            isActive: false,
+            isActive: hasChosenPlan,   // true si ya eligió su plan (aunque sea Starter)
             loading: false,
             error: null,
             subscriptionId: subscription?.id ?? null,

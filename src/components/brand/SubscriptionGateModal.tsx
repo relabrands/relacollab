@@ -5,6 +5,9 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PLANS, type PlanKey } from "@/lib/polar";
 import { POLAR_CHECKOUT_URLS } from "@/lib/polarCheckoutUrls";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/context/AuthContext";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
 
 const PURPLE = "#534AB7";
@@ -27,11 +30,25 @@ export function SubscriptionGateModal({
   onOpenChange,
   dismissible = false,
 }: SubscriptionGateModalProps) {
+  const { user } = useAuth();
   const { plan: activePlan } = useSubscription();
   const planKeys: PlanKey[] = ["starter", "growth", "pro"];
 
-  const handleSelect = (key: PlanKey) => {
-    window.open(POLAR_CHECKOUT_URLS[key], "_blank");
+  const handleSelect = async (key: PlanKey) => {
+    if (key === "starter") {
+      // Starter es gratis — solo marcamos que el usuario ya eligió un plan
+      if (user) {
+        try {
+          await updateDoc(doc(db, "users", user.uid), { hasChosenPlan: true });
+        } catch {
+          // Si falla (doc no existe), el gate simplemente se cierra igual
+        }
+      }
+      onOpenChange(false); // Cierra el gate inmediatamente
+    } else {
+      // Planes de pago — abre Polar checkout en nueva pestaña
+      window.open(POLAR_CHECKOUT_URLS[key], "_blank");
+    }
   };
 
   return (
