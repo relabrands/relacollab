@@ -19,6 +19,8 @@ import TikTokCallback from "./pages/auth/TikTokCallback";
 import Apply from "./pages/Apply";
 import PendingApproval from "./pages/PendingApproval";
 import Business from "./pages/Business";
+import Pricing from "./pages/Pricing";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 // Brand pages
 import BrandDashboard from "./pages/brand/BrandDashboard";
@@ -78,6 +80,8 @@ const App = () => (
             <Route path="/auth/tiktok/callback" element={<TikTokCallback />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/business" element={<Business />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/success" element={<PaymentSuccess />} />
 
             {/* Onboarding Routes */}
             <Route path="/onboarding" element={<OnboardingLayout />}>
