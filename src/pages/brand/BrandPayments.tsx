@@ -4,7 +4,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CreditCard, History, Loader2, Check, Building2, Copy, AlertCircle, Upload, CheckCircle2 } from "lucide-react";
+import { CreditCard, History, Loader2, Check, Building2, Copy, AlertCircle, Upload, CheckCircle2, Sparkles } from "lucide-react";
 import { db, storage } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, where, doc, getDoc, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -14,6 +14,9 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { useSubscription } from "@/hooks/useSubscription";
+import { SubscriptionGateModal } from "@/components/brand/SubscriptionGateModal";
+import { PLANS } from "@/lib/polar";
 
 interface Plan {
     id: string;
@@ -36,12 +39,10 @@ interface Payment {
 
 export default function BrandPayments() {
     const { user } = useAuth();
-    const [plans, setPlans] = useState<Plan[]>([]);
+    const { plan: activePlan, isActive, loading: subLoading } = useSubscription();
+    const [plansOpen, setPlansOpen] = useState(false);
     const [payments, setPayments] = useState<Payment[]>([]);
-    const [loadingPlans, setLoadingPlans] = useState(true);
     const [loadingPayments, setLoadingPayments] = useState(true);
-    const [processingId, setProcessingId] = useState<string | null>(null);
-    const [currentPlan, setCurrentPlan] = useState<string | null>(null);
 
     // Manual Payment States
     const [isInstructionOpen, setIsInstructionOpen] = useState(false);
@@ -52,38 +53,9 @@ export default function BrandPayments() {
 
     useEffect(() => {
         if (user) {
-            fetchPlans();
             fetchPayments();
-            fetchUserPlan();
         }
     }, [user]);
-
-    const fetchUserPlan = async () => {
-        if (!user) return;
-        try {
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists()) {
-                setCurrentPlan(userDoc.data().plan || null);
-            }
-        } catch (error) {
-        }
-    };
-
-    const fetchPlans = async () => {
-        try {
-            const q = query(collection(db, "plans"), where("active", "==", true), orderBy("price", "asc"));
-            const snapshot = await getDocs(q);
-            const fetchedPlans = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Plan[];
-            setPlans(fetchedPlans);
-        } catch (error: any) {
-            toast.error("Error al cargar los planes: " + (error.message || "Error desconocido"));
-        } finally {
-            setLoadingPlans(false);
-        }
-    };
 
     const fetchPayments = async () => {
         if (!user) return;
@@ -101,36 +73,7 @@ export default function BrandPayments() {
         }
     };
 
-    const handleSubscribe = async (plan: Plan) => {
-        if (!user) return;
-        // Check if this is a free/trial plan
-        if (plan.price === 0 || plan.isFree) {
-            setProcessingId(plan.id);
-            try {
-                // For free plans, we just update the user profile directly without Stripe
-                await fetch("/api/update-subscription", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ userId: user.uid, plan: plan.name })
-                });
 
-                // Usually this is done via backend, but as a fallback/mock for now if API missing:
-                // Note: Real implementation should rely on the API call above.
-
-                toast.success(`¡Suscrito a ${plan.name} exitosamente!`);
-                setCurrentPlan(plan.name);
-            } catch (error) {
-                toast.error("Error al suscribirse");
-            } finally {
-                setProcessingId(null);
-            }
-            return;
-        }
-
-        // Open manual payment instructions
-        setSelectedPlanForPayment(plan);
-        setIsInstructionOpen(true);
-    };
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -174,74 +117,47 @@ export default function BrandPayments() {
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader title="Pagos" subtitle="Gestiona tu suscripción y facturación" />
 
-                {/* Plans Section */}
+                {/* ── Plan Actual ── */}
                 <div className="mb-10">
-                    <h3 className="text-xl font-semibold mb-4">Planes de Suscripción</h3>
-                    {loadingPlans ? (
-                        <div className="flex items-center justify-center py-10"><Loader2 className="animate-spin" /></div>
-                    ) : plans.length === 0 ? (
-                        <Card className="p-8 text-center text-muted-foreground border-dashed">
-                            No hay planes disponibles en este momento.
-                        </Card>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {plans.map(plan => {
-                                const isCurrentPlan = currentPlan === plan.name;
-
-                                return (
-                                    <Card key={plan.id} className={`flex flex-col relative overflow-hidden transition-all ${isCurrentPlan ? 'border-primary shadow-md bg-primary/5' : 'hover:shadow-lg hover:border-primary/50'}`}>
-                                        {isCurrentPlan && (
-                                            <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-lg">
-                                                PLAN ACTUAL
-                                            </div>
-                                        )}
-                                        <CardHeader>
-                                            <CardTitle className="text-xl">{plan.name}</CardTitle>
-                                            <CardDescription>Facturación {plan.interval === "year" ? "anual" : "mensual"}</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="flex-1">
-                                            <div className="mb-4">
-                                                <span className="text-4xl font-bold">${plan.price}</span>
-                                                <span className="text-muted-foreground">/{plan.interval === "year" ? "año" : "mes"}</span>
-                                            </div>
-                                            <div className="space-y-2 mb-6">
-                                                <div className="flex items-center gap-2 text-sm font-medium">
-                                                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                                        <span className="text-primary text-xs">⚡</span>
-                                                    </div>
-                                                    {plan.credits} Créditos / mes
-                                                </div>
-                                                {plan.features?.map((feature, i) => (
-                                                    <div key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                                                        <Check className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                                                        {feature}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </CardContent>
-                                        <CardFooter className="pt-0">
-                                            <Button
-                                                className="w-full"
-                                                variant={isCurrentPlan ? "outline" : (processingId === plan.id ? "secondary" : "default")}
-                                                onClick={() => !isCurrentPlan && handleSubscribe(plan)}
-                                                disabled={!!processingId || isCurrentPlan}
-                                            >
-                                                {processingId === plan.id ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                                ) : isCurrentPlan ? (
-                                                    "Plan Actual"
-                                                ) : plan.isFree || plan.price === 0 ? (
-                                                    "Comenzar Gratis"
-                                                ) : (
-                                                    "Suscribirse"
+                    <h3 className="text-xl font-semibold mb-4">Suscripción</h3>
+                    <Card className="p-6">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                                    <CreditCard className="w-6 h-6 text-primary" />
+                                </div>
+                                <div>
+                                    {subLoading ? (
+                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                                    ) : (
+                                        <>
+                                            <p className="font-semibold capitalize flex items-center gap-2">
+                                                Plan {PLANS[activePlan]?.name ?? activePlan}
+                                                {isActive && (
+                                                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200 text-xs">
+                                                        Activo
+                                                    </Badge>
                                                 )}
-                                            </Button>
-                                        </CardFooter>
-                                    </Card>
-                                );
-                            })}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {isActive
+                                                    ? "Tu suscripción está activa"
+                                                    : "Sin suscripción activa"}
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <Button
+                                variant="outline"
+                                className="gap-2"
+                                onClick={() => setPlansOpen(true)}
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                {isActive ? "Cambiar plan" : "Activar suscripción"}
+                            </Button>
                         </div>
-                    )}
+                    </Card>
                 </div>
 
                 {/* Payment History */}
@@ -413,6 +329,13 @@ export default function BrandPayments() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Modal de selección de planes Polar */}
+            <SubscriptionGateModal
+                open={plansOpen}
+                onOpenChange={setPlansOpen}
+                dismissible={true}
+            />
         </div>
     );
 }

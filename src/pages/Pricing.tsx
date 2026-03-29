@@ -1,50 +1,22 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle, Zap, ArrowRight, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CheckCircle, Zap, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/context/AuthContext";
 import { PLANS, type PlanKey } from "@/lib/polar";
-import { createCheckout } from "@/lib/checkout";
+import { POLAR_CHECKOUT_URLS } from "@/lib/polarCheckoutUrls";
+import { useSubscription } from "@/hooks/useSubscription";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 const PURPLE = "#534AB7";
 const TEAL = "#0F6E56";
 
 export default function Pricing() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [loadingPlan, setLoadingPlan] = useState<PlanKey | null>(null);
-
-  const handleSubscribe = async (planKey: PlanKey) => {
-    const plan = PLANS[planKey];
-
-    // Plan gratuito → directo al login/registro
-    if (plan.price === 0) {
-      navigate("/login");
-      return;
-    }
-
-    if (!user?.email) {
-      toast.error("Inicia sesión para suscribirte.");
-      navigate("/login");
-      return;
-    }
-
-    setLoadingPlan(planKey);
-    try {
-      const { url } = await createCheckout(plan.productId, user.email);
-      window.location.href = url;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Error al iniciar el pago.";
-      toast.error(message);
-    } finally {
-      setLoadingPlan(null);
-    }
-  };
-
+  const { plan: activePlan, loading } = useSubscription();
   const planKeys: PlanKey[] = ["starter", "growth", "pro"];
+
+  const handleSelect = (key: PlanKey) => {
+    window.open(POLAR_CHECKOUT_URLS[key], "_blank");
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,25 +31,17 @@ export default function Pricing() {
             />
           </Link>
           <div className="flex items-center gap-3">
-            {user ? (
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/brand">Dashboard</Link>
-              </Button>
-            ) : (
-              <>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link to="/login">Iniciar sesión</Link>
-                </Button>
-                <Button
-                  size="sm"
-                  className="text-white"
-                  style={{ background: PURPLE }}
-                  asChild
-                >
-                  <Link to="/login">Comenzar</Link>
-                </Button>
-              </>
-            )}
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/login">Iniciar sesión</Link>
+            </Button>
+            <Button
+              size="sm"
+              className="text-white"
+              style={{ background: PURPLE }}
+              asChild
+            >
+              <Link to="/login">Comenzar gratis</Link>
+            </Button>
           </div>
         </div>
       </header>
@@ -107,7 +71,7 @@ export default function Pricing() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           {planKeys.map((key) => {
             const plan = PLANS[key];
-            const isLoading = loadingPlan === key;
+            const isCurrent = !loading && activePlan === key;
             const dark = plan.highlighted;
 
             return (
@@ -115,7 +79,8 @@ export default function Pricing() {
                 key={key}
                 className={cn(
                   "relative rounded-2xl border p-8 flex flex-col gap-6 transition-all duration-200",
-                  dark ? "shadow-2xl" : "bg-card shadow-sm hover:shadow-md"
+                  dark ? "shadow-2xl" : "bg-card shadow-sm hover:shadow-md",
+                  isCurrent && "ring-2 ring-primary"
                 )}
                 style={
                   dark
@@ -127,7 +92,7 @@ export default function Pricing() {
                     : {}
                 }
               >
-                {/* Badge más popular */}
+                {/* Badge "Más popular" */}
                 {dark && (
                   <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                     <Badge
@@ -170,13 +135,17 @@ export default function Pricing() {
 
                 {/* CTA */}
                 <Button
-                  className="w-full font-semibold rounded-xl h-11 gap-2 text-white hover:opacity-90"
-                  style={{ background: dark ? PURPLE : `${PURPLE}cc` }}
-                  disabled={isLoading}
-                  onClick={() => handleSubscribe(key)}
+                  className="w-full font-semibold rounded-xl h-11 gap-2"
+                  style={
+                    isCurrent
+                      ? { background: "var(--muted)", color: "var(--muted-foreground)" }
+                      : { background: dark ? PURPLE : `${PURPLE}cc`, color: "white" }
+                  }
+                  disabled={isCurrent}
+                  onClick={() => !isCurrent && handleSelect(key)}
                 >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                  {isCurrent ? (
+                    "Plan actual ✓"
                   ) : (
                     <>
                       {plan.cta}

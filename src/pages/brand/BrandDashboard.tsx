@@ -10,9 +10,14 @@ import { useAuth } from "@/context/AuthContext";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
+import { useSubscription } from "@/hooks/useSubscription";
+import { SubscriptionGateModal } from "@/components/brand/SubscriptionGateModal";
 
 export default function BrandDashboard() {
   const { user } = useAuth();
+  const { plan, isActive, loading: subLoading } = useSubscription();
+  // La modal se abre si terminó de cargar y no hay suscripción activa
+  const [gateOpen, setGateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<{
     title: string;
@@ -100,6 +105,13 @@ export default function BrandDashboard() {
     fetchDashboardData();
   }, [user]);
 
+  // Abre el gate si no tiene suscripción activa (carga completa)
+  useEffect(() => {
+    if (!subLoading && !isActive) {
+      setGateOpen(true);
+    }
+  }, [subLoading, isActive]);
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -153,6 +165,13 @@ export default function BrandDashboard() {
           </div>
         )}
       </main>
+
+      {/* Gate de suscripción — no dismissible hasta elegir un plan */}
+      <SubscriptionGateModal
+        open={gateOpen}
+        onOpenChange={setGateOpen}
+        dismissible={false}
+      />
     </div>
   );
 }
