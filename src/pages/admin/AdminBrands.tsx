@@ -53,6 +53,7 @@ const statusColors: Record<string, string> = {
 };
 
 const AVAILABLE_PLANS = [
+  { id: "none", name: "Sin Plan" },
   { id: "starter", name: "Starter" },
   { id: "growth", name: "Growth" },
   { id: "pro", name: "Pro" }
@@ -154,12 +155,26 @@ export default function AdminBrands() {
     if (!selectedBrand) return;
 
     try {
-      await updateDoc(doc(db, "users", selectedBrand.id), {
+      const updateData: any = {
         brandName: selectedBrand.name,
         email: selectedBrand.email, // Note: Changing email in Firestore doesn't change Auth email
         plan: selectedBrand.plan,
         credits: parseFloat(selectedBrand.credits.toString()) || 0
-      });
+      };
+
+      if (selectedBrand.plan === "none") {
+        updateData.subscription = null;
+        updateData.hasChosenPlan = false;
+      } else {
+        updateData.subscription = {
+          planKey: selectedBrand.plan,
+          status: "active",
+          id: `manual_${Date.now()}` // Mock id for manual override
+        };
+        updateData.hasChosenPlan = true;
+      }
+
+      await updateDoc(doc(db, "users", selectedBrand.id), updateData);
 
       setBrands(brands.map((b) => (b.id === selectedBrand.id ? { ...selectedBrand, credits: parseFloat(selectedBrand.credits.toString()) || 0 } : b)));
       setIsEditOpen(false);
@@ -197,6 +212,14 @@ export default function AdminBrands() {
         hasChosenPlan: true,
         plan: newPlanKey // Keep legacy field in sync just in case
       };
+
+      if (newPlanKey === "none") {
+        updateData = {
+          plan: "none",
+          subscription: null,
+          hasChosenPlan: false
+        };
+      }
 
       await updateDoc(doc(db, "users", brandId), updateData);
 
