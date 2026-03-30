@@ -31,7 +31,7 @@ export function SubscriptionGateModal({
   dismissible = false,
 }: SubscriptionGateModalProps) {
   const { user } = useAuth();
-  const { plan: activePlan } = useSubscription();
+  const { plan: activePlan, isActive } = useSubscription();
   const planKeys: PlanKey[] = ["starter", "growth", "pro"];
 
   const handleSelect = async (key: PlanKey) => {
@@ -92,7 +92,7 @@ export function SubscriptionGateModal({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {planKeys.map((key) => {
               const plan = PLANS[key];
-              const isCurrent = activePlan === key;
+              const isCurrent = isActive && activePlan === key;
               const dark = plan.highlighted;
 
               return (
