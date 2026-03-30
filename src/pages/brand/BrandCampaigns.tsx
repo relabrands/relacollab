@@ -107,6 +107,13 @@ export default function BrandCampaigns() {
                         Completadas
                     </Button>
                     <Button
+                        variant={filter === "expired" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFilter("expired")}
+                    >
+                        Expiradas
+                    </Button>
+                    <Button
                         variant={filter === "draft" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setFilter("draft")}

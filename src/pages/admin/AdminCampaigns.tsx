@@ -30,7 +30,7 @@ interface Campaign {
     title: string;
     brandName: string;
     brandId: string;
-    status: "active" | "completed" | "draft" | "paused";
+    status: "active" | "completed" | "draft" | "paused" | "expired";
     budget: string;
     applications: number;
     createdAt: string;
@@ -43,6 +43,7 @@ const statusColors: Record<string, string> = {
     completed: "bg-primary/10 text-primary",
     draft: "bg-muted text-muted-foreground",
     paused: "bg-warning/10 text-warning",
+    expired: "bg-destructive/10 text-destructive",
 };
 
 export default function AdminCampaigns() {
@@ -221,6 +222,7 @@ export default function AdminCampaigns() {
                                                     <SelectItem value="active">Active</SelectItem>
                                                     <SelectItem value="paused">Paused</SelectItem>
                                                     <SelectItem value="completed">Completed</SelectItem>
+                                                    <SelectItem value="expired">Expired</SelectItem>
                                                     <SelectItem value="draft">Draft</SelectItem>
                                                 </SelectContent>
                                             </Select>

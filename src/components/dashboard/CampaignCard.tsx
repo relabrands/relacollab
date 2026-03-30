@@ -4,14 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Users, ArrowRight, FileCheck, TrendingUp, Share2, DollarSign, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 interface CampaignCardProps {
   campaign: {
     id: string;
     name: string;
-    status: "draft" | "active" | "completed" | "pending";
+    status: "draft" | "active" | "completed" | "pending" | "expired" | string;
     goal: string;
     budget?: number;
     creatorCount?: number;
@@ -32,6 +32,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   active:    { label: "Activa",   className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800" },
   completed: { label: "Completada", className: "bg-primary/10 text-primary border-primary/20" },
   pending:   { label: "Pendiente", className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800" },
+  expired:   { label: "Expirada", className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800" },
 };
 
 const goalLabels: Record<string, string> = {
@@ -41,9 +42,12 @@ const goalLabels: Record<string, string> = {
   traffic:    "Tráfico",
 };
 
+
+
 export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ applications: 0, approved: 0 });
+  const [currentStatus, setCurrentStatus] = useState(campaign.status);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -54,11 +58,25 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
         );
         const appsSnapshot = await getDocs(appsQuery);
         const apps = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const approvedCount = apps.filter((a: any) => 
+          a.status === "approved" || a.status === "active" || a.status === "collaborating" || a.status === "completed"
+        ).length;
+        
         setStats({
           applications: apps.length,
-          approved: apps.filter((a: any) => a.status === "approved").length,
+          approved: approvedCount,
         });
-      } catch (_) {}
+
+        // Verificar si la fecha ha expirado y actualizar estado automáticamente
+        if (currentStatus === "active" && campaign.endDate) {
+          const endDate = new Date(`${campaign.endDate}T23:59:59`);
+          if (new Date() > endDate) {
+            const newStatus = approvedCount > 0 ? "completed" : "expired";
+            await updateDoc(doc(db, "campaigns", campaign.id), { status: newStatus });
+            setCurrentStatus(newStatus);
+          }
+        }
+      } catch (error) {}
     };
     fetchStats();
   }, [campaign.id]);
@@ -92,7 +110,7 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
   };
 
   const comp = compensationLabel();
-  const status = statusConfig[campaign.status] ?? statusConfig.draft;
+  const config = statusConfig[currentStatus] || statusConfig.draft;
 
   return (
     <div
@@ -109,8 +127,8 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
             {goalLabels[campaign.goal] ?? campaign.goal}
           </span>
         </div>
-        <Badge className={cn("shrink-0 text-xs font-medium border", status.className)}>
-          {status.label}
+        <Badge className={cn("shrink-0 text-xs font-medium border", config.className)}>
+          {config.label}
         </Badge>
       </div>
 
