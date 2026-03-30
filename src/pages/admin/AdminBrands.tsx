@@ -52,6 +52,12 @@ const statusColors: Record<string, string> = {
   inactive: "bg-destructive/10 text-destructive",
 };
 
+const AVAILABLE_PLANS = [
+  { id: "starter", name: "Starter" },
+  { id: "growth", name: "Growth" },
+  { id: "pro", name: "Pro" }
+];
+
 export default function AdminBrands() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,9 +66,6 @@ export default function AdminBrands() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
 
-  // Dynamic Plans State
-  const [availablePlans, setAvailablePlans] = useState<any[]>([]);
-
   // Details Dialog State
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
@@ -70,28 +73,13 @@ export default function AdminBrands() {
   const [newBrand, setNewBrand] = useState({
     name: "",
     email: "",
-    plan: "Basic",
+    plan: "starter",
   });
 
   useEffect(() => {
     fetchBrands();
-    fetchPlans();
   }, []);
 
-  const fetchPlans = async () => {
-    try {
-      const q = query(collection(db, "plans"), orderBy("price", "asc"));
-      const snapshot = await getDocs(q);
-      const plans = snapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name,
-        credits: doc.data().credits,
-        permissions: doc.data().permissions
-      }));
-      setAvailablePlans(plans);
-    } catch (e) {
-    }
-  };
 
   const fetchBrands = async () => {
     try {
@@ -110,11 +98,22 @@ export default function AdminBrands() {
 
       const brandsData = querySnapshot.docs.map(doc => {
         const data = doc.data();
+        const subscription = data.subscription;
+        
+        let currentPlan = "starter";
+        if (subscription && subscription.status === "active") {
+          currentPlan = subscription.planKey || "starter";
+        } else if (data.hasChosenPlan) {
+          currentPlan = "starter";
+        } else {
+          currentPlan = data.plan || "starter"; // fallback legacy
+        }
+
         return {
           id: doc.id,
           name: data.brandName || data.displayName || "Unknown Brand",
           email: data.email || "",
-          plan: data.plan || "Free",
+          plan: currentPlan,
           credits: data.credits || 0,
           status: data.status || "active", // Default to active if missing
           campaigns: campaignCounts[doc.id] || 0,
@@ -184,30 +183,27 @@ export default function AdminBrands() {
   };
 
   /* Update handleChangePlan to sync with plan data */
-  const handleChangePlan = async (brandId: string, newPlanName: string) => {
+  const handleChangePlan = async (brandId: string, newPlanKey: string) => {
     try {
       // Find the plan details
-      const planDetails = availablePlans.find(p => p.name === newPlanName);
-      let updateData: any = { plan: newPlanName };
-
-      // If we have details, update credits/permissions on the user profile too
-      if (planDetails) {
-        updateData = {
-          ...updateData,
-          credits: planDetails.credits || 0,
-          permissions: planDetails.permissions || []
-        };
-      }
+      const planDetails = AVAILABLE_PLANS.find(p => p.id === newPlanKey);
+      
+      let updateData: any = {
+        subscription: {
+          planKey: newPlanKey,
+          status: "active",
+          id: `manual_${Date.now()}` // Mock id for manual override
+        },
+        hasChosenPlan: true,
+        plan: newPlanKey // Keep legacy field in sync just in case
+      };
 
       await updateDoc(doc(db, "users", brandId), updateData);
 
       // Update local state
-      setBrands(brands.map((b) => (b.id === brandId ? { ...b, plan: newPlanName } : b)));
+      setBrands(brands.map((b) => (b.id === brandId ? { ...b, plan: newPlanKey } : b)));
 
-      toast.success(`Plan updated to ${newPlanName}`);
-      if (planDetails && planDetails.credits) {
-        toast.info(`Credits updated to ${planDetails.credits}`);
-      }
+      toast.success(`Plan updated to ${planDetails?.name || newPlanKey}`);
     } catch (error) {
       toast.error("Failed to update subscription plan");
     }
@@ -298,11 +294,9 @@ export default function AdminBrands() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {availablePlans.map(plan => (
-                        <SelectItem key={plan.id} value={plan.name}>{plan.name}</SelectItem>
+                      {AVAILABLE_PLANS.map(plan => (
+                        <SelectItem key={plan.id} value={plan.id} className="capitalize">{plan.name}</SelectItem>
                       ))}
-                      {/* Fallback option if no plans loaded */}
-                      {availablePlans.length === 0 && <SelectItem value="Free">Free</SelectItem>}
                     </SelectContent>
                   </Select>
                 </div>
@@ -360,11 +354,11 @@ export default function AdminBrands() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {availablePlans.map(plan => (
-                          <SelectItem key={plan.id} value={plan.name}>{plan.name}</SelectItem>
+                        {AVAILABLE_PLANS.map(plan => (
+                          <SelectItem key={plan.id} value={plan.id} className="capitalize">{plan.name}</SelectItem>
                         ))}
                         {/* Ensure current value is always an option to avoid UI bugs if plan is deprecated */}
-                        {!availablePlans.find(p => p.name === brand.plan) && brand.plan && (
+                        {!AVAILABLE_PLANS.find(p => p.id === brand.plan) && brand.plan && (
                           <SelectItem value={brand.plan}>{brand.plan}</SelectItem>
                         )}
                       </SelectContent>
@@ -493,8 +487,8 @@ export default function AdminBrands() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {availablePlans.map(plan => (
-                        <SelectItem key={plan.id} value={plan.name}>{plan.name}</SelectItem>
+                      {AVAILABLE_PLANS.map(plan => (
+                        <SelectItem key={plan.id} value={plan.id} className="capitalize">{plan.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
