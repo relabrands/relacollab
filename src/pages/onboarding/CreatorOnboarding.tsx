@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,16 +16,9 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Loader2, X, ChevronLeft, ChevronRight, Sparkles, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { CREATOR_NICHES, CREATOR_VIBES } from "@/lib/constants";
 
-const CONTENT_TYPES = [
-    "Estilo de vida",
-    "Belleza y moda",
-    "Recetas",
-    "Humor",
-    "Fitness",
-    "Edición",
-    "Tecnología"
-];
+
 
 const WHO_APPEARS = [
     "Solo yo",
@@ -49,16 +43,7 @@ const CONTENT_FORMATS = [
     { id: "videos", label: "Videos", emoji: "🎥", description: "Long-form videos" },
 ];
 
-const CREATOR_VIBES = [
-    { id: "romantic", label: "Romantic", emoji: "💕" },
-    { id: "party", label: "Party", emoji: "🎉" },
-    { id: "family", label: "Family", emoji: "👨‍👩‍👧" },
-    { id: "healthy", label: "Healthy", emoji: "🥗" },
-    { id: "premium", label: "Premium", emoji: "👑" },
-    { id: "adventure", label: "Adventure", emoji: "🏔️" },
-    { id: "minimal", label: "Minimal", emoji: "⚪" },
-    { id: "vibrant", label: "Vibrant", emoji: "🌈" },
-];
+
 
 const COLLABORATION_TYPES = [
     { value: "Con remuneración", label: "Con remuneración", description: "Solo colaboraciones pagadas" },
@@ -75,10 +60,10 @@ export default function CreatorOnboarding() {
 
     const [formData, setFormData] = useState({
         bio: "",
-        contentTypes: [] as string[], // Keep for categories
+        niche: "", // NEW
         customContentTypes: [] as string[],
-        contentFormats: [] as string[], // NEW: Posts, Reels, Stories, etc.
-        vibes: [] as string[], // NEW: Romantic, Party, Family, etc.
+        contentFormats: [] as string[],
+        vibes: [] as string[],
         whoAppearsInContent: [] as string[],
         experienceTime: "",
         collaborationPreference: "",
@@ -106,15 +91,6 @@ export default function CreatorOnboarding() {
         };
         fetchUserName();
     }, [user]);
-
-    const handleContentTypeToggle = (type: string) => {
-        setFormData(prev => ({
-            ...prev,
-            contentTypes: prev.contentTypes.includes(type)
-                ? prev.contentTypes.filter(t => t !== type)
-                : [...prev.contentTypes, type]
-        }));
-    };
 
     const handleWhoAppearsToggle = (option: string) => {
         setFormData(prev => ({
@@ -164,20 +140,20 @@ export default function CreatorOnboarding() {
         switch (step) {
             case 0: // Bio (optional, can skip)
                 return true;
-            case 1: // Content categories
-                if (formData.contentTypes.length === 0 && formData.customContentTypes.length === 0) {
-                    toast.error("Por favor selecciona al menos una categoría de contenido");
+            case 1: // Niche
+                if (!formData.niche) {
+                    toast.error("Por favor selecciona tu nicho principal");
                     return false;
                 }
                 return true;
-            case 2: // Content formats - NEW
+            case 2: // Secundarias
+                return true; // Optional
+            case 3: // Content formats
                 if (formData.contentFormats.length === 0) {
                     toast.error("Por favor selecciona al menos un formato de contenido");
                     return false;
                 }
                 return true;
-            case 3: // Vibes - NEW (optional)
-                return true; // Vibes are optional
             case 4: // Who appears, experience, collaboration
                 if (formData.whoAppearsInContent.length === 0) {
                     toast.error("Por favor selecciona quién aparece en tu contenido");
@@ -223,9 +199,10 @@ export default function CreatorOnboarding() {
             const userRef = doc(db, "users", user.uid);
             await updateDoc(userRef, {
                 bio: formData.bio,
-                categories: [...formData.contentTypes, ...formData.customContentTypes], // Renamed from contentTypes
-                contentFormats: formData.contentFormats, // NEW
-                vibes: formData.vibes, // NEW
+                niche: formData.niche,
+                categories: formData.customContentTypes,
+                contentFormats: formData.contentFormats,
+                vibes: formData.vibes,
                 whoAppearsInContent: formData.whoAppearsInContent,
                 experienceTime: formData.experienceTime,
                 collaborationPreference: formData.collaborationPreference,
@@ -311,72 +288,38 @@ export default function CreatorOnboarding() {
                         className="space-y-6"
                     >
                         <div className="space-y-2">
-                            <h3 className="text-2xl font-bold">¿Qué tipo de contenido creas?</h3>
+                            <h3 className="text-2xl font-bold">¿Cuál es tu nicho principal?</h3>
                             <p className="text-muted-foreground">
-                                Selecciona todas las categorías que apliquen a tu contenido.
+                                Selecciona la categoría principal de tu contenido.
                             </p>
                         </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {CONTENT_TYPES.map((type) => (
-                                <div
-                                    key={type}
-                                    onClick={() => handleContentTypeToggle(type)}
-                                    className={`
-                                        p-4 rounded-lg border-2 cursor-pointer transition-all
-                                        ${formData.contentTypes.includes(type)
-                                            ? 'border-primary bg-primary/10'
-                                            : 'border-border hover:border-primary/50'
-                                        }
-                                    `}
-                                >
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox
-                                            checked={formData.contentTypes.includes(type)}
-                                            onCheckedChange={() => handleContentTypeToggle(type)}
-                                        />
-                                        <label className="text-sm font-medium cursor-pointer">
-                                            {type}
-                                        </label>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
                         <div className="space-y-3">
-                            <Label>¿Otros tipos de contenido?</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    placeholder="Ej: Viajes, Gaming, Educativo..."
-                                    value={customContentType}
-                                    onChange={(e) => setCustomContentType(e.target.value)}
-                                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomContentType())}
-                                />
-                                <Button type="button" variant="outline" onClick={addCustomContentType}>
-                                    Agregar
-                                </Button>
-                            </div>
-                            {formData.customContentTypes.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {formData.customContentTypes.map((type) => (
-                                        <Badge key={type} variant="secondary" className="gap-1 py-1.5 px-3">
-                                            {type}
-                                            <X
-                                                className="w-3 h-3 cursor-pointer"
-                                                onClick={() => removeCustomContentType(type)}
-                                            />
-                                        </Badge>
+                            <Label>Nicho Principal</Label>
+                            <Select
+                                value={formData.niche}
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, niche: value }))}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Selecciona tu nicho" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {CREATOR_NICHES.map((niche) => (
+                                        <SelectItem key={niche.id} value={niche.id}>
+                                            <div className="flex items-center gap-2">
+                                                <span>{niche.label}</span>
+                                            </div>
+                                        </SelectItem>
                                     ))}
-                                </div>
-                            )}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </motion.div>
                 );
 
-            case 2:
+            case 3:
                 return (
                     <motion.div
-                        key="step-2"
+                        key="step-3"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
@@ -449,9 +392,9 @@ export default function CreatorOnboarding() {
                         className="space-y-6"
                     >
                         <div className="space-y-2">
-                            <h3 className="text-2xl font-bold">¿Cuál es tu vibe?</h3>
+                            <h3 className="text-2xl font-bold">Categorías Secundarias (Opcional)</h3>
                             <p className="text-muted-foreground">
-                                Selecciona los estilos que mejor describen tu contenido. Esto es opcional pero ayuda a mejorar los matches.
+                                Temas adicionales que aparecen en tu contenido.
                             </p>
                         </div>
 
@@ -468,7 +411,6 @@ export default function CreatorOnboarding() {
                                         }
                                     `}
                                 >
-                                    <div className="text-4xl mb-2">{vibe.emoji}</div>
                                     <div className="font-medium text-sm">{vibe.label}</div>
                                     {formData.vibes.includes(vibe.id) && (
                                         <div className="text-primary text-xs mt-1">✓</div>
@@ -477,29 +419,33 @@ export default function CreatorOnboarding() {
                             ))}
                         </div>
 
-                        {formData.vibes.length === 0 && (
-                            <div className="text-center p-6 border-2 border-dashed border-border rounded-lg">
-                                <p className="text-sm text-muted-foreground">
-                                    Puedes omitir este paso si lo prefieres, pero seleccionar tus vibes ayuda a encontrar mejores matches.
-                                </p>
+                        <div className="space-y-3">
+                            <Label>¿Etiquetas Personalizadas?</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder="Ej: Viajes, Gaming, Educativo..."
+                                    value={customContentType}
+                                    onChange={(e) => setCustomContentType(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomContentType())}
+                                />
+                                <Button type="button" variant="outline" onClick={addCustomContentType}>
+                                    Agregar
+                                </Button>
                             </div>
-                        )}
-
-                        {formData.vibes.length > 0 && (
-                            <div className="p-4 rounded-lg bg-muted/50">
-                                <p className="text-sm font-medium mb-2">Vibes seleccionados:</p>
+                            {formData.customContentTypes.length > 0 && (
                                 <div className="flex flex-wrap gap-2">
-                                    {formData.vibes.map((vibeId) => {
-                                        const vibe = CREATOR_VIBES.find(v => v.id === vibeId);
-                                        return (
-                                            <Badge key={vibeId} variant="secondary" className="gap-1">
-                                                {vibe?.emoji} {vibe?.label}
-                                            </Badge>
-                                        );
-                                    })}
+                                    {formData.customContentTypes.map((type) => (
+                                        <Badge key={type} variant="secondary" className="gap-1 py-1.5 px-3">
+                                            {type}
+                                            <X
+                                                className="w-3 h-3 cursor-pointer"
+                                                onClick={() => removeCustomContentType(type)}
+                                            />
+                                        </Badge>
+                                    ))}
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </motion.div>
                 );
 

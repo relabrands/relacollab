@@ -104,7 +104,7 @@ export function UpgradePrompt({
           </div>
 
           <p className="text-center text-xs text-muted-foreground">
-            Pago seguro por Polar.sh · Cancela cuando quieras
+            Pago seguro · Cancela cuando quieras
           </p>
         </div>
       </DialogContent>

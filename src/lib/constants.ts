@@ -1,0 +1,40 @@
+export const CREATOR_NICHES = [
+    { id: "Gastronomía", label: "🍽️ Gastronomía" },
+    { id: "Moda y Belleza", label: "👗 Moda y Belleza" },
+    { id: "Fitness y Salud", label: "💪 Fitness y Salud" },
+    { id: "Turismo y Experiencias", label: "✈️ Turismo y Experiencias" },
+    { id: "Lifestyle y Familia", label: "🏠 Lifestyle y Familia" },
+    { id: "Tecnología", label: "📱 Tecnología" },
+    { id: "Finanzas y Negocios", label: "💰 Finanzas y Negocios" },
+    { id: "Entretenimiento y Humor", label: "🎭 Entretenimiento y Humor" },
+    { id: "Retail y Tiendas", label: "🛍️ Retail y Tiendas" },
+    { id: "Salud y Farmacia", label: "💊 Salud y Farmacia" },
+    { id: "Supermercados y Consumo masivo", label: "🛒 Supermercados y Consumo masivo" },
+    { id: "Bienestar y Cuidado personal", label: "🏥 Bienestar y Cuidado personal" }
+] as const;
+
+export const CREATOR_VIBES = [
+    { id: "Gastronomía", label: "Gastronomía" },
+    { id: "Moda", label: "Moda" },
+    { id: "Belleza", label: "Belleza" },
+    { id: "Fitness", label: "Fitness" },
+    { id: "Salud", label: "Salud" },
+    { id: "Turismo", label: "Turismo" },
+    { id: "Lifestyle", label: "Lifestyle" },
+    { id: "Familia", label: "Familia" },
+    { id: "Tecnología", label: "Tecnología" },
+    { id: "Finanzas", label: "Finanzas" },
+    { id: "Humor", label: "Humor" },
+    { id: "Entretenimiento", label: "Entretenimiento" },
+    { id: "Deportes", label: "Deportes" },
+    { id: "Educación", label: "Educación" },
+    { id: "Mascotas", label: "Mascotas" },
+    { id: "Retail", label: "Retail" },
+    { id: "Farmacia", label: "Farmacia" },
+    { id: "Supermercado", label: "Supermercado" },
+    { id: "Consumo masivo", label: "Consumo masivo" },
+    { id: "Bienestar", label: "Bienestar" },
+    { id: "Cuidado personal", label: "Cuidado personal" },
+    { id: "Belleza masculina", label: "Belleza masculina" },
+    { id: "Maternidad", label: "Maternidad" }
+] as const;

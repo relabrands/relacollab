@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { AICampaignGenerator } from "@/components/brand/AICampaignGenerator";
+import { CREATOR_NICHES, CREATOR_VIBES } from "@/lib/constants";
 
 const goalOptions = [
   { id: "awareness", label: "Reconocimiento", description: "Aumentar la visibilidad de la marca" },
@@ -26,14 +27,7 @@ const goalOptions = [
   { id: "content", label: "Producción de Contenido", description: "UGC para anuncios" },
 ];
 
-const vibeOptions = [
-  { id: "romantic", label: "Romántico", emoji: "💕" },
-  { id: "party", label: "Fiesta", emoji: "🎉" },
-  { id: "family", label: "Familia", emoji: "👨‍👩‍👧‍👦" },
-  { id: "healthy", label: "Saludable", emoji: "🥗" },
-  { id: "premium", label: "Premium", emoji: "✨" },
-  { id: "adventure", label: "Aventura", emoji: "🏔️" },
-];
+// Vibes replaced by CREATOR_VIBES constant
 
 const contentTypeOptions = [
   { id: "post", label: "Publicación", emoji: "📸" },
@@ -62,6 +56,7 @@ export default function CreateCampaign() {
   const [formData, setFormData] = useState({
     name: "",
     brandName: "",
+    niche: "",
     description: "",
     coverImage: "",
     goal: "",
@@ -209,6 +204,10 @@ export default function CreateCampaign() {
       case 1:
         if (!formData.name.trim()) {
           toast.error("El nombre de la campaña es requerido");
+          return false;
+        }
+        if (!formData.niche) {
+          toast.error("El nicho de la campaña es requerido");
           return false;
         }
         if (!formData.description.trim()) {
@@ -498,6 +497,27 @@ export default function CreateCampaign() {
                   </div>
 
                   <div>
+                    <Label>Nicho de la Campaña *</Label>
+                    <Select
+                      value={formData.niche}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, niche: value }))}
+                    >
+                      <SelectTrigger className="mt-2 text-left">
+                        <SelectValue placeholder="Selecciona el nicho" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CREATOR_NICHES.map((niche) => (
+                          <SelectItem key={niche.id} value={niche.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{niche.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
                     <Label htmlFor="description">Descripción de la Campaña *</Label>
                     <Textarea
                       id="description"
@@ -637,7 +657,7 @@ export default function CreateCampaign() {
                   <div>
                     <Label className="mb-4 block">Vibe de la Marca (selecciona varios)</Label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {vibeOptions.map((vibe) => (
+                      {CREATOR_VIBES.map((vibe) => (
                         <button
                           key={vibe.id}
                           onClick={() => handleVibeToggle(vibe.id)}
@@ -646,8 +666,10 @@ export default function CreateCampaign() {
                             : "border-border hover:border-primary/50"
                             }`}
                         >
-                          <div className="text-2xl mb-1">{vibe.emoji}</div>
                           <div className="font-medium text-sm">{vibe.label}</div>
+                          {formData.vibes.includes(vibe.id) && (
+                            <div className="text-primary text-xs mt-1">✓</div>
+                          )}
                         </button>
                       ))}
                     </div>

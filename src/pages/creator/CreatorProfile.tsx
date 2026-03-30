@@ -35,6 +35,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { InstagramConnectModal } from "@/components/creator/InstagramConnectModal";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CREATOR_NICHES, CREATOR_VIBES } from "@/lib/constants";
 
 const CONTENT_FORMATS = [
   { id: "posts", label: "Posts", emoji: "📸" },
@@ -43,28 +45,6 @@ const CONTENT_FORMATS = [
   { id: "carousels", label: "Carruseles", emoji: "🖼️" },
   { id: "videos", label: "Videos", emoji: "🎥" },
 ];
-
-const CREATOR_VIBES = [
-  { id: "romantic", label: "Romántico", emoji: "💕" },
-  { id: "party", label: "Fiesta", emoji: "🎉" },
-  { id: "family", label: "Familiar", emoji: "👨‍👩‍👧" },
-  { id: "healthy", label: "Saludable", emoji: "🥗" },
-  { id: "premium", label: "Premium", emoji: "👑" },
-  { id: "adventure", label: "Aventura", emoji: "🏔️" },
-  { id: "minimal", label: "Minimalista", emoji: "⚪" },
-  { id: "vibrant", label: "Vibrante", emoji: "🌈" },
-];
-
-const CONTENT_CATEGORIES = [
-  "Estilo de vida",
-  "Belleza y moda",
-  "Recetas",
-  "Humor",
-  "Fitness",
-  "Edición",
-  "Tecnología"
-];
-
 const WHO_APPEARS = [
   "Solo yo",
   "Mi pareja",
@@ -137,6 +117,7 @@ export default function CreatorProfile() {
 
   // Professional fields
   const [professionalData, setProfessionalData] = useState({
+    niche: "",
     contentFormats: [] as string[],
     vibes: [] as string[],
     categories: [] as string[],
@@ -181,6 +162,7 @@ export default function CreatorProfile() {
 
           // Load professional data
           setProfessionalData({
+            niche: data.niche || "",
             contentFormats: data.contentFormats || [],
             vibes: data.vibes || [],
             categories: data.categories || [],
@@ -348,6 +330,12 @@ export default function CreatorProfile() {
 
   const handleSaveProfile = async () => {
     if (!user) return;
+    
+    if (!professionalData.niche) {
+      toast.error("Selecciona tu nicho principal para continuar");
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -362,6 +350,7 @@ export default function CreatorProfile() {
           tiktok: socialHandles.tiktok || "",
         },
         // Professional fields
+        niche: professionalData.niche,
         contentFormats: professionalData.contentFormats,
         vibes: professionalData.vibes,
         whoAppearsInContent: professionalData.whoAppearsInContent,
@@ -572,6 +561,27 @@ export default function CreatorProfile() {
                 />
               </div>
 
+              {/* Niche */}
+              <div className="mt-6 border-t pt-6">
+                <Label>Nicho Principal <span className="text-red-500">*</span></Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Selecciona el nicho principal que mejor define tu contenido. (Obligatorio)
+                </p>
+                <Select
+                  value={professionalData.niche}
+                  onValueChange={(val) => setProfessionalData(prev => ({ ...prev, niche: val }))}
+                >
+                  <SelectTrigger className="w-full sm:w-[300px]">
+                    <SelectValue placeholder="Selecciona tu nicho" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CREATOR_NICHES.map(niche => (
+                      <SelectItem key={niche.id} value={niche.id}>{niche.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Content Formats */}
               <div className="mt-6">
                 <Label>Formatos de Contenido</Label>
@@ -608,11 +618,11 @@ export default function CreatorProfile() {
                 </div>
               </div>
 
-              {/* Vibes */}
+              {/* Vibes / Secundarios (Antiguamente vibes, los mantenemos mapeando const) */}
               <div className="mt-6">
-                <Label>Estilo de Contenido</Label>
+                <Label>Categorías Secundarias</Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  ¿Cuál es tu estilo de contenido? (Opcional)
+                  Temas adicionales que aparecen en tu contenido (opcional)
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {CREATOR_VIBES.map((vibe) => (
@@ -635,7 +645,6 @@ export default function CreatorProfile() {
                         }
                       `}
                     >
-                      <div className="text-2xl mb-1">{vibe.emoji}</div>
                       <div className="text-xs font-medium">{vibe.label}</div>
                     </div>
                   ))}
@@ -782,20 +791,20 @@ export default function CreatorProfile() {
               </Button>
             </motion.div>
 
-            {/* Content Categories */}
+            {/* Custom Content Categories */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
               className="glass-card p-6"
             >
-              <h2 className="text-lg font-semibold mb-4">Categorías de Contenido</h2>
+              <h2 className="text-lg font-semibold mb-4">Etiquetas Personalizadas</h2>
               <p className="text-muted-foreground text-sm mb-4">
-                Selecciona los temas sobre los que creas contenido
+                Si sientes que te faltaron categorías para definirte, añadelas aquí (opcional)
               </p>
 
               <div className="flex flex-wrap gap-2">
-                {Array.from(new Set([...CONTENT_CATEGORIES, ...selectedCategories])).map(
+                {Array.from(new Set([...selectedCategories])).map(
                   (category) => (
                     <Badge
                       key={category}

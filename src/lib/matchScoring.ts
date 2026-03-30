@@ -88,11 +88,32 @@ export const calculateMatchScore = (campaign: any, creator: any): MatchScoreResu
     score += breakdown.contentType;
 
     // ========================================
-    // 3. NICHE/CATEGORIES (Max 20 points)
+    // 3. NICHE AND SECONDARY CATEGORIES / VIBES (Max 20 points)
     // ========================================
-    const creatorCategories = creator.vibes || creator.categories || creator.contentTypes || creator.tags || []; // Prioritize vibes, fallback to categories
+    const campaignNiche = campaign.niche || "";
+    const creatorNiche = creator.niche || "";
+    
+    // Creator categories can come from vibes (the new field), categories, contentTypes, tags
+    const creatorCategories = creator.vibes || creator.categories || creator.contentTypes || creator.tags || []; 
     const campaignVibes = campaign.vibes || [];
 
+    let nicheScore = 0;
+    
+    // 1. Direct niche match (highly prioritized)
+    if (campaignNiche && creatorNiche && campaignNiche === creatorNiche) {
+        nicheScore += 15;
+        reasons.push(`✓ Niche match exacto: ${campaignNiche}`);
+    } else if (campaignNiche && creatorCategories.some((c: string) => c.toLowerCase().includes(campaignNiche.toLowerCase()) || campaignNiche.toLowerCase().includes(c.toLowerCase()))) {
+        // Soft match: Creator's secondary category matches the campaign's main niche
+        nicheScore += 10;
+        reasons.push(`✓ Match con categoría secundaria: ${campaignNiche}`);
+    } else if (creatorNiche && campaignVibes.some((v: string) => v.toLowerCase().includes(creatorNiche.toLowerCase()) || creatorNiche.toLowerCase().includes(v.toLowerCase()))) {
+        // Soft match: Campaign's vibe matches creator's main niche
+        nicheScore += 10;
+        reasons.push(`✓ Match de vibe con nicho principal: ${creatorNiche}`);
+    }
+
+    // 2. Vibes / Secondary Categories match
     const matchedVibes = campaignVibes.filter((v: string) =>
         creatorCategories.some((c: string) =>
             c.toLowerCase().includes(v.toLowerCase()) || v.toLowerCase().includes(c.toLowerCase())
@@ -100,17 +121,21 @@ export const calculateMatchScore = (campaign: any, creator: any): MatchScoreResu
     );
 
     if (matchedVibes.length > 0) {
-        // 10 points for first match, +5 for each additional (cap at 20)
-        breakdown.niche = Math.min(20, 10 + ((matchedVibes.length - 1) * 5));
-        reasons.push(`✓ Matches vibes: ${matchedVibes.slice(0, 2).join(", ")}`);
-    } else if (creatorCategories.length > 0) {
-        // Soft match check against campaign description
+        // Up to 10 points for secondary vibes if no main niche match, 
+        // or just pad to 20 if main niche matched
+        const vibesPoints = matchedVibes.length * 5;
+        nicheScore += vibesPoints;
+        reasons.push(`✓ Matches vibes secundarias: ${matchedVibes.slice(0, 2).join(", ")}`);
+    } else if (nicheScore === 0 && creatorCategories.length > 0) {
+        // Soft match check against campaign description if no strong matches found
         const campaignContext = (campaign.name + " " + (campaign.description || "")).toLowerCase();
         if (creatorCategories.some((c: string) => campaignContext.includes(c.toLowerCase()))) {
-            breakdown.niche = 10;
-            reasons.push("Content relevant to campaign");
+            nicheScore += 5;
+            reasons.push("Contenido relevante a la descripción de la campaña");
         }
     }
+
+    breakdown.niche = Math.min(20, nicheScore);
     score += breakdown.niche;
 
     // ========================================
