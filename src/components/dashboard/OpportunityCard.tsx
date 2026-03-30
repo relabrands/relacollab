@@ -19,6 +19,8 @@ interface OpportunityCardProps {
     deadline: string;
     tags: string[];
     isInvited?: boolean;
+    isPending?: boolean;
+    status?: string;
     endDate?: string;
     brandDescription?: string;
     goal?: string;
@@ -201,14 +203,20 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
             <Button
               className={cn(
                 "w-full font-medium transition-colors",
-                opportunity.isPending
-                  ? "bg-orange-500/20 text-orange-300 border border-orange-500/30 hover:bg-orange-500/30"
-                  : opportunity.isInvited
-                    ? "bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/30"
-                    : "bg-white text-black hover:bg-white/90"
+                (opportunity.status === 'expired' || (opportunity.endDate && new Date(opportunity.endDate) < new Date()))
+                  ? "bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 cursor-not-allowed"
+                  : opportunity.isPending
+                    ? "bg-orange-500/20 text-orange-300 border border-orange-500/30 hover:bg-orange-500/30"
+                    : opportunity.isInvited
+                      ? "bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/30"
+                      : "bg-white text-black hover:bg-white/90"
               )}
+              disabled={opportunity.status === 'expired' || (opportunity.endDate && new Date(opportunity.endDate) < new Date())}
               onClick={(e) => {
                 e.stopPropagation();
+                if ((opportunity.status === 'expired' || (opportunity.endDate && new Date(opportunity.endDate) < new Date()))) {
+                  return;
+                }
                 if (opportunity.isPending && onViewDetails) {
                   onViewDetails();
                 } else {
@@ -216,10 +224,12 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
                 }
               }}
             >
-              {opportunity.isPending
-                ? "Aprobación Pendiente"
-                : (opportunity.isInvited ? "Aceptar Invitación" : "Aplicar Ahora")}
-              {!opportunity.isPending && <ArrowRight className="w-4 h-4 ml-2" />}
+              {(opportunity.status === 'expired' || (opportunity.endDate && new Date(opportunity.endDate) < new Date()))
+                ? "Campaña Expirada"
+                : opportunity.isPending
+                  ? "Aprobación Pendiente"
+                  : (opportunity.isInvited ? "Aceptar Invitación" : "Aplicar Ahora")}
+              {!(opportunity.status === 'expired' || (opportunity.endDate && new Date(opportunity.endDate) < new Date())) && !opportunity.isPending && <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
           )}
         </div>
