@@ -26,6 +26,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
 
     const isInvited = opportunity.isInvited;
     const isPending = opportunity.isPending;
+    const isExpired = opportunity.status === 'expired' || (opportunity.endDate && new Date(opportunity.endDate) < new Date());
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -38,7 +39,11 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                             className="w-16 h-16 rounded-xl object-cover border"
                         />
                         <div>
-                            {isInvited && (
+                            {isExpired ? (
+                                <Badge variant="destructive" className="mb-2">
+                                    Campaña Expirada
+                                </Badge>
+                            ) : isInvited && (
                                 <Badge variant="default" className="mb-2 bg-gradient-brand border-none">
                                     <Sparkles className="w-3 h-3 mr-1" />
                                     Invitación Personal
@@ -361,7 +366,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                     <Button variant="outline" onClick={showConfirm ? () => setShowConfirm(false) : onClose}>
                         {showConfirm ? "Volver" : "Cerrar"}
                     </Button>
-                    {!isActive && !isPending && (
+                    {!isActive && !isPending && !isExpired && (
                         <Button
                             variant="hero"
                             onClick={() => {
@@ -383,7 +388,11 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                             }
                         </Button>
                     )}
-                    {isPending && (
+                    {isExpired ? (
+                        <Button variant="secondary" disabled className="w-full sm:w-auto text-destructive bg-destructive/10 border border-destructive/20">
+                            Campaña Expirada
+                        </Button>
+                    ) : isPending && (
                         <Button variant="secondary" disabled className="w-full sm:w-auto text-orange-500 bg-orange-500/10 border border-orange-500/20">
                             Aprobación Pendiente
                         </Button>
