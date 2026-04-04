@@ -44,6 +44,8 @@ interface Brand {
   location?: string;
   phone?: string;
   bio?: string;
+  onboardingStep?: number;
+  onboardingCompleted?: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -126,7 +128,9 @@ export default function AdminBrands() {
           companySize: data.companySize,
           location: data.location,
           phone: data.phone,
-          bio: data.bio
+          bio: data.bio,
+          onboardingStep: data.onboardingStep,
+          onboardingCompleted: data.onboardingCompleted
         } as Brand;
       });
 
@@ -349,6 +353,7 @@ export default function AdminBrands() {
                 <th className="text-left p-4 font-medium text-muted-foreground">Email</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Plan</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Credits</th>
+                <th className="text-left p-4 font-medium text-muted-foreground">Onboarding</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Campaigns</th>
                 <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
@@ -388,6 +393,15 @@ export default function AdminBrands() {
                     </Select>
                   </td>
                   <td className="p-4 font-semibold text-primary">{brand.credits}</td>
+                  <td className="p-4">
+                    {brand.onboardingCompleted ? (
+                      <span className="text-sm font-medium text-success">Completado</span>
+                    ) : brand.onboardingStep ? (
+                      <span className="text-sm font-medium text-warning">Paso {brand.onboardingStep}</span>
+                    ) : (
+                      <span className="text-sm font-medium text-muted-foreground">Incompleto</span>
+                    )}
+                  </td>
                   <td className="p-4">
                     <Select
                       value={brand.status}

@@ -97,8 +97,33 @@ export default function BrandOnboarding() {
         return true;
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (!validateStep()) return;
+        
+        if (user) {
+            try {
+                await updateDoc(doc(db, "users", user.uid), {
+                    brandName: formData.companyName,
+                    contactPerson: formData.contactPerson,
+                    industry: formData.industry,
+                    location: formData.location,
+                    website: formData.website,
+                    description: formData.description,
+                    socialLinks: {
+                        instagram: formData.instagram,
+                        tiktok: formData.tiktok,
+                        facebook: formData.facebook,
+                        linkedin: formData.linkedin,
+                    },
+                    onboardingStep: step + 1,
+                    onboardingCompleted: false,
+                    updatedAt: new Date().toISOString(),
+                });
+            } catch (error) {
+                console.error("Error saving step progress", error);
+            }
+        }
+        
         setStep(s => s + 1);
     };
 
