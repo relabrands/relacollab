@@ -138,6 +138,9 @@ export default function CreatorDashboard() {
           if (appliedCampaignIds.includes(campaignId)) continue;
 
           const campaignData = campaignDoc.data();
+          
+          // Verify campaign is valid (skip empty/test dummy campaigns)
+          if (!campaignData.name || (!campaignData.brandName && !campaignData.brandId)) continue;
 
           // Calculate real match score
           const matchResult = calculateMatchScore(campaignData, userData);
