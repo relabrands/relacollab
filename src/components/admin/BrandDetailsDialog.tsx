@@ -149,6 +149,10 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                                                 <span className="font-medium">{brand.industry || "N/A"}</span>
                                             </div>
                                             <div className="flex justify-between py-2 border-b">
+                                                <span className="text-muted-foreground">Contact Person</span>
+                                                <span className="font-medium">{brand.contactPerson || "N/A"}</span>
+                                            </div>
+                                            <div className="flex justify-between py-2 border-b">
                                                 <span className="text-muted-foreground">Company Size</span>
                                                 <span className="font-medium">{brand.companySize || "N/A"}</span>
                                             </div>
@@ -171,7 +175,34 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                                     <div>
                                         <h3 className="font-semibold mb-3">Brand Bio</h3>
                                         <div className="p-4 bg-muted/30 rounded-lg text-sm text-muted-foreground min-h-[100px]">
-                                            {brand.bio || "No biography provided."}
+                                            {brand.description || brand.bio || "No biography provided."}
+                                        </div>
+                                        
+                                        <h3 className="font-semibold mt-6 mb-3">Onboarding Status</h3>
+                                        <div className="space-y-3 text-sm p-4 border rounded-xl">
+                                            <div className="flex justify-between py-1">
+                                                <span className="text-muted-foreground">Status</span>
+                                                <span className="font-medium">
+                                                    {brand.onboardingCompleted ? (
+                                                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">Completado</Badge>
+                                                    ) : brand.onboardingStep ? (
+                                                        <Badge variant="outline" className="border-yellow-200 bg-yellow-50 text-yellow-700">Paso {brand.onboardingStep}</Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="bg-muted text-muted-foreground">Incompleto</Badge>
+                                                    )}
+                                                </span>
+                                            </div>
+                                            {brand.socialLinks && (Object.values(brand.socialLinks).some(Boolean)) && (
+                                                <div className="pt-2 mt-2 border-t">
+                                                    <div className="text-muted-foreground mb-2">Social Links</div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {brand.socialLinks.instagram && <div className="text-xs truncate">IG: {brand.socialLinks.instagram}</div>}
+                                                        {brand.socialLinks.tiktok && <div className="text-xs truncate">TT: {brand.socialLinks.tiktok}</div>}
+                                                        {brand.socialLinks.facebook && <div className="text-xs truncate">FB: {brand.socialLinks.facebook}</div>}
+                                                        {brand.socialLinks.linkedin && <div className="text-xs truncate">LI: {brand.socialLinks.linkedin}</div>}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

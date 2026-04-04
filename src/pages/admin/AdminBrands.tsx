@@ -44,6 +44,9 @@ interface Brand {
   location?: string;
   phone?: string;
   bio?: string;
+  description?: string;
+  contactPerson?: string;
+  socialLinks?: any;
   onboardingStep?: number;
   onboardingCompleted?: boolean;
 }
@@ -129,6 +132,9 @@ export default function AdminBrands() {
           location: data.location,
           phone: data.phone,
           bio: data.bio,
+          description: data.description,
+          contactPerson: data.contactPerson,
+          socialLinks: data.socialLinks,
           onboardingStep: data.onboardingStep,
           onboardingCompleted: data.onboardingCompleted
         } as Brand;
