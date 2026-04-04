@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
     Calendar, Users, DollarSign, ArrowLeft, Target, Sparkles,
-    Loader2, MapPin, Briefcase, FileCheck, UserCheck, Edit2, Trash2, AlertTriangle
+    Loader2, MapPin, Briefcase, FileCheck, UserCheck, Edit2, Trash2, AlertTriangle, CreditCard
 } from "lucide-react";
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
@@ -98,12 +98,19 @@ export default function CampaignDetails() {
     const neededCount = campaign.creatorCount || 1;
     const progress = (approvedCount / neededCount) * 100;
 
+    // Fee derived from campaign data (e.g. 10% → 0.10). Applied to creator payout, invisible in UI.
+    const feeDecimal = (campaign.platformFeePercent || 10) / 100;
+
     // ✅ Total budget = gross per creator × number of creators
     const perCreatorGross = campaign.totalBudgetPerCreator || campaign.budget || 0;
     const totalBudget = perCreatorGross * neededCount;
     const totalFee = (campaign.platformFeeAmount || 0) * neededCount;
     const totalNet = (campaign.creatorPayment || perCreatorGross) * neededCount;
     const isMonetary = campaign.compensationType === "monetary";
+
+    // Range-based totals (when brand sets min/max reward)
+    const totalMin = (campaign.minReward || 0) * neededCount;
+    const totalMax = (campaign.maxReward || 0) * neededCount;
 
     return (
         <div className="flex min-h-screen bg-background">
@@ -231,17 +238,34 @@ export default function CampaignDetails() {
                                                 <div className="mt-2 pt-2 border-t border-border/40 space-y-1.5 text-sm">
                                                     {campaign.minReward && campaign.maxReward ? (
                                                         <>
-                                                            <div className="p-3 mb-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs leading-relaxed text-amber-800 dark:text-amber-400">
-                                                                * Retenemos el presupuesto máximo (${campaign.maxReward.toLocaleString()}) en <strong>Escrow</strong> por seguridad. Asignarás el pago final (entre ${campaign.minReward.toLocaleString()} y ${campaign.maxReward.toLocaleString()}) según la calidad del video. El sobrante quedará como crédito a favor.
+                                                            {/* Payment CTA Banner */}
+                                                            <div className="mb-3 p-4 bg-primary/5 border border-primary/30 rounded-xl">
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0 mt-0.5">
+                                                                        <CreditCard className="w-4 h-4 text-primary" />
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-sm font-semibold text-foreground mb-0.5">
+                                                                            Para activar esta campaña, transfiere el presupuesto a RELA
+                                                                        </p>
+                                                                        <p className="text-xs text-muted-foreground leading-relaxed">
+                                                                            Transfiere <strong className="text-foreground">${totalMax.toLocaleString()}</strong> a RELA Collab antes de asignar colaboradores. El creador recibe su parte al aprobar el contenido.
+                                                                        </p>
+                                                                        <Link to="/brand/billing" className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-primary hover:underline">
+                                                                            <CreditCard className="w-3.5 h-3.5" />
+                                                                            Ir a Facturación para pagar →
+                                                                        </Link>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                             <div className="flex justify-between">
                                                                 <span className="text-muted-foreground">Rango por creador (bruto)</span>
                                                                 <span className="font-semibold">${campaign.minReward.toLocaleString()} – ${campaign.maxReward.toLocaleString()}</span>
                                                             </div>
                                                             <div className="flex justify-between">
-                                                                <span className="text-muted-foreground">Neto al creator</span>
+                                                                <span className="text-muted-foreground">Creator recibe (neto)</span>
                                                                 <span className="text-green-600 font-medium whitespace-nowrap">
-                                                                    ${(campaign.minReward * 0.9).toLocaleString()} – ${(campaign.maxReward * 0.9).toLocaleString()}
+                                                                    ${(campaign.minReward * (1 - feeDecimal)).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})} – ${(campaign.maxReward * (1 - feeDecimal)).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2})}
                                                                 </span>
                                                             </div>
                                                         </>
@@ -259,12 +283,10 @@ export default function CampaignDetails() {
                                                             </div>
                                                         </>
                                                     )}
-                                                    {neededCount > 1 && (
-                                                        <div className="flex justify-between font-semibold pt-1 border-t border-border/40 mt-1">
-                                                            <span>Escrow Total ({neededCount} creadores)</span>
-                                                            <span className="text-primary">${totalBudget.toLocaleString()}</span>
-                                                        </div>
-                                                    )}
+                                                    <div className="flex justify-between font-semibold pt-1 border-t border-border/40 mt-1">
+                                                        <span>Total a transferir a RELA{neededCount > 1 ? ` (${neededCount} creadores)` : ""}</span>
+                                                        <span className="text-primary">${(totalMax > 0 ? totalMax : totalBudget).toLocaleString()}</span>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
