@@ -1,5 +1,5 @@
 import { useState, ReactNode } from "react";
-import { Bell, Search, X, LogOut, Settings, User as UserIcon } from "lucide-react";
+import { Search, LogOut, Settings, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -21,7 +21,6 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ title, subtitle, children }: DashboardHeaderProps) {
-  const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -70,20 +69,6 @@ export function DashboardHeader({ title, subtitle, children }: DashboardHeaderPr
 
   const searchResults = getSearchLinks();
 
-  const notifications = [
-    { id: 1, message: "New campaign match found!", time: "2 min ago" },
-    { id: 2, message: "Content approved by Sunrise Cafe", time: "1 hour ago" },
-    { id: 3, message: "Payment of $350 received", time: "3 hours ago" },
-  ];
-
-  const handleNotificationClick = () => {
-    setShowNotifications(!showNotifications);
-  };
-
-  const handleDismissNotification = (id: number) => {
-    toast.success("Notification dismissed");
-  };
-
   return (
     <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
       <div>
@@ -131,45 +116,7 @@ export function DashboardHeader({ title, subtitle, children }: DashboardHeaderPr
             )}
           </div>
 
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
-              onClick={handleNotificationClick}
-              title="Notifications"
-            >
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
-            </Button>
 
-            {showNotifications && (
-              <div className="absolute right-0 top-12 w-80 glass-card p-4 z-50 shadow-elevated">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold">Notifications</h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowNotifications(false)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="space-y-3">
-                  {notifications.map((notif) => (
-                    <div
-                      key={notif.id}
-                      className="p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-                      onClick={() => handleDismissNotification(notif.id)}
-                    >
-                      <p className="text-sm">{notif.message}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{notif.time}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
