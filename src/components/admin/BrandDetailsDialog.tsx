@@ -6,9 +6,11 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -23,10 +25,14 @@ import {
     Phone,
     CheckCircle,
     XCircle,
-    Clock
+    Clock,
+    AlertCircle,
+    Send
 } from "lucide-react";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { toast } from "sonner";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "@/lib/firebase";
 
 interface BrandDetailsDialogProps {
     brand: any;
@@ -38,12 +44,53 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
     const [activeTab, setActiveTab] = useState("overview");
     const [loading, setLoading] = useState(true);
     const [campaigns, setCampaigns] = useState<any[]>([]);
+    const [sendingReminder, setSendingReminder] = useState(false);
 
     useEffect(() => {
         if (brand?.id && isOpen) {
             fetchBrandData();
         }
     }, [brand, isOpen]);
+
+    const getOnboardingStep = () => {
+        if (!brand) return null;
+        if (brand.onboardingCompleted) return null;
+
+        const hasMissingBasicInfo = !brand.name && !brand.displayName;
+        const hasMissingContact = !brand.contactPerson;
+        const hasMissingIndustry = !brand.industry;
+
+        if (hasMissingBasicInfo || hasMissingContact || hasMissingIndustry) {
+            return { step: 1, message: "Falta información básica (nombre, contacto o industria)" };
+        }
+
+        return { step: brand.onboardingStep || 1, message: "Proceso no finalizado" };
+    };
+
+    const onboardingStatus = getOnboardingStep();
+    const isOnboardingIncomplete = onboardingStatus !== null;
+
+    const handleSendReminder = async () => {
+        if (!onboardingStatus || !brand.email) return;
+        setSendingReminder(true);
+        try {
+            const sendTestEmailFn = httpsCallable(functions, "sendTestEmail");
+            await sendTestEmailFn({
+                templateId: "onboarding_reminder",
+                toEmail: brand.email,
+                vars: {
+                    name: brand.contactPerson || brand.name || "Usuario",
+                    stepMessage: `Paso ${onboardingStatus.step} - ${onboardingStatus.message}`,
+                    dashboardUrl: "https://relacollab.com/brand",
+                }
+            });
+            toast.success("Recordatorio enviado a la marca");
+        } catch (error) {
+            toast.error("Error al enviar el recordatorio");
+        } finally {
+            setSendingReminder(false);
+        }
+    };
 
     const fetchBrandData = async () => {
         setLoading(true);
@@ -113,6 +160,31 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
 
                         <ScrollArea className="flex-1 p-6">
                             <TabsContent value="overview" className="mt-0 space-y-6">
+                                {/* Onboarding Alert */}
+                                {isOnboardingIncomplete && (
+                                    <Alert variant="destructive" className="border-2 border-red-200 bg-red-50 text-red-900">
+                                        <AlertCircle className="h-4 w-4 text-red-600" />
+                                        <AlertDescription className="flex items-center justify-between">
+                                            <div>
+                                                <p className="font-medium text-red-900">Onboarding Incompleto</p>
+                                                <p className="text-sm mt-1 text-red-700">
+                                                    Se quedó en: <strong>Paso {onboardingStatus.step}</strong> - {onboardingStatus.message}
+                                                </p>
+                                            </div>
+                                            <Button 
+                                                size="sm" 
+                                                variant="outline" 
+                                                className="ml-4 flex-shrink-0 border-red-200 hover:bg-red-100 hover:text-red-900 text-red-700 bg-white"
+                                                onClick={handleSendReminder}
+                                                disabled={sendingReminder}
+                                            >
+                                                <Send className="w-4 h-4 mr-2" />
+                                                {sendingReminder ? "Enviando..." : "Enviar Recordatorio"}
+                                            </Button>
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+
                                 {/* Quick Stats */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <Card>

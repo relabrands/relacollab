@@ -115,6 +115,24 @@ export default function AdminBrands() {
           currentPlan = data.plan || "starter"; // fallback legacy
         }
 
+        // Enforce strict validation for onboarding based on actual data
+        let actualOnboardingCompleted = data.onboardingCompleted;
+        let actualOnboardingStep = data.onboardingStep || 1;
+        
+        const hasMissingBasicInfo = !data.brandName && !data.displayName;
+        const hasMissingContact = !data.contactPerson;
+        const hasMissingIndustry = !data.industry;
+        
+        // If they miss basic info, they are explicitly at step 1
+        if (hasMissingBasicInfo || hasMissingContact || hasMissingIndustry) {
+          actualOnboardingCompleted = false;
+          actualOnboardingStep = 1;
+        } else if (!data.hasChosenPlan && !data.plan && (!subscription || subscription.status !== "active")) {
+          // If they have basic info but no plan selected, they are at step 3
+          actualOnboardingCompleted = false;
+          actualOnboardingStep = 3;
+        }
+
         return {
           id: doc.id,
           name: data.brandName || data.displayName || "Unknown Brand",
@@ -135,8 +153,8 @@ export default function AdminBrands() {
           description: data.description,
           contactPerson: data.contactPerson,
           socialLinks: data.socialLinks,
-          onboardingStep: data.onboardingStep,
-          onboardingCompleted: data.onboardingCompleted
+          onboardingStep: actualOnboardingStep,
+          onboardingCompleted: actualOnboardingCompleted
         } as Brand;
       });
 
