@@ -17,10 +17,12 @@ import {
     Play,
     ChevronDown,
     Users,
+    Plus,
+    Minus,
 } from "lucide-react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/landing/Header";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 const niches = ["Lifestyle", "Belleza", "Food", "Tech", "Fitness", "Moda", "Viajes", "Gaming", "Educación", "Mascotas"];
 
@@ -119,7 +121,101 @@ const requisitos = [
     "Pasión por crear y colaborar con marcas"
 ];
 
+const faqs = [
+    {
+        q: "¿Es gratis para los creadores?",
+        a: "Sí, 100% gratis para los creadores. Nunca te cobraremos por registrarte ni por aplicar a campañas. RELA Collab cobra una comisión a las marcas, no a ti."
+    },
+    {
+        q: "¿Cuántos seguidores necesito para aplicar?",
+        a: "Mínimo 1,000 seguidores en Instagram o TikTok. Valoramos más la calidad del contenido y el engagement que el número de seguidores. ¡Creadores pequeños también califican!"
+    },
+    {
+        q: "¿Cómo se manejan los pagos?",
+        a: "Los pagos se acuerdan directamente dentro de la plataforma. La marca deposita el monto acordado y tú lo recibes una vez aprobado tu contenido. Todo es transparente desde el inicio."
+    },
+    {
+        q: "¿Qué tipo de contenido puedo crear?",
+        a: "UGC (User Generated Content): videos para TikTok, Reels de Instagram, fotos de producto, unboxings, reviews, etc. Las marcas especifican el formato que necesitan en cada campaña."
+    },
+    {
+        q: "¿Cuánto tiempo tarda la aprobación?",
+        a: "Revisamos tu solicitud en menos de 24 horas hábiles. Te notificamos por correo electrónico una vez que tu perfil esté activo y listo para aplicar a campañas."
+    },
+    {
+        q: "¿Puedo trabajar con varias marcas al mismo tiempo?",
+        a: "¡Sí! Puedes aplicar a múltiples campañas simultáneamente. Tú controlas tu carga de trabajo y seleccionas las oportunidades que mejor se adaptan a tu calendario y estilo de contenido."
+    },
+];
+
+function FaqSection() {
+    const [open, setOpen] = useState<number | null>(null);
+
+    return (
+        <section className="py-28 px-4">
+            <div className="container mx-auto max-w-5xl">
+                <div className="grid md:grid-cols-[1fr_1.6fr] gap-12 items-start">
+                    {/* Left heading */}
+                    <div className="md:sticky md:top-32">
+                        <Badge variant="outline" className="mb-4 px-4 py-1.5 text-sm border-primary/30 text-primary bg-primary/5">Preguntas frecuentes</Badge>
+                        <h2 className="text-4xl md:text-5xl font-bold leading-tight mb-4">¿Tienes dudas?</h2>
+                        <p className="text-muted-foreground leading-relaxed mb-6">
+                            Aquí respondemos las preguntas más comunes. Si tienes alguna otra, escríbenos directo desde el chat.
+                        </p>
+                        <Link to="/login">
+                            <Button variant="outline" className="gap-2 rounded-xl">
+                                Crear cuenta gratis
+                                <ArrowRight className="w-4 h-4" />
+                            </Button>
+                        </Link>
+                    </div>
+
+                    {/* Right accordion */}
+                    <div className="space-y-3">
+                        {faqs.map((faq, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 12 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: i * 0.05 }}
+                                className={`glass-card overflow-hidden transition-all duration-200 ${open === i ? "border-primary/30" : "border-border/50 hover:border-primary/20"}`}
+                            >
+                                <button
+                                    onClick={() => setOpen(open === i ? null : i)}
+                                    className="w-full flex items-center justify-between gap-4 p-5 text-left"
+                                >
+                                    <span className="font-semibold text-sm sm:text-base">{faq.q}</span>
+                                    <span className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors ${open === i ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>
+                                        {open === i ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                                    </span>
+                                </button>
+                                <AnimatePresence initial={false}>
+                                    {open === i && (
+                                        <motion.div
+                                            key="answer"
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                                        >
+                                            <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed border-t border-border/40 pt-4">
+                                                {faq.a}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+}
+
 export default function Apply() {
+
     const heroRef = useRef<HTMLDivElement>(null);
     const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
     const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "25%"]);
@@ -263,7 +359,7 @@ export default function Apply() {
                 <div className="flex gap-4 whitespace-nowrap animate-marquee">
                     {[...niches, ...niches, ...niches].map((niche, i) => (
                         <span key={i} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                            <Sparkles className="w-3 h-3" />{niche}
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />{niche}
                         </span>
                     ))}
                 </div>
@@ -482,6 +578,48 @@ export default function Apply() {
                     </div>
                 </div>
             </section>
+
+            {/* ===== MARCAS ===== */}
+            <section className="py-20 px-4 bg-muted/20">
+                <div className="container mx-auto max-w-5xl">
+                    <div className="text-center mb-12 space-y-3">
+                        <Badge variant="outline" className="px-4 py-1.5 text-sm border-primary/30 text-primary bg-primary/5">Marcas aliadas</Badge>
+                        <h2 className="text-3xl md:text-4xl font-bold">Las marcas ya te están buscando</h2>
+                        <p className="text-muted-foreground max-w-xl mx-auto">Empresas reales de República Dominicana y la región trabajan con creadores en RELA Collab.</p>
+                    </div>
+
+                    {/* Logo grid — using text-based logo cards as brand placeholders */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-10">
+                        {[
+                            { name: "Código Ropa", cat: "Moda" },
+                            { name: "Sabor RD", cat: "Food" },
+                            { name: "FitLife DO", cat: "Fitness" },
+                            { name: "TechZone", cat: "Tech" },
+                            { name: "Glow Beauty", cat: "Belleza" },
+                            { name: "Viaja Ya", cat: "Viajes" },
+                        ].map((brand, i) => (
+                            <motion.div
+                                key={brand.name}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: i * 0.06 }}
+                                className="glass-card p-4 flex flex-col items-center justify-center text-center gap-1.5 hover:-translate-y-0.5 transition-transform min-h-[80px]"
+                            >
+                                <span className="text-sm font-bold text-foreground leading-tight">{brand.name}</span>
+                                <span className="text-[10px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">{brand.cat}</span>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    <p className="text-center text-sm text-muted-foreground">
+                        + decenas de marcas locales e internacionales que se unen cada semana.
+                    </p>
+                </div>
+            </section>
+
+            {/* ===== FAQ ===== */}
+            <FaqSection />
 
             {/* ===== FINAL CTA ===== */}
             <section className="py-28 px-4 relative overflow-hidden">
