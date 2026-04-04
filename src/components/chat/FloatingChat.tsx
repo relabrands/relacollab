@@ -45,10 +45,6 @@ export function FloatingChat() {
     
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Only render for brands and creators
-    if (!user || (role !== "brand" && role !== "creator")) {
-        return null; // hide for admins or unauthenticated users
-    }
 
     // Scroll to bottom on new message
     useEffect(() => {
@@ -186,6 +182,11 @@ export function FloatingChat() {
             toast.error("Error al enviar el mensaje");
         }
     };
+
+    // Only render for brands and creators
+    if (!user || (role !== "brand" && role !== "creator")) {
+        return null; // hide for admins or unauthenticated users
+    }
 
     return (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
