@@ -189,7 +189,7 @@ export function FloatingChat() {
     }
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        <div className="fixed bottom-24 md:bottom-6 right-6 z-50 flex flex-col items-end">
             {/* Chat Window */}
             {isOpen && (
                 <div className="w-80 sm:w-96 h-[500px] mb-4 bg-card border border-border/50 rounded-2xl shadow-elevated flex flex-col overflow-hidden glass-card transition-all duration-300 animate-in fade-in slide-in-from-bottom-5">
