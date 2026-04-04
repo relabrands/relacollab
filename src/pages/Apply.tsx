@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/landing/Header";
+import { TrustedBrands } from "@/components/landing/TrustedBrands";
 import { useRef, useState } from "react";
 
 const niches = ["Lifestyle", "Belleza", "Food", "Tech", "Fitness", "Moda", "Viajes", "Gaming", "Educación", "Mascotas"];
@@ -580,43 +581,7 @@ export default function Apply() {
             </section>
 
             {/* ===== MARCAS ===== */}
-            <section className="py-20 px-4 bg-muted/20">
-                <div className="container mx-auto max-w-5xl">
-                    <div className="text-center mb-12 space-y-3">
-                        <Badge variant="outline" className="px-4 py-1.5 text-sm border-primary/30 text-primary bg-primary/5">Marcas aliadas</Badge>
-                        <h2 className="text-3xl md:text-4xl font-bold">Las marcas ya te están buscando</h2>
-                        <p className="text-muted-foreground max-w-xl mx-auto">Empresas reales de República Dominicana y la región trabajan con creadores en RELA Collab.</p>
-                    </div>
-
-                    {/* Logo grid — using text-based logo cards as brand placeholders */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-10">
-                        {[
-                            { name: "Código Ropa", cat: "Moda" },
-                            { name: "Sabor RD", cat: "Food" },
-                            { name: "FitLife DO", cat: "Fitness" },
-                            { name: "TechZone", cat: "Tech" },
-                            { name: "Glow Beauty", cat: "Belleza" },
-                            { name: "Viaja Ya", cat: "Viajes" },
-                        ].map((brand, i) => (
-                            <motion.div
-                                key={brand.name}
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.06 }}
-                                className="glass-card p-4 flex flex-col items-center justify-center text-center gap-1.5 hover:-translate-y-0.5 transition-transform min-h-[80px]"
-                            >
-                                <span className="text-sm font-bold text-foreground leading-tight">{brand.name}</span>
-                                <span className="text-[10px] text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">{brand.cat}</span>
-                            </motion.div>
-                        ))}
-                    </div>
-
-                    <p className="text-center text-sm text-muted-foreground">
-                        + decenas de marcas locales e internacionales que se unen cada semana.
-                    </p>
-                </div>
-            </section>
+            <TrustedBrands />
 
             {/* ===== FAQ ===== */}
             <FaqSection />
