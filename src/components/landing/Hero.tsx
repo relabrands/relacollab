@@ -29,7 +29,7 @@ export function Hero() {
           >
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/70 bg-background text-xs font-medium text-muted-foreground tracking-wide">
               <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
-              Marketplace de UGC · Powered by AI
+              Software de Gestión UGC · Powered by AI
             </span>
           </motion.div>
 
@@ -62,7 +62,7 @@ export function Hero() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4, delay: 0.22 }}
           >
-            {["Creadores verificados", "Pagos seguros", "Analíticas en tiempo real"].map((item) => (
+            {["Creadores verificados", "Gestión de Campañas", "Analíticas en tiempo real"].map((item) => (
               <span key={item} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                 <CheckCircle className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                 {item}

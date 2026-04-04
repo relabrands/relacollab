@@ -33,7 +33,7 @@ export default function TermsAndConditions() {
 
                     <h2 className="text-xl font-semibold mt-8 mb-4">1. Descripción del Servicio</h2>
                     <p className="mb-4">
-                        RELA Collab es un marketplace que conecta a creadores de contenido con marcas para la gestión de campañas de contenido generado por el usuario (UGC). La plataforma facilita la visualización de métricas, la selección de entregables y la gestión de pagos.
+                        RELA Collab es una plataforma SaaS de gestión que conecta a creadores de contenido con marcas para la organización de campañas de contenido generado por el usuario (UGC). La plataforma facilita la visualización de métricas, la selección de entregables y la formalización de acuerdos directos entre las partes.
                     </p>
 
                     <h2 className="text-xl font-semibold mt-8 mb-4">2. Integraciones de Terceros (TikTok e Instagram)</h2>
@@ -53,17 +53,17 @@ export default function TermsAndConditions() {
                         <li><strong>Derechos de Marca:</strong> Las marcas conservan todos los derechos sobre sus materiales de campaña compartidos en la plataforma.</li>
                     </ul>
 
-                    <h2 className="text-xl font-semibold mt-8 mb-4">4. Pagos y Comisiones</h2>
+                    <h2 className="text-xl font-semibold mt-8 mb-4">4. Suscripciones y Pagos entre Partes</h2>
                     <ul className="list-disc pl-6 mb-4 space-y-1">
-                        <li><strong>Comisión de Plataforma:</strong> RELA Collab retiene una comisión de servicio del 10% (o el porcentaje vigente configurado por la administración) sobre el monto bruto acordado entre la marca y el creador.</li>
-                        <li><strong>Flujo de Pago:</strong> Los pagos se procesan de forma manual. El creador podrá solicitar el retiro de sus fondos una vez que el contenido sea aprobado por la marca y el balance esté marcado como "Disponible".</li>
+                        <li><strong>Modelo SaaS:</strong> RELA Collab cobra una suscripción mensual a las marcas por el uso de la plataforma y sus herramientas SaaS.</li>
+                        <li><strong>Acuerdos de Pago:</strong> RELA Collab no retiene, procesa ni funciona como intermediario financiero para los pagos de las campañas. Los pagos por el contenido se coordinan directamente entre marca y creador bajo sus propios términos.</li>
                     </ul>
 
                     <h2 className="text-xl font-semibold mt-8 mb-4">5. Conducta del Usuario</h2>
                     <p className="mb-4">Está estrictamente prohibido:</p>
                     <ul className="list-disc pl-6 mb-4 space-y-1">
                         <li>Utilizar las integraciones de TikTok o Instagram para actividades fraudulentas o spam.</li>
-                        <li>Proporcionar datos bancarios falsos para el retiro de fondos.</li>
+                        <li>Proporcionar información financiera o fiscal falsa a las marcas.</li>
                         <li>Incumplir con los entregables acordados en las campañas aceptadas.</li>
                     </ul>
 

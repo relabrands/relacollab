@@ -29,8 +29,8 @@ export default function Apply() {
     const beneficios = [
         {
             icon: DollarSign,
-            title: "Cobros Garantizados",
-            description: "Recibe pagos puntuales por cada campaña completada. Sin perseguir marcas, sin incertidumbre."
+            title: "Gestión de Acuerdos",
+            description: "Visualiza tus términos y cumple tus entregables sin complicaciones. Todo organizado en un solo lugar."
         },
         {
             icon: Target,
@@ -44,8 +44,8 @@ export default function Apply() {
         },
         {
             icon: Shield,
-            title: "Contratos Protegidos",
-            description: "Cada colaboración está respaldada por un contrato digital. Tú creas, nosotros protegemos."
+            title: "Acuerdos Digitales",
+            description: "Mantén tus términos de colaboración claros y organizados en un solo lugar. Tú creas, nosotros ordenamos."
         },
         {
             icon: Award,
@@ -62,7 +62,7 @@ export default function Apply() {
     const estadisticas = [
         { value: "$0", label: "Para creadores" },
         { value: "Top", label: "Marcas aliadas" },
-        { value: "100%", label: "Pagos garantizados" },
+        { value: "100%", label: "Transparencia" },
         { value: "IA", label: "Match inteligente" }
     ];
 
@@ -81,8 +81,8 @@ export default function Apply() {
         },
         {
             step: "03",
-            title: "Crea y gana",
-            description: "Entrega tu contenido, obtén aprobación y recibe tu pago. Así de simple.",
+            title: "Crea y finaliza",
+            description: "Entrega tu contenido, obtén aprobación y finaliza tu colaboración. Así de simple.",
             icon: CheckCircle2
         }
     ];
@@ -302,7 +302,7 @@ export default function Apply() {
                                         ))}
                                     </div>
                                     <p className="text-sm italic text-muted-foreground mb-4 leading-relaxed">
-                                        "Antes tardaba semanas buscando marcas. Ahora RELA Collab me manda oportunidades que encajan perfecto con mi contenido. ¡Ya generé más de $3,000 en mis primeros 2 meses!"
+                                        "Antes tardaba semanas buscando marcas. Ahora RELA Collab me manda oportunidades que encajan perfecto con mi contenido. ¡Ya completé mis primeras 5 colaboraciones con éxito!"
                                     </p>
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm">
@@ -326,7 +326,7 @@ export default function Apply() {
                                         ))}
                                     </div>
                                     <p className="text-sm italic text-muted-foreground mb-4 leading-relaxed">
-                                        "Lo que más me gusta es la transparencia. Sé exactamente cuánto voy a cobrar antes de aceptar una campaña. No más sorpresas, no más regateos."
+                                        "Lo que más me gusta es la transparencia. Sé exactamente los términos acordados antes de cerrar una campaña. No más sorpresas, no más regateos."
                                     </p>
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center text-white font-bold text-sm">
@@ -362,7 +362,7 @@ export default function Apply() {
                                     <Users className="w-8 h-8 text-primary" />
                                 </div>
                                 <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                                    ¿Listo para empezar a ganar?
+                                    ¿Listo para profesionalizar tu contenido?
                                 </h2>
                                 <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
                                     Únete a miles de creadores que ya monetizan su contenido con marcas que los valoran. Es gratis y toma menos de 3 minutos.

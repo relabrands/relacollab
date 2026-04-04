@@ -14,8 +14,8 @@ const features = [
     },
     {
         icon: Shield,
-        title: "Pagos en custodia",
-        description: "Marcas fondean por adelantado. Creadores cobran automáticamente al aprobar el contenido. Sin disputas, sin retrasos.",
+        title: "Colaboraciones verificadas",
+        description: "Flujo de campaña estructurado: brief, selección de creadores, entrega, aprobación y cierre. Todo gestionado desde un solo panel.",
     },
     {
         icon: Zap,
@@ -45,7 +45,7 @@ export function FeatureHighlights() {
                             <span className="gradient-text">gran UGC.</span>
                         </h2>
                         <p className="text-background/60 text-base md:text-lg max-w-xl">
-                            Un kit completo para colaboraciones modernas: desde el descubrimiento hasta el pago, todo en un solo lugar.
+                            Un kit completo para colaboraciones modernas: desde el descubrimiento hasta la gestión de tu campaña, todo en un solo lugar.
                         </p>
                     </motion.div>
 

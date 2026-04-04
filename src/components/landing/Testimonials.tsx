@@ -16,7 +16,7 @@ const testimonials = [
         avatar: "CR",
     },
     {
-        quote: "Por fin una plataforma que trata a los creadores como profesionales. Pagos transparentes, marcas reales, y las oportunidades llegan solas.",
+        quote: "Por fin una plataforma que trata a los creadores como profesionales. Acuerdos directos, marcas reales, y las oportunidades llegan solas.",
         name: "Luis Marte",
         role: "Creador Fitness · 42K seguidores",
         type: "creator",

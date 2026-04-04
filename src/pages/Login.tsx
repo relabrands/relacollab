@@ -173,12 +173,12 @@ const Login = () => {
                     {/* Main copy */}
                     <div className="space-y-6 max-w-sm">
                         <p className="text-3xl xl:text-4xl font-bold leading-tight text-background/95">
-                            El marketplace de UGC más inteligente de República Dominicana.
+                            La plataforma de gestión UGC más inteligente de República Dominicana.
                         </p>
                         <ul className="space-y-3">
                             {[
                                 "Matching con IA en segundos",
-                                "Pagos garantizados por contrato",
+                                "Contratos de cesión de derechos automatizados",
                                 "Miles de creadores verificados",
                                 "Analíticas en tiempo real",
                             ].map((item) => (
@@ -215,7 +215,7 @@ const Login = () => {
                         />
                     </Link>
                     <p className="text-sm text-muted-foreground max-w-[260px] leading-relaxed">
-                        El marketplace de UGC más inteligente de República Dominicana.
+                        La plataforma de gestión UGC más inteligente de República Dominicana.
                     </p>
                 </div>
 

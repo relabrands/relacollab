@@ -11,8 +11,8 @@ const creatorBenefits = [
     },
     {
         icon: DollarSign,
-        title: "Pagos claros y garantizados",
-        description: "Sabe exactamente cuánto ganarás antes de aplicar. Las marcas financian la campaña antes de que empieces a crear. Sin ghosting.",
+        title: "Acuerdos claros y directos",
+        description: "Conoce los términos de cada campaña antes de aplicar. La plataforma organiza todo el proceso para que solo te concentres en crear.",
     },
     {
         icon: TrendingUp,

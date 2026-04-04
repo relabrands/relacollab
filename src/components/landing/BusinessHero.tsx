@@ -54,7 +54,7 @@ export function BusinessHero() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4, delay: 0.22 }}
           >
-            {["Campañas llave en mano", "Pagos protegidos", "Resultados medibles"].map((item) => (
+            {["Campañas llave en mano", "Aprobación de activos", "Resultados medibles"].map((item) => (
               <span key={item} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                 <CheckCircle className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                 {item}

@@ -21,8 +21,8 @@ const brandBenefits = [
     },
     {
         icon: ShieldCheck,
-        title: "Pagos protegidos",
-        description: "Los fondos solo se liberan cuando apruebas el contenido. Cero riesgo, control total sobre tu inversión.",
+        title: "Acuerdos directos",
+        description: "RELA Collab facilita el match, los acuerdos de colaboración se coordinan directamente entre tú y el creador. Sin intermediarios financieros.",
     },
 ];
 

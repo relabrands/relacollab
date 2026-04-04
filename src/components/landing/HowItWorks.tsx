@@ -21,7 +21,7 @@ const brandSteps = [
     {
         icon: CheckCircle,
         title: "Aprueba y paga",
-        description: "Revisa el contenido, solicita revisiones si necesitas, aprueba y libera el pago con un clic.",
+        description: "Revisa el contenido, solicita revisiones si necesitas, aprueba y gestiona el cierre de tu campaña.",
     },
 ];
 
@@ -44,7 +44,7 @@ const creatorSteps = [
     {
         icon: DollarSign,
         title: "Crea y cobra",
-        description: "Sube el link del contenido, espera la aprobación y recibe tu pago. Así de directo.",
+        description: "Sube el link del contenido, espera la aprobación y coordina directamente con la marca. Así de directo.",
     },
 ];
 
