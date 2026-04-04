@@ -14,7 +14,6 @@ import {
   Inbox,
   User,
   Image,
-  MessageSquare,
   Calendar,
   Menu,
   ClipboardList,
@@ -43,7 +42,6 @@ const brandMainItems = [
 // Secondary items for Brand (in "More" dropdown)
 const brandMoreItems = [
   { icon: Image, label: "Content Library", path: "/brand/content" },
-  { icon: MessageSquare, label: "Messages", path: "/brand/messages" },
   { icon: Calendar, label: "Schedule", path: "/brand/schedule" },
   { icon: BarChart3, label: "Analytics", path: "/brand/analytics" },
   { icon: ClipboardList, label: "Reportes", path: "/brand/reports" },
@@ -61,7 +59,6 @@ const creatorMainItems = [
 // Secondary items for Creator (in "More" dropdown)
 const creatorMoreItems = [
   { icon: User, label: "My Profile", path: "/creator/profile" },
-  { icon: MessageSquare, label: "Messages", path: "/creator/messages" },
   { icon: Calendar, label: "Schedule", path: "/creator/schedule" },
   { icon: Sparkles, label: "AI Insights", path: "/creator/analytics" },
   { icon: Zap, label: "Active Campaigns", path: "/creator/active" }, // Kept for safety

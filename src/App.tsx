@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { FloatingChat } from "./components/chat/FloatingChat";
 import OnboardingLayout from "./pages/onboarding/OnboardingLayout";
 import BrandOnboarding from "./pages/onboarding/BrandOnboarding";
 import CreatorOnboarding from "./pages/onboarding/CreatorOnboarding";
@@ -34,7 +35,6 @@ import BrandSettings from "./pages/brand/BrandSettings";
 import CampaignDetails from "./pages/brand/CampaignDetails";
 import BrandCampaigns from "./pages/brand/BrandCampaigns";
 import BrandScheduling from "./pages/brand/BrandScheduling";
-import BrandMessages from "./pages/brand/Messages";
 import BrandReports from "./pages/brand/BrandReports";
 
 // Creator pages
@@ -47,7 +47,6 @@ import CreatorEarnings from "./pages/creator/CreatorEarnings";
 import CreatorSettings from "./pages/creator/CreatorSettings";
 import CreatorAnalytics from "./pages/creator/CreatorAnalytics";
 import CreatorScheduling from "./pages/creator/CreatorScheduling";
-import CreatorMessages from "./pages/creator/CreatorMessages";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -68,6 +67,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <FloatingChat />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -151,11 +151,6 @@ const App = () => (
                 <BrandSettings />
               </ProtectedRoute>
             } />
-            <Route path="/brand/messages" element={
-              <ProtectedRoute allowedRoles={['brand']}>
-                <BrandMessages />
-              </ProtectedRoute>
-            } />
             <Route path="/brand/reports" element={
               <ProtectedRoute allowedRoles={['brand']}>
                 <BrandReports />
@@ -196,11 +191,6 @@ const App = () => (
             <Route path="/creator/schedule" element={
               <ProtectedRoute allowedRoles={['creator']}>
                 <CreatorScheduling />
-              </ProtectedRoute>
-            } />
-            <Route path="/creator/messages" element={
-              <ProtectedRoute allowedRoles={['creator']}>
-                <CreatorMessages />
               </ProtectedRoute>
             } />
             <Route path="/creator/earnings" element={
