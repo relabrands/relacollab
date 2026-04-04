@@ -426,13 +426,13 @@ function InvoiceRow({
                     )}
                 </div>
                 <div className="flex gap-4 text-sm mt-1 flex-wrap">
-                    <span>Total Escrow: <strong className="text-foreground">${invoice.totalGross.toLocaleString()}</strong></span>
+                    <span>Presupuesto Operativo: <strong className="text-foreground">${invoice.totalGross.toLocaleString()}</strong></span>
                     <span className="text-muted-foreground">Fee RELA ({invoice.feePercent}%): ${invoice.totalFee.toLocaleString()}</span>
                     <span className="text-green-600 font-medium">Creadores reciben: ${invoice.totalNet.toLocaleString()}</span>
                 </div>
                 {invoice.minReward && invoice.maxReward && (
                     <p className="text-[10px] text-amber-600 dark:text-amber-400">
-                        ⚠️ El monto transferido (${invoice.totalGross.toLocaleString()}) garantiza el Escrow basado en el pago máximo. El pago final asignado podrá ser menor.
+                        ⚠️ El monto transferido (${invoice.totalGross.toLocaleString()}) cubre el presupuesto operativo basado en el pago máximo. El pago final asignado podrá ser menor.
                     </p>
                 )}
                 <p className="text-[10px] text-muted-foreground">

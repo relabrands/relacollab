@@ -251,7 +251,7 @@ export default function CampaignDetails() {
                                                                         <p className="text-xs text-muted-foreground leading-relaxed">
                                                                             Transfiere <strong className="text-foreground">${totalMax.toLocaleString()}</strong> a RELA Collab antes de asignar colaboradores. El creador recibe su parte al aprobar el contenido.
                                                                         </p>
-                                                                        <Link to="/brand/billing" className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-primary hover:underline">
+                                                                        <Link to="/brand/payments" className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-primary hover:underline">
                                                                             <CreditCard className="w-3.5 h-3.5" />
                                                                             Ir a Facturación para pagar →
                                                                         </Link>
@@ -381,7 +381,7 @@ export default function CampaignDetails() {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <DollarSign className="w-4 h-4" />
-                                        <span>Presupuesto (Escrow)</span>
+                                        <span>Presupuesto Operativo</span>
                                     </div>
                                     {isMonetary ? (
                                         <div className="text-right">

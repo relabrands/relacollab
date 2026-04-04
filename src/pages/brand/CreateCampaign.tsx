@@ -319,12 +319,12 @@ export default function CreateCampaign() {
       } catch (e) {
       }
 
-      // Calculate final amounts using maxReward as Escrow base
+      // Calculate final amounts using maxReward as budget base
       const minRewardVal = Number(formData.minReward) || 0;
       const maxRewardVal = Number(formData.maxReward) || 0;
       const creatorCount = parseInt(formData.creatorCount) || 1;
       const feePercent = config.serviceFeePercent || 10;
-      // Invoice is always based on maxReward (Escrow)
+      // Invoice is always based on maxReward (Max Budget)
       const perCreatorFee = maxRewardVal * (feePercent / 100);
       const perCreatorNet = maxRewardVal - perCreatorFee;
 
@@ -342,7 +342,7 @@ export default function CreateCampaign() {
         creatorPayment: perCreatorNet,       // Net creator receives (based on max, pre-approval)
         platformFeePercent: feePercent,
         platformFeeAmount: perCreatorFee,
-        totalBudgetPerCreator: maxRewardVal, // Gross per creator (Escrow)
+        totalBudgetPerCreator: maxRewardVal, // Gross per creator (Max Budget)
 
         budget: parseFloat(formData.budget) || 0,
         creatorCount: creatorCount,
@@ -364,7 +364,7 @@ export default function CreateCampaign() {
       } else {
         const campaignRef = await addDoc(collection(db, "campaigns"), campaignData);
 
-        // ✅ Auto-generate brand invoice for monetary or hybrid campaigns (based on maxReward Escrow)
+        // ✅ Auto-generate brand invoice for monetary or hybrid campaigns (based on maxReward budget)
         if ((formData.compensationType === "monetary" || formData.compensationType === "hybrid") && maxRewardVal > 0) {
           const totalGross = maxRewardVal * creatorCount;
           const totalFee = perCreatorFee * creatorCount;
@@ -380,7 +380,7 @@ export default function CreateCampaign() {
               creatorCount: creatorCount,
               minReward: minRewardVal,
               maxReward: maxRewardVal,
-              perCreatorGross: maxRewardVal, // Escrow = max
+              perCreatorGross: maxRewardVal, // Budget = max
               perCreatorFee: perCreatorFee,
               perCreatorNet: perCreatorNet,
               totalGross: totalGross,
@@ -971,7 +971,7 @@ export default function CreateCampaign() {
                               className="pl-8"
                             />
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">Pago máximo por contenido de alta calidad e impacto. También define el Escrow.</p>
+                          <p className="text-xs text-muted-foreground mt-1">Pago máximo por contenido de alta calidad e impacto. También define el presupuesto operativo.</p>
                         </div>
                       </div>
 
@@ -980,7 +980,7 @@ export default function CreateCampaign() {
                         <p className="text-xs text-destructive font-medium">⚠️ El pago máximo debe ser mayor o igual al mínimo.</p>
                       )}
 
-                      {/* Fee Calculation Display — based on maxReward (Escrow) */}
+                      {/* Fee Calculation Display — based on maxReward (Budget) */}
                       {formData.maxReward && (() => {
                         const minVal = Number(formData.minReward) || 0;
                         const maxVal = Number(formData.maxReward);
@@ -1001,11 +1001,11 @@ export default function CreateCampaign() {
                                 ${minVal > 0 ? minVal.toLocaleString() : "?"} – ${maxVal.toLocaleString()} USD
                               </span>
                             </div>
-                            {/* Total invoice — Escrow based on max */}
+                            {/* Total invoice — Budget based on max */}
                             <div className="px-4 py-3 bg-primary/10 border-b border-border/50 flex justify-between items-center">
                               <div>
                                 <span className="font-bold text-sm">Total Factura ({count} creador{count !== 1 ? "es" : ""})</span>
-                                <p className="text-[10px] text-muted-foreground">Basado en pago máximo (Escrow garantizado)</p>
+                                <p className="text-[10px] text-muted-foreground">Basado en pago máximo (Presupuesto Garantizado)</p>
                               </div>
                               <span className="text-primary font-black text-xl">${totalG.toLocaleString()}</span>
                             </div>
