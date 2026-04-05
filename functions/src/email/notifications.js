@@ -144,17 +144,19 @@ function registerEmailNotifications(functions, admin, exportsObj) {
 
             // Build compensation string based on compensationType
             let compensationStr = "";
-            const ct = camp.compensationType || "";
-            if (ct === "monetary") {
-                compensationStr = camp.budget ? `$${camp.budget} USD` : "Por acordar";
+            const ct = camp.compensationType || camp.rewardType || "";
+            const amountVal = camp.maxReward || camp.budget || camp.totalBudgetPerCreator || camp.creatorPayment || 0;
+            const money = amountVal ? `$${amountVal} USD` : "";
+
+            if (ct === "monetary" || ct === "paid") {
+                compensationStr = money || "Por acordar";
             } else if (ct === "exchange") {
                 compensationStr = camp.exchangeDetails || "Intercambio de producto/servicio";
             } else if (ct === "hybrid") {
-                const money = camp.budget ? `$${camp.budget} USD` : "";
                 const exch = camp.exchangeDetails || "";
-                compensationStr = [money, exch].filter(Boolean).join(" + ");
+                compensationStr = [money, exch].filter(Boolean).join(" + ") || "Por acordar";
             } else {
-                compensationStr = "Por acordar";
+                compensationStr = money || "Por acordar";
             }
 
             await sendEmail(creator.email, "invitation_received", {

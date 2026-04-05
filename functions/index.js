@@ -1289,7 +1289,7 @@ async function refreshTikTokMetricsForUser(userId, openId, accessToken, refreshT
     }
 }
 
-exports.updateCreatorMetricsDaily = functions
+exports.updateCreatorMetricsDaily = require('firebase-functions/v1')
     .runWith({ timeoutSeconds: 540, memory: '1GB' })
     .pubsub.schedule('0 0 * * *') // Runs every day at midnight 
     .timeZone('America/New_York')
