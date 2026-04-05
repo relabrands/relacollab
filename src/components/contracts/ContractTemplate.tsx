@@ -225,7 +225,7 @@ export function ContractTemplate({ contract, showDownload = false }: ContractTem
                     <div className="text-center pt-4 border-t border-dashed border-gray-300">
                         <p className="text-xs text-gray-400 font-sans">
                             Este contrato fue generado y firmado electrónicamente a través de RELA Collab.<br />
-                            ID de Contrato: <span className="font-mono">{contract.contractId || "—"}</span>  ·  Plataforma: relacollab.app
+                            ID de Contrato: <span className="font-mono">{contract.contractId || "—"}</span>  ·  Plataforma: relacollab.com
                         </p>
                     </div>
                 </section>
