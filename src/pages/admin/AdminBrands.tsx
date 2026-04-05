@@ -115,23 +115,23 @@ export default function AdminBrands() {
           currentPlan = data.plan || "starter"; // fallback legacy
         }
 
-        // Enforce strict validation for onboarding based on actual data
-        let actualOnboardingCompleted = data.onboardingCompleted;
-        let actualOnboardingStep = data.onboardingStep || 1;
+        // Enforce strict validation for onboarding ONLY if it's not already completed in DB
+        let actualOnboardingCompleted = !!data.onboardingCompleted;
+        let actualOnboardingStep = data.onboardingStep || (actualOnboardingCompleted ? undefined : 1);
         
-        const hasMissingBasicInfo = !data.brandName && !data.displayName;
-        const hasMissingContact = !data.contactPerson;
-        const hasMissingIndustry = !data.industry;
-        const hasMissingPhone = !data.phone;
-        
-        // If they miss basic info, they are explicitly at step 1
-        if (hasMissingBasicInfo || hasMissingContact || hasMissingIndustry || hasMissingPhone) {
-          actualOnboardingCompleted = false;
-          actualOnboardingStep = 1;
-        } else if (!data.onboardingCompleted) {
-          // If they have basic info but haven't finished, they are at step 2 (Social links)
-          actualOnboardingCompleted = false;
-          actualOnboardingStep = 2;
+        if (!actualOnboardingCompleted) {
+          const hasMissingBasicInfo = !data.brandName && !data.displayName;
+          const hasMissingContact = !data.contactPerson;
+          const hasMissingIndustry = !data.industry;
+          const hasMissingPhone = !data.phone;
+          
+          // If they miss basic info, they are explicitly at step 1
+          if (hasMissingBasicInfo || hasMissingContact || hasMissingIndustry || hasMissingPhone) {
+            actualOnboardingStep = 1;
+          } else {
+            // If they have basic info but haven't finished, they are at step 2 (Social links)
+            actualOnboardingStep = 2;
+          }
         }
 
         return {
