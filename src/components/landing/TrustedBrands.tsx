@@ -22,25 +22,25 @@ export function TrustedBrands() {
                 </motion.p>
 
                 {/* Infinite marquee */}
-                <div className="relative flex overflow-x-hidden group">
-                    <div className="animate-marquee flex gap-16 min-w-full items-center group-hover:[animation-play-state:paused]">
-                        {brands.map((brand, i) => (
+                <div className="relative flex overflow-hidden group">
+                    <div className="animate-marquee flex gap-12 md:gap-20 items-center shrink-0 pr-12 md:pr-20 group-hover:[animation-play-state:paused]">
+                        {[...brands, ...brands, ...brands, ...brands].map((brand, i) => (
                             <img
                                 key={i}
                                 src={brand.logo}
                                 alt={brand.name}
-                                className="h-8 md:h-10 w-auto object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-80 transition-all duration-300 flex-shrink-0"
+                                className="h-7 md:h-9 w-auto object-contain grayscale opacity-40 hover:grayscale-0 hover:opacity-80 transition-all duration-300 shrink-0"
                             />
                         ))}
                     </div>
-                    {/* Duplicate for infinite loop */}
-                    <div className="animate-marquee flex gap-16 min-w-full items-center absolute top-0 left-full group-hover:[animation-play-state:paused]">
-                        {brands.map((brand, i) => (
+                    {/* Duplicate for seamless loop */}
+                    <div className="animate-marquee flex gap-12 md:gap-20 items-center shrink-0 pr-12 md:pr-20 group-hover:[animation-play-state:paused]">
+                        {[...brands, ...brands, ...brands, ...brands].map((brand, i) => (
                             <img
                                 key={`dup-${i}`}
                                 src={brand.logo}
                                 alt={brand.name}
-                                className="h-8 md:h-10 w-auto object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-80 transition-all duration-300 flex-shrink-0"
+                                className="h-7 md:h-9 w-auto object-contain grayscale opacity-40 hover:grayscale-0 hover:opacity-80 transition-all duration-300 shrink-0"
                             />
                         ))}
                     </div>

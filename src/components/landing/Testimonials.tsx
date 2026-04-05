@@ -2,39 +2,39 @@ import { motion } from "framer-motion";
 
 const testimonials = [
     {
-        quote: "Pasé de luchar por conseguir acuerdos a tener un flujo constante de oportunidades que realmente encajan con mi estilo. El matching de IA es increíblemente preciso.",
-        name: "María González",
-        role: "Creadora · 85K seguidores",
-        type: "creator",
-        avatar: "MG",
-    },
-    {
-        quote: "Lanzamos tres campañas y vimos una mejora de 3x en engagement frente a nuestra estrategia anterior. La calidad de los creadores es impresionante.",
-        name: "Carlos Reyes",
-        role: "Director de Marketing · Marca de Belleza",
+        quote: "Antes llamaba a creadores por Instagram y nunca sabía si iban a cumplir. Con RELA Collab lanzamos una campaña, invitamos 3 creadores y en una semana teníamos el contenido listo. El contrato dejó todo claro desde el principio.",
+        name: "Alejandra Núñez",
+        role: "Marketing Manager · Marca de skincare local",
         type: "brand",
-        avatar: "CR",
+        avatar: "AN",
     },
     {
-        quote: "Por fin una plataforma que trata a los creadores como profesionales. Acuerdos directos, marcas reales, y las oportunidades llegan solas.",
+        quote: "Tengo 8K seguidores y nunca pensé que podía cobrar por hacer contenido. La primera semana me llegó una invitación de una marca de suplementos. Hice el contenido, lo aprobaron y coordinamos el pago sin problema. Así de simple.",
         name: "Luis Marte",
-        role: "Creador Fitness · 42K seguidores",
+        role: "Creador Fitness · @luismarte.fit · Santiago",
         type: "creator",
         avatar: "LM",
     },
     {
-        quote: "Redujimos el gasto en influencers un 40% y duplicamos el volumen de contenido. El dashboard hace que todo sea fácil de gestionar.",
-        name: "Sofía Tavares",
-        role: "Growth Lead · Startup Tech",
+        quote: "Lo que más me gustó fue que la plataforma nos mostró exactamente cuánto engagement tenía cada creador antes de invitarlos. Tomamos decisiones con datos reales, no con intuición.",
+        name: "Rodrigo Peralta",
+        role: "Director Comercial · Startup de tecnología",
         type: "brand",
+        avatar: "RP",
+    },
+    {
+        quote: "Ya había tenido malas experiencias con marcas que cambian los términos al final. Aquí el contrato fue claro desde que acepté: qué entregar, cuándo y cuánto. Ninguna sorpresa.",
+        name: "Sofía Tavares",
+        role: "Creadora Lifestyle · @sofiatavaresc · Santo Domingo",
+        type: "creator",
         avatar: "ST",
     },
 ];
 
 export function Testimonials() {
     return (
-        <section className="py-20 md:py-28 bg-muted/20" id="testimonials">
-            <div className="container px-4">
+        <section className="py-20 md:py-28 bg-muted/20 overflow-hidden" id="testimonials">
+            <div className="container px-4 max-w-full">
                 <div className="max-w-5xl mx-auto">
                     {/* Header */}
                     <motion.div
@@ -44,15 +44,18 @@ export function Testimonials() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.4 }}
                     >
-                        <span className="section-eyebrow">Testimonios</span>
+                        <span className="section-eyebrow">Experiencias reales</span>
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mt-3">
-                            Elegido por marcas{" "}
-                            <span className="gradient-text">y creadores.</span>
+                            Lo que dicen{" "}
+                            <span className="gradient-text">los que ya usaron RELA.</span>
                         </h2>
+                        <p className="text-muted-foreground text-lg mt-3 max-w-lg">
+                            Sin cinco estrellas automáticas. Solo lo que nos contaron.
+                        </p>
                     </motion.div>
 
                     {/* Grid */}
-                    <div className="grid sm:grid-cols-2 gap-4 md:gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
                         {testimonials.map((t, index) => (
                             <motion.div
                                 key={t.name}
@@ -62,14 +65,16 @@ export function Testimonials() {
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.35, delay: index * 0.07 }}
                             >
-                                <blockquote className="text-sm md:text-base leading-relaxed text-foreground mb-5">
-                                    "{t.quote}"
+                                {/* Opening quote mark */}
+                                <span className="text-3xl leading-none text-primary/25 font-serif select-none block mb-3">"</span>
+                                <blockquote className="text-sm md:text-base leading-relaxed text-foreground mb-5 break-words">
+                                    {t.quote}
                                 </blockquote>
-                                <div className="flex items-center gap-3 pt-4 border-t border-border/50">
-                                    <div className="w-9 h-9 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                <div className="flex items-center gap-3 pt-4 border-t border-border/50 min-w-0">
+                                    <div className="w-9 h-9 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-bold shrink-0">
                                         {t.avatar}
                                     </div>
-                                    <div className="flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 overflow-hidden">
                                         <div className="font-medium text-sm truncate">{t.name}</div>
                                         <div className="text-xs text-muted-foreground truncate">{t.role}</div>
                                     </div>

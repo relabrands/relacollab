@@ -6,23 +6,23 @@ import { ArrowRight, DollarSign, Zap, TrendingUp, Award } from "lucide-react";
 const creatorBenefits = [
     {
         icon: Zap,
-        title: "Oportunidades que llegan a ti",
-        description: "No más propuestas en frío ni perder tiempo persiguiendo marcas. Recibe matches con campañas que encajan con tu estilo y audiencia.",
+        title: "Las campañas te llegan, no al revés",
+        description: "Nada de DMs que nadie responde. Cuando tu perfil encaja con una campaña, la marca te invita directamente o tú ves la oportunidad en tu panel.",
     },
     {
         icon: DollarSign,
-        title: "Acuerdos claros y directos",
-        description: "Conoce los términos de cada campaña antes de aplicar. La plataforma organiza todo el proceso para que solo te concentres en crear.",
+        title: "Sabes cuánto te pagan antes de decir que sí",
+        description: "Cada campaña muestra la compensación desde el principio. Aceptas solo si te conviene. Sin regateos ni sorpresas después de entregar el contenido.",
     },
     {
         icon: TrendingUp,
-        title: "Crece como profesional",
-        description: "Construye un historial con campañas verificadas, acumula reseñas y desbloquea acuerdos mejor pagados con el tiempo.",
+        title: "Tu historial habla por ti",
+        description: "Cada campaña completada queda en tu perfil. Con el tiempo, acumulas credenciales que abren puertas a marcas más grandes y mejor pagadas.",
     },
     {
         icon: Award,
-        title: "Solo marcas verificadas",
-        description: "Cada marca en RELA Collab está verificada. Colaboras con empresas reales, briefs claros y condiciones justas.",
+        title: "Solo marcas que saben lo que quieren",
+        description: "Cada marca en la plataforma tiene un brief claro: qué contenido necesitan, cuándo y bajo qué condiciones. No pierdes tiempo con propuestas vagas.",
     },
 ];
 
@@ -41,11 +41,11 @@ export function ForCreators() {
                     >
                         <span className="section-eyebrow">Para Creadores</span>
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mt-3 mb-4">
-                            Convierte tu contenido en{" "}
-                            <span className="gradient-text">ingresos consistentes.</span>
+                            Tu contenido ya tiene valor.{" "}
+                            <span className="gradient-text">Ahora que te lo paguen.</span>
                         </h2>
                         <p className="text-base md:text-lg text-muted-foreground max-w-xl">
-                            Deja de luchar para conseguir acuerdos con marcas. RELA Collab conecta contigo las empresas que realmente encajan con tu nicho.
+                            No necesitas ser famoso. Necesitas contenido auténtico y audiencia real. Con eso, RELA Collab hace el resto: te conecta con marcas que buscan exactamente lo que tú haces.
                         </p>
                     </motion.div>
 
@@ -80,8 +80,8 @@ export function ForCreators() {
                         transition={{ duration: 0.4 }}
                     >
                         <div className="flex-1">
-                            <h3 className="text-xl md:text-2xl font-bold mb-1">¿Listo para trabajar con tus marcas ideales?</h3>
-                            <p className="text-muted-foreground text-sm">Aplica en minutos. Consigue matches al instante.</p>
+                            <h3 className="text-xl md:text-2xl font-bold mb-1">Aplica gratis. Sin tarjeta.</h3>
+                            <p className="text-muted-foreground text-sm">Revisamos tu perfil en menos de 24 horas. Si calificas, ya puedes ver las campañas disponibles.</p>
                         </div>
                         <Link to="/apply" className="flex-shrink-0">
                             <Button className="h-11 px-6 rounded-xl font-medium w-full sm:w-auto">

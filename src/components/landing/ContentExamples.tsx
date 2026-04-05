@@ -1,10 +1,22 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 
-const stats = [
-    { value: "+200%", label: "Vistas orgánicas" },
-    { value: "-55%", label: "Costo de contenido" },
-    { value: "82%", label: "Decisiones de compra desde redes" },
+const insights = [
+    {
+        value: "82%",
+        label: "de personas en RD prueban un lugar porque lo vieron en redes",
+        source: "Dato de comportamiento digital local"
+    },
+    {
+        value: "3×",
+        label: "más engagement genera el UGC vs. contenido producido por agencias",
+        source: "Promedio de campañas en plataforma"
+    },
+    {
+        value: "1K",
+        label: "seguidores es suficiente para empezar a colaborar con marcas en RELA",
+        source: "Requisito mínimo de la plataforma"
+    },
 ];
 
 export function ContentExamples() {
@@ -21,7 +33,7 @@ export function ContentExamples() {
             <div className="container px-4 max-w-6xl mx-auto">
                 <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
-                    {/* Text column — first on mobile */}
+                    {/* Text column */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -29,31 +41,41 @@ export function ContentExamples() {
                         transition={{ duration: 0.45 }}
                         className="space-y-6 order-1 lg:order-none"
                     >
-                        <span className="section-eyebrow">Contenido que convierte</span>
+                        <span className="section-eyebrow">Por qué funciona</span>
 
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight">
-                            El 82% de personas prueban un lugar porque
-                            {" "}<span className="gradient-text">lo vieron en redes.</span>
+                            Tu próximo cliente te está{" "}
+                            <span className="gradient-text">buscando en TikTok.</span>{" "}
+                            No en Google.
                         </h2>
 
                         <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-md">
-                            TikTok y Reels ya son motores de búsqueda. Tu próximo cliente te está buscando ahí antes de abrir Google.
+                            El contenido de creadores reales convierte más que cualquier anuncio producido. La gente confía en personas, no en marcas. RELA Collab existe para poner ese contenido a trabajar.
                         </p>
 
-                        {/* Stats row */}
-                        <div className="grid grid-cols-3 gap-3 pt-2">
-                            {stats.map((s) => (
-                                <div key={s.label} className="p-3 md:p-4 rounded-xl border border-border/60 bg-background text-center">
-                                    <div className="text-xl md:text-2xl font-bold text-primary">{s.value}</div>
-                                    <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{s.label}</div>
-                                </div>
+                        {/* Insights */}
+                        <div className="space-y-3 pt-2">
+                            {insights.map((s, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ opacity: 0, x: -12 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: i * 0.08 }}
+                                    className="flex items-start gap-4 p-4 rounded-xl border border-border/60 bg-background"
+                                >
+                                    <div className="text-2xl font-black text-primary shrink-0 leading-none pt-0.5">{s.value}</div>
+                                    <div>
+                                        <p className="text-sm font-medium leading-snug">{s.label}</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{s.source}</p>
+                                    </div>
+                                </motion.div>
                             ))}
                         </div>
                     </motion.div>
 
                     {/* Phones column */}
                     <div className="relative h-[320px] sm:h-[400px] md:h-[480px] flex justify-center items-end order-2 lg:order-none">
-                        {/* Subtle glow */}
                         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-16 bg-primary/10 rounded-full blur-2xl" />
 
                         {/* Phone 1 — left */}
@@ -79,7 +101,7 @@ export function ContentExamples() {
                             </motion.div>
                         </div>
 
-                        {/* Phone 2 — center / right */}
+                        {/* Phone 2 — right */}
                         <div className="absolute right-[5%] sm:right-[8%] top-0 rotate-[5deg] z-0">
                             <motion.div
                                 initial={{ opacity: 0, x: 20 }}

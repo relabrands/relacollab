@@ -24,7 +24,7 @@ import {
 const navLinks = [
   { label: "Inicio", href: "/", sectionId: null },
   { label: "Cómo funciona", href: "/#how-it-works", sectionId: "how-it-works" },
-  { label: "Para Marcas", href: "/#for-brands", sectionId: "for-brands" },
+  { label: "Para Marcas", href: "/business", sectionId: null },
   { label: "Para Creadores", href: "/apply", sectionId: null },
 ];
 

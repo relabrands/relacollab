@@ -6,23 +6,23 @@ import { ArrowRight, Sparkles, Clock, ShieldCheck, BarChart3 } from "lucide-reac
 const brandBenefits = [
     {
         icon: Sparkles,
-        title: "Matching con IA",
-        description: "Olvídate de revisar cientos de perfiles. Nuestra IA encuentra al instante creadores cuya audiencia, estilo e interacción encajan con tus objetivos.",
+        title: "El match lo hace el sistema",
+        description: "Describes tu campaña y la plataforma cruza tu brief con los perfiles de creadores disponibles. Ves los más compatibles primero, no una lista de miles.",
     },
     {
         icon: Clock,
-        title: "Lanza en horas",
-        description: "Desde el brief hasta el contenido en vivo en tiempo récord. Gestiona todo desde un solo panel, sin correos ni hojas de cálculo.",
+        title: "Campaña activa en el mismo día",
+        description: "Publica el brief, selecciona creadores e invítalos directamente desde el panel. Sin llamadas de ventas, sin propuestas en PDF, sin semanas de coordinación.",
     },
     {
         icon: BarChart3,
-        title: "Analíticas en tiempo real",
-        description: "Rastrea vistas, engagement, alcance y ROI de cada creador. Conoce exactamente qué funciona y qué no.",
+        title: "Sabes exactamente qué pasó",
+        description: "Cada entrega queda registrada. Ves qué contenido se aprobó, qué se rechazó y cómo se cerró cada campaña. Sin Excel ni seguimientos por WhatsApp.",
     },
     {
         icon: ShieldCheck,
-        title: "Acuerdos directos",
-        description: "RELA Collab facilita el match, los acuerdos de colaboración se coordinan directamente entre tú y el creador. Sin intermediarios financieros.",
+        title: "Contrato digital en cada campaña",
+        description: "El creador acepta los términos digitalmente antes de empezar. Los entregables, fechas y compensación quedan registrados. Sin malentendidos al final.",
     },
 ];
 
@@ -41,11 +41,11 @@ export function ForBrands() {
                     >
                         <span className="section-eyebrow">Para Marcas</span>
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mt-3 mb-4">
-                            Encuentra al creador perfecto.{" "}
-                            <span className="gradient-text">Siempre.</span>
+                            Deja de buscar creadores en Instagram.{" "}
+                            <span className="gradient-text">Ellos llegan a ti.</span>
                         </h2>
                         <p className="text-base md:text-lg text-muted-foreground max-w-xl">
-                            Deja de adivinar. La IA de RELA Collab asegura que cada creador con el que trabajes sea ideal para tu marca.
+                            Las marcas que usan RELA Collab no pierden tiempo levantando el teléfono ni revisando miles de perfiles. Publican una campaña y reciben propuestas de creadores que ya encajan.
                         </p>
                     </motion.div>
 
@@ -80,10 +80,10 @@ export function ForBrands() {
                         transition={{ duration: 0.4 }}
                     >
                         <div className="flex-1">
-                            <h3 className="text-xl md:text-2xl font-bold mb-1">Inicia tu primera campaña hoy</h3>
-                            <p className="text-background/60 text-sm">Únete a cientos de marcas que ya toman decisiones basadas en datos.</p>
+                            <h3 className="text-xl md:text-2xl font-bold mb-1">¿Tienes una campaña en mente?</h3>
+                            <p className="text-background/60 text-sm">Crea tu cuenta y publica tu primer brief. Los creadores correctos estarán esperando.</p>
                         </div>
-                        <Link to="/login" className="flex-shrink-0">
+                        <Link to="/business" className="flex-shrink-0">
                             <Button className="bg-background text-foreground hover:bg-background/90 h-11 px-6 rounded-xl font-medium">
                                 Empezar como Marca
                                 <ArrowRight className="w-4 h-4 ml-1" />

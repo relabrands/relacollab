@@ -18,7 +18,7 @@ export function Footer() {
             <Link to="/" className="hover:text-sidebar-foreground transition-colors">
               Inicio
             </Link>
-            <Link to="/#for-brands" className="hover:text-sidebar-foreground transition-colors">
+            <Link to="/business" className="hover:text-sidebar-foreground transition-colors">
               Para Marcas
             </Link>
             <Link to="/apply" className="hover:text-sidebar-foreground transition-colors">

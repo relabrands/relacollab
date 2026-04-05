@@ -4,23 +4,23 @@ import { Sparkles, BarChart3, Shield, Zap } from "lucide-react";
 const features = [
     {
         icon: Sparkles,
-        title: "Matching con IA",
-        description: "Motor entrenado con miles de señales de rendimiento de campañas. Encuentra al creador adecuado para cada brief al instante.",
+        title: "El match no es aleatorio",
+        description: "El sistema cruza tu brief con el nicho, el engagement y la audiencia de cada creador. No ves una lista de nombres, ves perfiles ordenados por compatibilidad real.",
     },
     {
         icon: BarChart3,
-        title: "Analíticas en tiempo real",
-        description: "Alcance, impresiones, engagement, clics. Todo en vivo en todas tus campañas activas desde un solo dashboard.",
+        title: "Ves los números antes de decidir",
+        description: "Alcance, tasa de engagement, plataforma activa, frecuencia de publicación. Tienes los datos de cada creador disponibles antes de enviar una sola invitación.",
     },
     {
         icon: Shield,
-        title: "Colaboraciones verificadas",
-        description: "Flujo de campaña estructurado: brief, selección de creadores, entrega, aprobación y cierre. Todo gestionado desde un solo panel.",
+        title: "Cada campaña tiene un contrato",
+        description: "Nada de acuerdos de palabra. Cada colaboración genera automáticamente un contrato digital con entregables, fechas y términos. Firmado antes de empezar.",
     },
     {
         icon: Zap,
-        title: "Descubrimiento instantáneo",
-        description: "Filtra por nicho, seguidores, ubicación, plataforma y engagement. Identifica al creador ideal en menos de 60 segundos.",
+        title: "Encuentra al creador en 60 segundos",
+        description: "Filtra por nicho, plataforma, número de seguidores y tipo de contenido. El descubrimiento no debería tomar días. Con RELA Collab, toma minutos.",
     },
 ];
 
@@ -41,11 +41,11 @@ export function FeatureHighlights() {
                             La plataforma
                         </span>
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4">
-                            Todo lo que necesitas para{" "}
-                            <span className="gradient-text">gran UGC.</span>
+                            Todo en un solo panel.{" "}
+                            <span className="gradient-text">Nada que descargar.</span>
                         </h2>
                         <p className="text-background/60 text-base md:text-lg max-w-xl">
-                            Un kit completo para colaboraciones modernas: desde el descubrimiento hasta la gestión de tu campaña, todo en un solo lugar.
+                            Desde que creas el brief hasta que apruebas el último contenido, todo pasa dentro de RELA Collab. Sin hojas de cálculo, sin seguimientos por correo.
                         </p>
                     </motion.div>
 

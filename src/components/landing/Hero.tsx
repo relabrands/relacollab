@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useRef } from "react";
 
@@ -15,12 +15,13 @@ export function Hero() {
 
   return (
     <section className="relative min-h-screen bg-background overflow-hidden">
-      {/* Subtle gradient orb — top right only */}
+      {/* Subtle gradient orb */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -translate-y-1/4 translate-x-1/4 pointer-events-none" />
 
       <div className="container relative z-10 px-4 pt-28 pb-0 md:pt-32">
         <div className="max-w-5xl mx-auto">
-          {/* Eyebrow */}
+
+          {/* Eyebrow — context, not pitch */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -29,46 +30,31 @@ export function Hero() {
           >
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/70 bg-background text-xs font-medium text-muted-foreground tracking-wide">
               <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
-              Software de Gestión UGC · Powered by AI
+              La plataforma de UGC de República Dominicana
             </span>
           </motion.div>
 
-          {/* Headline */}
+          {/* Headline — problem-aware, not pitch */}
           <motion.h1
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-center leading-[1.05] mb-6"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.08 }}
           >
-            <span className="block text-foreground">Donde marcas</span>
-            <span className="block gradient-text">encuentran creadores</span>
-            <span className="block text-foreground">perfectos.</span>
+            <span className="block text-foreground">Marcas que necesitan</span>
+            <span className="block gradient-text">contenido real.</span>
+            <span className="block text-foreground">Creadores que lo hacen.</span>
           </motion.h1>
 
-          {/* Subheadline */}
+          {/* Subheadline — specific, not generic */}
           <motion.p
             className="text-lg md:text-xl text-muted-foreground text-center max-w-xl mx-auto mb-8 leading-relaxed"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.16 }}
           >
-            IA que analiza objetivos, audiencias y engagement para conectar marcas con el creador ideal. Sin suposiciones.
+            RELA Collab conecta marcas dominicanas con creadores de TikTok e Instagram que generan contenido auténtico. Sin agencias, sin intermediarios, sin vueltas.
           </motion.p>
-
-          {/* Value props — simple inline list */}
-          <motion.div
-            className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.22 }}
-          >
-            {["Creadores verificados", "Gestión de Campañas", "Analíticas en tiempo real"].map((item) => (
-              <span key={item} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                <CheckCircle className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                {item}
-              </span>
-            ))}
-          </motion.div>
 
           {/* CTA Buttons */}
           <motion.div
@@ -77,7 +63,7 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.28 }}
           >
-            <Link to="/login">
+            <Link to="/business">
               <Button size="lg" className="h-12 px-8 text-base font-medium rounded-xl w-full sm:w-auto">
                 Soy una Marca
                 <ArrowRight className="w-4 h-4 ml-1" />
@@ -101,21 +87,17 @@ export function Hero() {
           {/* Glow under phones */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-20 bg-primary/10 rounded-full blur-2xl" />
 
-          {/* Phone 1 — left, tilted left */}
+          {/* Phone 1 — left, tilted */}
           <div className="absolute left-1/2 -translate-x-[130%] md:-translate-x-[145%] bottom-0 -rotate-[6deg] z-10">
             <div className="relative w-[140px] sm:w-[170px] md:w-[200px] h-[245px] sm:h-[300px] md:h-[350px] rounded-[1.75rem] overflow-hidden border border-black/10 shadow-2xl bg-black">
               <video
                 ref={video1Ref}
                 src="https://relabrands.com/wp-content/uploads/2026/02/video2.mp4"
                 className="w-full h-full object-cover opacity-95"
-                autoPlay
-                loop
-                muted
-                playsInline
+                autoPlay loop muted playsInline
                 disablePictureInPicture
                 controlsList="nodownload nofullscreen noremoteplayback"
               />
-              {/* Overlay badge */}
               <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] font-semibold flex items-center gap-1 shadow-sm">
                 <span className="text-red-500">❤️</span> 14.2K
               </div>
@@ -129,34 +111,26 @@ export function Hero() {
                 ref={video2Ref}
                 src="https://relabrands.com/wp-content/uploads/2026/02/video1.mp4"
                 className="w-full h-full object-cover opacity-95"
-                autoPlay
-                loop
-                muted
-                playsInline
+                autoPlay loop muted playsInline
                 disablePictureInPicture
                 controlsList="nodownload nofullscreen noremoteplayback"
               />
-              {/* Overlay badge */}
               <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] font-semibold flex items-center gap-1 shadow-sm">
                 <span className="text-red-500">❤️</span> 18.5K
               </div>
             </div>
           </div>
 
-          {/* Phone 3 — right, tilted right */}
+          {/* Phone 3 — right, tilted */}
           <div className="absolute left-1/2 translate-x-[30%] md:translate-x-[45%] bottom-0 rotate-[6deg] z-10">
             <div className="relative w-[140px] sm:w-[170px] md:w-[200px] h-[245px] sm:h-[300px] md:h-[350px] rounded-[1.75rem] overflow-hidden border border-black/10 shadow-2xl bg-black">
               <video
                 src="https://relabrands.com/wp-content/uploads/2026/02/video2.mp4"
                 className="w-full h-full object-cover opacity-95 scale-x-[-1]"
-                autoPlay
-                loop
-                muted
-                playsInline
+                autoPlay loop muted playsInline
                 disablePictureInPicture
                 controlsList="nodownload nofullscreen noremoteplayback"
               />
-              {/* Overlay badge */}
               <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] font-semibold flex items-center gap-1 shadow-sm">
                 💬 45
               </div>

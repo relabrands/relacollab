@@ -1,50 +1,50 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { FileText, Sparkles, Users, CheckCircle, Inbox, DollarSign, Star, Phone } from "lucide-react";
+import { FileText, Users, CheckCircle, Inbox, DollarSign, Phone, Search, Send } from "lucide-react";
 
 const brandSteps = [
     {
         icon: FileText,
-        title: "Crea el brief",
-        description: "Define objetivos, público, presupuesto e identidad de marca. Nuestro formulario te guía en cada paso.",
+        title: "Escribe tu brief",
+        description: "¿Qué producto? ¿Para quién? ¿Qué tono? Nuestro formulario te guía. No necesitas saber de marketing para llenarlo bien.",
     },
     {
-        icon: Sparkles,
-        title: "La IA hace el match",
-        description: "El sistema cruza tu brief con miles de perfiles y te entrega una lista curada con scores de coincidencia.",
+        icon: Search,
+        title: "Recibe a los creadores que encajan",
+        description: "El sistema sugiere perfiles ordenados por compatibilidad con tu campaña. Ves sus métricas, su contenido y su nicho antes de decidir.",
     },
     {
-        icon: Users,
-        title: "Invita y colabora",
-        description: "Revisa portafolios, envía propuestas e inicia la colaboración directamente desde la plataforma.",
+        icon: Send,
+        title: "Invita y coordina desde la plataforma",
+        description: "Envía invitaciones directamente. El creador las recibe, lee el contrato y acepta o no. Sin WhatsApp grupal, sin correos perdidos.",
     },
     {
         icon: CheckCircle,
-        title: "Aprueba y paga",
-        description: "Revisa el contenido, solicita revisiones si necesitas, aprueba y gestiona el cierre de tu campaña.",
+        title: "Aprueba el contenido y cierra",
+        description: "El creador sube el contenido. Tú lo revisas, solicitas cambios si aplica, apruebas y listo. Todo queda registrado.",
     },
 ];
 
 const creatorSteps = [
     {
         icon: Phone,
-        title: "Crea tu perfil",
-        description: "Conecta tu TikTok o Instagram. Los datos de tu audiencia hablan por sí solos.",
+        title: "Crea tu perfil en minutos",
+        description: "Conecta tu Instagram o TikTok. El sistema analiza tus métricas y define tu perfil automáticamente. Sin formularios interminables.",
     },
     {
         icon: Inbox,
-        title: "Descubre oportunidades",
-        description: "Explora campañas ordenadas por compatibilidad. Cada una tiene un score calculado para ti.",
+        title: "Explora campañas o recibe invitaciones",
+        description: "Ves campañas ordenadas por compatibilidad. Cada una muestra lo que debes entregar, cuándo y cuánto recibes. Antes de aplicar.",
     },
     {
-        icon: Star,
-        title: "Aplica o recibe invitaciones",
-        description: "Aplica a campañas que te gusten o recibe invitaciones de marcas que ya te eligieron.",
+        icon: FileText,
+        title: "Lee el contrato y acepta",
+        description: "Cada colaboración genera un contrato digital con los términos claros. Lo lees, lo aceptas y empieza la campaña. Sin papel.",
     },
     {
         icon: DollarSign,
-        title: "Crea y cobra",
-        description: "Sube el link del contenido, espera la aprobación y coordina directamente con la marca. Así de directo.",
+        title: "Entrega el contenido y coordina el pago",
+        description: "Subes el contenido a la plataforma. La marca lo aprueba y coordinas el cierre directamente. Sin perseguir a nadie.",
     },
 ];
 
@@ -72,10 +72,10 @@ export function HowItWorks({ initialView = "brand", hideToggle = false }: HowItW
                         <span className="section-eyebrow">Cómo funciona</span>
                         <div className="flex flex-col sm:flex-row sm:items-end gap-4 mt-3">
                             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight flex-1">
-                                Simple para todos.
+                                Sin aprendizaje.<br />Sin curva.
                             </h2>
 
-                            {/* Toggle — minimal text version */}
+                            {/* Toggle */}
                             {!hideToggle && (
                                 <div className="flex items-center gap-1 pb-1">
                                     <button
