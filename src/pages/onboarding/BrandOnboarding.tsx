@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { doc, updateDoc, collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,18 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Check, Loader2, LogOut, Instagram, Globe, Facebook, Linkedin } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface Plan {
-    id: string;
-    name: string;
-    price: number;
-    credits?: number;
-    features: string[];
-    interval: "month" | "year";
-    isFree?: boolean;
-}
+// Removed unused Plan interface
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 2;
 
 export default function BrandOnboarding() {
     const { user, logout } = useAuth();
@@ -30,8 +21,6 @@ export default function BrandOnboarding() {
 
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
-    const [plans, setPlans] = useState<Plan[]>([]);
-    const [plansLoading, setPlansLoading] = useState(true);
 
     const [formData, setFormData] = useState({
         // Step 1 – Company Information
@@ -40,15 +29,13 @@ export default function BrandOnboarding() {
         website: "",
         industry: "",
         location: "",
+        phone: "",
         description: "",
         // Step 2 – Social Links
         instagram: "",
         tiktok: "",
         facebook: "",
         linkedin: "",
-        // Step 3 – Plan
-        selectedPlanId: "",
-        selectedPlanName: "",
     });
 
     // Pre-fill contact person from Auth displayName once user loads
@@ -58,42 +45,17 @@ export default function BrandOnboarding() {
         }
     }, [user?.displayName]);
 
-    // Load active plans from Firestore
-    useEffect(() => {
-        const fetchPlans = async () => {
-            try {
-                const q = query(
-                    collection(db, "plans"),
-                    where("active", "==", true),
-                    orderBy("price", "asc")
-                );
-                const snap = await getDocs(q);
-                const loaded: Plan[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Plan, "id">) }));
-                setPlans(loaded);
-            } catch (err) {
-                toast.error("No se pudieron cargar los planes");
-            } finally {
-                setPlansLoading(false);
-            }
-        };
-        fetchPlans();
-    }, []);
-
     const update = (key: string, value: string) => setFormData(prev => ({ ...prev, [key]: value }));
 
-    // ── Validation per step ──────────────────────────────────────────────────
     const validateStep = (): boolean => {
         if (step === 1) {
             if (!formData.companyName.trim()) { toast.error("El nombre de la empresa es requerido"); return false; }
             if (!formData.contactPerson.trim()) { toast.error("La persona de contacto es requerida"); return false; }
+            if (!formData.phone.trim()) { toast.error("El número de teléfono es requerido"); return false; }
             if (!formData.industry) { toast.error("Selecciona una industria"); return false; }
             return true;
         }
         if (step === 2) return true; // Social links are optional
-        if (step === 3) {
-            if (!formData.selectedPlanId) { toast.error("Por favor selecciona un plan"); return false; }
-            return true;
-        }
         return true;
     };
 
@@ -105,6 +67,7 @@ export default function BrandOnboarding() {
                 await updateDoc(doc(db, "users", user.uid), {
                     brandName: formData.companyName,
                     contactPerson: formData.contactPerson,
+                    phone: formData.phone,
                     industry: formData.industry,
                     location: formData.location,
                     website: formData.website,
@@ -132,10 +95,11 @@ export default function BrandOnboarding() {
         setLoading(true);
         try {
             if (!user) return;
-            const selectedPlan = plans.find(p => p.id === formData.selectedPlanId);
+            // Removed plan selection requirement from onboarding
             await updateDoc(doc(db, "users", user.uid), {
                 brandName: formData.companyName,
                 contactPerson: formData.contactPerson,
+                phone: formData.phone,
                 website: formData.website,
                 industry: formData.industry,
                 location: formData.location,
@@ -146,8 +110,8 @@ export default function BrandOnboarding() {
                     facebook: formData.facebook,
                     linkedin: formData.linkedin,
                 },
-                plan: selectedPlan?.name || formData.selectedPlanName,
-                planId: formData.selectedPlanId,
+                plan: "Trial Gratis", // Default initial plan
+                planId: "trial",
                 status: "pending",
                 onboardingCompleted: true,
                 updatedAt: new Date().toISOString(),
@@ -171,7 +135,7 @@ export default function BrandOnboarding() {
     };
 
     // ─── Step labels ──────────────────────────────────────────────────────────
-    const stepLabels = ["Información de la Empresa", "Redes Sociales", "Seleccionar Plan"];
+    const stepLabels = ["Información de la Empresa", "Redes Sociales"];
 
     return (
         <div className="space-y-6">
@@ -239,6 +203,10 @@ export default function BrandOnboarding() {
                             <div className="space-y-2">
                                 <Label htmlFor="location">Ubicación</Label>
                                 <Input id="location" placeholder="Ciudad, País (ej. Santo Domingo, RD)" value={formData.location} onChange={e => update("location", e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="phone">Teléfono de Contacto *</Label>
+                                <Input id="phone" type="tel" placeholder="+1 (829) 000-0000" value={formData.phone} onChange={e => update("phone", e.target.value)} />
                             </div>
                         </div>
 
@@ -313,80 +281,13 @@ export default function BrandOnboarding() {
 
                         <div className="flex gap-3">
                             <Button variant="outline" onClick={() => setStep(1)} className="w-1/3">← Atrás</Button>
-                            <Button onClick={handleNext} className="flex-1">Siguiente: Seleccionar Plan →</Button>
+                            <Button onClick={handleComplete} className="flex-1" disabled={loading}>
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Completar Configuración
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
-            )}
-
-            {/* ── Step 3: Plan Selection ─────────────────────────────────────── */}
-            {step === 3 && (
-                <div className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Selecciona tu Plan</CardTitle>
-                            <CardDescription>Elige el plan que mejor se adapte a tu marca. Podrás cambiarlo más adelante.</CardDescription>
-                        </CardHeader>
-                    </Card>
-
-                    {plansLoading ? (
-                        <div className="flex justify-center py-12">
-                            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                        </div>
-                    ) : plans.length === 0 ? (
-                        <Card className="p-8 text-center text-muted-foreground">
-                            <p>No hay planes disponibles en este momento. Contacta al administrador.</p>
-                        </Card>
-                    ) : (
-                        <div className={`grid grid-cols-1 gap-4 ${plans.length >= 3 ? "md:grid-cols-3" : plans.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1 max-w-sm mx-auto"}`}>
-                            {plans.map((plan) => {
-                                const isSelected = formData.selectedPlanId === plan.id;
-                                return (
-                                    <Card
-                                        key={plan.id}
-                                        className={`cursor-pointer transition-all border-2 ${isSelected ? "border-primary ring-2 ring-primary/20 shadow-lg" : "border-transparent hover:border-border"}`}
-                                        onClick={() => setFormData(prev => ({ ...prev, selectedPlanId: plan.id, selectedPlanName: plan.name }))}
-                                    >
-                                        <CardHeader>
-                                            <CardTitle className="flex justify-between items-center">
-                                                {plan.name}
-                                                {isSelected && <Check className="w-5 h-5 text-primary" />}
-                                            </CardTitle>
-                                            <div>
-                                                {plan.isFree ? (
-                                                    <span className="text-2xl font-bold">Gratis</span>
-                                                ) : (
-                                                    <>
-                                                        <span className="text-2xl font-bold">${plan.price.toLocaleString()}</span>
-                                                        <span className="text-sm text-muted-foreground">/{plan.interval === "year" ? "año" : "mes"}</span>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <ul className="text-sm space-y-2">
-                                                {(plan.features || []).map(feat => (
-                                                    <li key={feat} className="flex items-start gap-2">
-                                                        <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                                                        <span>{feat}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    <div className="flex gap-3">
-                        <Button variant="outline" onClick={() => setStep(2)} className="w-1/3">← Atrás</Button>
-                        <Button onClick={handleComplete} className="flex-1" disabled={loading || !formData.selectedPlanId}>
-                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Completar Configuración
-                        </Button>
-                    </div>
-                </div>
             )}
         </div>
     );
