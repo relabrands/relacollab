@@ -45,9 +45,10 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
         if (role === 'creator') return <Navigate to="/onboarding/creator" replace />;
     }
 
-    // Check for pending approval status
-    // Redirect to pending approval page if status is pending AND we are not already there (handled by route itself usually, but good to be safe)
-    if (status === 'pending' && role !== 'admin') {
+    // Check for active status
+    // Any status that is NOT 'active' (pending, suspended, or null) will be redirected to pending-approval
+    // only for brands and creators. Admins are exempt.
+    if (role !== 'admin' && status !== 'active') {
         return <Navigate to="/pending-approval" replace />;
     }
 

@@ -1,10 +1,21 @@
 import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut, Clock, ShieldCheck } from "lucide-react";
 
 export default function PendingApproval() {
-    const { logout, user } = useAuth();
+    const { logout, user, status, role } = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (status === 'active') {
+            if (role === 'brand') navigate('/brand');
+            else if (role === 'creator') navigate('/creator');
+            else if (role === 'admin') navigate('/admin');
+        }
+    }, [status, role, navigate]);
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">

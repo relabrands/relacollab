@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 // Define available roles
@@ -42,39 +42,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [status, setStatus] = useState<string | null>(null);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        let unsubscribeDoc: (() => void) | null = null;
+
+        const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
 
+            // Clean up any previous document listener
+            if (unsubscribeDoc) {
+                unsubscribeDoc();
+                unsubscribeDoc = null;
+            }
+
             if (currentUser) {
-                // Fetch user role from Firestore
+                // Listen for user role and status changes in real-time
                 try {
-                    const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data();
-                        setRole(userData.role as UserRole);
-                        setOnboardingCompleted(!!userData.onboardingCompleted);
-                        setStatus(userData.status || null);
-                    } else {
-                        // New user, wait for sign up process to set role or handle it here
-                        setRole(null);
-                        setOnboardingCompleted(false);
-                        setStatus(null);
-                    }
+                    unsubscribeDoc = onSnapshot(doc(db, "users", currentUser.uid), (userDoc) => {
+                        if (userDoc.exists()) {
+                            const userData = userDoc.data();
+                            setRole(userData.role as UserRole);
+                            setOnboardingCompleted(!!userData.onboardingCompleted);
+                            
+                            // Option B: If status is missing, default to 'pending' unless they are admin
+                            const userStatus = userData.status || (userData.role === 'admin' ? 'active' : 'pending');
+                            setStatus(userStatus);
+                        } else {
+                            setRole(null);
+                            setOnboardingCompleted(false);
+                            setStatus(null);
+                        }
+                        setLoading(false);
+                    }, (error) => {
+                        console.error("Error listening to user doc:", error);
+                        setLoading(false);
+                    });
                 } catch (error) {
                     setRole(null);
                     setOnboardingCompleted(false);
                     setStatus(null);
+                    setLoading(false);
                 }
             } else {
                 setRole(null);
                 setOnboardingCompleted(false);
                 setStatus(null);
+                setLoading(false);
             }
-
-            setLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribeAuth();
+            if (unsubscribeDoc) unsubscribeDoc();
+        };
     }, []);
 
     const signInWithGoogle = async (selectedRole: UserRole): Promise<UserRole> => {
