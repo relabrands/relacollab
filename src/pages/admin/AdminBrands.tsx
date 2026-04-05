@@ -122,15 +122,16 @@ export default function AdminBrands() {
         const hasMissingBasicInfo = !data.brandName && !data.displayName;
         const hasMissingContact = !data.contactPerson;
         const hasMissingIndustry = !data.industry;
+        const hasMissingPhone = !data.phone;
         
         // If they miss basic info, they are explicitly at step 1
-        if (hasMissingBasicInfo || hasMissingContact || hasMissingIndustry) {
+        if (hasMissingBasicInfo || hasMissingContact || hasMissingIndustry || hasMissingPhone) {
           actualOnboardingCompleted = false;
           actualOnboardingStep = 1;
-        } else if (!data.hasChosenPlan && !data.plan && (!subscription || subscription.status !== "active")) {
-          // If they have basic info but no plan selected, they are at step 3
+        } else if (!data.onboardingCompleted) {
+          // If they have basic info but haven't finished, they are at step 2 (Social links)
           actualOnboardingCompleted = false;
-          actualOnboardingStep = 3;
+          actualOnboardingStep = 2;
         }
 
         return {

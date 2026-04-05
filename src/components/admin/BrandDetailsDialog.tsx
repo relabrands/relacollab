@@ -59,12 +59,13 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
         const hasMissingBasicInfo = !brand.name && !brand.displayName;
         const hasMissingContact = !brand.contactPerson;
         const hasMissingIndustry = !brand.industry;
+        const hasMissingPhone = !brand.phone;
 
-        if (hasMissingBasicInfo || hasMissingContact || hasMissingIndustry) {
-            return { step: 1, message: "Falta información básica (nombre, contacto o industria)" };
+        if (hasMissingBasicInfo || hasMissingContact || hasMissingIndustry || hasMissingPhone) {
+            return { step: 1, message: "Falta información básica (nombre, contacto, teléfono o industria)" };
         }
 
-        return { step: brand.onboardingStep || 1, message: "Proceso no finalizado" };
+        return { step: 2, message: "Falta configurar redes sociales" };
     };
 
     const onboardingStatus = getOnboardingStep();
