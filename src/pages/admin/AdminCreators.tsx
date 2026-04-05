@@ -111,7 +111,7 @@ export default function AdminCreators() {
           avatar: data.photoURL || data.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
           followers: followersCount > 0 ? `${(followersCount / 1000).toFixed(1)}K` : "0",
           engagement: engagementRate > 0 ? `${parseFloat(engagementRate).toFixed(2)}%` : "0%",
-          status: data.status || "active",
+          status: data.status || "pending",
           campaigns: appCounts[docSnap.id] || 0,
           earnings: "$0", // Placeholder
           // Extra data
@@ -240,15 +240,15 @@ export default function AdminCreators() {
           </div>
         </div>
 
-        {/* Creators Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="glass-card overflow-hidden"
         >
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
                 <th className="text-left p-4 font-medium text-muted-foreground">Creator</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Followers</th>
                 <th className="text-left p-4 font-medium text-muted-foreground">Engagement</th>
@@ -327,6 +327,7 @@ export default function AdminCreators() {
               ))}
             </tbody>
           </table>
+        </div>
 
           {filteredCreators.length === 0 && (
             <div className="p-12 text-center">

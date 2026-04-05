@@ -140,7 +140,7 @@ export default function AdminBrands() {
           email: data.email || "",
           plan: currentPlan,
           credits: data.credits || 0,
-          status: data.status || "active", // Default to active if missing
+          status: data.status || "pending",
           campaigns: campaignCounts[doc.id] || 0,
           joined: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : "N/A",
           // Extra Details
@@ -365,26 +365,26 @@ export default function AdminBrands() {
           </Dialog>
         </div>
 
-        {/* Brands Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="glass-card overflow-hidden"
         >
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="text-left p-4 font-medium text-muted-foreground">Brand</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Email</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Plan</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Credits</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Onboarding</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Campaigns</th>
-                <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left p-4 font-medium text-muted-foreground">Brand</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground">Email</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground">Plan</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground">Credits</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground">Onboarding</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground">Campaigns</th>
+                  <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
               {filteredBrands.map((brand) => (
                 <tr key={brand.id} className="border-t border-border hover:bg-muted/30 transition-colors">
                   <td className="p-4">
@@ -478,6 +478,7 @@ export default function AdminBrands() {
               ))}
             </tbody>
           </table>
+        </div>
 
           {filteredBrands.length === 0 && (
             <div className="p-12 text-center">

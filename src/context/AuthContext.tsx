@@ -95,7 +95,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     role: selectedRole,
                     createdAt: new Date().toISOString(),
                     displayName: user.displayName,
-                    photoURL: user.photoURL
+                    photoURL: user.photoURL,
+                    status: "pending"
                 });
                 setRole(selectedRole);
             } else if (userDoc.exists()) {
@@ -133,7 +134,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await setDoc(doc(db, "users", user.uid), {
                 email: user.email,
                 role: selectedRole,
-                status: selectedRole === "creator" ? "pending" : "active", // Creators need approval
+                status: "pending",
                 createdAt: new Date().toISOString(),
                 displayName: name,
                 photoURL: null,
@@ -152,7 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await setDoc(doc(db, "users", user.uid), {
                 email: user.email,
                 role: selectedRole,
-                status: selectedRole === "creator" ? "pending" : "active",
+                status: "pending",
                 createdAt: new Date().toISOString(),
                 displayName: user.displayName,
                 photoURL: user.photoURL,
