@@ -14,9 +14,18 @@ import {
 import { motion } from "framer-motion";
 import { Search, Eye, Ban, CheckCircle, Users, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CreatorDetailsDialog } from "@/components/admin/CreatorDetailsDialog";
+
+interface Application {
+  id: string;
+  creatorId: string;
+  campaignId: string;
+  status: string;
+  campaignTitle?: string;
+  budget?: string;
+}
 
 interface Creator {
   id: string;
@@ -28,16 +37,14 @@ interface Creator {
   status: "active" | "pending" | "suspended";
   campaigns: number;
   earnings: string;
-  // Additional fields for details view
   location?: string;
   phone?: string;
   bio?: string;
   socialHandles?: { instagram?: string; tiktok?: string };
   categories?: string[];
-  // Onboarding fields
   contentTypes?: string[];
-  contentFormats?: string[]; // NEW
-  vibes?: string[]; // NEW
+  contentFormats?: string[];
+  vibes?: string[];
   whoAppearsInContent?: string[];
   experienceTime?: string;
   collaborationPreference?: string;
@@ -53,9 +60,10 @@ const statusColors: Record<string, string> = {
 
 export default function AdminCreators() {
   const [creators, setCreators] = useState<Creator[]>([]);
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "pending" | "suspended">("all");
 
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -66,20 +74,21 @@ export default function AdminCreators() {
 
   const fetchCreators = async () => {
     try {
+      setLoading(true);
       const q = query(collection(db, "users"), where("role", "==", "creator"));
       const querySnapshot = await getDocs(q);
 
       const appsSnapshot = await getDocs(collection(db, "applications"));
-      const allApps = await Promise.all(appsSnapshot.docs.map(async docSnap => {
-        const appData = docSnap.data();
-        if (appData.campaignId) return { id: docSnap.id, ...appData };
-        return { id: docSnap.id, ...appData };
-      }));
+      const allApps = appsSnapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return { id: docSnap.id, ...data } as Application;
+      });
 
       const campaignsSnapshot = await getDocs(collection(db, "campaigns"));
       const campaignMap: Record<string, string> = {};
       campaignsSnapshot.docs.forEach(docSnap => {
-        campaignMap[docSnap.id] = docSnap.data().title || docSnap.data().name || "Untitled";
+        const campaignData = docSnap.data();
+        campaignMap[docSnap.id] = campaignData.title || campaignData.name || "Untitled";
       });
 
       const enrichedApps = allApps
@@ -100,7 +109,6 @@ export default function AdminCreators() {
 
       const creatorsData = querySnapshot.docs.map(docSnap => {
         const data = docSnap.data();
-
         const followersCount = data.instagramMetrics?.followers || data.instagramFollowers || 0;
         const engagementRate = data.instagramMetrics?.engagementRate || data.engagementRate || 0;
 
@@ -113,17 +121,15 @@ export default function AdminCreators() {
           engagement: engagementRate > 0 ? `${parseFloat(engagementRate).toFixed(2)}%` : "0%",
           status: data.status || "pending",
           campaigns: appCounts[docSnap.id] || 0,
-          earnings: "$0", // Placeholder
-          // Extra data
+          earnings: "$0",
           location: data.location,
           phone: data.phone,
           bio: data.bio,
           socialHandles: data.socialHandles,
           categories: data.categories,
-          // Onboarding fields for pending approval
           contentTypes: data.contentTypes,
-          contentFormats: data.contentFormats || [], // Extract new field
-          vibes: data.vibes || [], // Extract new field
+          contentFormats: data.contentFormats || [],
+          vibes: data.vibes || [],
           whoAppearsInContent: data.whoAppearsInContent,
           experienceTime: data.experienceTime,
           collaborationPreference: data.collaborationPreference,
@@ -138,8 +144,6 @@ export default function AdminCreators() {
       setLoading(false);
     }
   };
-
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "pending" | "suspended">("all");
 
   const filteredCreators = creators.filter(
     (creator) => {
@@ -198,147 +202,156 @@ export default function AdminCreators() {
           subtitle="View and manage creator accounts"
         />
 
-        {/* Status Filter Tabs */}
-        <div className="mb-6 flex gap-2">
-          {[
-            { key: "all" as const, label: "Todos", count: creators.length },
-            { key: "active" as const, label: "Activos", count: creators.filter(c => c.status === "active").length },
-            { key: "pending" as const, label: "Pendientes", count: creators.filter(c => c.status === "pending").length },
-            { key: "suspended" as const, label: "Suspendidos", count: creators.filter(c => c.status === "suspended").length }
-          ].map(tab => (
-            <Button
-              key={tab.key}
-              variant={statusFilter === tab.key ? "default" : "outline"}
-              size="sm"
-              onClick={() => setStatusFilter(tab.key)}
-              className="gap-2"
-            >
-              {tab.label}
-              <Badge variant={statusFilter === tab.key ? "secondary" : "outline"} className="ml-1">
-                {tab.count}
-              </Badge>
-            </Button>
-          ))}
-        </div>
-
-        {/* Actions Bar */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="relative w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search creators..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        {loading ? (
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-muted-foreground animate-pulse">Loading creators...</p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">
-              {filteredCreators.length} creators
-            </span>
-          </div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card overflow-hidden"
-        >
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr>
-                <th className="text-left p-4 font-medium text-muted-foreground">Creator</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Followers</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Engagement</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Active Collabs</th>
-                <th className="text-left p-4 font-medium text-muted-foreground">Earnings</th>
-                <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCreators.map((creator) => (
-                <tr key={creator.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={creator.avatar}
-                        alt={creator.name}
-                        className="w-10 h-10 rounded-xl object-cover"
-                      />
-                      <div>
-                        <div className="font-medium">{creator.name}</div>
-                        <div className="text-sm text-muted-foreground">{creator.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4 font-medium">{creator.followers}</td>
-                  <td className="p-4">
-                    <span className="text-success font-medium">{creator.engagement}</span>
-                  </td>
-                  <td className="p-4">
-                    <Select
-                      value={creator.status}
-                      onValueChange={(value: "active" | "pending" | "suspended") =>
-                        handleChangeStatus(creator.id, value)
-                      }
-                    >
-                      <SelectTrigger className={`w-32 h-8 text-xs font-medium capitalize ${statusColors[creator.status] || "bg-muted"}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="suspended">Suspended</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="p-4 text-center">{creator.campaigns}</td>
-                  <td className="p-4 font-medium">{creator.earnings}</td>
-                  <td className="p-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleViewDetails(creator)}>
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      {creator.status === "suspended" ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-success hover:text-success"
-                          onClick={() => handleActivate(creator)}
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleSuspend(creator)}
-                        >
-                          <Ban className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+        ) : (
+          <>
+            {/* Status Filter Tabs */}
+            <div className="mb-6 flex gap-2">
+              {[
+                { key: "all" as const, label: "Todos", count: creators.length },
+                { key: "active" as const, label: "Activos", count: creators.filter(c => c.status === "active").length },
+                { key: "pending" as const, label: "Pendientes", count: creators.filter(c => c.status === "pending").length },
+                { key: "suspended" as const, label: "Suspendidos", count: creators.filter(c => c.status === "suspended").length }
+              ].map(tab => (
+                <Button
+                  key={tab.key}
+                  variant={statusFilter === tab.key ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter(tab.key)}
+                  className="gap-2"
+                >
+                  {tab.label}
+                  <Badge variant={statusFilter === tab.key ? "secondary" : "outline"} className="ml-1">
+                    {tab.count}
+                  </Badge>
+                </Button>
               ))}
-            </tbody>
-          </table>
-        </div>
-
-          {filteredCreators.length === 0 && (
-            <div className="p-12 text-center">
-              <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">No creators found</h3>
-              <p className="text-muted-foreground text-sm">
-                Try adjusting your search
-              </p>
             </div>
-          )}
-        </motion.div>
+
+            {/* Actions Bar */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="relative w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search creators..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">
+                  {filteredCreators.length} creators
+                </span>
+              </div>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-card overflow-hidden"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Creator</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Followers</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Engagement</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground text-center">Active Collabs</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Earnings</th>
+                      <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCreators.map((creator) => (
+                      <tr key={creator.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={creator.avatar}
+                              alt={creator.name}
+                              className="w-10 h-10 rounded-xl object-cover"
+                            />
+                            <div>
+                              <div className="font-medium text-sm">{creator.name}</div>
+                              <div className="text-xs text-muted-foreground">{creator.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4 font-medium text-sm">{creator.followers}</td>
+                        <td className="p-4 text-sm">
+                          <span className="text-success font-medium">{creator.engagement}</span>
+                        </td>
+                        <td className="p-4">
+                          <Select
+                            value={creator.status}
+                            onValueChange={(value: "active" | "pending" | "suspended") =>
+                              handleChangeStatus(creator.id, value)
+                            }
+                          >
+                            <SelectTrigger className={`w-32 h-8 text-xs font-medium capitalize ${statusColors[creator.status] || "bg-muted"}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="suspended">Suspended</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="p-4 text-center text-sm">{creator.campaigns}</td>
+                        <td className="p-4 font-medium text-sm">{creator.earnings}</td>
+                        <td className="p-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleViewDetails(creator)}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {creator.status === "suspended" ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-success hover:text-success"
+                                onClick={() => handleActivate(creator)}
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleSuspend(creator)}
+                              >
+                                <Ban className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {filteredCreators.length === 0 && (
+                <div className="p-12 text-center">
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold mb-2">No creators found</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Try adjusting your search
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
 
         {/* Creator Details Dialog */}
         <CreatorDetailsDialog
@@ -347,6 +360,7 @@ export default function AdminCreators() {
           onClose={() => setIsDetailsOpen(false)}
           applications={applications}
         />
+
 
       </main>
     </div>
