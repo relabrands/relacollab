@@ -317,6 +317,73 @@ export default function CreatorOnboarding() {
                     </motion.div>
                 );
 
+            case 2:
+                return (
+                    <motion.div
+                        key="step-2"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-6"
+                    >
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-bold">Categorías Secundarias (Opcional)</h3>
+                            <p className="text-muted-foreground">
+                                Temas adicionales que aparecen en tu contenido.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {CREATOR_VIBES.map((vibe) => (
+                                <div
+                                    key={vibe.id}
+                                    onClick={() => handleVibeToggle(vibe.id)}
+                                    className={`
+                                        p-4 rounded-xl border-2 cursor-pointer transition-all text-center
+                                        ${formData.vibes.includes(vibe.id)
+                                            ? 'border-primary bg-primary/10 shadow-sm scale-105'
+                                            : 'border-border hover:border-primary/50 hover:scale-105'
+                                        }
+                                    `}
+                                >
+                                    <div className="font-medium text-sm">{vibe.label}</div>
+                                    {formData.vibes.includes(vibe.id) && (
+                                        <div className="text-primary text-xs mt-1">✓</div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="space-y-3">
+                            <Label>¿Etiquetas Personalizadas?</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder="Ej: Viajes, Gaming, Educativo..."
+                                    value={customContentType}
+                                    onChange={(e) => setCustomContentType(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomContentType())}
+                                />
+                                <Button type="button" variant="outline" onClick={addCustomContentType}>
+                                    Agregar
+                                </Button>
+                            </div>
+                            {formData.customContentTypes.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                    {formData.customContentTypes.map((type) => (
+                                        <Badge key={type} variant="secondary" className="gap-1 py-1.5 px-3">
+                                            {type}
+                                            <X
+                                                className="w-3 h-3 cursor-pointer"
+                                                onClick={() => removeCustomContentType(type)}
+                                            />
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                );
+
             case 3:
                 return (
                     <motion.div
@@ -380,73 +447,6 @@ export default function CreatorOnboarding() {
                                 </div>
                             </div>
                         )}
-                    </motion.div>
-                );
-
-            case 3:
-                return (
-                    <motion.div
-                        key="step-3"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6"
-                    >
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-bold">Categorías Secundarias (Opcional)</h3>
-                            <p className="text-muted-foreground">
-                                Temas adicionales que aparecen en tu contenido.
-                            </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {CREATOR_VIBES.map((vibe) => (
-                                <div
-                                    key={vibe.id}
-                                    onClick={() => handleVibeToggle(vibe.id)}
-                                    className={`
-                                        p-4 rounded-xl border-2 cursor-pointer transition-all text-center
-                                        ${formData.vibes.includes(vibe.id)
-                                            ? 'border-primary bg-primary/10 shadow-sm scale-105'
-                                            : 'border-border hover:border-primary/50 hover:scale-105'
-                                        }
-                                    `}
-                                >
-                                    <div className="font-medium text-sm">{vibe.label}</div>
-                                    {formData.vibes.includes(vibe.id) && (
-                                        <div className="text-primary text-xs mt-1">✓</div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="space-y-3">
-                            <Label>¿Etiquetas Personalizadas?</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    placeholder="Ej: Viajes, Gaming, Educativo..."
-                                    value={customContentType}
-                                    onChange={(e) => setCustomContentType(e.target.value)}
-                                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCustomContentType())}
-                                />
-                                <Button type="button" variant="outline" onClick={addCustomContentType}>
-                                    Agregar
-                                </Button>
-                            </div>
-                            {formData.customContentTypes.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {formData.customContentTypes.map((type) => (
-                                        <Badge key={type} variant="secondary" className="gap-1 py-1.5 px-3">
-                                            {type}
-                                            <X
-                                                className="w-3 h-3 cursor-pointer"
-                                                onClick={() => removeCustomContentType(type)}
-                                            />
-                                        </Badge>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
                     </motion.div>
                 );
 
