@@ -5,7 +5,7 @@ import { CreatorCard } from "@/components/dashboard/CreatorCard";
 import { MatchDetailsDialog } from "@/components/brand/MatchDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Sparkles, Filter, SlidersHorizontal, Loader2, Plus, Users, UserCheck, CheckCircle } from "lucide-react";
+import { Sparkles, Filter, SlidersHorizontal, Loader2, Plus, Users, UserCheck, CheckCircle, FileText } from "lucide-react";
 import { collection, getDocs, query, where, orderBy, doc, getDoc, addDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { calculateMatchScore } from "@/lib/matchScoring";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { ContractTemplate } from "@/components/contracts/ContractTemplate";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const formatNumber = (num: number) => {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
@@ -49,6 +51,9 @@ export default function BrandMatches() {
   // Dialog State
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [contractOpen, setContractOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<any>(null);
+  const [loadingContract, setLoadingContract] = useState(false);
 
   // 1. Fetch Campaigns
   useEffect(() => {
@@ -595,6 +600,66 @@ export default function BrandMatches() {
                 campaignId={activeCampaign?.id}
                 creatorId={creator.id}
               />
+              {/* Ver Contrato — only in collaborating mode */}
+              {viewMode === 'collaborating' && (
+                <div className="mt-2 px-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2 text-xs"
+                    onClick={async () => {
+                      if (!user || !activeCampaign) return;
+                      setLoadingContract(true);
+                      setContractOpen(true);
+                      try {
+                        const cq = query(
+                          collection(db, "contracts"),
+                          where("campaignId", "==", activeCampaign.id),
+                          where("creatorId", "==", creator.id)
+                        );
+                        const snap = await getDocs(cq);
+                        if (!snap.empty) {
+                          const data = snap.docs[0].data();
+                          setSelectedContract({ ...data, contractId: snap.docs[0].id });
+                        } else {
+                          // Fallback from live data
+                          setSelectedContract({
+                            contractId: "—",
+                            status: "active",
+                            signedByCreatorAt: creator.approvedAt || new Date().toISOString(),
+                            campaign: {
+                              title: activeCampaign.title || activeCampaign.name || "",
+                              description: activeCampaign.description || "",
+                              deliverables: activeCampaign.deliverables || [],
+                              compensationType: activeCampaign.compensationType || "exchange",
+                              creatorPayment: activeCampaign.creatorPayment || activeCampaign.budget || 0,
+                              exchangeDetails: activeCampaign.exchangeDetails || "",
+                              deadline: activeCampaign.deadline || activeCampaign.endDate || "",
+                              location: activeCampaign.location || "",
+                            },
+                            brand: {
+                              displayName: activeCampaign.brandName || user.displayName || "Marca",
+                              email: user.email || "",
+                            },
+                            creator: {
+                              displayName: creator.name || creator.displayName || "Creador",
+                              email: creator.email || "",
+                              instagram: creator.instagram || "",
+                            },
+                          });
+                        }
+                      } catch {
+                        setSelectedContract(null);
+                      } finally {
+                        setLoadingContract(false);
+                      }
+                    }}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    Ver Contrato
+                  </Button>
+                </div>
+              )}
             </motion.div>
           )) : (
             <div className="col-span-3 text-center py-20">
@@ -671,6 +736,27 @@ export default function BrandMatches() {
           }}
         />
       )}
+
+      {/* Contract Dialog — Brand side */}
+      <Dialog open={contractOpen} onOpenChange={setContractOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Contrato de Colaboración
+            </DialogTitle>
+          </DialogHeader>
+          {loadingContract ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : selectedContract ? (
+            <ContractTemplate contract={selectedContract} showDownload={true} />
+          ) : (
+            <p className="text-center text-muted-foreground py-8">No se encontró el contrato para esta colaboración.</p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

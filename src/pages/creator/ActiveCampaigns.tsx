@@ -4,14 +4,15 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { OpportunityCard } from "@/components/dashboard/OpportunityCard";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Loader2, PlusCircle } from "lucide-react";
+import { Loader2, PlusCircle, FileText } from "lucide-react";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Link } from "react-router-dom";
 import { OpportunityDetailsDialog } from "@/components/dashboard/OpportunityDetailsDialog";
-
+import { ContractTemplate } from "@/components/contracts/ContractTemplate";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { calculateMatchScore } from "@/lib/matchScoring";
 
 export default function ActiveCampaigns() {
@@ -20,6 +21,9 @@ export default function ActiveCampaigns() {
     const [loading, setLoading] = useState(true);
     const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [contractOpen, setContractOpen] = useState(false);
+    const [selectedContract, setSelectedContract] = useState<any>(null);
+    const [loadingContract, setLoadingContract] = useState(false);
 
     useEffect(() => {
         const fetchActiveCampaigns = async () => {
@@ -99,6 +103,54 @@ export default function ActiveCampaigns() {
         setIsDialogOpen(true);
     };
 
+    const handleViewContract = async (campaign: any) => {
+        if (!user) return;
+        setLoadingContract(true);
+        setContractOpen(true);
+        try {
+            const q = query(
+                collection(db, "contracts"),
+                where("campaignId", "==", campaign.id),
+                where("creatorId", "==", user.uid)
+            );
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                const data = snap.docs[0].data();
+                setSelectedContract({ ...data, contractId: snap.docs[0].id });
+            } else {
+                // Fallback: build contract from campaign data
+                setSelectedContract({
+                    contractId: "—",
+                    status: "active",
+                    signedByCreatorAt: new Date().toISOString(),
+                    campaign: {
+                        title: campaign.title,
+                        description: campaign.description,
+                        deliverables: campaign.deliverables || [],
+                        compensationType: campaign.compensationType || "exchange",
+                        creatorPayment: campaign.creatorPayment || campaign.budget || 0,
+                        exchangeDetails: campaign.exchangeDetails,
+                        deadline: campaign.deadline || campaign.endDate,
+                        location: campaign.location,
+                    },
+                    brand: {
+                        displayName: campaign.brandName,
+                        email: campaign.brandProfile?.email,
+                        logo: campaign.brandLogo,
+                    },
+                    creator: {
+                        displayName: user.displayName || user.email || "Creador",
+                        email: user.email || "",
+                    },
+                });
+            }
+        } catch {
+            setSelectedContract(null);
+        } finally {
+            setLoadingContract(false);
+        }
+    };
+
     return (
         <div className="flex min-h-screen bg-background">
             <DashboardSidebar type="creator" />
@@ -147,6 +199,18 @@ export default function ActiveCampaigns() {
                                         <div className="absolute top-2 right-2 bg-success text-white text-xs px-2 py-1 rounded-full font-medium">
                                             Activa
                                         </div>
+                                        {/* Ver Contrato button */}
+                                        <div className="mt-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full gap-2 text-xs"
+                                                onClick={() => handleViewContract(campaign)}
+                                            >
+                                                <FileText className="w-3.5 h-3.5" />
+                                                Ver mi Contrato
+                                            </Button>
+                                        </div>
                                     </div>
                                 </motion.div>
                             ))}
@@ -177,6 +241,27 @@ export default function ActiveCampaigns() {
                 onAccept={() => { }} // No accept action needed for active campaigns
                 isActive={true}
             />
+
+            {/* Contract Dialog */}
+            <Dialog open={contractOpen} onOpenChange={setContractOpen}>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-primary" />
+                            Mi Contrato de Colaboración
+                        </DialogTitle>
+                    </DialogHeader>
+                    {loadingContract ? (
+                        <div className="flex justify-center py-12">
+                            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        </div>
+                    ) : selectedContract ? (
+                        <ContractTemplate contract={selectedContract} showDownload={true} />
+                    ) : (
+                        <p className="text-center text-muted-foreground py-8">No se encontró el contrato para esta campaña.</p>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

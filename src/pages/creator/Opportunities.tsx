@@ -301,14 +301,49 @@ export default function Opportunities() {
         });
       }
 
+      // ====== CREATE CONTRACT IN FIRESTORE ======
+      try {
+        await addDoc(collection(db, "contracts"), {
+          campaignId: campaignId,
+          creatorId: user.uid,
+          brandId: campaign.brandId,
+          status: isInvitation ? "active" : "pending",
+          signedByCreatorAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          campaign: {
+            title: campaign.title || campaign.name || "",
+            description: campaign.description || "",
+            deliverables: campaign.deliverables || [],
+            compensationType: campaign.compensationType || campaign.rewardType || "exchange",
+            creatorPayment: campaign.creatorPayment || campaign.budget || 0,
+            exchangeDetails: campaign.exchangeDetails || "",
+            deadline: campaign.deadline || campaign.endDate || "",
+            location: campaign.location || "",
+          },
+          brand: {
+            displayName: campaign.brandName || campaign.brandProfile?.displayName || "Marca",
+            email: campaign.brandProfile?.email || "",
+            logo: campaign.brandLogo || "",
+          },
+          creator: {
+            displayName: user.displayName || user.email || "Creador",
+            email: user.email || "",
+            avatar: user.photoURL || "",
+          },
+        });
+      } catch (_contractError) {
+        // Contract creation failed silently — don't block the application
+      }
+
       toast.success(campaign.isInvited ? "¡Invitación Aceptada!" : "¡Solicitud Enviada!", {
-        description: campaign.isInvited ? "Ahora estás colaborando en esta campaña." : "La marca ha sido notificada de tu interés.",
+        description: campaign.isInvited ? "Contrato firmado. Ahora estás colaborando en esta campaña." : "La marca ha sido notificada. Tu contrato se activará al ser aprobado.",
       });
 
       // Update local state to remove from list
       setOpportunities(prev => prev.filter(op => op.id !== campaignId));
       setAppliedCampaignIds(prev => new Set(prev).add(campaignId));
       setIsDialogOpen(false);
+
 
     } catch (error) {
       toast.error("Error al enviar la solicitud");

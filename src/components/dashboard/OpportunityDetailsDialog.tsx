@@ -1,8 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, DollarSign, Gift, Check, ExternalLink, Sparkles, Building2, Users, UserCheck, Instagram } from "lucide-react";
+import { MapPin, Calendar, DollarSign, Gift, Check, ExternalLink, Sparkles, Building2, Users, UserCheck, Instagram, FileText, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { ContractTemplate } from "@/components/contracts/ContractTemplate";
 
 interface OpportunityDetailsDialogProps {
     isOpen: boolean;
@@ -14,10 +15,14 @@ interface OpportunityDetailsDialogProps {
 
 export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccept, isActive }: OpportunityDetailsDialogProps) {
     const [showConfirm, setShowConfirm] = useState(false);
+    const [showContract, setShowContract] = useState(false);
 
     useEffect(() => {
         if (!isOpen) {
-            const timer = setTimeout(() => setShowConfirm(false), 300);
+            const timer = setTimeout(() => {
+                setShowConfirm(false);
+                setShowContract(false);
+            }, 300);
             return () => clearTimeout(timer);
         }
     }, [isOpen]);
@@ -69,7 +74,53 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                     </div>
                 </DialogHeader>
 
-                {showConfirm ? (
+                {showContract ? (
+                    /* ====== STEP 2: Contract Preview ====== */
+                    <div className="py-4 space-y-4">
+                        {/* Auto-sign notice banner */}
+                        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
+                            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="font-semibold text-amber-800 dark:text-amber-400 text-sm">Lee el contrato antes de confirmar</p>
+                                <p className="text-xs text-amber-700 dark:text-amber-500 mt-0.5 leading-relaxed">
+                                    Al presionar <strong>"Confirmar y Firmar"</strong>, este contrato quedará firmado digitalmente y automáticamente en nombre tuyo. El acuerdo entrará en vigor {opportunity?.isInvited ? 'de inmediato' : 'una vez que la marca apruebe tu solicitud'}.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Contract content */}
+                        <div className="max-h-[50vh] overflow-y-auto pr-1 rounded-xl">
+                            <ContractTemplate
+                                contract={{
+                                    campaign: {
+                                        title: opportunity?.title || "",
+                                        description: opportunity?.description,
+                                        deliverables: opportunity?.deliverables,
+                                        compensationType: opportunity?.compensationType || opportunity?.rewardType || "exchange",
+                                        creatorPayment: opportunity?.creatorPayment || opportunity?.budget,
+                                        exchangeDetails: opportunity?.exchangeDetails,
+                                        deadline: opportunity?.deadline || opportunity?.endDate,
+                                        location: opportunity?.location,
+                                    },
+                                    brand: {
+                                        displayName: opportunity?.brandName || opportunity?.brandProfile?.displayName || "Marca",
+                                        email: opportunity?.brandProfile?.email,
+                                        logo: opportunity?.brandLogo,
+                                    },
+                                    creator: {
+                                        displayName: "Tú (Creador)",
+                                        email: "",
+                                        instagram: opportunity?.brandProfile?.instagram,
+                                    },
+                                    status: opportunity?.isInvited ? "active" : "pending",
+                                    signedByCreatorAt: new Date().toISOString(),
+                                }}
+                                showDownload={false}
+                            />
+                        </div>
+                    </div>
+                ) : showConfirm ? (
+                    /* ====== STEP 3: Summary ====== */
                     <div className="py-6 space-y-6">
                         <div className="text-center space-y-2">
                             <h3 className="text-2xl font-bold">Resumen de Aplicación</h3>
@@ -363,16 +414,34 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                 )}
 
                 <DialogFooter className="gap-2 sm:gap-0">
-                    <Button variant="outline" onClick={showConfirm ? () => setShowConfirm(false) : onClose}>
-                        {showConfirm ? "Volver" : "Cerrar"}
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            if (showContract) {
+                                setShowContract(false);
+                                setShowConfirm(false);
+                            } else if (showConfirm) {
+                                setShowConfirm(false);
+                            } else {
+                                onClose();
+                            }
+                        }}
+                    >
+                        {showContract || showConfirm ? "Volver" : "Cerrar"}
                     </Button>
                     {!isActive && !isPending && !isExpired && (
                         <Button
                             variant="hero"
                             onClick={() => {
-                                if (!showConfirm) {
+                                if (!showConfirm && !showContract) {
+                                    // Step 1 → Step 2 (show contract)
                                     setShowConfirm(true);
+                                    setShowContract(true);
+                                } else if (showContract) {
+                                    // Step 2 → Step 3 (confirm)
+                                    setShowContract(false);
                                 } else {
+                                    // Step 3 → submit
                                     onAccept();
                                     onClose();
                                 }
@@ -380,11 +449,13 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                             className="w-full sm:w-auto"
                             disabled={!isInvited && (opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999)}
                         >
-                            {showConfirm
-                                ? (isInvited ? "Confirmar Aceptación" : "Confirmar Aplicación")
-                                : (isInvited
-                                    ? "Aceptar Invitación"
-                                    : ((opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999) ? "Campaña Llena" : "Aplicar a la Campaña"))
+                            {showContract
+                                ? <><FileText className="w-4 h-4 mr-1" /> Confirmar y Firmar</>  
+                                : showConfirm
+                                    ? (isInvited ? "Enviar Aceptación" : "Confirmar Aplicación")
+                                    : (isInvited
+                                        ? "Aceptar Invitación"
+                                        : ((opportunity.approvedCount || 0) >= (opportunity.creatorCount || 999) ? "Campaña Llena" : "Aplicar a la Campaña"))
                             }
                         </Button>
                     )}
