@@ -41,7 +41,7 @@ export function ForBrands() {
                     >
                         <span className="section-eyebrow">Para Marcas</span>
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mt-3 mb-4">
-                            Deja de buscar creadores en Instagram.{" "}
+                            Deja de buscar creadores en Instagram y TikTok.{" "}
                             <span className="gradient-text">Ellos llegan a ti.</span>
                         </h2>
                         <p className="text-base md:text-lg text-muted-foreground max-w-xl">

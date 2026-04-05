@@ -29,7 +29,7 @@ const creatorSteps = [
     {
         icon: Phone,
         title: "Crea tu perfil en minutos",
-        description: "Conecta tu Instagram o TikTok. El sistema analiza tus métricas y define tu perfil automáticamente. Sin formularios interminables.",
+        description: "Conecta tu TikTok o Instagram. El sistema analiza tus métricas y define tu perfil automáticamente. Sin formularios interminables.",
     },
     {
         icon: Inbox,

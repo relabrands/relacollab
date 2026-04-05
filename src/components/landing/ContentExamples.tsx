@@ -45,7 +45,7 @@ export function ContentExamples() {
 
                         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight">
                             Tu próximo cliente te está{" "}
-                            <span className="gradient-text">buscando en TikTok.</span>{" "}
+                            <span className="gradient-text">buscando en TikTok e Instagram.</span>{" "}
                             No en Google.
                         </h2>
 
