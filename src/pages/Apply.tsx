@@ -458,12 +458,16 @@ export default function Apply() {
                             <p className="text-muted-foreground leading-relaxed mb-6 text-sm">
                                 Aquí están las preguntas que más nos hacen. Si la tuya no está, escríbenos por el chat.
                             </p>
-                            <Link to="/login">
+                            <a
+                                href="https://wa.me/18297404861?text=Hola%20quiero%20más%20información"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
                                 <Button variant="outline" size="sm" className="gap-2 rounded-xl">
                                     <MessageSquare className="w-4 h-4" />
                                     Hablar con el equipo
                                 </Button>
-                            </Link>
+                            </a>
                         </div>
 
                         <div className="space-y-3">

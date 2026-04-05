@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 
 const Login = () => {
     const [role, setRole] = useState<UserRole>("brand");
+    const [registerStep, setRegisterStep] = useState<1 | 2>(1);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -41,15 +42,15 @@ const Login = () => {
         }
     };
 
-    const handleRegister = async (e: React.FormEvent) => {
+    const handleRegisterNext = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!role) {
-            toast.error("Selecciona un rol");
-            return;
-        }
+        setRegisterStep(2);
+    };
+
+    const performRegistration = async (selectedRole: UserRole) => {
         setIsLoggingIn(true);
         try {
-            const finalRole = await registerWithEmail(email, password, name, role);
+            const finalRole = await registerWithEmail(email, password, name, selectedRole);
             if (finalRole) {
                 navigate(`/${finalRole}`);
             } else {
@@ -57,6 +58,7 @@ const Login = () => {
             }
         } catch (error) {
             toast.error("Error al registrarse. El correo podría estar en uso.");
+            setRegisterStep(1); // Go back to correct data if error
         } finally {
             setIsLoggingIn(false);
         }
@@ -242,7 +244,7 @@ const Login = () => {
 
                         {/* Tab switcher */}
                         <TabsList className="grid w-full grid-cols-2 mb-6 h-10 bg-muted/60 rounded-xl p-0.5">
-                            <TabsTrigger value="login" className="rounded-[10px] text-sm font-medium">Iniciar sesión</TabsTrigger>
+                            <TabsTrigger value="login" onClick={() => setRegisterStep(1)} className="rounded-[10px] text-sm font-medium">Iniciar sesión</TabsTrigger>
                             <TabsTrigger value="register" className="rounded-[10px] text-sm font-medium">Registrarse</TabsTrigger>
                         </TabsList>
 
@@ -274,47 +276,71 @@ const Login = () => {
 
                         {/* REGISTER */}
                         <TabsContent value="register">
-                            <form onSubmit={handleRegister} className="space-y-3">
-                                <Input
-                                    placeholder="Nombre completo"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                    className="h-11"
-                                />
-                                <Input
-                                    type="email"
-                                    placeholder="Correo electrónico"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    className="h-11"
-                                />
-                                <Input
-                                    type="password"
-                                    placeholder="Contraseña"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    className="h-11"
-                                />
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-muted-foreground">Soy un...</label>
-                                    <Select value={role || ""} onValueChange={(val) => setRole(val as UserRole)}>
-                                        <SelectTrigger className="h-11">
-                                            <SelectValue placeholder="Selecciona tu rol" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="brand">Marca (Brand)</SelectItem>
-                                            <SelectItem value="creator">Creador (Creator)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                            {registerStep === 1 ? (
+                                <form onSubmit={handleRegisterNext} className="space-y-3">
+                                    <Input
+                                        placeholder="Nombre completo"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        required
+                                        className="h-11"
+                                    />
+                                    <Input
+                                        type="email"
+                                        placeholder="Correo electrónico"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        className="h-11"
+                                    />
+                                    <Input
+                                        type="password"
+                                        placeholder="Contraseña"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        className="h-11"
+                                    />
+                                    <Button type="submit" className="w-full h-11 mt-1">
+                                        Siguiente
+                                    </Button>
+                                </form>
+                            ) : (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                    <div className="mb-2">
+                                        <h3 className="text-sm font-medium">¿Cómo quieres usar RELA Collab?</h3>
+                                        <p className="text-xs text-muted-foreground mt-1">Selecciona tu perfil. Esto configurará tu panel.</p>
+                                    </div>
+                                    <div className="grid gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => performRegistration("brand")}
+                                            disabled={isLoggingIn}
+                                            className="flex flex-col items-start p-4 border border-border rounded-xl hover:border-primary hover:bg-primary/5 transition-all text-left bg-background"
+                                        >
+                                            <span className="font-semibold text-sm">Soy una Marca</span>
+                                            <span className="text-xs text-muted-foreground mt-0.5">Busco creadores y quiero lanzar campañas.</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => performRegistration("creator")}
+                                            disabled={isLoggingIn}
+                                            className="flex flex-col items-start p-4 border border-border rounded-xl hover:border-primary hover:bg-primary/5 transition-all text-left bg-background"
+                                        >
+                                            <span className="font-semibold text-sm">Soy Creador</span>
+                                            <span className="text-xs text-muted-foreground mt-0.5">Quiero participar en campañas y monetizar.</span>
+                                        </button>
+                                    </div>
+                                    <Button variant="ghost" onClick={() => setRegisterStep(1)} disabled={isLoggingIn} className="w-full h-11">
+                                        Atrás
+                                    </Button>
+                                    {isLoggingIn && (
+                                        <div className="flex justify-center mt-2">
+                                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                                        </div>
+                                    )}
                                 </div>
-                                <Button type="submit" className="w-full h-11 mt-1" disabled={isLoggingIn}>
-                                    {isLoggingIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Crear cuenta gratis
-                                </Button>
-                            </form>
+                            )}
                         </TabsContent>
                     </Tabs>
 
