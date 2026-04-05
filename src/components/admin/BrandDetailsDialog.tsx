@@ -150,15 +150,16 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                 </DialogHeader>
 
                 <div className="flex-1 overflow-hidden flex flex-col">
-                    <Tabs defaultValue="overview" className="flex-1 flex flex-col" onValueChange={setActiveTab}>
-                        <div className="px-6 pt-4">
+                    <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0" onValueChange={setActiveTab}>
+                        <div className="px-6 pt-4 flex-shrink-0">
                             <TabsList className="grid w-full grid-cols-2">
                                 <TabsTrigger value="overview">Overview & Info</TabsTrigger>
                                 <TabsTrigger value="campaigns">Campaigns ({campaigns.length})</TabsTrigger>
                             </TabsList>
                         </div>
 
-                        <ScrollArea className="flex-1 p-6">
+                        <ScrollArea className="flex-1">
+                            <div className="p-6">
                             <TabsContent value="overview" className="mt-0 space-y-6">
                                 {/* Onboarding Alert */}
                                 {isOnboardingIncomplete && (
@@ -225,6 +226,13 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                                                 <span className="font-medium">{brand.contactPerson || "N/A"}</span>
                                             </div>
                                             <div className="flex justify-between py-2 border-b">
+                                                <span className="text-muted-foreground">Phone</span>
+                                                <div className="flex items-center gap-1 font-medium">
+                                                    {brand.phone && <Phone className="w-3 h-3 text-muted-foreground" />}
+                                                    {brand.phone || "N/A"}
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between py-2 border-b">
                                                 <span className="text-muted-foreground">Company Size</span>
                                                 <span className="font-medium">{brand.companySize || "N/A"}</span>
                                             </div>
@@ -233,13 +241,6 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                                                 <div className="flex items-center gap-1 font-medium">
                                                     {brand.location && <MapPin className="w-3 h-3 text-muted-foreground" />}
                                                     {brand.location || "N/A"}
-                                                </div>
-                                            </div>
-                                            <div className="flex justify-between py-2 border-b">
-                                                <span className="text-muted-foreground">Phone</span>
-                                                <div className="flex items-center gap-1 font-medium">
-                                                    {brand.phone && <Phone className="w-3 h-3 text-muted-foreground" />}
-                                                    {brand.phone || "N/A"}
                                                 </div>
                                             </div>
                                         </div>
@@ -326,6 +327,7 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                                     </div>
                                 )}
                             </TabsContent>
+                            </div>
                         </ScrollArea>
                     </Tabs>
                 </div>
