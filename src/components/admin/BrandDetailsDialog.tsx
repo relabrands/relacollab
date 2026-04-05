@@ -8,7 +8,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -150,7 +149,7 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-hidden flex flex-col min-h-0">
                     <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0" onValueChange={setActiveTab}>
                         <div className="px-6 pt-4 flex-shrink-0">
                             <TabsList className="grid w-full grid-cols-2">
@@ -159,7 +158,7 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                             </TabsList>
                         </div>
 
-                        <ScrollArea className="flex-1">
+                        <div className="flex-1 overflow-y-auto">
                             <div className="p-6">
                             <TabsContent value="overview" className="mt-0 space-y-6">
                                 {/* Onboarding Alert */}
@@ -329,7 +328,7 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                                 )}
                             </TabsContent>
                             </div>
-                        </ScrollArea>
+                        </div>
                     </Tabs>
                 </div>
             </DialogContent>
