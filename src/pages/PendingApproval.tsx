@@ -34,7 +34,10 @@ export default function PendingApproval() {
                     </div>
 
                     <Button
-                        onClick={() => logout()}
+                        onClick={async () => {
+                            await logout();
+                            window.location.href = "/login";
+                        }}
                         variant="outline"
                         className="w-full gap-2 border-dashed"
                     >

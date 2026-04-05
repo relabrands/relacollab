@@ -231,8 +231,9 @@ export default function CreatorOnboarding() {
     const handleLogout = async () => {
         try {
             await logout();
-            navigate("/login");
+            window.location.href = "/login";
         } catch (error) {
+            toast.error("Error al cerrar sesión");
         }
     };
 

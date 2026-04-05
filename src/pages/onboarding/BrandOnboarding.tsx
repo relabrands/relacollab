@@ -162,6 +162,12 @@ export default function BrandOnboarding() {
     };
 
     const handleLogout = async () => {
+        try {
+            await logout();
+            window.location.href = "/login";
+        } catch (error) {
+            toast.error("Error al cerrar sesión");
+        }
     };
 
     // ─── Step labels ──────────────────────────────────────────────────────────
