@@ -3,7 +3,7 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DollarSign, ArrowDownLeft, Clock, Search, Download, Loader2, Settings, Wallet, Gift } from "lucide-react";
+import { DollarSign, ArrowDownLeft, Clock, Search, Download, Loader2, Settings, Wallet, Gift, ChevronDown, ChevronUp, Sparkles, TrendingUp } from "lucide-react";
 import { collection, query, where, getDocs, orderBy, doc, getDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +20,8 @@ export default function CreatorEarnings() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [hasBankDetails, setHasBankDetails] = useState(false);
     const [isRequesting, setIsRequesting] = useState(false);
+    const [expandedCampaigns, setExpandedCampaigns] = useState<string[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
 
     const [stats, setStats] = useState({
         totalEarned: 0,
@@ -231,7 +233,12 @@ export default function CreatorEarnings() {
                                     <div className="flex gap-2 w-full md:w-auto">
                                         <div className="relative flex-1 md:flex-initial md:w-64">
                                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                            <Input placeholder="Buscar transacciones..." className="pl-8" />
+                                            <Input 
+                                                placeholder="Buscar por campaña..." 
+                                                className="pl-8" 
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                            />
                                         </div>
                                         <Button variant="outline" size="icon">
                                             <Download className="h-4 w-4" />
@@ -241,60 +248,152 @@ export default function CreatorEarnings() {
                             </CardHeader>
                             <CardContent>
                                 {payments.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {payments.map((payment) => {
-                                            const isExchange = payment.type === 'exchange';
-                                            return (
-                                                <div key={payment.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border/50 hover:bg-muted/70 transition-colors">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`p-2 rounded-full ${isExchange ? 'bg-purple-500/10' :
-                                                            payment.status === 'paid' ? 'bg-green-500/10' : 'bg-muted'
-                                                            }`}>
-                                                            {isExchange ? (
-                                                                <Gift className="h-4 w-4 text-purple-500" />
-                                                            ) : payment.status === 'paid' ? (
-                                                                <ArrowDownLeft className="h-4 w-4 text-green-500" />
-                                                            ) : (
-                                                                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                                                            )}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium">{payment.campaignName || "Pago de Campaña"}</p>
-                                                            {isExchange ? (
-                                                                <p className="text-sm text-purple-600 font-medium">
-                                                                    🎁 {payment.exchangeDetails || "Intercambio"}
-                                                                </p>
-                                                            ) : (
-                                                                <>
-                                                                    <p className="text-sm text-muted-foreground">
-                                                                        {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString("es-DO") : "N/A"}
-                                                                        {payment.feeAmount > 0 && ` • Tarifa: $${payment.feeAmount}`}
-                                                                    </p>
-                                                                    {payment.minReward && payment.maxReward && (
-                                                                        <p className="text-xs text-muted-foreground mt-0.5">
-                                                                            Rango inicial: <span className="font-medium">${payment.minReward.toLocaleString()} – ${payment.maxReward.toLocaleString()}</span>
-                                                                        </p>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        {isExchange ? (
-                                                            <p className="font-medium text-purple-600">Intercambio</p>
-                                                        ) : (
-                                                            <p className="font-bold text-foreground">+${(payment.netAmount || 0).toLocaleString()}</p>
-                                                        )}
-                                                        <Badge
-                                                            variant="outline"
-                                                            className={`mt-1 capitalize text-[10px] ${statusColors[payment.status] || ''}`}
-                                                        >
-                                                            {statusLabels[payment.status] || payment.status}
-                                                        </Badge>
-                                                    </div>
-                                                </div>
+                                    <div className="space-y-4">
+                                        {(() => {
+                                            // Grouping Logic
+                                            const filteredPayments = payments.filter(p => 
+                                                p.campaignName?.toLowerCase().includes(searchQuery.toLowerCase())
                                             );
-                                        })}
+
+                                            const groups: Record<string, any> = {};
+                                            filteredPayments.forEach(p => {
+                                                const cid = p.campaignId || 'other';
+                                                if (!groups[cid]) {
+                                                    groups[cid] = {
+                                                        id: cid,
+                                                        name: p.campaignName || "Sin Nombre",
+                                                        transactions: [],
+                                                        totalNet: 0,
+                                                        latestDate: p.createdAt,
+                                                        status: p.status
+                                                    };
+                                                }
+                                                groups[cid].transactions.push(p);
+                                                groups[cid].totalNet += (p.netAmount || 0);
+                                                if (new Date(p.createdAt) > new Date(groups[cid].latestDate)) {
+                                                    groups[cid].latestDate = p.createdAt;
+                                                    groups[cid].status = p.status;
+                                                }
+                                            });
+
+                                            return Object.values(groups)
+                                                .sort((a: any, b: any) => new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime())
+                                                .map((group: any) => {
+                                                    const isExpanded = expandedCampaigns.includes(group.id);
+                                                    
+                                                    return (
+                                                        <div key={group.id} className="border border-border/50 rounded-xl overflow-hidden bg-muted/20 hover:bg-muted/30 transition-all duration-300">
+                                                            {/* Group Header */}
+                                                            <div 
+                                                                className="flex items-center justify-between p-4 cursor-pointer select-none"
+                                                                onClick={() => {
+                                                                    setExpandedCampaigns(prev => 
+                                                                        prev.includes(group.id) 
+                                                                            ? prev.filter(id => id !== group.id)
+                                                                            : [...prev, group.id]
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="p-2.5 rounded-xl bg-primary/10">
+                                                                        <TrendingUp className="h-5 w-5 text-primary" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <h3 className="font-semibold text-foreground">{group.name}</h3>
+                                                                        <p className="text-xs text-muted-foreground">
+                                                                            {new Date(group.latestDate).toLocaleDateString("es-DO", { 
+                                                                                day: 'numeric', 
+                                                                                month: 'long', 
+                                                                                year: 'numeric' 
+                                                                            })}
+                                                                            {group.transactions.length > 1 && ` • ${group.transactions.length} movimientos`}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-6">
+                                                                    <div className="text-right hidden sm:block">
+                                                                        <p className="text-sm font-medium text-muted-foreground">Total Neto</p>
+                                                                        <p className="font-bold text-lg text-primary">+${group.totalNet.toLocaleString()}</p>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Badge
+                                                                            variant="outline"
+                                                                            className={`capitalize text-[10px] px-2 py-0 ${statusColors[group.status] || ''}`}
+                                                                        >
+                                                                            {statusLabels[group.status] || group.status}
+                                                                        </Badge>
+                                                                        {isExpanded ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Transactions Detail */}
+                                                            {isExpanded && (
+                                                                <div className="px-4 pb-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                                    <div className="h-px bg-border/50 mb-4" />
+                                                                    {group.transactions.map((payment: any) => {
+                                                                        const isExchange = payment.type === 'exchange';
+                                                                        const isMaxReward = !isExchange && payment.grossAmount >= payment.maxReward && payment.maxReward > 0;
+                                                                        
+                                                                        return (
+                                                                            <div key={payment.id} className="bg-background/40 border border-border/30 rounded-lg p-4">
+                                                                                <div className="flex items-start justify-between">
+                                                                                    <div className="flex items-center gap-3">
+                                                                                        <div className={`p-2 rounded-full ${isExchange ? 'bg-purple-500/10' : 'bg-green-500/10'}`}>
+                                                                                            {isExchange ? <Gift className="h-4 w-4 text-purple-500" /> : <ArrowDownLeft className="h-4 w-4 text-green-500" />}
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                                                                {isExchange ? 'Intercambio' : 'Pago Monetario'}
+                                                                                            </span>
+                                                                                            {isMaxReward && (
+                                                                                                <Badge className="ml-2 bg-yellow-500/10 text-yellow-600 border-yellow-500/20 hover:bg-yellow-500/20 transition-colors animate-pulse">
+                                                                                                    <Sparkles className="w-3 h-3 mr-1" />
+                                                                                                    ¡Pago Máximo!
+                                                                                                </Badge>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                {!isExchange ? (
+                                                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 bg-muted/30 p-3 rounded-lg border border-border/20">
+                                                                                        <div className="space-y-1">
+                                                                                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Monto Bruto</p>
+                                                                                            <p className="font-semibold text-foreground text-sm">${(payment.grossAmount || 0).toLocaleString()}</p>
+                                                                                        </div>
+                                                                                        <div className="space-y-1 border-l border-border/50 pl-4">
+                                                                                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Fee Rela ({payment.feePercent}%)</p>
+                                                                                            <p className="font-semibold text-destructive text-sm">-${(payment.feeAmount || 0).toLocaleString()}</p>
+                                                                                        </div>
+                                                                                        <div className="space-y-1 border-l border-border/50 pl-4">
+                                                                                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Monto Neto</p>
+                                                                                            <p className="font-bold text-success text-sm">+${(payment.netAmount || 0).toLocaleString()}</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div className="mt-3 bg-purple-500/5 p-3 rounded-lg border border-purple-500/10">
+                                                                                        <p className="text-sm text-purple-700 font-medium leading-relaxed">
+                                                                                            🎁 {payment.exchangeDetails || "Detalles del intercambio"}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
+                                                                                
+                                                                                {!isExchange && payment.minReward && payment.maxReward && (
+                                                                                    <p className="text-[10px] text-muted-foreground mt-3 text-center sm:text-left italic">
+                                                                                        Basado en rango de campaña: ${payment.minReward.toLocaleString()} – ${payment.maxReward.toLocaleString()}
+                                                                                    </p>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                });
+                                        })()}
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">

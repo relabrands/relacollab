@@ -587,6 +587,8 @@ export default function ContentLibrary() {
                         feeAmount: feeAmount,
                         netAmount: netAmount,
                         feePercent: feePercent,
+                        minReward: campaign.minReward || 0,
+                        maxReward: campaign.maxReward || 0,
                         status: "pending",  // pending -> ready_to_withdraw -> requested -> paid -> completed
                         createdAt: new Date().toISOString(),
                       });
@@ -603,6 +605,8 @@ export default function ContentLibrary() {
                       creatorAvatar: creator?.photoURL || "",
                       campaignId,
                       campaignName: campaign.name || submission.campaignName,
+                      minReward: campaign.minReward || 0,
+                      maxReward: campaign.maxReward || 0,
                       contentSubmissionId: id,
                       grossAmount: 0,
                       feeAmount: 0,
