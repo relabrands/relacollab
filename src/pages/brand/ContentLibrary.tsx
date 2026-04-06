@@ -31,7 +31,8 @@ import {
   MessageSquareShare,
   Clock,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  DollarSign
 } from "lucide-react";
 import { toast } from "sonner";
 import { addDoc, updateDoc, getDocs } from "firebase/firestore";
@@ -909,100 +910,163 @@ export default function ContentLibrary() {
 
       {/* Approve & Rate Creator Dialog */}
       <Dialog open={isRatingDialogOpen} onOpenChange={setIsRatingDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Aprobar y Calificar</DialogTitle>
-            <DialogDescription>
-              Apunto de aprobar el contenido de {contentToRate?.creatorName}. Opcionalmente, puedes dejarle una calificación.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-2 space-y-4">
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-sm font-medium">¿Qué tal fue trabajar con este creador?</span>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onMouseEnter={() => setHoveredRating(star)}
-                    onMouseLeave={() => setHoveredRating(0)}
-                    onClick={() => setRating(star)}
-                    className={`p-1 transition-transform hover:scale-110 ${(hoveredRating || rating) >= star
-                      ? "text-yellow-400"
-                      : "text-muted-foreground/30"
-                      }`}
-                  >
-                    <Star className="w-8 h-8 fill-current" />
-                  </button>
-                ))}
-              </div>
-              <span className="text-sm font-semibold text-foreground">
-                {rating} de 5 estrellas
-              </span>
-            </div>
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none glass-card">
+          <div className="px-6 py-4 border-b border-border/50 bg-muted/30">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Aprobar y Calificar</DialogTitle>
+              <DialogDescription className="text-sm">
+                Apunto de aprobar el contenido de <strong>{contentToRate?.creatorName}</strong>.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                <MessageSquareShare className="w-4 h-4" />
-                Reseña (Opcional)
-              </label>
-              <textarea
-                value={reviewText}
-                onChange={(e) => setReviewText(e.target.value)}
-                placeholder={`¿Qué te pareció el contenido creado por ${contentToRate?.creatorName}?`}
-                className="w-full min-h-[100px] p-3 rounded-xl bg-background border border-input text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
+          <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+            {/* ─── Final Payment Assignment ─── */}
+            {(contentToRate?.compensationType === 'monetary' || contentToRate?.compensationType === 'hybrid') &&
+              contentToRate.minReward !== undefined &&
+              contentToRate.maxReward !== undefined &&
+              contentToRate.minReward < contentToRate.maxReward && (
+                <div className="rounded-2xl border border-primary/20 overflow-hidden bg-primary/5">
+                  <div className="px-5 py-3 bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/10 flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-primary" />
+                    <h3 className="font-semibold text-sm">Asignar Pago Final</h3>
+                  </div>
+                  <div className="px-5 py-4 space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                      Asigna el pago final basado en la calidad y el impacto del contenido entregado.
+                    </p>
+                    
+                    {/* Slider UI */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-[10px] uppercase tracking-wider font-bold text-muted-foreground/70">
+                        <span>Min: ${contentToRate.minReward}</span>
+                        <span>Max: ${contentToRate.maxReward}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={contentToRate.minReward}
+                        max={contentToRate.maxReward}
+                        step={1}
+                        value={Number(finalPayment) || contentToRate.minReward}
+                        onChange={(e) => setFinalPayment(Number(e.target.value))}
+                        className="w-full h-2 bg-primary/20 rounded-lg appearance-none cursor-pointer accent-primary"
+                      />
+                      <div className="flex items-center justify-between gap-4 bg-background/50 p-3 rounded-xl border border-primary/10">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-muted-foreground">Pago:</span>
+                          <div className="relative w-24">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                            <Input
+                              type="number"
+                              min={contentToRate.minReward}
+                              max={contentToRate.maxReward}
+                              value={finalPayment}
+                              onChange={(e) => {
+                                const val = e.target.value === "" ? "" : Number(e.target.value);
+                                setFinalPayment(val);
+                              }}
+                              onBlur={() => {
+                                if (typeof finalPayment === 'number') {
+                                  const clamped = Math.min(contentToRate.maxReward!, Math.max(contentToRate.minReward!, finalPayment));
+                                  setFinalPayment(clamped);
+                                }
+                              }}
+                              className="pl-5 h-8 font-bold text-base border-none focus-visible:ring-0 bg-transparent"
+                            />
+                          </div>
+                        </div>
+                        <span className="text-xl font-black text-primary">${Number(finalPayment).toLocaleString() || 0}</span>
+                      </div>
+                    </div>
 
-            {/* Variable Payment Selection for applicable campaigns */}
-            {(contentToRate?.compensationType === 'monetary' || contentToRate?.compensationType === 'hybrid') && 
-             contentToRate.minReward !== undefined && 
-             contentToRate.maxReward !== undefined && 
-             contentToRate.minReward < contentToRate.maxReward && (
-              <div className="space-y-2 mt-4 px-3 py-3 bg-primary/5 rounded-xl border border-primary/20">
-                <label className="text-sm font-semibold text-primary flex items-center gap-2">
-                  <span className="bg-primary/20 text-primary p-1 rounded-full"><Star className="w-3 h-3 fill-current" /></span>
-                  Pago Final Asignado
-                </label>
-                <div className="text-xs text-muted-foreground/80 leading-relaxed">
-                  Esta campaña tiene un pago dinámico entre <strong>${contentToRate.minReward}</strong> y <strong>${contentToRate.maxReward}</strong>. 
-                  <p className="mt-1 text-[11px] text-green-600 dark:text-green-500 font-medium">¡Incentiva la genialidad! Da el valor máximo si el video superó tus expectativas. 🚀</p>
+                    {/* Incentives / Notes */}
+                    {finalPayment === contentToRate.maxReward ? (
+                      <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-[11px] text-green-600 dark:text-green-400 flex items-start gap-2">
+                        <Star className="w-3.5 h-3.5 mt-0.5 fill-current" />
+                        <span>¡Estás asignando el pago máximo! Esto reconoce la excelencia del contenido del creador.</span>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-600 dark:text-blue-400">
+                        Los <strong>${(contentToRate.maxReward - (Number(finalPayment) || 0)).toLocaleString()}</strong> sobrantes quedarán como crédito para futuras producciones.
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="relative mt-2">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
-                  <Input 
-                    type="number" 
-                    min={contentToRate.minReward}
-                    max={contentToRate.maxReward}
-                    value={finalPayment}
-                    onChange={(e) => setFinalPayment(e.target.value ? Number(e.target.value) : "")}
-                    className="pl-7 bg-background text-base font-semibold"
-                    placeholder={`${contentToRate.maxReward}`}
+              )}
+
+            {/* ─── Rate Creator ─── */}
+            <div className="rounded-2xl border border-border/50 overflow-hidden bg-muted/20">
+              <div className="px-5 py-3 border-b border-border/50 flex items-center gap-2 bg-muted/40 font-semibold text-sm">
+                <Star className="w-4 h-4 text-yellow-500" />
+                Calificar al Creador
+              </div>
+              <div className="p-5 space-y-5">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onMouseEnter={() => setHoveredRating(star)}
+                        onMouseLeave={() => setHoveredRating(0)}
+                        onClick={() => setRating(star)}
+                        className={`p-1 transition-all hover:scale-125 ${(hoveredRating || rating) >= star
+                          ? "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]"
+                          : "text-muted-foreground/20"
+                          }`}
+                      >
+                        <Star className={`w-9 h-9 ${((hoveredRating || rating) >= star) ? "fill-current" : ""}`} />
+                      </button>
+                    ))}
+                  </div>
+                  <Badge variant="secondary" className="px-3 py-1 text-xs font-bold bg-yellow-400/10 text-yellow-600 dark:text-yellow-400 border-yellow-400/20">
+                    {rating} de 5 estrellas
+                  </Badge>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                    <MessageSquareShare className="w-3.5 h-3.5" />
+                    Reseña (Opcional)
+                  </label>
+                  <textarea
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    placeholder={`¿Qué te pareció el trabajo de ${contentToRate?.creatorName}? Tus comentarios ayudan a otros clientes.`}
+                    className="w-full min-h-[100px] p-4 rounded-xl bg-background border border-border/50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50"
                   />
                 </div>
               </div>
-            )}
+            </div>
           </div>
-          <div className="flex gap-3 justify-end mt-4">
-            <Button variant="outline" onClick={() => setIsRatingDialogOpen(false)}>
+
+          <div className="p-6 bg-muted/30 border-t border-border/50 flex gap-3 justify-end">
+            <Button variant="ghost" className="font-semibold" onClick={() => setIsRatingDialogOpen(false)}>
               Cancelar
             </Button>
             <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white px-8 font-bold shadow-lg shadow-green-600/20"
               disabled={isApproving}
               onClick={async () => {
                 if (!contentToRate) return;
-                
+
                 // Validate range if applicable
-                const isVariable = (contentToRate.compensationType === 'monetary' || contentToRate.compensationType === 'hybrid') && contentToRate.maxReward && contentToRate.minReward && contentToRate.minReward < contentToRate.maxReward;
+                const isVariable = (contentToRate.compensationType === 'monetary' || contentToRate.compensationType === 'hybrid') && 
+                                   contentToRate.maxReward !== undefined && 
+                                   contentToRate.minReward !== undefined && 
+                                   contentToRate.minReward < contentToRate.maxReward;
+                                   
                 let paymentAmount = undefined;
-                
+
                 if (isVariable) {
-                    if (finalPayment === "" || Number(finalPayment) < contentToRate.minReward! || Number(finalPayment) > contentToRate.maxReward!) {
-                        toast.error(`El pago debe estar entre $${contentToRate.minReward} y $${contentToRate.maxReward}.`);
-                        return;
-                    }
-                    paymentAmount = Number(finalPayment);
+                  const finalVal = Number(finalPayment);
+                  if (finalPayment === "" || isNaN(finalVal) || finalVal < contentToRate.minReward! || finalVal > contentToRate.maxReward!) {
+                    toast.error(`El pago debe estar entre $${contentToRate.minReward} y $${contentToRate.maxReward}.`, {
+                      description: "Asegúrate de que la cantidad asignada sea válida."
+                    });
+                    return;
+                  }
+                  paymentAmount = finalVal;
                 }
 
                 setIsApproving(true);
@@ -1012,7 +1076,7 @@ export default function ContentLibrary() {
                 setContentToRate(null);
               }}
             >
-              {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+              {isApproving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Check className="w-5 h-5 mr-2" />}
               Confirmar Aprobación
             </Button>
           </div>
