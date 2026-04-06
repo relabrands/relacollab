@@ -136,14 +136,14 @@ export function DeliverableSubmissionDialog({
 
                 // If resubmitting a specific existing submission, ONLY include that slot
                 if (existingSubmission && existingSubmission.id) {
-                     if (existing?.id === existingSubmission.id) {
+                     if (existingSubmission.deliverableType === deliverable.type && existingSubmission.deliverableNumber === counter) {
                          slots.push({
                             type: deliverable.type,
                             number: counter,
                             required: deliverable.required,
                             key,
                             platform: deliverable.platform,
-                            submitted: existing,
+                            submitted: existingSubmission,
                         });
                      }
                      continue;
