@@ -120,6 +120,18 @@ export default function CreatorDashboard() {
         const activeResults = await Promise.all(activePromises);
         const activeCount = activeResults.filter(Boolean).length;
 
+        // 2.5 Fetch Invitations
+        const invitationsQuery = query(
+          collection(db, "invitations"),
+          where("creatorId", "==", user.uid),
+          where("status", "==", "pending")
+        );
+        const invSnapshot = await getDocs(invitationsQuery);
+        const invitationsMap: Record<string, string> = {};
+        invSnapshot.docs.forEach(doc => {
+          invitationsMap[doc.data().campaignId] = doc.id;
+        });
+
         // 3. Fetch ALL active campaigns
         const campaignsQuery = query(
           collection(db, "campaigns"),
@@ -144,20 +156,27 @@ export default function CreatorDashboard() {
 
           // Calculate real match score
           const matchResult = calculateMatchScore(campaignData, userData);
+          const isInvited = !!invitationsMap[campaignId];
 
-          // Only include campaigns with score > 0 (passed compensation filter)
-          if (matchResult.score > 0) {
+          // Only include campaigns with score > 0 (passed compensation filter) or if invited
+          if (matchResult.score > 0 || isInvited) {
             matchedOpportunities.push({
               id: campaignId,
               ...campaignData,
               matchScore: matchResult.score,
-              matchBreakdown: matchResult.breakdown
+              matchBreakdown: matchResult.breakdown,
+              isInvited: isInvited,
+              invitationId: invitationsMap[campaignId] || undefined
             });
           }
         }
 
-        // Sort by match score and get top 4
-        matchedOpportunities.sort((a, b) => b.matchScore - a.matchScore);
+        // Sort by invitations first, then match score, and get top 4
+        matchedOpportunities.sort((a, b) => {
+          if (a.isInvited && !b.isInvited) return -1;
+          if (!a.isInvited && b.isInvited) return 1;
+          return b.matchScore - a.matchScore;
+        });
         const topOpportunities = matchedOpportunities.slice(0, 4);
 
         setOpportunities(topOpportunities);
