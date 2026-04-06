@@ -345,8 +345,8 @@ export default function CampaignDetails() {
                                             {/* Monetary details (monetary or hybrid) */}
                                             {(isMonetary || campaign.compensationType === "hybrid") && (
                                                 <div className="mt-2 pt-2 border-t border-border/40 space-y-1.5 text-sm">
-                                                    {/* Payment CTA Banner - Hidden if already paid */}
-                                                    {!isPaid && (
+                                                    {/* Payment CTA Banner - Hidden if already paid or campaign is not pending */}
+                                                    {!isPaid && campaign.status === 'pending' && (
                                                         <div className="mb-3 p-4 bg-primary/5 border border-primary/30 rounded-xl animate-in fade-in duration-500">
                                                             <div className="flex items-start gap-3">
                                                                 <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0 mt-0.5">
@@ -493,7 +493,11 @@ export default function CampaignDetails() {
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <DollarSign className="w-4 h-4" />
-                                        <span>Presupuesto Operativo</span>
+                                        <span>
+                                            {campaign.compensationType === 'hybrid' 
+                                                ? "Presupuesto Monetario + Intercambio" 
+                                                : "Presupuesto Monetario"}
+                                        </span>
                                     </div>
                                     {isMonetary ? (
                                         <div className="text-right">

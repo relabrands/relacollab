@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { MatchScore } from "@/components/dashboard/MatchScore";
 import {
     Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2,
-    ExternalLink, Check, Eye, Music2, ThumbsUp, ThumbsDown, Star, MessageSquareShare,
+    ExternalLink, Check, Eye, Music2, ThumbsUp, ThumbsDown, Star, MessageSquareShare, CheckCircle2,
     Target, BarChart2, MessageSquare, Zap, AlertTriangle, DollarSign
+
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -122,6 +123,8 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
     const [loadingAnalysis, setLoadingAnalysis] = useState(false);
     const [activePlatform, setActivePlatform] = useState<"instagram" | "tiktok">("instagram");
 
+    const [matchData, setMatchData] = useState<any>(null);
+
     // Final payment assignment state (brand side, collaborating mode)
     const hasRange = isCollaborating && campaign?.minReward && campaign?.maxReward;
     const [finalPayment, setFinalPayment] = useState<number>(campaign?.maxReward || 0);
@@ -131,6 +134,9 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
     const [rating, setRating] = useState<number>(5);
     const [hoveredRating, setHoveredRating] = useState<number>(0);
     const [reviewText, setReviewText] = useState("");
+
+    const isSettled = matchData?.status === "completed" || matchData?.finalPayment !== undefined;
+
 
     useEffect(() => {
         if (!isOpen) return;
@@ -160,6 +166,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
         const unsubscribe = onSnapshot(matchRef, async (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
+                setMatchData(data); // Capture full snapshot data
                 setAiStatus(data.aiStatus || null);
 
                 if (data.aiAnalysis?.matchPercentage !== undefined) {
@@ -180,6 +187,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                     setLoadingAnalysis(false);
                 }
             } else {
+                setMatchData(null);
                 // Document missing — create it to trigger the Cloud Function
                 try {
                     await setDoc(matchRef, {
@@ -641,7 +649,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                     </div>
 
                     {/* ─── Final Payment Assignment (brand, collaborating mode) ─── */}
-                    {hasRange && campaign.minReward && campaign.maxReward && (
+                    {hasRange && campaign.minReward && campaign.maxReward && !isSettled && (
                         <div className="rounded-2xl border border-primary/20 overflow-hidden">
                             <div className="px-5 py-3 bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/10 flex items-center gap-2">
                                 <DollarSign className="w-4 h-4 text-primary" />
@@ -701,7 +709,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                     )}
 
                     {/* ─── Calificar al Creador ─── */}
-                    {hasRange && campaign.minReward && campaign.maxReward && (
+                    {hasRange && campaign.minReward && campaign.maxReward && !isSettled && (
                         <div className="rounded-2xl border border-primary/20 overflow-hidden mt-4">
                             <div className="px-5 py-3 bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/10 flex items-center gap-2">
                                 <Star className="w-4 h-4 text-primary" />
@@ -757,7 +765,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                         <Button className="flex-1" variant="outline" onClick={onClose}>
                             Cerrar
                         </Button>
-                        {hasRange ? (
+                        {hasRange && !isSettled ? (
                             <Button
                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                                 disabled={isApprovingPayment}
@@ -854,28 +862,44 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                                             });
                                         }
 
-                                        toast.success(`¡Pago de $${finalPayment.toLocaleString()} asignado exitosamente!`, {
-                                            description: creditAmount > 0
-                                                ? `$${creditAmount.toLocaleString()} quedaron como crédito a favor.`
-                                                : "El creador recibió el pago máximo."
+                                        // 6. Update the match document to mark it as completed
+                                        const matchRef = doc(db, "campaigns", campaign.id, "matches", creator.id);
+                                        await updateDoc(matchRef, {
+                                            status: "completed",
+                                            finalPayment: finalPayment,
+                                            rating: rating,
+                                            settledAt: new Date().toISOString()
                                         });
 
-                                        onApprove?.();
-                                        onClose();
+                                        setMatchData((prev: any) => ({
+                                            ...prev,
+                                            status: "completed",
+                                            finalPayment: finalPayment,
+                                            rating: rating
+                                        }));
+
+                                        toast.success("Pago asignado y creador calificado exitosamente.");
                                     } catch (err) {
-                                        toast.error("Error al asignar el pago. Intenta de nuevo.");
+                                        toast.error("Error al procesar el pago.");
                                     } finally {
                                         setIsApprovingPayment(false);
                                     }
                                 }}
                             >
                                 {isApprovingPayment ? (
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
-                                    <Check className="w-4 h-4 mr-2" />
+                                    <>
+                                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                                        Aprobar y Asignar Pago
+                                    </>
                                 )}
-                                Aprobar y Asignar Pago
                             </Button>
+                        ) : isSettled ? (
+                            <div className="flex-1 px-4 py-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center justify-center gap-2 text-green-700 dark:text-green-400 font-medium text-sm">
+                                <CheckCircle2 className="w-4 h-4" />
+                                Pago Completado & Calificado
+                            </div>
                         ) : (
                             <Button
                                 className="flex-1"
