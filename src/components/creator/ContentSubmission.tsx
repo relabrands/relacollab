@@ -404,22 +404,25 @@ export function ContentSubmission() {
                                     )}
                                   </div>
                                   {submission?.revisionHistory && submission.revisionHistory.length > 0 && (
-                                    <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-950/20 rounded border border-orange-200">
-                                      <p className="text-xs font-medium text-orange-800 dark:text-orange-300">
-                                        ✏️ Cambios Solicitados:
-                                      </p>
-                                      <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
+                                    <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/20 rounded-md border border-red-200">
+                                      <div className="flex items-center gap-1.5 mb-2">
+                                        <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                        <span className="text-sm font-semibold text-red-800 dark:text-red-300">
+                                          Cambios Solicitados por la Marca
+                                        </span>
+                                      </div>
+                                      <div className="text-sm text-red-700 dark:text-red-400 whitespace-pre-wrap bg-white/50 dark:bg-black/20 p-2.5 rounded border border-red-100 dark:border-red-900/30">
                                         {submission.revisionHistory[submission.revisionHistory.length - 1].notes}
-                                      </p>
+                                      </div>
                                       {submission.status === "revision_requested" && (
                                         <Button
                                           size="sm"
-                                          variant="outline"
-                                          className="mt-2 w-full text-xs"
+                                          variant="destructive"
+                                          className="mt-3 w-full text-xs font-medium"
                                           onClick={() => handleResubmit(campaign, submission)}
                                         >
-                                          <Upload className="w-3 h-3 mr-1" />
-                                          Reenviar Contenido
+                                          <Upload className="w-4 h-4 mr-1.5" />
+                                          Reenviar Contenido Corregido
                                         </Button>
                                       )}
                                     </div>
