@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Upload, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, Trash2, Play, ExternalLink, DollarSign } from "lucide-react";
+import { Upload, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, Trash2, Play, ExternalLink, DollarSign, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
@@ -415,14 +415,22 @@ export function ContentSubmission() {
                                         {submission.revisionHistory[submission.revisionHistory.length - 1].notes}
                                       </div>
                                       {submission.status === "revision_requested" && (
-                                        <div className="mt-3">
-                                          <p className="text-xs text-red-600/80 dark:text-red-400/80 mb-2 font-medium">
-                                            💡 Recuerda que puedes contactar a la marca mediante el chat flotante si necesitas aclarar alguna duda antes de volver a grabar.
-                                          </p>
+                                        <div className="mt-4">
+                                          <div className="mb-4 p-3 bg-red-100/60 dark:bg-red-900/40 rounded border border-red-200 dark:border-red-800/40 flex items-start gap-3">
+                                            <MessageCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+                                            <div>
+                                              <p className="text-sm text-red-900 dark:text-red-300 font-semibold mb-0.5">
+                                                ¿Tienes dudas sobre esta corrección?
+                                              </p>
+                                              <p className="text-xs text-red-800/90 dark:text-red-400/90 leading-relaxed">
+                                                Comunícate directamente con la marca usando el <strong>ícono de chat púrpura</strong> en la esquina inferior derecha ↘️ antes de regrabar o corregir tu contenido.
+                                              </p>
+                                            </div>
+                                          </div>
                                           <Button
                                             size="sm"
                                             variant="destructive"
-                                            className="w-full text-xs font-medium"
+                                            className="w-full text-xs font-medium py-4"
                                             onClick={() => handleResubmit(campaign, submission)}
                                           >
                                             <Upload className="w-4 h-4 mr-1.5" />
