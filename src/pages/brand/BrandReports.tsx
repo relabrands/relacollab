@@ -92,10 +92,30 @@ export default function BrandReports() {
                 snaps.forEach((snap) =>
                     snap.docs.forEach((d) => allSubs.push({ id: d.id, ...d.data() }))
                 );
-                setSubmissions(allSubs);
+                
+                // 1. Filter by status (only approved)
+                let finalSubs = allSubs.filter(s => s.status === "approved");
+
+                // 2. De-duplicate by slot (campaign + creator + deliverable type/number)
+                const slotsMap = new Map();
+                finalSubs.forEach(s => {
+                    const creatorId = s.userId || s.creatorId;
+                    const slotKey = `${s.campaignId}_${creatorId}_${s.deliverableType || 'default'}_${s.deliverableNumber || 0}`;
+                    const existing = slotsMap.get(slotKey);
+                    
+                    const currentTs = (s.updatedAt?.toMillis?.() || s.createdAt?.toMillis?.() || (s.updatedAt?.seconds * 1000) || (s.createdAt?.seconds * 1000) || 0);
+                    const existingTs = existing ? (existing.updatedAt?.toMillis?.() || existing.createdAt?.toMillis?.() || (existing.updatedAt?.seconds * 1000) || (existing.createdAt?.seconds * 1000) || 0) : -1;
+
+                    if (!existing || currentTs > existingTs) {
+                        slotsMap.set(slotKey, s);
+                    }
+                });
+
+                finalSubs = Array.from(slotsMap.values());
+                setSubmissions(finalSubs);
 
                 // Fetch creator profiles for unique creatorIds
-                const creatorIds = [...new Set(allSubs.map((s) => s.userId || s.creatorId).filter(Boolean))];
+                const creatorIds = [...new Set(finalSubs.map((s) => s.userId || s.creatorId).filter(Boolean))];
                 const profileMap: Record<string, any> = {};
                 await Promise.all(
                     creatorIds.map(async (cid: string) => {

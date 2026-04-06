@@ -77,9 +77,33 @@ export default function BrandAnalytics() {
         const process = async () => {
             if (loading) return; // Wait until initial data fetching is complete
 
-            const filteredSubmissions = activePlatform === "all"
+            // 1. Filter by platform and then by status (only approved)
+            let filteredSubmissions = activePlatform === "all"
                 ? rawSubmissions
                 : rawSubmissions.filter(s => (s.platform || (s.metrics?.inputPlatform) || "instagram") === activePlatform);
+            
+            // Only count approved content
+            filteredSubmissions = filteredSubmissions.filter(s => s.status === "approved");
+
+            // 2. De-duplicate by slot (campaign + creator + deliverable type/number)
+            // This ensures that if a creator submitted multiple times for the same deliverable,
+            // only the latest approved version is counted.
+            const slotsMap = new Map();
+            filteredSubmissions.forEach(s => {
+                const creatorId = s.userId || s.creatorId;
+                const slotKey = `${s.campaignId}_${creatorId}_${s.deliverableType || 'default'}_${s.deliverableNumber || 0}`;
+                const existing = slotsMap.get(slotKey);
+                
+                // Compare timestamps safely
+                const currentTs = (s.updatedAt?.toMillis?.() || s.createdAt?.toMillis?.() || (s.updatedAt?.seconds * 1000) || (s.createdAt?.seconds * 1000) || 0);
+                const existingTs = existing ? (existing.updatedAt?.toMillis?.() || existing.createdAt?.toMillis?.() || (existing.updatedAt?.seconds * 1000) || (existing.createdAt?.seconds * 1000) || 0) : -1;
+
+                if (!existing || currentTs > existingTs) {
+                    slotsMap.set(slotKey, s);
+                }
+            });
+
+            const finalSubmissions = Array.from(slotsMap.values());
 
             // Aggregate Data
             let tPosts = 0;
@@ -93,7 +117,7 @@ export default function BrandAnalytics() {
 
             const creatorStats: any = {};
 
-            for (const sub of filteredSubmissions) {
+            for (const sub of finalSubmissions) {
                 tPosts++;
                 const likes = sub.metrics?.likes || 0;
                 const comments = sub.metrics?.comments || 0;
