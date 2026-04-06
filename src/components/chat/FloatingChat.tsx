@@ -53,7 +53,7 @@ export function FloatingChat() {
 
     // Fetch collaborations
     useEffect(() => {
-        if (!user || !isOpen) return;
+        if (!user) return;
 
         const fetchCollaborations = async () => {
             setLoading(true);
@@ -128,7 +128,48 @@ export function FloatingChat() {
         };
 
         fetchCollaborations();
-    }, [user, role, isOpen]);
+    }, [user, role]);
+
+    // Listen to unread messages across ALL collaborations
+    useEffect(() => {
+        if (!user || collaborations.length === 0) return;
+
+        const unsubscribes = collaborations.map(collab => {
+            const unreadQuery = query(
+                collection(db, "messages"),
+                where("collaborationId", "==", collab.id),
+                where("read", "==", false)
+            );
+
+            return onSnapshot(unreadQuery, (snapshot) => {
+                let unreadCount = 0;
+                
+                snapshot.docs.forEach(doc => {
+                    const msg = doc.data() as Message;
+                    // Count only messages from the other person
+                    if (msg.senderId !== user.uid) {
+                        unreadCount++;
+                    }
+                });
+
+                setCollaborations(prev => 
+                    prev.map(c => 
+                        c.id === collab.id ? { ...c, unreadCount } : c
+                    )
+                );
+            });
+        });
+
+        return () => {
+            unsubscribes.forEach(unsub => unsub());
+        };
+    }, [user, collaborations?.length]);
+
+    // Update global unread state when collaborations change
+    useEffect(() => {
+        const totalUnread = collaborations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+        setHasUnread(totalUnread > 0);
+    }, [collaborations]);
 
     // Listen to messages for selected collaboration
     useEffect(() => {
