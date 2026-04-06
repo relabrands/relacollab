@@ -75,146 +75,162 @@ export default function BrandAnalytics() {
     // 2. Process Data when Platform or Submissions Change
     useEffect(() => {
         const process = async () => {
-            if (loading) return; // Wait until initial data fetching is complete
+            if (loading) return; 
 
-            // 1. Filter by platform and then by status (only approved)
-            let filteredSubmissions = activePlatform === "all"
-                ? rawSubmissions
-                : rawSubmissions.filter(s => (s.platform || (s.metrics?.inputPlatform) || "instagram") === activePlatform);
-            
-            // Only count approved content
-            filteredSubmissions = filteredSubmissions.filter(s => s.status === "approved");
-
-            // 2. De-duplicate by slot (campaign + creator + deliverable type/number)
-            // This ensures that if a creator submitted multiple times for the same deliverable,
-            // only the latest approved version is counted.
-            const slotsMap = new Map();
-            filteredSubmissions.forEach(s => {
-                const creatorId = s.userId || s.creatorId;
-                const slotKey = `${s.campaignId}_${creatorId}_${s.deliverableType || 'default'}_${s.deliverableNumber || 0}`;
-                const existing = slotsMap.get(slotKey);
+            try {
+                // 1. Filter by platform and then by status (only approved)
+                let filteredSubs = activePlatform === "all"
+                    ? rawSubmissions
+                    : rawSubmissions.filter(s => (s.platform || (s.metrics?.inputPlatform) || "instagram") === activePlatform);
                 
-                // Compare timestamps safely
-                const currentTs = (s.updatedAt?.toMillis?.() || s.createdAt?.toMillis?.() || (s.updatedAt?.seconds * 1000) || (s.createdAt?.seconds * 1000) || 0);
-                const existingTs = existing ? (existing.updatedAt?.toMillis?.() || existing.createdAt?.toMillis?.() || (existing.updatedAt?.seconds * 1000) || (existing.createdAt?.seconds * 1000) || 0) : -1;
+                // Only count approved content
+                filteredSubs = filteredSubs.filter(s => s.status === "approved");
 
-                if (!existing || currentTs > existingTs) {
-                    slotsMap.set(slotKey, s);
-                }
-            });
-
-            const finalSubmissions = Array.from(slotsMap.values());
-
-            // Aggregate Data
-            let tPosts = 0;
-            let tLikes = 0;
-            let tComments = 0;
-            let tReach = 0;
-            let tSaved = 0;
-            let tShares = 0;
-            let tViews = 0;
-            let tInteractions = 0;
-
-            const creatorStats: any = {};
-
-            for (const sub of finalSubmissions) {
-                tPosts++;
-                const likes = sub.metrics?.likes || 0;
-                const comments = sub.metrics?.comments || 0;
-                const reach = sub.metrics?.reach || 0;
-                const saved = sub.metrics?.saved || 0;
-                const shares = sub.metrics?.shares || 0;
-                const views = sub.metrics?.views || 0;
-                const interactions = sub.metrics?.interactions || 0;
-
-                tLikes += likes;
-                tComments += comments;
-                tReach += reach;
-                tSaved += saved;
-                tShares += shares;
-                tViews += views;
-                tInteractions += interactions;
-
-                const creatorKey = sub.userId || sub.creatorId;
-                if (!creatorStats[creatorKey]) {
-                    creatorStats[creatorKey] = {
-                        userId: creatorKey,
-                        posts: 0,
-                        likes: 0,
-                        comments: 0,
-                        reach: 0,
-                        saved: 0,
-                        shares: 0,
-                        views: 0,
-                        interactions: 0,
-                        campaigns: new Set()
+                // 2. De-duplicate by slot (campaign + creator + deliverable type/number)
+                const slotsMap = new Map();
+                filteredSubs.forEach(s => {
+                    const creatorId = s.userId || s.creatorId;
+                    if (!creatorId) return; // Skip if no creator ID (should not happen)
+                    
+                    const slotKey = `${s.campaignId}_${creatorId}_${s.deliverableType || 'default'}_${s.deliverableNumber || 0}`;
+                    const existing = slotsMap.get(slotKey);
+                    
+                    // Compare timestamps safely
+                    const getTs = (obj: any) => {
+                        if (!obj) return 0;
+                        if (typeof obj.toMillis === 'function') return obj.toMillis();
+                        if (obj.seconds) return obj.seconds * 1000;
+                        if (obj.toDate && typeof obj.toDate === 'function') return obj.toDate().getTime();
+                        return new Date(obj).getTime() || 0;
                     };
-                }
-                creatorStats[creatorKey].posts++;
-                creatorStats[creatorKey].likes += likes;
-                creatorStats[creatorKey].comments += comments;
-                creatorStats[creatorKey].reach += reach;
-                creatorStats[creatorKey].saved += saved;
-                creatorStats[creatorKey].shares += shares;
-                creatorStats[creatorKey].views += views;
-                creatorStats[creatorKey].interactions += interactions;
-                creatorStats[creatorKey].campaigns.add(campMap.get(sub.campaignId) || "Desconocido");
-            }
 
-            setStats({
-                totalPosts: tPosts,
-                totalLikes: tLikes,
-                totalComments: tComments,
-                totalReach: tReach,
-                totalSaved: tSaved,
-                totalShares: tShares,
-                totalViews: tViews,
-                totalInteractions: tInteractions
-            });
+                    const currentTs = Math.max(getTs(s.updatedAt), getTs(s.createdAt));
+                    const existingTs = existing ? Math.max(getTs(existing.updatedAt), getTs(existing.createdAt)) : -1;
 
-            // Fetch Creator Profiles
-            const creatorIds = Object.keys(creatorStats);
-            if (creatorIds.length > 0) {
-                const userPromises = creatorIds.map(id => getDoc(doc(db, "users", id)));
-                const userSnaps = await Promise.all(userPromises);
-                const creatorsData = userSnaps.map(snap => snap.exists() ? { id: snap.id, ...snap.data() } : null).filter(Boolean);
-
-                const enrichedPerformance = creatorIds.map(id => {
-                    const profile: any = creatorsData.find((c: any) => c.id === id);
-                    const stat = creatorStats[id];
-                    return {
-                        ...stat,
-                        name: profile?.displayName || "Creador Desconocido",
-                        avatar: profile?.photoURL || profile?.avatar,
-                        handle: profile?.instagramUsername || profile?.socialHandles?.tiktok,
-                        campaigns: Array.from(stat.campaigns).join(", ")
-                    };
+                    if (!existing || currentTs > existingTs) {
+                        slotsMap.set(slotKey, s);
+                    }
                 });
-                setCreatorPerformance(enrichedPerformance);
-            } else {
-                setCreatorPerformance([]);
-            }
 
-            // Chart Data
-            // We need to re-map based on filtered submissions to show how campaigns are doing for this platform
-            const campaignGroups: any = {};
-            filteredSubmissions.forEach(sub => {
-                if (!campaignGroups[sub.campaignId]) {
-                    campaignGroups[sub.campaignId] = {
-                        name: campMap.get(sub.campaignId) || "Desconocido",
-                        likes: 0,
-                        posts: 0
-                    };
+                const finalSubmissions = Array.from(slotsMap.values());
+
+                // 3. Aggregate Data
+                let tPosts = 0;
+                let tLikes = 0;
+                let tComments = 0;
+                let tReach = 0;
+                let tSaved = 0;
+                let tShares = 0;
+                let tViews = 0;
+                let tInteractions = 0;
+
+                const creatorStats: any = {};
+
+                for (const sub of finalSubmissions) {
+                    tPosts++;
+                    const m = sub.metrics || {};
+                    const likes = Number(m.likes) || 0;
+                    const comments = Number(m.comments) || 0;
+                    const reach = Number(m.reach) || 0;
+                    const saved = Number(m.saved) || 0;
+                    const shares = Number(m.shares) || 0;
+                    const views = Number(m.views) || 0;
+                    const interactions = Number(m.interactions) || 0;
+
+                    tLikes += likes;
+                    tComments += comments;
+                    tReach += reach;
+                    tSaved += saved;
+                    tShares += shares;
+                    tViews += views;
+                    tInteractions += interactions;
+
+                    const creatorKey = sub.userId || sub.creatorId || "unknown";
+                    if (!creatorStats[creatorKey]) {
+                        creatorStats[creatorKey] = {
+                            userId: creatorKey,
+                            posts: 0,
+                            likes: 0,
+                            comments: 0,
+                            reach: 0,
+                            saved: 0,
+                            shares: 0,
+                            views: 0,
+                            interactions: 0,
+                            campaigns: new Set()
+                        };
+                    }
+                    creatorStats[creatorKey].posts++;
+                    creatorStats[creatorKey].likes += likes;
+                    creatorStats[creatorKey].comments += comments;
+                    creatorStats[creatorKey].reach += reach;
+                    creatorStats[creatorKey].saved += saved;
+                    creatorStats[creatorKey].shares += shares;
+                    creatorStats[creatorKey].views += views;
+                    creatorStats[creatorKey].interactions += interactions;
+                    if (sub.campaignId) {
+                        creatorStats[creatorKey].campaigns.add(campMap.get(sub.campaignId) || "Desconocido");
+                    }
                 }
-                campaignGroups[sub.campaignId].likes += (sub.metrics?.likes || 0);
-                campaignGroups[sub.campaignId].posts += 1;
-            });
-            const chartData = Object.values(campaignGroups).map((c: any) => ({
-                name: c.name.substring(0, 10),
-                likes: c.likes,
-                posts: c.posts
-            }));
-            setData(chartData);
+
+                setStats({
+                    totalPosts: tPosts,
+                    totalLikes: tLikes,
+                    totalComments: tComments,
+                    totalReach: tReach,
+                    totalSaved: tSaved,
+                    totalShares: tShares,
+                    totalViews: tViews,
+                    totalInteractions: tInteractions
+                });
+
+                // 4. Fetch Creator Profiles
+                const creatorIds = Object.keys(creatorStats).filter(id => id !== "unknown");
+                if (creatorIds.length > 0) {
+                    const userPromises = creatorIds.map(id => getDoc(doc(db, "users", id)));
+                    const userSnaps = await Promise.all(userPromises);
+                    const creatorsData: any[] = userSnaps.map(snap => snap.exists() ? { id: snap.id, ...snap.data() } : null).filter((c): c is any => c !== null);
+
+                    const enrichedPerformance = creatorIds.map(id => {
+                        const profile = creatorsData.find((c: any) => c.id === id);
+                        const stat = creatorStats[id];
+                        return {
+                            ...stat,
+                            name: profile?.displayName || profile?.name || "Creador Desconocido",
+                            avatar: profile?.photoURL || profile?.avatar,
+                            handle: profile?.instagramUsername || profile?.socialHandles?.instagram || profile?.socialHandles?.tiktok,
+                            campaigns: Array.from(stat.campaigns).join(", ")
+                        };
+                    });
+                    setCreatorPerformance(enrichedPerformance);
+                } else {
+                    setCreatorPerformance([]);
+                }
+
+                // 5. Chart Data
+                const campaignGroups: any = {};
+                // Also use finalSubmissions for chart to be consistent
+                finalSubmissions.forEach(sub => {
+                    if (!sub.campaignId) return;
+                    if (!campaignGroups[sub.campaignId]) {
+                        campaignGroups[sub.campaignId] = {
+                            name: campMap.get(sub.campaignId) || "Desconocido",
+                            likes: 0,
+                            posts: 0
+                        };
+                    }
+                    campaignGroups[sub.campaignId].likes += (sub.metrics?.likes || 0);
+                    campaignGroups[sub.campaignId].posts += 1;
+                });
+                const chartData = Object.values(campaignGroups).map((c: any) => ({
+                    name: String(c.name || "Desconocido").substring(0, 10),
+                    likes: Number(c.likes) || 0,
+                    posts: Number(c.posts) || 0
+                }));
+                setData(chartData);
+            } catch (error) {
+                console.error("Error processing analytics data:", error);
+            }
         };
 
         process();
