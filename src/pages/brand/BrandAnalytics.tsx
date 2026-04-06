@@ -3,8 +3,8 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Loader2, Instagram } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Loader2, Instagram, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
@@ -26,6 +26,7 @@ export default function BrandAnalytics() {
     });
     const [creatorPerformance, setCreatorPerformance] = useState<any[]>([]);
     const [activePlatform, setActivePlatform] = useState<"all" | "instagram" | "tiktok">("all");
+    const [expandedCreators, setExpandedCreators] = useState<Set<string>>(new Set());
     const [rawSubmissions, setRawSubmissions] = useState<any[]>([]);
     const [campMap, setCampMap] = useState<Map<string, string>>(new Map());
 
@@ -33,7 +34,6 @@ export default function BrandAnalytics() {
         const fetchData = async () => {
             if (!user) return;
             try {
-                // 1. Get Brand Campaigns
                 const q = query(collection(db, "campaigns"), where("brandId", "==", user.uid));
                 const campaignSnapshot = await getDocs(q);
                 const campaignIds = campaignSnapshot.docs.map(d => d.id);
@@ -44,12 +44,6 @@ export default function BrandAnalytics() {
                     setLoading(false);
                     return;
                 }
-
-                // 2. Get Submissions for these campaigns
-                // Firestore 'in' query supports up to 10 items. If more, we might need multiple queries or just fetch all submissions and filter (if not too many).
-                // For Scalability: Query submissions by brandId if we added it, but we didn't.
-                // Alternative: Query *all* submissions and filter in JS (okay for MVP).
-                // Better: Fetch submissions for each campaign (Promise.all).
 
                 const submissionsPromises = campaignIds.map(id =>
                     getDocs(query(collection(db, "content_submissions"), where("campaignId", "==", id)))
@@ -62,8 +56,6 @@ export default function BrandAnalytics() {
                 });
 
                 setRawSubmissions(allSubmissions);
-
-
             } catch (error) {
             } finally {
                 setLoading(false);
@@ -72,30 +64,25 @@ export default function BrandAnalytics() {
         fetchData();
     }, [user]);
 
-    // 2. Process Data when Platform or Submissions Change
     useEffect(() => {
         const process = async () => {
             if (loading) return; 
 
             try {
-                // 1. Filter by platform and then by status (only approved)
                 let filteredSubs = activePlatform === "all"
                     ? rawSubmissions
                     : rawSubmissions.filter(s => (s.platform || (s.metrics?.inputPlatform) || "instagram") === activePlatform);
                 
-                // Only count approved content
                 filteredSubs = filteredSubs.filter(s => s.status === "approved");
 
-                // 2. De-duplicate by slot (campaign + creator + deliverable type/number)
                 const slotsMap = new Map();
                 filteredSubs.forEach(s => {
                     const creatorId = s.userId || s.creatorId;
-                    if (!creatorId) return; // Skip if no creator ID (should not happen)
+                    if (!creatorId) return;
                     
                     const slotKey = `${s.campaignId}_${creatorId}_${s.deliverableType || 'default'}_${s.deliverableNumber || 0}`;
                     const existing = slotsMap.get(slotKey);
                     
-                    // Compare timestamps safely
                     const getTs = (obj: any) => {
                         if (!obj) return 0;
                         if (typeof obj.toMillis === 'function') return obj.toMillis();
@@ -114,7 +101,6 @@ export default function BrandAnalytics() {
 
                 const finalSubmissions = Array.from(slotsMap.values());
 
-                // 3. Aggregate Data
                 let tPosts = 0;
                 let tLikes = 0;
                 let tComments = 0;
@@ -157,7 +143,8 @@ export default function BrandAnalytics() {
                             shares: 0,
                             views: 0,
                             interactions: 0,
-                            campaigns: new Set()
+                            campaigns: new Set(),
+                            individualPosts: []
                         };
                     }
                     creatorStats[creatorKey].posts++;
@@ -168,6 +155,26 @@ export default function BrandAnalytics() {
                     creatorStats[creatorKey].shares += shares;
                     creatorStats[creatorKey].views += views;
                     creatorStats[creatorKey].interactions += interactions;
+                    
+                    const postDetail = {
+                        id: sub.id,
+                        campaignId: sub.campaignId,
+                        campaignName: campMap.get(sub.campaignId) || "Desconocido",
+                        deliverableType: sub.deliverableType || "Post",
+                        deliverableNumber: sub.deliverableNumber || 1,
+                        likes,
+                        comments,
+                        reach,
+                        saved,
+                        shares,
+                        views,
+                        interactions,
+                        status: sub.status,
+                        contentUrl: sub.contentUrl,
+                        platform: sub.platform || (sub.metrics?.inputPlatform) || "instagram"
+                    };
+                    creatorStats[creatorKey].individualPosts.push(postDetail);
+
                     if (sub.campaignId) {
                         creatorStats[creatorKey].campaigns.add(campMap.get(sub.campaignId) || "Desconocido");
                     }
@@ -184,7 +191,6 @@ export default function BrandAnalytics() {
                     totalInteractions: tInteractions
                 });
 
-                // 4. Fetch Creator Profiles
                 const creatorIds = Object.keys(creatorStats).filter(id => id !== "unknown");
                 if (creatorIds.length > 0) {
                     const userPromises = creatorIds.map(id => getDoc(doc(db, "users", id)));
@@ -199,7 +205,8 @@ export default function BrandAnalytics() {
                             name: profile?.displayName || profile?.name || "Creador Desconocido",
                             avatar: profile?.photoURL || profile?.avatar,
                             handle: profile?.instagramUsername || profile?.socialHandles?.instagram || profile?.socialHandles?.tiktok,
-                            campaigns: Array.from(stat.campaigns).join(", ")
+                            campaigns: Array.from(stat.campaigns).join(", "),
+                            individualPosts: stat.individualPosts
                         };
                     });
                     setCreatorPerformance(enrichedPerformance);
@@ -207,9 +214,7 @@ export default function BrandAnalytics() {
                     setCreatorPerformance([]);
                 }
 
-                // 5. Chart Data
                 const campaignGroups: any = {};
-                // Also use finalSubmissions for chart to be consistent
                 finalSubmissions.forEach(sub => {
                     if (!sub.campaignId) return;
                     if (!campaignGroups[sub.campaignId]) {
@@ -234,7 +239,16 @@ export default function BrandAnalytics() {
         };
 
         process();
-    }, [rawSubmissions, activePlatform, campMap, loading]); // Dependencies for re-processing
+    }, [rawSubmissions, activePlatform, campMap, loading]);
+
+    const toggleCreator = (creatorId: string) => {
+        setExpandedCreators(prev => {
+            const next = new Set(prev);
+            if (next.has(creatorId)) next.delete(creatorId);
+            else next.add(creatorId);
+            return next;
+        });
+    };
 
     if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
@@ -246,7 +260,6 @@ export default function BrandAnalytics() {
             <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
                 <DashboardHeader title="Resumen de Analytics" subtitle="Rendimiento en tiempo real de los envíos válidos" />
 
-                {/* Platform Toggle */}
                 <div className="flex gap-2 mb-6">
                     <Button
                         variant={activePlatform === "all" ? "default" : "outline"}
@@ -273,7 +286,6 @@ export default function BrandAnalytics() {
                     </Button>
                 </div>
 
-                {/* Overall Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-8">
                     <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Publicaciones Totales</CardTitle></CardHeader>
@@ -311,7 +323,6 @@ export default function BrandAnalytics() {
 
                 {data.length > 0 ? (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Chart */}
                         <Card className="col-span-3 lg:col-span-2">
                             <CardHeader>
                                 <CardTitle>Rendimiento de Campaña (Me gusta)</CardTitle>
@@ -328,7 +339,6 @@ export default function BrandAnalytics() {
                             </CardContent>
                         </Card>
 
-                        {/* Creator Breakdown Table */}
                         <Card className="col-span-3">
                             <CardHeader>
                                 <CardTitle>Rendimiento de Creadores</CardTitle>
@@ -339,9 +349,10 @@ export default function BrandAnalytics() {
                                         <div className="w-full overflow-auto">
                                             <table className="w-full text-sm text-left">
                                                 <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
-                                                    <tr>
-                                                        <th className="px-4 py-3 rounded-l-lg">Creador</th>
-                                                        <th className="px-4 py-3">Campañas</th>
+                                                    <tr className="bg-muted/30 text-muted-foreground text-sm">
+                                                        <th className="px-4 py-3 text-left rounded-l-lg w-10"></th>
+                                                        <th className="px-4 py-3 text-left">Creador</th>
+                                                        <th className="px-4 py-3 text-left">Campañas</th>
                                                         <th className="px-4 py-3 text-right">Publicaciones</th>
                                                         <th className="px-4 py-3 text-right">Vistas</th>
                                                         <th className="px-4 py-3 text-right">Alcance</th>
@@ -354,26 +365,86 @@ export default function BrandAnalytics() {
                                                 </thead>
                                                 <tbody>
                                                     {creatorPerformance.map((item) => (
-                                                        <tr key={item.userId} className="border-b border-border/50 hover:bg-muted/20">
-                                                            <td className="px-4 py-3 font-medium flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-full bg-muted overflow-hidden">
-                                                                    {item.avatar && <img src={item.avatar} className="w-full h-full object-cover" />}
-                                                                </div>
-                                                                <div>
-                                                                    <div className="font-semibold">{item.name}</div>
-                                                                    <div className="text-xs text-muted-foreground">@{item.handle}</div>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-4 py-3 text-muted-foreground">{item.campaigns}</td>
-                                                            <td className="px-4 py-3 text-right">{item.posts}</td>
-                                                            <td className="px-4 py-3 text-right">{item.views?.toLocaleString() || 0}</td>
-                                                            <td className="px-4 py-3 text-right">{item.reach?.toLocaleString() || 0}</td>
-                                                            <td className="px-4 py-3 text-right text-success font-medium">{item.likes.toLocaleString()}</td>
-                                                            <td className="px-4 py-3 text-right">{item.comments.toLocaleString()}</td>
-                                                            <td className="px-4 py-3 text-right">{item.saved?.toLocaleString() || 0}</td>
-                                                            <td className="px-4 py-3 text-right">{item.shares?.toLocaleString() || 0}</td>
-                                                            <td className="px-4 py-3 text-right">{item.interactions?.toLocaleString() || 0}</td>
-                                                        </tr>
+                                                        <React.Fragment key={item.userId}>
+                                                            <tr 
+                                                                className={`border-b border-border/50 hover:bg-muted/20 cursor-pointer transition-colors ${expandedCreators.has(item.userId) ? 'bg-muted/10' : ''}`}
+                                                                onClick={() => toggleCreator(item.userId)}
+                                                            >
+                                                                <td className="px-4 py-3 text-center">
+                                                                    {item.individualPosts.length > 1 ? (
+                                                                        expandedCreators.has(item.userId) ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                                                                    ) : null}
+                                                                </td>
+                                                                <td className="px-4 py-3 font-medium flex items-center gap-3">
+                                                                    <div className="w-8 h-8 rounded-full bg-muted overflow-hidden shrink-0">
+                                                                        {item.avatar && <img src={item.avatar} className="w-full h-full object-cover" />}
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="font-semibold">{item.name}</div>
+                                                                        <div className="text-xs text-muted-foreground">@{item.handle}</div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-muted-foreground">{item.campaigns}</td>
+                                                                <td className="px-4 py-3 text-right">{item.posts}</td>
+                                                                <td className="px-4 py-3 text-right">{item.views?.toLocaleString() || 0}</td>
+                                                                <td className="px-4 py-3 text-right">{item.reach?.toLocaleString() || 0}</td>
+                                                                <td className="px-4 py-3 text-right text-success font-medium">{item.likes.toLocaleString()}</td>
+                                                                <td className="px-4 py-3 text-right">{item.comments.toLocaleString()}</td>
+                                                                <td className="px-4 py-3 text-right">{item.saved?.toLocaleString() || 0}</td>
+                                                                <td className="px-4 py-3 text-right">{item.shares?.toLocaleString() || 0}</td>
+                                                                <td className="px-4 py-3 text-right">{item.interactions?.toLocaleString() || 0}</td>
+                                                            </tr>
+                                                            {expandedCreators.has(item.userId) && (
+                                                                <tr className="bg-muted/5">
+                                                                    <td colSpan={11} className="px-8 py-4">
+                                                                        <div className="border rounded-lg bg-white/50 overflow-hidden">
+                                                                            <table className="w-full text-xs">
+                                                                                <thead>
+                                                                                    <tr className="bg-muted/20 text-muted-foreground border-b">
+                                                                                        <th className="px-4 py-2 text-left">Publicación / Entregable</th>
+                                                                                        <th className="px-4 py-2 text-right">Vistas</th>
+                                                                                        <th className="px-4 py-2 text-right">Me Gusta</th>
+                                                                                        <th className="px-4 py-2 text-right">Comentarios</th>
+                                                                                        <th className="px-4 py-2 text-right">Guardados</th>
+                                                                                        <th className="px-4 py-2 text-right">Compartidos</th>
+                                                                                        <th className="px-4 py-2 text-right">Acción</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    {item.individualPosts.map((post: any, idx: number) => (
+                                                                                        <tr key={post.id || idx} className="border-b border-border/30 last:border-0 hover:bg-muted/10">
+                                                                                            <td className="px-4 py-2">
+                                                                                                <div className="font-medium text-sm text-primary/80">
+                                                                                                    {post.deliverableType} #{post.deliverableNumber}
+                                                                                                </div>
+                                                                                                <div className="text-[10px] text-muted-foreground uppercase">{post.platform}</div>
+                                                                                            </td>
+                                                                                            <td className="px-4 py-2 text-right">{post.views?.toLocaleString() || 0}</td>
+                                                                                            <td className="px-4 py-2 text-right text-success">{post.likes.toLocaleString()}</td>
+                                                                                            <td className="px-4 py-2 text-right">{post.comments.toLocaleString()}</td>
+                                                                                            <td className="px-4 py-2 text-right">{post.saved?.toLocaleString() || 0}</td>
+                                                                                            <td className="px-4 py-2 text-right">{post.shares?.toLocaleString() || 0}</td>
+                                                                                            <td className="px-4 py-2 text-right">
+                                                                                                {post.contentUrl && (
+                                                                                                    <a 
+                                                                                                        href={post.contentUrl} 
+                                                                                                        target="_blank" 
+                                                                                                        rel="noopener noreferrer"
+                                                                                                        className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
+                                                                                                    >
+                                                                                                        Ver <ExternalLink className="w-2 h-2" />
+                                                                                                    </a>
+                                                                                                )}
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    ))}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            )}
+                                                        </React.Fragment>
                                                     ))}
                                                 </tbody>
                                             </table>
