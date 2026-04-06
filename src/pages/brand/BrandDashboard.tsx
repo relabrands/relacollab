@@ -28,9 +28,9 @@ export default function BrandDashboard() {
     iconColor: "primary" | "accent" | "success";
   }[]>([
     {
-      title: "Campañas Activas",
+      title: "Campañas",
       value: 0,
-      change: "0 este mes",
+      change: "Total: 0",
       changeType: "neutral",
       icon: FileText,
       iconColor: "primary",
@@ -46,7 +46,7 @@ export default function BrandDashboard() {
     {
       title: "Inversión Total",
       value: "$0",
-      change: "Este mes",
+      change: "Histórico",
       changeType: "neutral",
       icon: DollarSign,
       iconColor: "primary",
@@ -58,42 +58,80 @@ export default function BrandDashboard() {
     const fetchDashboardData = async () => {
       if (!user) return;
       try {
-        // Fetch Campaigns
-        const q = query(
+        // Fetch ALL Campaigns for accurate total counts
+        const allCampaignsQuery = query(
           collection(db, "campaigns"),
-          where("brandId", "==", user.uid),
-          orderBy("createdAt", "desc"),
-          limit(5)
+          where("brandId", "==", user.uid)
         );
-        const querySnapshot = await getDocs(q);
-        const campaigns = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setRecentCampaigns(campaigns);
+        const allCampaignsSnapshot = await getDocs(allCampaignsQuery);
+        const allCampaigns = allCampaignsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
 
         // Calculate Stats
-        const activeCount = campaigns.filter((c: any) => c.status === 'active').length;
+        const activeCount = allCampaigns.filter(c => c.status === 'active').length;
+        const totalCount = allCampaigns.length;
+
+        // Fetch Payouts to calculate Total Investment
+        const payoutsQuery = query(
+          collection(db, "payouts"),
+          where("brandId", "==", user.uid)
+        );
+        const payoutsSnapshot = await getDocs(payoutsQuery);
+        const totalInvestment = payoutsSnapshot.docs.reduce((acc, doc) => {
+          const data = doc.data() as any;
+          return acc + (data.grossAmount || 0);
+        }, 0);
+
+        setRecentCampaigns(allCampaigns.sort((a: any, b: any) => 
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        ).slice(0, 5));
 
         // Fetch all applications for this brand's campaigns
-        const campaignIds = campaigns.map(c => c.id);
+        const campaignIds = allCampaigns.map(c => c.id);
         let totalMatched = 0;
 
         if (campaignIds.length > 0) {
-          // Fetch applications for all campaigns
-          const appsQuery = query(
-            collection(db, "applications"),
-            where("campaignId", "in", campaignIds.slice(0, 10)) // Firestore limit
+          // Fetch applications for all campaigns (chunking because of Firestore 'in' limit of 30)
+          const chunks = [];
+          for (let i = 0; i < campaignIds.length; i += 10) {
+            chunks.push(campaignIds.slice(i, i + 10));
+          }
+
+          const appsPromises = chunks.map(chunk => 
+            getDocs(query(collection(db, "applications"), where("campaignId", "in", chunk)))
           );
-          const appsSnapshot = await getDocs(appsQuery);
+          
+          const appsSnapshots = await Promise.all(appsPromises);
+          let allApps: any[] = [];
+          appsSnapshots.forEach(snap => {
+            allApps = [...allApps, ...snap.docs.map(d => d.data())];
+          });
+
           // Count approved/collaborating creators
-          totalMatched = appsSnapshot.docs.filter(doc => {
-            const status = doc.data().status;
+          totalMatched = allApps.filter(data => {
+            const status = data.status;
             return status === "approved" || status === "active" || status === "collaborating";
           }).length;
         }
 
         setStats(prev => [
-          { ...prev[0], value: activeCount, change: `${activeCount} este mes` },
-          { ...prev[1], value: totalMatched, change: `${totalMatched} esta semana`, changeType: totalMatched > 0 ? "positive" : "neutral" },
-          { ...prev[2], value: "$0" }
+          { 
+            ...prev[0], 
+            value: activeCount, 
+            change: `Total: ${totalCount}`,
+            changeType: "neutral" 
+          },
+          { 
+            ...prev[1], 
+            value: totalMatched, 
+            change: `${totalMatched} esta semana`, 
+            changeType: totalMatched > 0 ? "positive" : "neutral" 
+          },
+          { 
+            ...prev[2], 
+            value: `$${totalInvestment.toLocaleString()}`,
+            change: "Dinero invertido",
+            changeType: "positive"
+          }
         ]);
 
       } catch (error) {
