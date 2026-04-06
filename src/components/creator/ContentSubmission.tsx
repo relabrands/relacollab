@@ -32,6 +32,8 @@ interface SubmittedContent {
   contentUrl: string;
   thumbnailUrl?: string;
   caption?: string;
+  createdAt?: string;
+  updatedAt?: string;
   metrics?: {
     likes?: number;
     comments?: number;
@@ -103,20 +105,37 @@ export function ContentSubmission() {
           where("creatorId", "==", user.uid)
         );
         const submissionsSnapshot = await getDocs(submissionsQuery);
-        const submissions = submissionsSnapshot.docs.map(doc => ({
+        const allSubmissions = submissionsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         } as SubmittedContent));
 
-        // 4. Calculate progress
+        // 4. Group by slot and only consider LATEST submission for each deliverable slot
+        const slotsMap = new Map<string, SubmittedContent>();
+        allSubmissions.forEach(s => {
+          const slotIdentifier = `${s.deliverableType}_${s.deliverableNumber}`;
+          const existing = slotsMap.get(slotIdentifier);
+          
+          // Use latest based on updatedAt or createdAt or ID
+          const sTime = new Date(s.updatedAt || s.createdAt || 0).getTime();
+          const eTime = existing ? new Date(existing.updatedAt || existing.createdAt || 0).getTime() : 0;
+
+          if (!existing || sTime > eTime || (sTime === eTime && s.id! > (existing.id || ''))) {
+            slotsMap.set(slotIdentifier, s);
+          }
+        });
+
+        const latestSubmissions = Array.from(slotsMap.values());
+
+        // 5. Calculate progress based on latest unique slots
         const deliverables = campaignData.deliverables || [];
         const totalRequired = deliverables
           .filter((d: any) => d.required)
           .reduce((sum: number, d: any) => sum + d.quantity, 0);
 
-        const totalSubmitted = submissions.length;
-        const totalApproved = submissions.filter(s => s.status === "approved").length;
-        const needsRevision = submissions.filter(s => s.status === "needs_revision" || s.status === "revision_requested").length;
+        const totalSubmitted = latestSubmissions.length;
+        const totalApproved = latestSubmissions.filter(s => s.status === "approved").length;
+        const needsRevision = latestSubmissions.filter(s => s.status === "needs_revision" || s.status === "revision_requested").length;
 
         // Fetch Net Payment
         const netPayment = campaignData.creatorPayment || 0;
@@ -129,7 +148,7 @@ export function ContentSubmission() {
             deliverables,
             netPayment, // Add net payment
           },
-          submissions,
+          submissions: allSubmissions, // We keep all for history/display, but use latest for counts
           totalRequired,
           totalSubmitted,
           totalApproved,
@@ -196,9 +215,19 @@ export function ContentSubmission() {
     type: string,
     number: number
   ) => {
-    return submissions.find(
+    // Filter all submissions for this specific slot
+    const slotSubmissions = submissions.filter(
       s => s.deliverableType === type && s.deliverableNumber === number
     );
+    
+    if (slotSubmissions.length === 0) return undefined;
+
+    // Return the latest one based on updatedAt or createdAt
+    return slotSubmissions.sort((a, b) => {
+      const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return dateB - dateA;
+    })[0];
   };
 
   if (loading) {

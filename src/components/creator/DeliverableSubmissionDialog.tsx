@@ -46,6 +46,8 @@ interface SubmittedContent {
     thumbnailUrl?: string;
     caption?: string;
     status: "pending" | "approved" | "needs_revision" | "revision_requested" | "resubmitted";
+    createdAt?: string;
+    updatedAt?: string;
     metrics?: {
         likes?: number;
         comments?: number;
@@ -228,9 +230,17 @@ export function DeliverableSubmissionDialog({
                     ? existingSubmission 
                     : undefined;
 
-                const existingSlotSubmission = matchingExisting || submittedContent.find(
+                const existingSlotSubmissions = submittedContent.filter(
                     s => s.deliverableType === type && s.deliverableNumber === number
                 );
+
+                const existingSlotSubmission = matchingExisting || (existingSlotSubmissions.length > 0 
+                    ? existingSlotSubmissions.sort((a, b) => {
+                        const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+                        const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+                        return dateB - dateA;
+                    })[0] 
+                    : undefined);
 
                 let docId = "";
                 let submissionRef: any;

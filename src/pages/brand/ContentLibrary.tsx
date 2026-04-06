@@ -378,9 +378,26 @@ export default function ContentLibrary() {
           allSubmissions = [...allSubmissions, ...snap.docs.map(d => ({ id: d.id, ...d.data() }))];
         });
 
+        // 2b. Deduplicate: Group by slot to only show LATEST version in the main list
+        const uniqueSlots = new Map<string, any>();
+        allSubmissions.forEach(sub => {
+          const cId = sub.creatorId || sub.userId;
+          const slotId = `${sub.campaignId}_${cId}_${sub.deliverableType || 'default'}_${sub.deliverableNumber || 1}`;
+          const existing = uniqueSlots.get(slotId);
+          
+          const sTime = new Date(sub.updatedAt || sub.createdAt || 0).getTime();
+          const eTime = existing ? new Date(existing.updatedAt || existing.createdAt || 0).getTime() : 0;
+
+          if (!existing || sTime > eTime || (sTime === eTime && sub.id > (existing.id || ''))) {
+            uniqueSlots.set(slotId, sub);
+          }
+        });
+
+        const latestSubmissions = Array.from(uniqueSlots.values());
+
         // 3. Enrich with Creator Data
         const enrichedContent = await Promise.all(
-          allSubmissions.map(async (sub) => {
+          latestSubmissions.map(async (sub) => {
             let creatorData: any = {};
             try {
               // Ensure we have correct creatorId field (userId or creatorId)
@@ -406,6 +423,8 @@ export default function ContentLibrary() {
               minReward: campaignData.minReward,
               maxReward: campaignData.maxReward,
               compensationType: campaignData.compensationType,
+              deliverableType: sub.deliverableType,
+              deliverableNumber: sub.deliverableNumber,
               // Determine type from mediaType or fallback
               type: (sub.mediaType === "VIDEO" || sub.mediaType === "REELS") ? "video" : "image",
               platform: sub.platform || "instagram",
