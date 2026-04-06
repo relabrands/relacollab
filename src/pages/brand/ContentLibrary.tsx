@@ -72,6 +72,9 @@ interface ContentItem {
     previousMediaUrl?: string;
     resubmittedAt?: string;
   }[];
+  minReward?: number;
+  maxReward?: number;
+  compensationType?: string;
 }
 
 interface ContentCardProps {
@@ -347,6 +350,7 @@ export default function ContentLibrary() {
   const [hoveredRating, setHoveredRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [isApproving, setIsApproving] = useState(false);
+  const [finalPayment, setFinalPayment] = useState<number | "">("");
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -356,7 +360,7 @@ export default function ContentLibrary() {
         const campaignsQuery = query(collection(db, "campaigns"), where("brandId", "==", user.uid));
         const campaignsSnapshot = await getDocs(campaignsQuery);
         const campaignIds = campaignsSnapshot.docs.map(d => d.id);
-        const campaignMap = new Map(campaignsSnapshot.docs.map(d => [d.id, d.data().name || "Sin Título"]));
+        const campaignMap = new Map(campaignsSnapshot.docs.map(d => [d.id, d.data()]));
 
         if (campaignIds.length === 0) {
           setLoading(false);
@@ -389,13 +393,18 @@ export default function ContentLibrary() {
             } catch (e) {
             }
 
+            const campaignData = campaignMap.get(sub.campaignId) || {};
+
             return {
               id: sub.id,
               campaignId: sub.campaignId || "",
               creatorId: sub.creatorId || sub.userId,
               creatorName: creatorData.displayName || "Creador Desconocido",
               creatorAvatar: creatorData.photoURL || creatorData.avatar || "https://via.placeholder.com/150",
-              campaignName: campaignMap.get(sub.campaignId) || sub.campaignName || "Campaña Desconocida",
+              campaignName: campaignData.name || sub.campaignName || "Campaña Desconocida",
+              minReward: campaignData.minReward,
+              maxReward: campaignData.maxReward,
+              compensationType: campaignData.compensationType,
               // Determine type from mediaType or fallback
               type: (sub.mediaType === "VIDEO" || sub.mediaType === "REELS") ? "video" : "image",
               platform: sub.platform || "instagram",
@@ -462,7 +471,7 @@ export default function ContentLibrary() {
   if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   // Handler for status updates
-  const handleStatusChange = async (id: string, newStatus: "approved" | "rejected", providedRating?: number, providedReview?: string) => {
+  const handleStatusChange = async (id: string, newStatus: "approved" | "rejected", providedRating?: number, providedReview?: string, finalPaymentAmount?: number) => {
     try {
       const submission = contentList.find(c => c.id === id);
 
@@ -531,26 +540,40 @@ export default function ContentLibrary() {
                   const creatorDoc = await getDoc(doc(db, "users", submission.creatorId));
                   const creator = creatorDoc.data();
 
-                  if (campaign.compensationType === "monetary" && campaign.totalBudgetPerCreator > 0) {
-                    // 💵 MONETARY — real cash payout
-                    await addDoc(collection(db, "payouts"), {
-                      type: "monetary",
-                      brandId: campaign.brandId,
-                      creatorId: submission.creatorId,
-                      creatorName: creator?.displayName || "Creator",
-                      creatorAvatar: creator?.photoURL || "",
-                      creatorBankAccount: creator?.bankAccount || null,
-                      campaignId,
-                      campaignName: campaign.name || submission.campaignName,
-                      contentSubmissionId: id,
-                      grossAmount: campaign.totalBudgetPerCreator,
-                      feeAmount: campaign.platformFeeAmount || 0,
-                      netAmount: campaign.creatorPayment || campaign.totalBudgetPerCreator,
-                      feePercent: campaign.platformFeePercent || 0,
-                      status: "pending",  // pending -> ready_to_withdraw -> requested -> paid -> completed
-                      createdAt: new Date().toISOString(),
-                    });
-                  } else if (campaign.compensationType === "exchange") {
+                  if (campaign.compensationType === "monetary" || campaign.compensationType === "hybrid") {
+                    // Decide final payment
+                    let finalGross = campaign.totalBudgetPerCreator || campaign.maxReward || 0;
+                    if (finalPaymentAmount !== undefined && !isNaN(finalPaymentAmount) && finalPaymentAmount > 0) {
+                        finalGross = finalPaymentAmount;
+                    }
+
+                    const feePercent = campaign.platformFeePercent || 10;
+                    const feeAmount = finalGross * (feePercent / 100);
+                    const netAmount = finalGross - feeAmount;
+
+                    if (finalGross > 0) {
+                      // 💵 MONETARY — real cash payout
+                      await addDoc(collection(db, "payouts"), {
+                        type: "monetary",
+                        brandId: campaign.brandId,
+                        creatorId: submission.creatorId,
+                        creatorName: creator?.displayName || "Creator",
+                        creatorAvatar: creator?.photoURL || "",
+                        creatorBankAccount: creator?.bankAccount || null,
+                        campaignId,
+                        campaignName: campaign.name || submission.campaignName,
+                        contentSubmissionId: id,
+                        grossAmount: finalGross,
+                        feeAmount: feeAmount,
+                        netAmount: netAmount,
+                        feePercent: feePercent,
+                        status: "pending",  // pending -> ready_to_withdraw -> requested -> paid -> completed
+                        createdAt: new Date().toISOString(),
+                      });
+                    }
+                  } 
+                  
+                  if (campaign.compensationType === "exchange" || campaign.compensationType === "hybrid") {
                     // 🎁 EXCHANGE — product/food/experience record
                     await addDoc(collection(db, "payouts"), {
                       type: "exchange",
@@ -646,6 +669,14 @@ export default function ContentLibrary() {
     setRating(5);
     setHoveredRating(0);
     setReviewText("");
+    
+    // Set default final payment to maxReward
+    if ((content.compensationType === 'monetary' || content.compensationType === 'hybrid') && content.maxReward) {
+      setFinalPayment(content.maxReward);
+    } else {
+      setFinalPayment("");
+    }
+    
     setIsRatingDialogOpen(true);
   };
 
@@ -922,6 +953,35 @@ export default function ContentLibrary() {
                 className="w-full min-h-[100px] p-3 rounded-xl bg-background border border-input text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
+
+            {/* Variable Payment Selection for applicable campaigns */}
+            {(contentToRate?.compensationType === 'monetary' || contentToRate?.compensationType === 'hybrid') && 
+             contentToRate.minReward !== undefined && 
+             contentToRate.maxReward !== undefined && 
+             contentToRate.minReward < contentToRate.maxReward && (
+              <div className="space-y-2 mt-4 px-3 py-3 bg-primary/5 rounded-xl border border-primary/20">
+                <label className="text-sm font-semibold text-primary flex items-center gap-2">
+                  <span className="bg-primary/20 text-primary p-1 rounded-full"><Star className="w-3 h-3 fill-current" /></span>
+                  Pago Final Asignado
+                </label>
+                <div className="text-xs text-muted-foreground/80 leading-relaxed">
+                  Esta campaña tiene un pago dinámico entre <strong>${contentToRate.minReward}</strong> y <strong>${contentToRate.maxReward}</strong>. 
+                  <p className="mt-1 text-[11px] text-green-600 dark:text-green-500 font-medium">¡Incentiva la genialidad! Da el valor máximo si el video superó tus expectativas. 🚀</p>
+                </div>
+                <div className="relative mt-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                  <Input 
+                    type="number" 
+                    min={contentToRate.minReward}
+                    max={contentToRate.maxReward}
+                    value={finalPayment}
+                    onChange={(e) => setFinalPayment(e.target.value ? Number(e.target.value) : "")}
+                    className="pl-7 bg-background text-base font-semibold"
+                    placeholder={`${contentToRate.maxReward}`}
+                  />
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex gap-3 justify-end mt-4">
             <Button variant="outline" onClick={() => setIsRatingDialogOpen(false)}>
@@ -932,8 +992,21 @@ export default function ContentLibrary() {
               disabled={isApproving}
               onClick={async () => {
                 if (!contentToRate) return;
+                
+                // Validate range if applicable
+                const isVariable = (contentToRate.compensationType === 'monetary' || contentToRate.compensationType === 'hybrid') && contentToRate.maxReward && contentToRate.minReward && contentToRate.minReward < contentToRate.maxReward;
+                let paymentAmount = undefined;
+                
+                if (isVariable) {
+                    if (finalPayment === "" || Number(finalPayment) < contentToRate.minReward! || Number(finalPayment) > contentToRate.maxReward!) {
+                        toast.error(`El pago debe estar entre $${contentToRate.minReward} y $${contentToRate.maxReward}.`);
+                        return;
+                    }
+                    paymentAmount = Number(finalPayment);
+                }
+
                 setIsApproving(true);
-                await handleStatusChange(contentToRate.id, "approved", rating, reviewText);
+                await handleStatusChange(contentToRate.id, "approved", rating, reviewText, paymentAmount);
                 setIsApproving(false);
                 setIsRatingDialogOpen(false);
                 setContentToRate(null);
