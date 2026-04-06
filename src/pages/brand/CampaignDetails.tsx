@@ -176,7 +176,7 @@ export default function CampaignDetails() {
             <DashboardSidebar type="brand" />
             <MobileNav type="brand" />
 
-            <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+            <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8 overflow-y-auto">
                 <div className="mb-6">
                     <Link to="/brand" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
                         <ArrowLeft className="w-4 h-4" />
@@ -185,38 +185,41 @@ export default function CampaignDetails() {
                 </div>
 
                 {/* Header with Edit/Delete */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <DashboardHeader 
-                        title={
-                            <div className="flex items-center gap-3">
-                                {campaign.name}
-                                <Badge variant="outline" className={`text-[10px] uppercase font-bold py-0 h-5 ${statusColor}`}>
-                                    {statusLabel}
-                                </Badge>
-                            </div>
-                        } 
-                        subtitle="Detalles de la Campaña y Progreso" 
-                    />
+                <DashboardHeader 
+                    title={
+                        <div className="flex items-center gap-3">
+                            {campaign.name}
+                            <Badge variant="outline" className={`text-[10px] uppercase font-bold py-0 h-5 ${statusColor}`}>
+                                {statusLabel}
+                            </Badge>
+                        </div>
+                    } 
+                    subtitle="Detalles de la Campaña y Progreso" 
+                >
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <Link to={`/brand/campaigns/edit/${campaign.id}`}>
                             <Button variant="outline" size="sm">
-                                <Edit2 className="w-4 h-4 mr-1.5" />
+                                <Edit2 className="w-4 h-4 mr-2" />
                                 Editar
                             </Button>
                         </Link>
-                        <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                            onClick={() => setIsDeleteOpen(true)}>
-                            <Trash2 className="w-4 h-4 mr-1.5" />
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => setIsDeleteOpen(true)}
+                        >
+                            <Trash2 className="w-4 h-4 mr-2" />
                             Eliminar
                         </Button>
                         <Link to={`/brand/matches?campaignId=${campaign.id}`}>
-                            <Button variant="hero" size="sm">
+                            <Button size="sm" className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
                                 <Sparkles className="w-4 h-4 mr-2" />
                                 Ver Matches
                             </Button>
                         </Link>
                     </div>
-                </div>
+                </DashboardHeader>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content */}
