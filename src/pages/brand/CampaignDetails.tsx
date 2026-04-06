@@ -194,7 +194,7 @@ export default function CampaignDetails() {
                             </Badge>
                         </div>
                     } 
-                    subtitle="Detalles de la Campaña y Progreso" 
+                    subtitle={`Detalles de la Campaña y Progreso • ${statusLabel}`} 
                 >
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <Link to={`/brand/campaigns/edit/${campaign.id}`}>
