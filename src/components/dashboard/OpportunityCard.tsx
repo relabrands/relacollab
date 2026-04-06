@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchScore } from "./MatchScore";
-import { MapPin, DollarSign, Gift, Clock, ArrowRight, Upload, Eye } from "lucide-react";
+import { MapPin, DollarSign, Gift, Clock, ArrowRight, Upload, Eye, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -34,6 +34,7 @@ interface OpportunityCardProps {
   };
   onAccept?: (id: string) => void;
   isActive?: boolean;
+  isCompleted?: boolean;
   onViewDetails?: () => void;
 }
 
@@ -49,7 +50,7 @@ const formatDeliverables = (deliverables?: Array<any>) => {
   return formatted.join(' • ');
 };
 
-export function OpportunityCard({ opportunity, onAccept, isActive = false, onViewDetails }: OpportunityCardProps) {
+export function OpportunityCard({ opportunity, onAccept, isActive = false, isCompleted = false, onViewDetails }: OpportunityCardProps) {
   const handleApply = (e: React.MouseEvent) => {
     e.stopPropagation(); // Stop opening the dialog
     if (onAccept) {
@@ -92,6 +93,13 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-violet-600/90 backdrop-blur text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-1 z-10 w-max max-w-[90%] border border-white/20">
           <Gift className="w-3.5 h-3.5 text-white" />
           Invitación Personal
+        </div>
+      )}
+
+      {isCompleted && (
+        <div className="absolute top-4 left-4 bg-green-500/90 backdrop-blur text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-1 z-10 w-max border border-white/20">
+          <CheckCircle className="w-3.5 h-3.5 text-white" />
+          Completada
         </div>
       )}
 
@@ -186,10 +194,26 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
         <div className="flex flex-col gap-2 w-full mt-2">
           {isActive ? (
             <>
-              <Link to="/creator/content" className="w-full">
-                <Button className="w-full bg-white/10 hover:bg-white/20 text-white border-white/20 font-medium backdrop-blur-sm">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Enviar Contenido
+              <Link to={isCompleted ? "/creator/content" : "/creator/content"} className="w-full">
+                <Button 
+                  className={cn(
+                    "w-full font-medium backdrop-blur-sm",
+                    isCompleted 
+                      ? "bg-green-500/20 text-green-300 border-green-500/30 hover:bg-green-500/30" 
+                      : "bg-white/10 hover:bg-white/20 text-white border-white/20"
+                  )}
+                >
+                  {isCompleted ? (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Ver Mi Contenido
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Enviar Contenido
+                    </>
+                  )}
                 </Button>
               </Link>
               {/* Motivational reminder for active campaigns with range */}

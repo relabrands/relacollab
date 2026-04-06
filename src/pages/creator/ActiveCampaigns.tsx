@@ -14,6 +14,7 @@ import { OpportunityDetailsDialog } from "@/components/dashboard/OpportunityDeta
 import { ContractTemplate } from "@/components/contracts/ContractTemplate";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { calculateMatchScore } from "@/lib/matchScoring";
+import { cn } from "@/lib/utils";
 
 export default function ActiveCampaigns() {
     const { user } = useAuth();
@@ -74,16 +75,67 @@ export default function ActiveCampaigns() {
                         // Calculate Match Score
                         const { score } = calculateMatchScore(campaignData, creatorProfile);
 
+                        // Fetch content submissions and payouts for completion check
+                        let isCompleted = false;
+                        let progressStatus = "Activa";
+                        
+                        try {
+                            const submissionsQuery = query(
+                                collection(db, "content_submissions"),
+                                where("campaignId", "==", campaignDoc.id),
+                                where("creatorId", "==", user.uid)
+                            );
+                            const submissionsSnap = await getDocs(submissionsQuery);
+                            const submissions = submissionsSnap.docs.map(d => d.data());
+                            
+                            // Group by slot to find latest unique approved submissions
+                            const slotsMap = new Map();
+                            submissions.forEach(s => {
+                                const slotId = `${s.deliverableType}_${s.deliverableNumber}`;
+                                if (!slotsMap.has(slotId) || (s.updatedAt || s.createdAt) > (slotsMap.get(slotId).updatedAt || slotsMap.get(slotId).createdAt)) {
+                                    slotsMap.set(slotId, s);
+                                }
+                            });
+                            
+                            const latestSubmissions = Array.from(slotsMap.values());
+                            const deliverables = campaignData.deliverables || [];
+                            const totalRequired = deliverables
+                                .filter((d: any) => d.required)
+                                .reduce((sum: number, d: any) => sum + (d.quantity || 1), 0);
+                            
+                            const totalApproved = latestSubmissions.filter(s => s.status === "approved").length;
+                            
+                            // Fetch payout status
+                            const payoutQuery = query(
+                                collection(db, "payouts"),
+                                where("campaignId", "==", campaignDoc.id),
+                                where("creatorId", "==", user.uid)
+                            );
+                            const payoutSnap = await getDocs(payoutQuery);
+                            const isPaid = payoutSnap.docs.some(d => d.data().status === "paid");
+                            
+                            // A campaign is "Completed" if all required content is approved AND (optionally) paid
+                            // However, we'll mark as completed if content is approved to give immediate feedback.
+                            // If they are paid, it's definitely completed.
+                            if (totalApproved >= totalRequired && totalRequired > 0) {
+                                isCompleted = true;
+                                progressStatus = isPaid ? "Pagado" : "Pendiente de Pago";
+                            }
+                        } catch (e) {
+                        }
+
                         campaigns.push({
                             id: campaignDoc.id,
                             ...campaignData,
-                            brandName: brandName, // Correct brand name
-                            brandLogo: brandLogo, // Correct brand logo
+                            brandName: brandName, 
+                            brandLogo: brandLogo, 
                             applicationId: appDoc.id,
-                            matchScore: score, // Real calculated score
+                            matchScore: score, 
                             title: campaignData.title || campaignData.name || "Campaña sin Título",
                             brandDescription: campaignData.brandDescription || campaignData.description || "",
-                            brandProfile: brandProfile
+                            brandProfile: brandProfile,
+                            isCompleted: isCompleted,
+                            progressStatus: progressStatus
                         });
                     }
                 }
@@ -194,10 +246,16 @@ export default function ActiveCampaigns() {
                                         <OpportunityCard
                                             opportunity={campaign}
                                             isActive={true}
+                                            isCompleted={campaign.isCompleted}
                                             onViewDetails={() => handleViewDetails(campaign)}
                                         />
-                                        <div className="absolute top-2 right-2 bg-success text-white text-xs px-2 py-1 rounded-full font-medium">
-                                            Activa
+                                        <div className={cn(
+                                            "absolute top-2 right-2 text-white text-xs px-2 py-1 rounded-full font-medium shadow-sm border border-white/10",
+                                            campaign.isCompleted 
+                                                ? (campaign.progressStatus === "Pagado" ? "bg-green-600/90" : "bg-blue-600/90")
+                                                : "bg-success"
+                                        )}>
+                                            {campaign.isCompleted ? campaign.progressStatus : "Activa"}
                                         </div>
                                         {/* Ver Contrato button */}
                                         <div className="mt-2">
