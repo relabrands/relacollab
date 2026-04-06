@@ -132,7 +132,22 @@ export function DeliverableSubmissionDialog({
 
                 const existing = submittedContent.find(
                     s => s.deliverableType === deliverable.type && s.deliverableNumber === counter
-                );
+                ) || (existingSubmission?.deliverableType === deliverable.type && existingSubmission?.deliverableNumber === counter ? existingSubmission : undefined);
+
+                // If resubmitting a specific existing submission, ONLY include that slot
+                if (existingSubmission && existingSubmission.id) {
+                     if (existing?.id === existingSubmission.id) {
+                         slots.push({
+                            type: deliverable.type,
+                            number: counter,
+                            required: deliverable.required,
+                            key,
+                            platform: deliverable.platform,
+                            submitted: existing,
+                        });
+                     }
+                     continue;
+                }
 
                 slots.push({
                     type: deliverable.type,
@@ -202,140 +217,94 @@ export function DeliverableSubmissionDialog({
 
         setLoading(true);
         try {
-            // RESUBMISSION MODE: Update existing submission
-            if (existingSubmission && existingSubmission.id) {
-                const [key, media] = Array.from(selectedDeliverables.entries())[0]; // Get first selected media
-
-                if (!media) {
-                    toast.error("Por favor selecciona contenido para reenviar");
-                    setLoading(false);
-                    return;
-                }
-
-                const previousMediaUrl = existingSubmission.contentUrl;
-                const latestRevision = existingSubmission.revisionHistory?.[existingSubmission.revisionHistory.length - 1];
-
-                // Update existing submission
-                const submissionRef = doc(db, "content_submissions", existingSubmission.id);
-                await updateDoc(submissionRef, {
-                    contentUrl: media.permalink,
-                    mediaUrl: media.media_url || "",
-                    thumbnailUrl: media.thumbnail_url || media.media_url || "",
-                    caption: media.caption || "",
-                    mediaType: media.media_type,
-                    status: "resubmitted",
-                    updatedAt: new Date().toISOString(),
-                    metrics: {
-                        likes: media.like_count || 0,
-                        comments: media.comments_count || 0,
-                        views: media.video_view_count || media.view_count || 0,
-                        reach: media.reach || 0,
-                        saved: 0,
-                        shares: 0,
-                        interactions: 0
-                    },
-                    revisionHistory: arrayUnion({
-                        ...latestRevision,
-                        resubmittedAt: new Date().toISOString(),
-                        previousMediaUrl
-                    })
-                });
-
-                // Auto-fetch metrics for resubmitted content
-                try {
-                    // Start metrics Logic
-                    if ((media as any).platform === 'tiktok') {
-                        // TikTok metrics are already in the media object from selection (approx),
-                        // but ideally we'd want to refresh them. For sandbox, we might not have a separate 'getSingleVideo' endpoint easily.
-                        // We will trust the selection values for now.
-                        await updateDoc(submissionRef, {
-                            "metrics.views": media.view_count || 0,
-                            "metrics.likes": media.like_count || 0,
-                            "metrics.comments": media.comments_count || 0,
-                            "metrics.shares": (media as any).share_count || 0,
-                            "metrics.inputPlatform": "tiktok",
-                            "metrics.updatedAt": new Date().toISOString()
-                        });
-                    } else {
-                        // Instagram Logic
-                        const match = media.permalink.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
-                        const postId = match ? match[2] : null;
-
-                        if (postId) {
-                            fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ userId: user!.uid, postId })
-                            }).then(async (res) => {
-                                if (res.ok) {
-                                    const data = await res.json();
-                                    if (data.success && data.metrics) {
-                                        await updateDoc(submissionRef, {
-                                            "metrics.views": data.metrics.views || 0,
-                                            "metrics.reach": data.metrics.reach || 0,
-                                            "metrics.saved": data.metrics.saved || 0,
-                                            "metrics.shares": data.metrics.shares || 0,
-                                            "metrics.interactions": data.metrics.interactions || 0,
-                                            "metrics.likes": data.metrics.likes || 0,
-                                            "metrics.comments": data.metrics.comments || 0,
-                                            "metrics.updatedAt": new Date().toISOString()
-                                        });
-                                    }
-                                }
-                            });
-                        }
-                    }
-                } catch (e) {
-                }
-
-                toast.success("¡Contenido reenviado exitosamente!");
-                setSelectedDeliverables(new Map());
-                onSuccess();
-                onClose();
-                setLoading(false);
-                return;
-            }
-
-            // NORMAL SUBMISSION MODE: Create new documents
+            // Process all submissions (both new and resubmissions)
             const submissionPromises = Array.from(selectedDeliverables.entries()).map(async ([key, media]) => {
                 const lastUnderscore = key.lastIndexOf('_');
                 const type = key.substring(0, lastUnderscore);
                 const number = parseInt(key.substring(lastUnderscore + 1), 10);
 
-                // 1. Create the submission document locally first
-                const docRef = await addDoc(collection(db, "content_submissions"), {
-                    campaignId: campaign.id,
-                    creatorId: user!.uid,
-                    userId: user!.uid, // For BrandAnalytics grouping
-                    deliverableType: type,
-                    deliverableNumber: number,
-                    contentUrl: media.permalink,
-                    mediaUrl: media.media_url || "",
-                    thumbnailUrl: media.thumbnail_url || media.media_url || "",
-                    caption: media.caption || "",
-                    mediaType: media.media_type,
-                    platform: (media as any).platform || "instagram", // Save platform explicitly
-                    status: "pending",
-                    createdAt: new Date().toISOString(),
-                    metrics: {
-                        likes: media.like_count || 0,
-                        comments: media.comments_count || 0,
-                        views: media.video_view_count || media.view_count || 0,
-                        reach: media.reach || 0,
-                        saved: 0,
-                        shares: 0,
-                        interactions: 0
-                    },
-                });
+                const existingSlotSubmission = submittedContent.find(
+                    s => s.deliverableType === type && s.deliverableNumber === number
+                ) || (existingSubmission?.deliverableType === type && existingSubmission?.deliverableNumber === number ? existingSubmission : undefined);
+
+                let docId = "";
+                let submissionRef: any;
+
+                if (existingSlotSubmission && existingSlotSubmission.id) {
+                    // UPDATE EXISTING SUBMISSION
+                    docId = existingSlotSubmission.id;
+                    submissionRef = doc(db, "content_submissions", docId);
+                    
+                    const previousMediaUrl = existingSlotSubmission.contentUrl;
+                    const isResubmission = existingSlotSubmission.status === "needs_revision" || existingSlotSubmission.status === "revision_requested";
+                    
+                    let updatedHistory = existingSlotSubmission.revisionHistory ? [...existingSlotSubmission.revisionHistory] : [];
+                    if (isResubmission && updatedHistory.length > 0) {
+                        const lastIndex = updatedHistory.length - 1;
+                        if (!updatedHistory[lastIndex].resubmittedAt) {
+                            updatedHistory[lastIndex] = {
+                                ...updatedHistory[lastIndex],
+                                resubmittedAt: new Date().toISOString(),
+                                previousMediaUrl: previousMediaUrl
+                            };
+                        }
+                    }
+
+                    await updateDoc(submissionRef, {
+                        contentUrl: media.permalink,
+                        mediaUrl: media.media_url || "",
+                        thumbnailUrl: media.thumbnail_url || media.media_url || "",
+                        caption: media.caption || "",
+                        mediaType: media.media_type,
+                        platform: (media as any).platform || "instagram",
+                        status: isResubmission ? "resubmitted" : "pending",
+                        updatedAt: new Date().toISOString(),
+                        metrics: {
+                            likes: media.like_count || 0,
+                            comments: media.comments_count || 0,
+                            views: media.video_view_count || media.view_count || 0,
+                            reach: media.reach || 0,
+                            saved: 0,
+                            shares: 0,
+                            interactions: 0
+                        },
+                        revisionHistory: updatedHistory
+                    });
+                } else {
+                    // CREATE NEW SUBMISSION
+                    submissionRef = await addDoc(collection(db, "content_submissions"), {
+                        campaignId: campaign.id,
+                        creatorId: user!.uid,
+                        userId: user!.uid,
+                        deliverableType: type,
+                        deliverableNumber: number,
+                        contentUrl: media.permalink,
+                        mediaUrl: media.media_url || "",
+                        thumbnailUrl: media.thumbnail_url || media.media_url || "",
+                        caption: media.caption || "",
+                        mediaType: media.media_type,
+                        platform: (media as any).platform || "instagram",
+                        status: "pending",
+                        createdAt: new Date().toISOString(),
+                        metrics: {
+                            likes: media.like_count || 0,
+                            comments: media.comments_count || 0,
+                            views: media.video_view_count || media.view_count || 0,
+                            reach: media.reach || 0,
+                            saved: 0,
+                            shares: 0,
+                            interactions: 0
+                        },
+                    });
+                }
 
                 // 2. Fetch detailed metrics immediately (Fire and forget, but we await the start)
                 try {
                     const match = media.permalink.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
                     const postId = match ? match[2] : null;
 
-
                     if ((media as any).platform === 'tiktok') {
-                        await updateDoc(docRef, {
+                        await updateDoc(submissionRef, {
                             "metrics.views": media.view_count || 0,
                             "metrics.likes": media.like_count || 0,
                             "metrics.comments": media.comments_count || 0,
@@ -347,7 +316,6 @@ export function DeliverableSubmissionDialog({
                     } else {
                         // Instagram Logic
                         if (postId) {
-                            // We use fetch here to call our cloud function
                             fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
@@ -356,7 +324,7 @@ export function DeliverableSubmissionDialog({
                                 if (res.ok) {
                                     const data = await res.json();
                                     if (data.success && data.metrics) {
-                                        await updateDoc(docRef, {
+                                        await updateDoc(submissionRef, {
                                             "metrics.views": data.metrics.views || 0,
                                             "metrics.reach": data.metrics.reach || 0,
                                             "metrics.saved": data.metrics.saved || 0,
@@ -375,7 +343,7 @@ export function DeliverableSubmissionDialog({
                 } catch (e) {
                 }
 
-                return docRef;
+                return submissionRef;
             });
 
             await Promise.all(submissionPromises);
