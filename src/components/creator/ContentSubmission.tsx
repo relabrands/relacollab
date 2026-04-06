@@ -293,11 +293,10 @@ export function ContentSubmission() {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className={`w-full relative shadow-sm hover:shadow-md transition-all duration-300 ${!isExpanded && needsRevision > 0 ? "bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 animate-pulse border-red-200 border" : ""}`}
+                    className={`w-full relative shadow-sm hover:shadow-md transition-all duration-300 ${!isExpanded && needsRevision > 0 ? "bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-red-200 border" : ""}`}
                   >
                     {!isExpanded && needsRevision > 0 && (
                       <span className="absolute left-3 flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                       </span>
                     )}
@@ -311,7 +310,7 @@ export function ContentSubmission() {
                         <ChevronDown className={`w-4 h-4 mr-2 ${needsRevision > 0 ? "text-red-600" : ""}`} />
                         Ver Entregables ({totalSubmitted} enviados) 
                         {needsRevision > 0 && (
-                          <span className="ml-2 font-bold underline decoration-2 underline-offset-4 animate-bounce inline-block">
+                          <span className="ml-2 font-bold underline decoration-2 underline-offset-4 inline-block">
                             ¡REVISIÓN REQUERIDA!
                           </span>
                         )}
