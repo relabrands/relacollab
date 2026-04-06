@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface DashboardHeaderProps {
-  title: string;
+  title: ReactNode;
   subtitle?: string;
   children?: ReactNode;
 }

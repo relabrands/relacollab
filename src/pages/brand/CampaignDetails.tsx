@@ -20,6 +20,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { toast } from "sonner";
+import { MatchDetailsDialog } from "@/components/brand/MatchDetailsDialog";
 
 export default function CampaignDetails() {
     const { id } = useParams();
@@ -33,6 +34,10 @@ export default function CampaignDetails() {
     const [collaboratingCount, setCollaboratingCount] = useState(0);
     const [collaborators, setCollaborators] = useState<any[]>([]);
     const [isPaid, setIsPaid] = useState(false);
+
+    // Creator dialog state
+    const [selectedCreator, setSelectedCreator] = useState<any>(null);
+    const [isCreatorDialogOpen, setIsCreatorDialogOpen] = useState(false);
 
     // Delete state
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -131,23 +136,47 @@ export default function CampaignDetails() {
     // Fee derived from campaign data (e.g. 10% → 0.10). Applied to creator payout, invisible in UI.
     const feeDecimal = (campaign.platformFeePercent || 10) / 100;
 
-    // ✅ Total budget = gross per creator × number of creators
-    const perCreatorGross = campaign.totalBudgetPerCreator || campaign.budget || 0;
-    const totalBudget = perCreatorGross * neededCount;
-    const totalFee = (campaign.platformFeeAmount || 0) * neededCount;
-    const totalNet = (campaign.creatorPayment || perCreatorGross) * neededCount;
-    const isMonetary = campaign.compensationType === "monetary";
-
-    // Range-based totals (when brand sets min/max reward)
-    const totalMin = (campaign.minReward || 0) * neededCount;
+    const isMonetary = campaign.compensationType === 'monetary' || campaign.compensationType === 'hybrid';
     const totalMax = (campaign.maxReward || 0) * neededCount;
+    const totalBudget = (campaign.totalBudgetPerCreator || 0) * neededCount;
+    const perCreatorGross = campaign.maxReward || campaign.totalBudgetPerCreator || 0;
+    const totalFee = totalBudget * ((campaign.platformFeePercent || 10) / 100);
+    const totalNet = totalBudget - totalFee;
 
+    // Status calculation
+    const isExpired = campaign.endDate && new Date(campaign.endDate) < new Date();
+    const isCompleted = approvedCount >= neededCount && neededCount > 0;
+    const statusLabel = isExpired ? "Expirada" : isCompleted ? "Completada" : "Activa";
+    const statusColor = isExpired ? "bg-red-100 text-red-700 border-red-200" : isCompleted ? "bg-green-100 text-green-700 border-green-200" : "bg-blue-100 text-blue-700 border-blue-200";
+
+    const handleCreatorClick = (collab: any) => {
+        // Map collaborator to CreatorDetails format expected by MatchDetailsDialog
+        const creatorDetails = {
+            id: collab.id,
+            name: collab.displayName || "Creador",
+            avatar: collab.photoURL || "",
+            location: collab.location || "N/A",
+            followers: (collab.followers || collab.instagramMetrics?.followers || collab.tiktokMetrics?.followers || 0).toLocaleString(),
+            engagement: (collab.engagementRate || collab.instagramMetrics?.engagementRate || collab.tiktokMetrics?.engagementRate || 0).toFixed(1) + "%",
+            matchScore: 100,
+            tags: collab.categories || [],
+            matchReason: "Colaborador aprobado y activo en esta campaña.",
+            bio: collab.bio || "Este creador no ha proporcionado una biografía todavía.",
+            instagramUsername: collab.instagramUsername,
+            tiktokUsername: collab.tiktokUsername,
+            instagramMetrics: collab.instagramMetrics,
+            tiktokMetrics: collab.tiktokMetrics,
+            aiAnalysis: null
+        };
+        setSelectedCreator(creatorDetails);
+        setIsCreatorDialogOpen(true);
+    };
     return (
         <div className="flex min-h-screen bg-background">
             <DashboardSidebar type="brand" />
             <MobileNav type="brand" />
 
-            <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
+            <main className="flex-1 p-4 md:p-8 overflow-y-auto">
                 <div className="mb-6">
                     <Link to="/brand" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
                         <ArrowLeft className="w-4 h-4" />
@@ -156,8 +185,18 @@ export default function CampaignDetails() {
                 </div>
 
                 {/* Header with Edit/Delete */}
-                <div className="flex items-start justify-between mb-8 gap-4">
-                    <DashboardHeader title={campaign.name} subtitle="Detalles de la Campaña y Progreso" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <DashboardHeader 
+                        title={
+                            <div className="flex items-center gap-3">
+                                {campaign.name}
+                                <Badge variant="outline" className={`text-[10px] uppercase font-bold py-0 h-5 ${statusColor}`}>
+                                    {statusLabel}
+                                </Badge>
+                            </div>
+                        } 
+                        subtitle="Detalles de la Campaña y Progreso" 
+                    />
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <Link to={`/brand/campaigns/edit/${campaign.id}`}>
                             <Button variant="outline" size="sm">
@@ -228,7 +267,11 @@ export default function CampaignDetails() {
                                 </h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {collaborators.map((c) => (
-                                        <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-white/5 border border-border/40 hover:border-primary/30 transition-all group">
+                                        <div 
+                                            key={c.id} 
+                                            onClick={() => handleCreatorClick(c)}
+                                            className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-white/5 border border-border/40 hover:border-primary/30 transition-all group cursor-pointer"
+                                        >
                                             <div className="w-10 h-10 rounded-full overflow-hidden bg-muted ring-2 ring-primary/10 group-hover:ring-primary/30 transition-all">
                                                 {c.photoURL ? (
                                                     <img src={c.photoURL} alt={c.displayName} className="w-full h-full object-cover" />
@@ -452,9 +495,14 @@ export default function CampaignDetails() {
                                     {isMonetary ? (
                                         <div className="text-right">
                                             <span className="font-bold text-primary text-lg">${totalBudget.toLocaleString()}</span>
-                                            <p className="text-[10px] text-muted-foreground">
-                                                {neededCount} creador{neededCount > 1 ? "es" : ""} × ${perCreatorGross.toLocaleString()} {campaign.minReward && campaign.maxReward ? "(máx)" : ""}
-                                            </p>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    {neededCount} creador{neededCount > 1 ? "es" : ""} × ${perCreatorGross.toLocaleString()} {campaign.minReward && campaign.maxReward ? "(máx)" : ""}
+                                                </p>
+                                                <Badge variant="secondary" className="text-[9px] h-4 font-bold bg-primary/10 text-primary border-primary/20">
+                                                    {campaign.compensationType === 'hybrid' ? "💳 Monetario + 🎁 Intercambio" : "💰 Monetario"}
+                                                </Badge>
+                                            </div>
                                         </div>
                                     ) : (
                                         <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
@@ -509,6 +557,16 @@ export default function CampaignDetails() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            {/* Match / Creator Profile Dialog */}
+            {selectedCreator && (
+                <MatchDetailsDialog
+                    isOpen={isCreatorDialogOpen}
+                    onClose={() => setIsCreatorDialogOpen(false)}
+                    creator={selectedCreator}
+                    campaign={campaign}
+                    isCollaborating={true}
+                />
+            )}
         </div>
     );
 }
