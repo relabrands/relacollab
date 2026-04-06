@@ -60,7 +60,7 @@ export default function CreatorDashboard() {
       iconColor: "success",
     },
     {
-      title: "Este Mes",
+      title: "Ganancias Totales",
       value: "$0",
       change: "Pendiente: $0",
       changeType: "neutral",
@@ -167,6 +167,7 @@ export default function CreatorDashboard() {
 
         const activeResults = await Promise.all(activePromises);
         activeCount = activeResults.filter(Boolean).length;
+        const totalCount = approvedApps.length;
 
         // 2.5 Fetch Invitations
         const invitationsQuery = query(
@@ -235,47 +236,26 @@ export default function CreatorDashboard() {
           ? Math.round(topOpportunities.reduce((sum, opp) => sum + opp.matchScore, 0) / topOpportunities.length)
           : 0;
 
-        // 5. Fetch Earnings (Filtered by Current Month)
+        // 5. Fetch Earnings (Historical Totals)
         const paymentsRef = collection(db, "users", user.uid, "payments");
         const paymentsSnap = await getDocs(paymentsRef);
-
-        const currentMonthStart = startOfMonth(new Date());
-        const currentMonthEnd = endOfMonth(new Date());
 
         let totalEarned = 0;
         let pendingEarnings = 0;
 
         paymentsSnap.forEach((paymentDoc) => {
           const data = paymentDoc.data();
-          let paymentDate: Date;
-          
-          if (data.createdAt) {
-            paymentDate = new Date(data.createdAt);
-          } else if (data.date) {
-            paymentDate = new Date(data.date);
-          } else {
-            // Default to old date if no timestamp found (so it doesn't show in current month)
-            paymentDate = new Date(0);
-          }
-
-          const isInCurrentMonth = (
-            (isAfter(paymentDate, currentMonthStart) || paymentDate.getTime() === currentMonthStart.getTime()) && 
-            (isBefore(paymentDate, currentMonthEnd) || paymentDate.getTime() === currentMonthEnd.getTime())
-          );
-
-          if (isInCurrentMonth) {
-            if (data.status === 'completed') {
-              totalEarned += data.amount || 0;
-            } else if (data.status === 'pending') {
-              pendingEarnings += data.amount || 0;
-            }
+          if (data.status === 'completed') {
+            totalEarned += data.amount || 0;
+          } else if (data.status === 'pending') {
+            pendingEarnings += data.amount || 0;
           }
         });
 
         // Update stats
         setStats(prev => [
           { ...prev[0], value: matchedOpportunities.length, change: `${topOpportunities.length} mejores matches` },
-          { ...prev[1], value: activeCount, change: activeCount > 0 ? "En progreso" : "Sin campañas activas" },
+          { ...prev[1], value: activeCount, change: `Historial: ${totalCount} campañas` },
           { ...prev[2], value: `${avgMatchScore}%`, change: avgMatchScore >= 70 ? "¡Excelente match!" : "Encuentra tu match" },
           { ...prev[3], value: `$${totalEarned.toLocaleString()}`, change: `Pendiente: $${pendingEarnings.toLocaleString()}` }
         ]);
