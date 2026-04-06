@@ -128,7 +128,7 @@ export default function CreatorDashboard() {
             if (campaignDoc.exists()) {
               const campaignData = campaignDoc.data();
               
-              // Check completion status (similar to ActiveCampaigns.tsx)
+              // Check completion status (synchronized with ActiveCampaigns.tsx)
               const submissionsQuery = query(
                 collection(db, "content_submissions"),
                 where("campaignId", "==", campaignId),
@@ -137,7 +137,6 @@ export default function CreatorDashboard() {
               const submissionsSnap = await getDocs(submissionsQuery);
               const submissions = submissionsSnap.docs.map(d => d.data());
               
-              // Group by slot
               const slotsMap = new Map();
               submissions.forEach(s => {
                 const slotId = `${s.deliverableType}_${s.deliverableNumber}`;
@@ -150,17 +149,21 @@ export default function CreatorDashboard() {
               const deliverables = campaignData.deliverables || [];
               const totalRequired = deliverables
                 .filter((d: any) => d.required)
-                .reduce((sum: number, d: any) => sum + (d.quantity || 1), 0);
+                .reduce((sum: number, d: any) => sum + (Number(d.quantity) || 1), 0);
               
               const totalApproved = latestSubmissions.filter(s => s.status === "approved").length;
               
-              // If not completed, it's still active
-              if (totalApproved < totalRequired || totalRequired === 0) {
+              // logic from ActiveCampaigns.tsx: 
+              // completed if totalApproved >= totalRequired AND totalRequired > 0
+              const isCompleted = totalRequired > 0 && totalApproved >= totalRequired;
+
+              if (!isCompleted) {
                 return true;
               }
             }
             return false;
           } catch (e) {
+            console.error("Error checking campaign completion:", e);
             return false;
           }
         });
@@ -236,19 +239,24 @@ export default function CreatorDashboard() {
           ? Math.round(topOpportunities.reduce((sum, opp) => sum + opp.matchScore, 0) / topOpportunities.length)
           : 0;
 
-        // 5. Fetch Earnings (Historical Totals)
-        const paymentsRef = collection(db, "users", user.uid, "payments");
-        const paymentsSnap = await getDocs(paymentsRef);
+        // 5. Fetch Earnings (Historical Totals from payouts collection)
+        const payoutsQuery = query(
+          collection(db, "payouts"),
+          where("creatorId", "==", user.uid)
+        );
+        const payoutsSnap = await getDocs(payoutsQuery);
 
         let totalEarned = 0;
         let pendingEarnings = 0;
 
-        paymentsSnap.forEach((paymentDoc) => {
-          const data = paymentDoc.data();
-          if (data.status === 'completed') {
-            totalEarned += data.amount || 0;
-          } else if (data.status === 'pending') {
-            pendingEarnings += data.amount || 0;
+        payoutsSnap.docs.forEach((payoutDoc) => {
+          const data = payoutDoc.data();
+          const amount = Number(data.netAmount || data.amount || 0);
+          
+          if (data.status === 'paid') {
+            totalEarned += amount;
+          } else if (['pending', 'ready_to_withdraw', 'requested'].includes(data.status)) {
+            pendingEarnings += amount;
           }
         });
 
