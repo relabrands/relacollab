@@ -223,9 +223,14 @@ export function DeliverableSubmissionDialog({
                 const type = key.substring(0, lastUnderscore);
                 const number = parseInt(key.substring(lastUnderscore + 1), 10);
 
-                const existingSlotSubmission = submittedContent.find(
+                // Prefer existingSubmission if it perfectly matches the slot we are processing
+                const matchingExisting = existingSubmission?.deliverableType === type && existingSubmission?.deliverableNumber === number 
+                    ? existingSubmission 
+                    : undefined;
+
+                const existingSlotSubmission = matchingExisting || submittedContent.find(
                     s => s.deliverableType === type && s.deliverableNumber === number
-                ) || (existingSubmission?.deliverableType === type && existingSubmission?.deliverableNumber === number ? existingSubmission : undefined);
+                );
 
                 let docId = "";
                 let submissionRef: any;
