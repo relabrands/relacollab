@@ -70,6 +70,7 @@ interface Payout {
     netAmount?: number;
     type?: "monetary" | "exchange";
     status: "pending" | "ready_to_withdraw" | "requested" | "paid" | "completed";
+    requestedAt?: any; // Added for grouping
     paidAt?: any;
     createdAt: any;
     receiptUrl?: string;
@@ -83,6 +84,19 @@ interface Payout {
     };
 }
 
+interface PayoutGroup {
+    id: string;
+    creatorId: string;
+    creatorName: string;
+    status: Payout["status"];
+    totalAmount: number;
+    payouts: Payout[];
+    date: any;
+    bankDetails?: Payout["bankDetails"];
+    receiptUrl?: string;
+    paidAt?: any;
+}
+
 export default function AdminFinance() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [subscriptionInvoices, setSubscriptionInvoices] = useState<SubscriptionInvoice[]>([]);
@@ -94,7 +108,7 @@ export default function AdminFinance() {
     // Dialog States
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionInvoice | null>(null);
-    const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null);
+    const [selectedPayoutGroup, setSelectedPayoutGroup] = useState<PayoutGroup | null>(null);
     const [isInvoiceDetailsOpen, setIsInvoiceDetailsOpen] = useState(false);
     const [isSubscriptionDetailsOpen, setIsSubscriptionDetailsOpen] = useState(false);
     const [isPayoutDetailsOpen, setIsPayoutDetailsOpen] = useState(false);
@@ -253,21 +267,21 @@ export default function AdminFinance() {
     };
 
     // --- Payout Logic ---
-    const handleViewPayout = async (payout: Payout) => {
-        setSelectedPayout(payout);
+    const handleViewPayout = async (group: PayoutGroup) => {
+        setSelectedPayoutGroup(group);
         setIsPayoutDetailsOpen(true);
-        setPayoutReceiptUrl("");
+        setPayoutReceiptUrl(group.receiptUrl || "");
 
-        // Fetch Bank Details if not present
-        if (!payout.bankDetails) {
+        // Fetch Bank Details if not present for the first payout in group
+        if (!group.bankDetails && group.payouts.length > 0) {
             setIsLoadingBankDetails(true);
             try {
-                const userDoc = await getDoc(doc(db, "users", payout.creatorId));
+                const userDoc = await getDoc(doc(db, "users", group.creatorId));
                 if (userDoc.exists()) {
                     const userData = userDoc.data();
                     const bankDetails = userData.bankAccount;
                     if (bankDetails) {
-                        setSelectedPayout(prev => prev ? { ...prev, bankDetails } : null);
+                        setSelectedPayoutGroup(prev => prev ? { ...prev, bankDetails } : null);
                     }
                 }
             } catch (error) {
@@ -279,7 +293,7 @@ export default function AdminFinance() {
     };
 
     const handleMarkPayoutPaid = async () => {
-        if (!selectedPayout) return;
+        if (!selectedPayoutGroup) return;
         if (!payoutReceiptUrl) {
             toast.error("Please provide a receipt URL");
             return;
@@ -287,17 +301,33 @@ export default function AdminFinance() {
 
         setIsSubmittingPayout(true);
         try {
-            await updateDoc(doc(db, "payouts", selectedPayout.id), {
-                status: "paid",
-                receiptUrl: payoutReceiptUrl,
-                paidAt: new Date().toISOString()
+            const batch = writeBatch(db);
+            const paidAt = new Date().toISOString();
+
+            selectedPayoutGroup.payouts.forEach(payout => {
+                batch.update(doc(db, "payouts", payout.id), {
+                    status: "paid",
+                    receiptUrl: payoutReceiptUrl,
+                    paidAt: paidAt
+                });
             });
 
-            toast.success("Payout marked as PAID");
-            setPayouts(prev => prev.map(p => p.id === selectedPayout.id ? { ...p, status: "paid", receiptUrl: payoutReceiptUrl } : p));
+            await batch.commit();
+
+            toast.success("Payouts marked as PAID");
+            
+            // Update local state
+            setPayouts(prev => prev.map(p => {
+                const updatedPayout = selectedPayoutGroup.payouts.find(up => up.id === p.id);
+                if (updatedPayout) {
+                    return { ...p, status: "paid" as const, receiptUrl: payoutReceiptUrl, paidAt };
+                }
+                return p;
+            }));
+
             setIsPayoutDetailsOpen(false);
         } catch (error) {
-            toast.error("Failed to update payout");
+            toast.error("Failed to update payouts");
         } finally {
             setIsSubmittingPayout(false);
         }
@@ -332,6 +362,47 @@ export default function AdminFinance() {
         item.campaignName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.creatorName?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    // Grouping Logic for Creator Payouts
+    const groupedPayouts = Array.from(filteredPayouts.reduce((acc, payout) => {
+        // Grouping key: For 'requested' or 'paid', use creatorId + timestamp
+        // For others, keep separate by using unique ID as part of key
+        let groupKey = "";
+        if (payout.status === "requested") {
+            const reqDate = payout.requestedAt?.seconds ? payout.requestedAt.seconds : (payout.requestedAt || payout.createdAt);
+            groupKey = `req_${payout.creatorId}_${reqDate}`;
+        } else if (payout.status === "paid") {
+            const paidDate = payout.paidAt?.seconds ? payout.paidAt.seconds : (payout.paidAt || payout.createdAt);
+            groupKey = `paid_${payout.creatorId}_${paidDate}`;
+        } else {
+            groupKey = `other_${payout.id}`;
+        }
+
+        if (!acc.has(groupKey)) {
+            acc.set(groupKey, {
+                id: groupKey,
+                creatorId: payout.creatorId,
+                creatorName: payout.creatorName || "Unknown",
+                status: payout.status,
+                totalAmount: 0,
+                payouts: [],
+                date: payout.status === "paid" ? payout.paidAt : (payout.status === "requested" ? payout.requestedAt : payout.createdAt),
+                bankDetails: payout.bankDetails,
+                receiptUrl: payout.receiptUrl,
+                paidAt: payout.paidAt
+            });
+        }
+
+        const group = acc.get(groupKey)!;
+        group.payouts.push(payout);
+        group.totalAmount += (payout.amount || 0);
+
+        return acc;
+    }, new Map<string, PayoutGroup>()).values()).sort((a, b) => {
+        const dateA = a.date?.seconds ? a.date.seconds * 1000 : new Date(a.date).getTime();
+        const dateB = b.date?.seconds ? b.date.seconds * 1000 : new Date(b.date).getTime();
+        return (dateB || 0) - (dateA || 0);
+    });
 
     return (
         <div className="flex min-h-screen bg-background">
@@ -375,7 +446,7 @@ export default function AdminFinance() {
                             <DollarSign className="w-4 h-4" />
                             Payouts
                             <Badge variant="secondary" className="ml-1">
-                                {filteredPayouts.filter(p => p.status === 'pending' || p.status === 'requested').length}
+                                {groupedPayouts.filter(g => g.status === 'pending' || g.status === 'requested' || g.status === 'ready_to_withdraw').length}
                             </Badge>
                         </TabsTrigger>
                     </TabsList>
@@ -417,7 +488,7 @@ export default function AdminFinance() {
                                                         <td className="p-4 font-medium">{invoice.campaignName || "Unknown"}</td>
                                                         <td className="p-4">{invoice.brandName || "Unknown"}</td>
                                                         <td className="p-4 text-muted-foreground">{formatDate(invoice.createdAt)}</td>
-                                                        <td className="p-4 font-semibold">{formatCurrency(invoice.totalGross || invoice.amount)}</td>
+                                                        <td className="p-4 font-semibold">{formatCurrency(invoice.totalGross || 0)}</td>
                                                         <td className="p-4">
                                                             <Badge
                                                                 variant={invoice.status === 'paid' ? 'success' : invoice.status === 'verifying' ? 'warning' : 'destructive'}
@@ -504,7 +575,7 @@ export default function AdminFinance() {
                                     <table className="w-full">
                                         <thead className="bg-muted/50">
                                             <tr>
-                                                <th className="text-left p-4 font-medium text-muted-foreground">Content</th>
+                                                <th className="text-left p-4 font-medium text-muted-foreground">Campaign / Bundle</th>
                                                 <th className="text-left p-4 font-medium text-muted-foreground">Creator</th>
                                                 <th className="text-left p-4 font-medium text-muted-foreground">Date</th>
                                                 <th className="text-left p-4 font-medium text-muted-foreground">Payout Amount</th>
@@ -513,19 +584,28 @@ export default function AdminFinance() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredPayouts.length === 0 ? (
+                                            {groupedPayouts.length === 0 ? (
                                                 <tr>
                                                     <td colSpan={6} className="p-8 text-center text-muted-foreground">
                                                         No payouts found
                                                     </td>
                                                 </tr>
                                             ) : (
-                                                filteredPayouts.map((payout) => (
-                                                    <tr key={payout.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                                                        <td className="p-4 font-medium">{payout.campaignName || "Unknown"}</td>
-                                                        <td className="p-4">{payout.creatorName || "Unknown"}</td>
-                                                        <td className="p-4 text-muted-foreground">{formatDate(payout.createdAt)}</td>
-                                                        <td className="p-4 font-semibold">{formatCurrency(payout.amount)}</td>
+                                                groupedPayouts.map((group) => (
+                                                    <tr key={group.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                                                        <td className="p-4">
+                                                            {group.payouts.length > 1 ? (
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-medium text-primary">Transfer Bundle</span>
+                                                                    <span className="text-xs text-muted-foreground">{group.payouts.length} campaigns combined</span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="font-medium">{group.payouts[0]?.campaignName || "Unknown"}</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="p-4">{group.creatorName}</td>
+                                                        <td className="p-4 text-muted-foreground">{formatDate(group.date)}</td>
+                                                        <td className="p-4 font-semibold">{formatCurrency(group.totalAmount)}</td>
                                                         <td className="p-4">
                                                             {(() => {
                                                                 const statusMap: Record<string, { label: string; variant: any }> = {
@@ -535,12 +615,12 @@ export default function AdminFinance() {
                                                                     paid: { label: "Paid", variant: "success" },
                                                                     completed: { label: "Completed (Exchange)", variant: "success" },
                                                                 };
-                                                                const s = statusMap[payout.status] || { label: payout.status, variant: "secondary" };
+                                                                const s = statusMap[group.status] || { label: group.status, variant: "secondary" };
                                                                 return <Badge variant={s.variant} className="capitalize">{s.label}</Badge>;
                                                             })()}
                                                         </td>
                                                         <td className="p-4 text-right">
-                                                            <Button variant="ghost" size="sm" onClick={() => handleViewPayout(payout)}>
+                                                            <Button variant="ghost" size="sm" onClick={() => handleViewPayout(group)}>
                                                                 <Eye className="w-4 h-4 mr-2" />
                                                                 Details
                                                             </Button>
@@ -714,21 +794,39 @@ export default function AdminFinance() {
                 <Dialog open={isPayoutDetailsOpen} onOpenChange={setIsPayoutDetailsOpen}>
                     <DialogContent className="max-w-2xl">
                         <DialogHeader>
-                            <DialogTitle>Process Payout</DialogTitle>
-                            <DialogDescription>Review bank details and mark as paid.</DialogDescription>
+                            <DialogTitle>{selectedPayoutGroup?.status === 'paid' ? 'Payout Details' : 'Process Payout'}</DialogTitle>
+                            <DialogDescription>Review distribution and bank details.</DialogDescription>
                         </DialogHeader>
 
-                        {selectedPayout && (
+                        {selectedPayoutGroup && (
                             <div className="space-y-6 mt-2">
                                 {/* Amount & Summary */}
                                 <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Amount to Pay</p>
-                                        <p className="text-2xl font-bold text-primary">{formatCurrency(selectedPayout.amount)}</p>
+                                        <p className="text-sm text-muted-foreground">Total to Pay</p>
+                                        <p className="text-2xl font-bold text-primary">{formatCurrency(selectedPayoutGroup.totalAmount)}</p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-sm text-muted-foreground">Creator</p>
-                                        <p className="font-medium">{selectedPayout.creatorName || "Unknown"}</p>
+                                        <p className="font-medium">{selectedPayoutGroup.creatorName}</p>
+                                    </div>
+                                </div>
+
+                                {/* Campaign Distribution Breakdown */}
+                                <div className="space-y-3">
+                                    <h4 className="font-semibold text-sm text-muted-foreground px-1">Campaign Distribution</h4>
+                                    <div className="bg-muted/30 rounded-lg p-3 space-y-2 border border-border">
+                                        {selectedPayoutGroup.payouts.map((p, idx) => (
+                                            <div key={p.id} className="flex justify-between items-center text-sm">
+                                                <span className="text-foreground">{p.campaignName}</span>
+                                                <span className="font-medium">{formatCurrency(p.amount)}</span>
+                                            </div>
+                                        ))}
+                                        <div className="h-px bg-border my-1" />
+                                        <div className="flex justify-between items-center font-bold">
+                                            <span>Requested Total</span>
+                                            <span>{formatCurrency(selectedPayoutGroup.totalAmount)}</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -741,31 +839,31 @@ export default function AdminFinance() {
 
                                     {isLoadingBankDetails ? (
                                         <div className="p-8 flex justify-center"><Loader className="animate-spin w-6 h-6" /></div>
-                                    ) : selectedPayout.bankDetails ? (
+                                    ) : selectedPayoutGroup.bankDetails ? (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-xl">
                                             <div>
                                                 <Label className="text-xs text-muted-foreground">Bank</Label>
-                                                <p className="font-medium">{selectedPayout.bankDetails.bankName}</p>
+                                                <p className="font-medium">{selectedPayoutGroup.bankDetails.bankName}</p>
                                             </div>
                                             <div>
                                                 <Label className="text-xs text-muted-foreground">Account Type</Label>
-                                                <p className="font-medium capitalize">{selectedPayout.bankDetails.accountType}</p>
+                                                <p className="font-medium capitalize">{selectedPayoutGroup.bankDetails.accountType}</p>
                                             </div>
                                             <div>
                                                 <Label className="text-xs text-muted-foreground">Account Number</Label>
                                                 <div className="flex items-center gap-2">
-                                                    <p className="font-mono font-medium text-lg">{selectedPayout.bankDetails.accountNumber}</p>
+                                                    <p className="font-mono font-medium text-lg">{selectedPayoutGroup.bankDetails.accountNumber}</p>
                                                 </div>
                                             </div>
                                             <div>
                                                 <Label className="text-xs text-muted-foreground">ID (RNC/Cedula)</Label>
-                                                <p className="font-medium">{selectedPayout.bankDetails.identityDocument}</p>
+                                                <p className="font-medium">{selectedPayoutGroup.bankDetails.identityDocument}</p>
                                             </div>
                                             <div className="col-span-2">
                                                 <Label className="text-xs text-muted-foreground">Account Holder</Label>
                                                 <p className="font-medium flex items-center gap-2">
                                                     <User className="w-3 h-3" />
-                                                    {selectedPayout.bankDetails.accountHolder}
+                                                    {selectedPayoutGroup.bankDetails.accountHolder}
                                                 </p>
                                             </div>
                                         </div>
@@ -778,7 +876,7 @@ export default function AdminFinance() {
                                 </div>
 
                                 {/* Upload Receipt (Only if not paid) */}
-                                {selectedPayout.status !== 'paid' ? (
+                                {selectedPayoutGroup.status !== 'paid' && selectedPayoutGroup.status !== 'completed' ? (
                                     <div className="space-y-2 pt-4 border-t">
                                         <Label>Payment Receipt URL</Label>
                                         <div className="flex gap-2">
@@ -796,11 +894,13 @@ export default function AdminFinance() {
                                     <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <CheckCircle className="w-5 h-5 text-green-500" />
-                                            <span className="font-medium text-green-700">Paid on {formatDate(selectedPayout.paidAt)}</span>
+                                            <span className="font-medium text-green-700">
+                                                {selectedPayoutGroup.status === 'completed' ? 'Exchange completed' : `Paid on ${formatDate(selectedPayoutGroup.paidAt)}`}
+                                            </span>
                                         </div>
-                                        {selectedPayout.receiptUrl && (
+                                        {selectedPayoutGroup.receiptUrl && (
                                             <Button variant="outline" size="sm" asChild>
-                                                <a href={selectedPayout.receiptUrl} target="_blank" rel="noopener noreferrer">
+                                                <a href={selectedPayoutGroup.receiptUrl} target="_blank" rel="noopener noreferrer">
                                                     <ExternalLink className="w-4 h-4 mr-2" />
                                                     Receipt
                                                 </a>
@@ -813,14 +913,14 @@ export default function AdminFinance() {
 
                         <DialogFooter className="gap-2">
                             <Button variant="outline" onClick={() => setIsPayoutDetailsOpen(false)}>Cancel</Button>
-                            {selectedPayout?.status !== 'paid' && (
+                            {selectedPayoutGroup?.status !== 'paid' && selectedPayoutGroup?.status !== 'completed' && (
                                 <Button
                                     variant="hero"
                                     onClick={handleMarkPayoutPaid}
                                     disabled={isSubmittingPayout || !payoutReceiptUrl}
                                 >
                                     {isSubmittingPayout && <Loader className="w-4 h-4 mr-2 animate-spin" />}
-                                    Mark as Paid
+                                    Mark all as Paid
                                 </Button>
                             )}
                         </DialogFooter>
