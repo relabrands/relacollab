@@ -269,41 +269,64 @@ export default function CreatorEarnings() {
                                                 p.campaignName?.toLowerCase().includes(searchQuery.toLowerCase())
                                             );
 
-                                            const withdrawalMovements: any[] = [];
+                                            const withdrawalBatchGroups: Record<string, any> = {};
                                             const earningsGroups: Record<string, any> = {};
 
                                             filteredPayments.forEach(p => {
-                                                if (p.status === 'requested' || p.status === 'paid') {
-                                                    withdrawalMovements.push({
-                                                        ...p,
-                                                        isWithdrawal: true,
-                                                        latestDate: p.paidAt || p.requestedAt || p.createdAt
-                                                    });
-                                                } else {
-                                                    const cid = p.campaignId || 'other';
-                                                    if (!earningsGroups[cid]) {
-                                                        earningsGroups[cid] = {
-                                                            id: cid,
-                                                            name: p.campaignName || "Sin Nombre",
-                                                            transactions: [],
-                                                            totalNet: 0,
-                                                            latestDate: p.createdAt,
-                                                            status: p.status,
-                                                            isGroup: true
-                                                        };
-                                                    }
-                                                    earningsGroups[cid].transactions.push(p);
-                                                    earningsGroups[cid].totalNet += (p.netAmount || 0);
-                                                    if (new Date(p.createdAt) > new Date(earningsGroups[cid].latestDate)) {
-                                                        earningsGroups[cid].latestDate = p.createdAt;
+                                                // --- 1. Campaign Grouping (History) ---
+                                                // All payments regardless of status go here to keep history complete
+                                                const cid = p.campaignId || 'other';
+                                                if (!earningsGroups[cid]) {
+                                                    earningsGroups[cid] = {
+                                                        id: cid,
+                                                        name: p.campaignName || "Sin Nombre",
+                                                        transactions: [],
+                                                        totalNet: 0,
+                                                        latestDate: p.createdAt,
+                                                        status: p.status,
+                                                        isGroup: true
+                                                    };
+                                                }
+                                                earningsGroups[cid].transactions.push(p);
+                                                earningsGroups[cid].totalNet += (p.netAmount || 0);
+                                                
+                                                // Update latest status/date for the campaign group
+                                                if (new Date(p.createdAt) > new Date(earningsGroups[cid].latestDate)) {
+                                                    earningsGroups[cid].latestDate = p.createdAt;
+                                                    // We prioritize 'pending' or 'ready' status for the group label 
+                                                    // if some transactions inside are still active
+                                                    if (p.status === 'pending' || p.status === 'ready_to_withdraw') {
                                                         earningsGroups[cid].status = p.status;
                                                     }
+                                                }
+
+                                                // --- 2. Withdrawal Movement Grouping (Standalone) ---
+                                                if (p.status === 'requested' || p.status === 'paid') {
+                                                    const batchKey = p.status === 'paid' 
+                                                        ? `paid_${p.paidAt}` 
+                                                        : `req_${p.requestedAt}`;
+                                                    
+                                                    if (!withdrawalBatchGroups[batchKey]) {
+                                                        withdrawalBatchGroups[batchKey] = {
+                                                            id: batchKey,
+                                                            isWithdrawal: true,
+                                                            status: p.status,
+                                                            latestDate: p.status === 'paid' ? p.paidAt : p.requestedAt,
+                                                            batchTotal: 0,
+                                                            receiptUrl: p.receiptUrl,
+                                                            payoutIds: []
+                                                        };
+                                                    }
+                                                    withdrawalBatchGroups[batchKey].batchTotal += (p.netAmount || 0);
+                                                    withdrawalBatchGroups[batchKey].payoutIds.push(p.id);
+                                                    // If any in the batch has a receipt, use it
+                                                    if (p.receiptUrl) withdrawalBatchGroups[batchKey].receiptUrl = p.receiptUrl;
                                                 }
                                             });
 
                                             const allItems = [
                                                 ...Object.values(earningsGroups),
-                                                ...withdrawalMovements
+                                                ...Object.values(withdrawalBatchGroups)
                                             ].sort((a: any, b: any) => new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime());
 
                                             return allItems.map((item: any) => {
@@ -321,7 +344,7 @@ export default function CreatorEarnings() {
                                                                             {isPaid ? 'Retiro Recibido' : 'Solicitud de Retiro en Proceso'}
                                                                         </h3>
                                                                         <p className="text-xs text-muted-foreground">
-                                                                            Campaña: {item.campaignName} • {new Date(item.latestDate).toLocaleDateString("es-DO", {
+                                                                            Transferencia Bancaria • {new Date(item.latestDate).toLocaleDateString("es-DO", {
                                                                                 day: 'numeric',
                                                                                 month: 'long',
                                                                                 year: 'numeric'
@@ -334,7 +357,7 @@ export default function CreatorEarnings() {
                                                                     <div className="text-right hidden sm:block">
                                                                         <p className="text-sm font-medium text-muted-foreground">Monto Retirado</p>
                                                                         <p className={`font-bold text-lg ${isPaid ? 'text-success' : 'text-orange-600'}`}>
-                                                                            -${(item.netAmount || 0).toLocaleString()}
+                                                                            -${(item.batchTotal || 0).toLocaleString()}
                                                                         </p>
                                                                     </div>
                                                                     <div className="flex items-center gap-2">
