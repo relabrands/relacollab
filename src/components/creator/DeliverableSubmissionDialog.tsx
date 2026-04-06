@@ -517,16 +517,38 @@ export function DeliverableSubmissionDialog({
 
                                             <div className="flex-shrink-0 mt-2 md:mt-0 w-full md:w-auto">
                                                 {slot.submitted ? (
-                                                    <div className="text-sm text-muted-foreground">
-                                                        {slot.submitted.status === "needs_revision" && (
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
-                                                                className="w-full md:w-auto"
-                                                            >
-                                                                Reenviar
-                                                            </Button>
+                                                    <div className="text-sm text-muted-foreground flex flex-col md:flex-row gap-2">
+                                                        {(slot.submitted.status === "needs_revision" || slot.submitted.status === "revision_requested") && (
+                                                            <>
+                                                                {(!slot.platform || slot.platform === "instagram") && (
+                                                                    <Button
+                                                                        variant={selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? "default" : "outline"}
+                                                                        size="sm"
+                                                                        onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
+                                                                        className={`${selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? "bg-green-600 hover:bg-green-700 text-white" : ""} w-full md:w-auto`}
+                                                                    >
+                                                                        {selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? (
+                                                                            <><Check className="w-4 h-4 mr-2" /> Cambiar IG</>
+                                                                        ) : (
+                                                                            <><Upload className="w-4 h-4 mr-2" /> Reenviar IG</>
+                                                                        )}
+                                                                    </Button>
+                                                                )}
+                                                                {(!slot.platform || slot.platform === "tiktok") && ["Video", "Reel", "Post"].includes(slot.type) && (
+                                                                    <Button
+                                                                        variant={selectedMedia && (selectedMedia as any).platform === 'tiktok' ? "default" : "outline"}
+                                                                        size="sm"
+                                                                        onClick={() => handleOpenTikTokPicker(slot.key, slot.type)}
+                                                                        className={`${selectedMedia && (selectedMedia as any).platform === 'tiktok' ? "bg-black hover:bg-gray-800 text-white" : ""} w-full md:w-auto`}
+                                                                    >
+                                                                        {selectedMedia && (selectedMedia as any).platform === 'tiktok' ? (
+                                                                            <><Check className="w-4 h-4 mr-2" /> Cambiar TikTok</>
+                                                                        ) : (
+                                                                            <><svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg> Reenviar TikTok</>
+                                                                        )}
+                                                                    </Button>
+                                                                )}
+                                                            </>
                                                         )}
                                                     </div>
                                                 ) : (
