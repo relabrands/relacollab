@@ -31,6 +31,8 @@ export default function CampaignDetails() {
     const [applicationsCount, setApplicationsCount] = useState(0);
     const [approvedCount, setApprovedCount] = useState(0);
     const [collaboratingCount, setCollaboratingCount] = useState(0);
+    const [collaborators, setCollaborators] = useState<any[]>([]);
+    const [isPaid, setIsPaid] = useState(false);
 
     // Delete state
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -47,14 +49,42 @@ export default function CampaignDetails() {
                     const campaignData = { id: docSnap.id, ...docSnap.data() };
                     setCampaign(campaignData);
 
+                    // 1. Fetch applications
                     const appsQuery = query(collection(db, "applications"), where("campaignId", "==", id));
                     const appsSnapshot = await getDocs(appsQuery);
                     const allApps = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
                     setApplicationsCount(allApps.length);
+                    const approvedApps = allApps.filter((a: any) =>
+                        ["approved", "active", "collaborating"].includes(a.status)
+                    );
                     setApprovedCount(allApps.filter((a: any) => a.status === "approved").length);
-                    setCollaboratingCount(allApps.filter((a: any) =>
-                        ["approved", "active", "collaborating"].includes(a.status)).length);
+                    setCollaboratingCount(approvedApps.length);
+
+                    // 2. Fetch collaborator profiles
+                    if (approvedApps.length > 0) {
+                        const creatorIds = [...new Set(approvedApps.map((a: any) => a.creatorId))];
+                        // Fetch users in chunks if necessary (max 30 for 'in' operator)
+                        // but here we likely have few collaborators (1-10+)
+                        const userProfiles: any[] = [];
+                        for (let i = 0; i < creatorIds.length; i += 10) {
+                            const chunk = creatorIds.slice(i, i + 10);
+                            const usersQuery = query(collection(db, "users"), where("__name__", "in", chunk));
+                            const usersSnap = await getDocs(usersQuery);
+                            usersSnap.forEach(uDoc => userProfiles.push({ id: uDoc.id, ...uDoc.data() }));
+                        }
+                        setCollaborators(userProfiles);
+                    }
+
+                    // 3. Check for paid invoice
+                    const invoicesQuery = query(
+                        collection(db, "invoices"),
+                        where("campaignId", "==", id),
+                        where("status", "==", "paid"),
+                        where("type", "==", "campaign_budget")
+                    );
+                    const invoicesSnap = await getDocs(invoicesQuery);
+                    setIsPaid(!invoicesSnap.empty);
                 }
             } catch (error) {
             } finally {
@@ -189,6 +219,39 @@ export default function CampaignDetails() {
                             </div>
                         </div>
 
+                        {/* Collaborators List */}
+                        {collaborators.length > 0 && (
+                            <div className="glass-card p-6 bg-gradient-to-br from-background to-accent/5">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <Users className="w-5 h-5 text-primary" />
+                                    Creators collaborating
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {collaborators.map((c) => (
+                                        <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-white/5 border border-border/40 hover:border-primary/30 transition-all group">
+                                            <div className="w-10 h-10 rounded-full overflow-hidden bg-muted ring-2 ring-primary/10 group-hover:ring-primary/30 transition-all">
+                                                {c.photoURL ? (
+                                                    <img src={c.photoURL} alt={c.displayName} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-primary/10">
+                                                        <Users className="w-5 h-5" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{c.displayName || "Creador"}</p>
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    <Badge variant="outline" className="text-[10px] h-4 bg-emerald-50 text-emerald-600 border-emerald-200">
+                                                        Activo
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Description */}
                         <div className="glass-card p-6">
                             <h3 className="text-lg font-semibold mb-4">Sobre esta Campaña</h3>
@@ -236,28 +299,31 @@ export default function CampaignDetails() {
                                             {/* Monetary details (monetary or hybrid) */}
                                             {(isMonetary || campaign.compensationType === "hybrid") && (
                                                 <div className="mt-2 pt-2 border-t border-border/40 space-y-1.5 text-sm">
-                                                    {campaign.minReward && campaign.maxReward ? (
-                                                        <>
-                                                            {/* Payment CTA Banner */}
-                                                            <div className="mb-3 p-4 bg-primary/5 border border-primary/30 rounded-xl">
-                                                                <div className="flex items-start gap-3">
-                                                                    <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0 mt-0.5">
-                                                                        <CreditCard className="w-4 h-4 text-primary" />
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className="text-sm font-semibold text-foreground mb-0.5">
-                                                                            Para activar esta campaña, transfiere el presupuesto a RELA
-                                                                        </p>
-                                                                        <p className="text-xs text-muted-foreground leading-relaxed">
-                                                                            Transfiere <strong className="text-foreground">${totalMax.toLocaleString()}</strong> a RELA Collab antes de asignar colaboradores. El creador recibe su parte al aprobar el contenido.
-                                                                        </p>
-                                                                        <Link to="/brand/payments" className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-primary hover:underline">
-                                                                            <CreditCard className="w-3.5 h-3.5" />
-                                                                            Ir a Facturación para pagar →
-                                                                        </Link>
-                                                                    </div>
+                                                    {/* Payment CTA Banner - Hidden if already paid */}
+                                                    {!isPaid && (
+                                                        <div className="mb-3 p-4 bg-primary/5 border border-primary/30 rounded-xl animate-in fade-in duration-500">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0 mt-0.5">
+                                                                    <CreditCard className="w-4 h-4 text-primary" />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-sm font-semibold text-foreground mb-0.5">
+                                                                        Para activar esta campaña, transfiere el presupuesto a RELA
+                                                                    </p>
+                                                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                                                        Transfiere <strong className="text-foreground">${(totalMax > 0 ? totalMax : totalBudget).toLocaleString()}</strong> a RELA Collab antes de asignar colaboradores. El creador recibe su parte al aprobar el contenido.
+                                                                    </p>
+                                                                    <Link to="/brand/payments" className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-primary hover:underline">
+                                                                        <CreditCard className="w-3.5 h-3.5" />
+                                                                        Ir a Facturación para pagar →
+                                                                    </Link>
                                                                 </div>
                                                             </div>
+                                                        </div>
+                                                    )}
+
+                                                    {campaign.minReward && campaign.maxReward ? (
+                                                        <>
                                                             <div className="flex justify-between">
                                                                 <span className="text-muted-foreground">Rango por creador (bruto)</span>
                                                                 <span className="font-semibold">${campaign.minReward.toLocaleString()} – ${campaign.maxReward.toLocaleString()}</span>
