@@ -3,7 +3,23 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DollarSign, ArrowDownLeft, Clock, Search, Download, Loader2, Settings, Wallet, Gift, ChevronDown, ChevronUp, Sparkles, TrendingUp } from "lucide-react";
+import { 
+    DollarSign, 
+    ArrowDownLeft, 
+    Clock, 
+    Search, 
+    Download, 
+    Loader2, 
+    Settings, 
+    Wallet, 
+    Gift, 
+    ChevronDown, 
+    ChevronUp, 
+    Sparkles, 
+    TrendingUp,
+    ArrowUpRight,
+    ExternalLink
+} from "lucide-react";
 import { collection, query, where, getDocs, orderBy, doc, getDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
@@ -63,6 +79,7 @@ export default function CreatorEarnings() {
                 setHasBankDetails(false);
             }
         } catch (error) {
+            console.error("Error checking bank details:", error);
         }
     };
 
@@ -70,7 +87,6 @@ export default function CreatorEarnings() {
         if (!user) return;
         setIsLoading(true);
         try {
-            // Fetch payouts from root collection
             const q = query(
                 collection(db, "payouts"),
                 where("creatorId", "==", user.uid),
@@ -80,9 +96,9 @@ export default function CreatorEarnings() {
 
             const fetchedPayments: any[] = [];
             let total = 0;
-            let pending = 0;
-            let available = 0;
-            let requested = 0;
+            let pendingArr = 0;
+            let availableArr = 0;
+            let requestedArr = 0;
 
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
@@ -93,22 +109,23 @@ export default function CreatorEarnings() {
                 if (data.status === 'paid') {
                     total += amount;
                 } else if (data.status === 'pending') {
-                    pending += amount;
+                    pendingArr += amount;
                 } else if (data.status === 'ready_to_withdraw') {
-                    available += amount;
+                    availableArr += amount;
                 } else if (data.status === 'requested') {
-                    requested += amount;
+                    requestedArr += amount;
                 }
             });
 
             setPayments(fetchedPayments);
             setStats({
                 totalEarned: total,
-                pending: pending,
-                available: available,
-                requested: requested
+                pending: pendingArr,
+                available: availableArr,
+                requested: requestedArr
             });
         } catch (error) {
+            console.error("Error fetching earnings:", error);
         } finally {
             setIsLoading(false);
         }
@@ -138,7 +155,7 @@ export default function CreatorEarnings() {
 
             await batch.commit();
             toast.success("¡Solicitud de pago enviada exitosamente!");
-            fetchEarnings(); // Refresh data
+            fetchEarnings();
         } catch (error) {
             toast.error("Error al solicitar el pago.");
         } finally {
@@ -168,7 +185,6 @@ export default function CreatorEarnings() {
                     </div>
                 ) : (
                     <>
-                        {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <Card className="glass-card">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -222,7 +238,6 @@ export default function CreatorEarnings() {
                             </Card>
                         </div>
 
-                        {/* Transactions */}
                         <Card className="glass-card">
                             <CardHeader>
                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -250,149 +265,213 @@ export default function CreatorEarnings() {
                                 {payments.length > 0 ? (
                                     <div className="space-y-4">
                                         {(() => {
-                                            // Grouping Logic
                                             const filteredPayments = payments.filter(p => 
                                                 p.campaignName?.toLowerCase().includes(searchQuery.toLowerCase())
                                             );
 
-                                            const groups: Record<string, any> = {};
+                                            const withdrawalMovements: any[] = [];
+                                            const earningsGroups: Record<string, any> = {};
+
                                             filteredPayments.forEach(p => {
-                                                const cid = p.campaignId || 'other';
-                                                if (!groups[cid]) {
-                                                    groups[cid] = {
-                                                        id: cid,
-                                                        name: p.campaignName || "Sin Nombre",
-                                                        transactions: [],
-                                                        totalNet: 0,
-                                                        latestDate: p.createdAt,
-                                                        status: p.status
-                                                    };
-                                                }
-                                                groups[cid].transactions.push(p);
-                                                groups[cid].totalNet += (p.netAmount || 0);
-                                                if (new Date(p.createdAt) > new Date(groups[cid].latestDate)) {
-                                                    groups[cid].latestDate = p.createdAt;
-                                                    groups[cid].status = p.status;
+                                                if (p.status === 'requested' || p.status === 'paid') {
+                                                    withdrawalMovements.push({
+                                                        ...p,
+                                                        isWithdrawal: true,
+                                                        latestDate: p.paidAt || p.requestedAt || p.createdAt
+                                                    });
+                                                } else {
+                                                    const cid = p.campaignId || 'other';
+                                                    if (!earningsGroups[cid]) {
+                                                        earningsGroups[cid] = {
+                                                            id: cid,
+                                                            name: p.campaignName || "Sin Nombre",
+                                                            transactions: [],
+                                                            totalNet: 0,
+                                                            latestDate: p.createdAt,
+                                                            status: p.status,
+                                                            isGroup: true
+                                                        };
+                                                    }
+                                                    earningsGroups[cid].transactions.push(p);
+                                                    earningsGroups[cid].totalNet += (p.netAmount || 0);
+                                                    if (new Date(p.createdAt) > new Date(earningsGroups[cid].latestDate)) {
+                                                        earningsGroups[cid].latestDate = p.createdAt;
+                                                        earningsGroups[cid].status = p.status;
+                                                    }
                                                 }
                                             });
 
-                                            return Object.values(groups)
-                                                .sort((a: any, b: any) => new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime())
-                                                .map((group: any) => {
-                                                    const isExpanded = expandedCampaigns.includes(group.id);
-                                                    
+                                            const allItems = [
+                                                ...Object.values(earningsGroups),
+                                                ...withdrawalMovements
+                                            ].sort((a: any, b: any) => new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime());
+
+                                            return allItems.map((item: any) => {
+                                                if (item.isWithdrawal) {
+                                                    const isPaid = item.status === 'paid';
                                                     return (
-                                                        <div key={group.id} className="border border-border/50 rounded-xl overflow-hidden bg-muted/20 hover:bg-muted/30 transition-all duration-300">
-                                                            {/* Group Header */}
-                                                            <div 
-                                                                className="flex items-center justify-between p-4 cursor-pointer select-none"
-                                                                onClick={() => {
-                                                                    setExpandedCampaigns(prev => 
-                                                                        prev.includes(group.id) 
-                                                                            ? prev.filter(id => id !== group.id)
-                                                                            : [...prev, group.id]
-                                                                    );
-                                                                }}
-                                                            >
+                                                        <div key={item.id} className="border border-primary/20 rounded-xl overflow-hidden bg-primary/5 hover:bg-primary/10 transition-all duration-300 p-4">
+                                                            <div className="flex items-center justify-between">
                                                                 <div className="flex items-center gap-4">
-                                                                    <div className="p-2.5 rounded-xl bg-primary/10">
-                                                                        <TrendingUp className="h-5 w-5 text-primary" />
+                                                                    <div className={`p-2.5 rounded-xl ${isPaid ? 'bg-success/10' : 'bg-orange-500/10'}`}>
+                                                                        <ArrowUpRight className={`h-5 w-5 ${isPaid ? 'text-success' : 'text-orange-500'}`} />
                                                                     </div>
                                                                     <div>
-                                                                        <h3 className="font-semibold text-foreground">{group.name}</h3>
+                                                                        <h3 className="font-semibold text-foreground">
+                                                                            {isPaid ? 'Retiro Recibido' : 'Solicitud de Retiro en Proceso'}
+                                                                        </h3>
                                                                         <p className="text-xs text-muted-foreground">
-                                                                            {new Date(group.latestDate).toLocaleDateString("es-DO", { 
-                                                                                day: 'numeric', 
-                                                                                month: 'long', 
-                                                                                year: 'numeric' 
+                                                                            Campaña: {item.campaignName} • {new Date(item.latestDate).toLocaleDateString("es-DO", {
+                                                                                day: 'numeric',
+                                                                                month: 'long',
+                                                                                year: 'numeric'
                                                                             })}
-                                                                            {group.transactions.length > 1 && ` • ${group.transactions.length} movimientos`}
                                                                         </p>
                                                                     </div>
                                                                 </div>
 
                                                                 <div className="flex items-center gap-6">
                                                                     <div className="text-right hidden sm:block">
-                                                                        <p className="text-sm font-medium text-muted-foreground">Total Neto</p>
-                                                                        <p className="font-bold text-lg text-primary">+${group.totalNet.toLocaleString()}</p>
+                                                                        <p className="text-sm font-medium text-muted-foreground">Monto Retirado</p>
+                                                                        <p className={`font-bold text-lg ${isPaid ? 'text-success' : 'text-orange-600'}`}>
+                                                                            -${(item.netAmount || 0).toLocaleString()}
+                                                                        </p>
                                                                     </div>
                                                                     <div className="flex items-center gap-2">
+                                                                        {isPaid && item.receiptUrl && (
+                                                                            <Button variant="outline" size="sm" className="h-8 gap-1.5" asChild>
+                                                                                <a href={item.receiptUrl} target="_blank" rel="noopener noreferrer">
+                                                                                    <ExternalLink className="w-3.5 h-3.5" />
+                                                                                    <span className="text-[10px] uppercase font-bold">Ver Recibo</span>
+                                                                                </a>
+                                                                            </Button>
+                                                                        )}
                                                                         <Badge
                                                                             variant="outline"
-                                                                            className={`capitalize text-[10px] px-2 py-0 ${statusColors[group.status] || ''}`}
+                                                                            className={`capitalize text-[10px] px-2 py-0 ${statusColors[item.status] || ''}`}
                                                                         >
-                                                                            {statusLabels[group.status] || group.status}
+                                                                            {statusLabels[item.status] || item.status}
                                                                         </Badge>
-                                                                        {isExpanded ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
                                                                     </div>
                                                                 </div>
                                                             </div>
-
-                                                            {/* Transactions Detail */}
-                                                            {isExpanded && (
-                                                                <div className="px-4 pb-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                                    <div className="h-px bg-border/50 mb-4" />
-                                                                    {group.transactions.map((payment: any) => {
-                                                                        const isExchange = payment.type === 'exchange';
-                                                                        const isMaxReward = !isExchange && payment.grossAmount >= payment.maxReward && payment.maxReward > 0;
-                                                                        
-                                                                        return (
-                                                                            <div key={payment.id} className="bg-background/40 border border-border/30 rounded-lg p-4">
-                                                                                <div className="flex items-start justify-between">
-                                                                                    <div className="flex items-center gap-3">
-                                                                                        <div className={`p-2 rounded-full ${isExchange ? 'bg-purple-500/10' : 'bg-green-500/10'}`}>
-                                                                                            {isExchange ? <Gift className="h-4 w-4 text-purple-500" /> : <ArrowDownLeft className="h-4 w-4 text-green-500" />}
-                                                                                        </div>
-                                                                                        <div>
-                                                                                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                                                                                {isExchange ? 'Intercambio' : 'Pago Monetario'}
-                                                                                            </span>
-                                                                                            {isMaxReward && (
-                                                                                                <Badge className="ml-2 bg-yellow-500/10 text-yellow-600 border-yellow-500/20 hover:bg-yellow-500/20 transition-colors animate-pulse">
-                                                                                                    <Sparkles className="w-3 h-3 mr-1" />
-                                                                                                    ¡Pago Máximo!
-                                                                                                </Badge>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-
-                                                                                {!isExchange ? (
-                                                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 bg-muted/30 p-3 rounded-lg border border-border/20">
-                                                                                        <div className="space-y-1">
-                                                                                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Monto Bruto</p>
-                                                                                            <p className="font-semibold text-foreground text-sm">${(payment.grossAmount || 0).toLocaleString()}</p>
-                                                                                        </div>
-                                                                                        <div className="space-y-1 border-l border-border/50 pl-4">
-                                                                                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Fee Rela ({payment.feePercent}%)</p>
-                                                                                            <p className="font-semibold text-destructive text-sm">-${(payment.feeAmount || 0).toLocaleString()}</p>
-                                                                                        </div>
-                                                                                        <div className="space-y-1 border-l border-border/50 pl-4">
-                                                                                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Monto Neto</p>
-                                                                                            <p className="font-bold text-success text-sm">+${(payment.netAmount || 0).toLocaleString()}</p>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                ) : (
-                                                                                    <div className="mt-3 bg-purple-500/5 p-3 rounded-lg border border-purple-500/10">
-                                                                                        <p className="text-sm text-purple-700 font-medium leading-relaxed">
-                                                                                            🎁 {payment.exchangeDetails || "Detalles del intercambio"}
-                                                                                        </p>
-                                                                                    </div>
-                                                                                )}
-                                                                                
-                                                                                {!isExchange && payment.minReward && payment.maxReward && (
-                                                                                    <p className="text-[10px] text-muted-foreground mt-3 text-center sm:text-left italic">
-                                                                                        Basado en rango de campaña: ${payment.minReward.toLocaleString()} – ${payment.maxReward.toLocaleString()}
-                                                                                    </p>
-                                                                                )}
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     );
-                                                });
+                                                }
+
+                                                const group = item;
+                                                const isExpanded = expandedCampaigns.includes(group.id);
+                                                
+                                                return (
+                                                    <div key={group.id} className="border border-border/50 rounded-xl overflow-hidden bg-muted/20 hover:bg-muted/30 transition-all duration-300">
+                                                        <div 
+                                                            className="flex items-center justify-between p-4 cursor-pointer select-none"
+                                                            onClick={() => {
+                                                                setExpandedCampaigns(prev => 
+                                                                    prev.includes(group.id) 
+                                                                        ? prev.filter(id => id !== group.id)
+                                                                        : [...prev, group.id]
+                                                                );
+                                                            }}
+                                                        >
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="p-2.5 rounded-xl bg-primary/10">
+                                                                    <TrendingUp className="h-5 w-5 text-primary" />
+                                                                </div>
+                                                                <div>
+                                                                    <h3 className="font-semibold text-foreground">{group.name}</h3>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {new Date(group.latestDate).toLocaleDateString("es-DO", { 
+                                                                            day: 'numeric', 
+                                                                            month: 'long', 
+                                                                            year: 'numeric' 
+                                                                        })}
+                                                                        {group.transactions.length > 1 && ` • ${group.transactions.length} movimientos`}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-6">
+                                                                <div className="text-right hidden sm:block">
+                                                                    <p className="text-sm font-medium text-muted-foreground">Total Neto</p>
+                                                                    <p className="font-bold text-lg text-primary">+${group.totalNet.toLocaleString()}</p>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className={`capitalize text-[10px] px-2 py-0 ${statusColors[group.status] || ''}`}
+                                                                    >
+                                                                        {statusLabels[group.status] || group.status}
+                                                                    </Badge>
+                                                                    {isExpanded ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {isExpanded && (
+                                                            <div className="px-4 pb-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                                <div className="h-px bg-border/50 mb-4" />
+                                                                {group.transactions.map((payment: any) => {
+                                                                    const isExchange = payment.type === 'exchange';
+                                                                    const isMaxReward = !isExchange && payment.grossAmount >= payment.maxReward && payment.maxReward > 0;
+                                                                    
+                                                                    return (
+                                                                        <div key={payment.id} className="bg-background/40 border border-border/30 rounded-lg p-4">
+                                                                            <div className="flex items-start justify-between">
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <div className={`p-2 rounded-full ${isExchange ? 'bg-purple-500/10' : 'bg-green-500/10'}`}>
+                                                                                        {isExchange ? <Gift className="h-4 w-4 text-purple-500" /> : <ArrowDownLeft className="h-4 w-4 text-green-500" />}
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                                                            {isExchange ? 'Intercambio' : 'Pago Monetario'}
+                                                                                        </span>
+                                                                                        {isMaxReward && (
+                                                                                            <Badge className="ml-2 bg-yellow-500/10 text-yellow-600 border-yellow-500/20 hover:bg-yellow-500/20 transition-colors animate-pulse">
+                                                                                                <Sparkles className="w-3 h-3 mr-1" />
+                                                                                                ¡Pago Máximo!
+                                                                                            </Badge>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {!isExchange ? (
+                                                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 bg-muted/30 p-3 rounded-lg border border-border/20">
+                                                                                    <div className="space-y-1">
+                                                                                        <p className="text-[10px] text-muted-foreground uppercase font-medium">Monto Bruto</p>
+                                                                                        <p className="font-semibold text-foreground text-sm">${(payment.grossAmount || 0).toLocaleString()}</p>
+                                                                                    </div>
+                                                                                    <div className="space-y-1 border-l border-border/50 pl-4">
+                                                                                        <p className="text-[10px] text-muted-foreground uppercase font-medium">Fee Rela ({payment.feePercent}%)</p>
+                                                                                        <p className="font-semibold text-destructive text-sm">-${(payment.feeAmount || 0).toLocaleString()}</p>
+                                                                                    </div>
+                                                                                    <div className="space-y-1 border-l border-border/50 pl-4">
+                                                                                        <p className="text-[10px] text-muted-foreground uppercase font-medium">Monto Neto</p>
+                                                                                        <p className="font-bold text-success text-sm">+${(payment.netAmount || 0).toLocaleString()}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="mt-3 bg-purple-500/5 p-3 rounded-lg border border-purple-500/10">
+                                                                                    <p className="text-sm text-purple-700 font-medium leading-relaxed">
+                                                                                        🎁 {payment.exchangeDetails || "Detalles del intercambio"}
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+                                                                            
+                                                                            {!isExchange && payment.minReward && payment.maxReward && (
+                                                                                <p className="text-[10px] text-muted-foreground mt-3 text-center sm:text-left italic">
+                                                                                    Basado en rango de campaña: ${payment.minReward.toLocaleString()} – ${payment.maxReward.toLocaleString()}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            });
                                         })()}
                                     </div>
                                 ) : (
