@@ -12,6 +12,7 @@ import { collection, query, where, getDocs, orderBy, limit, doc, getDoc, addDoc,
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { toast } from "sonner";
+import { startOfMonth, endOfMonth, isAfter, isBefore } from "date-fns";
 
 export default function CreatorDashboard() {
   const { user } = useAuth();
@@ -113,22 +114,59 @@ export default function CreatorDashboard() {
         const applicationsSnap = await getDocs(applicationsQuery);
         const appliedCampaignIds = applicationsSnap.docs.map(doc => doc.data().campaignId);
 
-        // Count active campaigns (approved applications) by verifying campaign existence
+        // Count active campaigns (approved applications) by verifying campaign existence and completion status
         const approvedApps = applicationsSnap.docs.filter(
           doc => doc.data().status === "approved"
         );
 
+        let activeCount = 0;
         const activePromises = approvedApps.map(async (appDoc) => {
           try {
-            const campaignDoc = await getDoc(doc(db, "campaigns", appDoc.data().campaignId));
-            return campaignDoc.exists();
+            const campaignId = appDoc.data().campaignId;
+            const campaignDoc = await getDoc(doc(db, "campaigns", campaignId));
+            
+            if (campaignDoc.exists()) {
+              const campaignData = campaignDoc.data();
+              
+              // Check completion status (similar to ActiveCampaigns.tsx)
+              const submissionsQuery = query(
+                collection(db, "content_submissions"),
+                where("campaignId", "==", campaignId),
+                where("creatorId", "==", user.uid)
+              );
+              const submissionsSnap = await getDocs(submissionsQuery);
+              const submissions = submissionsSnap.docs.map(d => d.data());
+              
+              // Group by slot
+              const slotsMap = new Map();
+              submissions.forEach(s => {
+                const slotId = `${s.deliverableType}_${s.deliverableNumber}`;
+                if (!slotsMap.has(slotId) || (s.updatedAt || s.createdAt) > (slotsMap.get(slotId).updatedAt || slotsMap.get(slotId).createdAt)) {
+                  slotsMap.set(slotId, s);
+                }
+              });
+              
+              const latestSubmissions = Array.from(slotsMap.values());
+              const deliverables = campaignData.deliverables || [];
+              const totalRequired = deliverables
+                .filter((d: any) => d.required)
+                .reduce((sum: number, d: any) => sum + (d.quantity || 1), 0);
+              
+              const totalApproved = latestSubmissions.filter(s => s.status === "approved").length;
+              
+              // If not completed, it's still active
+              if (totalApproved < totalRequired || totalRequired === 0) {
+                return true;
+              }
+            }
+            return false;
           } catch (e) {
             return false;
           }
         });
 
         const activeResults = await Promise.all(activePromises);
-        const activeCount = activeResults.filter(Boolean).length;
+        activeCount = activeResults.filter(Boolean).length;
 
         // 2.5 Fetch Invitations
         const invitationsQuery = query(
@@ -197,19 +235,40 @@ export default function CreatorDashboard() {
           ? Math.round(topOpportunities.reduce((sum, opp) => sum + opp.matchScore, 0) / topOpportunities.length)
           : 0;
 
-        // 5. Fetch Earnings
+        // 5. Fetch Earnings (Filtered by Current Month)
         const paymentsRef = collection(db, "users", user.uid, "payments");
         const paymentsSnap = await getDocs(paymentsRef);
+
+        const currentMonthStart = startOfMonth(new Date());
+        const currentMonthEnd = endOfMonth(new Date());
 
         let totalEarned = 0;
         let pendingEarnings = 0;
 
-        paymentsSnap.forEach((doc) => {
-          const data = doc.data();
-          if (data.status === 'completed') {
-            totalEarned += data.amount || 0;
-          } else if (data.status === 'pending') {
-            pendingEarnings += data.amount || 0;
+        paymentsSnap.forEach((paymentDoc) => {
+          const data = paymentDoc.data();
+          let paymentDate: Date;
+          
+          if (data.createdAt) {
+            paymentDate = new Date(data.createdAt);
+          } else if (data.date) {
+            paymentDate = new Date(data.date);
+          } else {
+            // Default to old date if no timestamp found (so it doesn't show in current month)
+            paymentDate = new Date(0);
+          }
+
+          const isInCurrentMonth = (
+            (isAfter(paymentDate, currentMonthStart) || paymentDate.getTime() === currentMonthStart.getTime()) && 
+            (isBefore(paymentDate, currentMonthEnd) || paymentDate.getTime() === currentMonthEnd.getTime())
+          );
+
+          if (isInCurrentMonth) {
+            if (data.status === 'completed') {
+              totalEarned += data.amount || 0;
+            } else if (data.status === 'pending') {
+              pendingEarnings += data.amount || 0;
+            }
           }
         });
 
