@@ -29,14 +29,14 @@ interface RequestEditsDialogProps {
 }
 
 const editCategories = [
-    { id: "lighting", label: "Improve Lighting" },
-    { id: "audio", label: "Audio Quality" },
-    { id: "framing", label: "Better Framing" },
-    { id: "caption", label: "Caption Changes" },
-    { id: "voiceover", label: "Add Voiceover" },
-    { id: "music", label: "Different Music" },
-    { id: "reshoot", label: "Needs Reshoot" },
-    { id: "other", label: "Other" },
+    { id: "lighting", label: "Mejorar Iluminación" },
+    { id: "audio", label: "Mejorar Audio" },
+    { id: "framing", label: "Mejorar Encuadre" },
+    { id: "caption", label: "Cambios en el Texto" },
+    { id: "voiceover", label: "Añadir Voz en Off" },
+    { id: "music", label: "Cambiar Música" },
+    { id: "reshoot", label: "Volver a Grabar" },
+    { id: "other", label: "Otro" },
 ];
 
 export function RequestEditsDialog({
@@ -52,34 +52,44 @@ export function RequestEditsDialog({
 
     const handleSubmit = async () => {
         if (!feedback.trim()) {
-            toast.error("Please provide feedback for the creator");
+            toast.error("Por favor, provee una corrección específica para el creador");
             return;
         }
 
         if (!user) {
-            toast.error("You must be logged in");
+            toast.error("Debes iniciar sesión");
             return;
         }
 
         setLoading(true);
         try {
+            const categoryLabels = selectedCategories
+                .map(catId => editCategories.find(c => c.id === catId)?.label)
+                .filter(Boolean);
+            
+            const categoryText = categoryLabels.length > 0 
+                ? `Tipos de mejora sugeridos: ${categoryLabels.join(", ")}\n\nDetalles:\n` 
+                : "";
+                
+            const finalNotes = categoryText + feedback.trim();
+
             // Update content status to revision_requested and add to revisionHistory
             await updateDoc(doc(db, "content_submissions", content.id), {
                 status: "revision_requested",
                 revisionHistory: arrayUnion({
                     requestedAt: new Date().toISOString(),
                     requestedBy: user.uid,
-                    notes: feedback.trim()
+                    notes: finalNotes
                 })
             });
 
-            toast.success("Edit request sent to creator");
+            toast.success("Corrección solicitada exitosamente");
             setFeedback("");
             setSelectedCategories([]);
             onSuccess();
             onClose();
         } catch (error) {
-            toast.error("Failed to send edit request");
+            toast.error("Hubo un error al solicitar la corrección");
         } finally {
             setLoading(false);
         }
@@ -99,10 +109,10 @@ export function RequestEditsDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <AlertCircle className="w-5 h-5 text-orange-500" />
-                        Request Edits
+                        Solicitar Corrección
                     </DialogTitle>
                     <DialogDescription>
-                        Provide specific feedback to the creator on what needs to be improved.
+                        Frecuentemente detalla los cambios o mejoras que buscas en el entregable.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -128,7 +138,7 @@ export function RequestEditsDialog({
 
                     {/* Edit Categories */}
                     <div>
-                        <Label className="mb-3 block">What needs improvement? (optional)</Label>
+                        <Label className="mb-3 block">¿Qué necesita ser arreglado? (opcional)</Label>
                         <div className="grid grid-cols-2 gap-3">
                             {editCategories.map(category => (
                                 <div
@@ -154,23 +164,23 @@ export function RequestEditsDialog({
                     {/* Feedback */}
                     <div>
                         <Label htmlFor="feedback" className="mb-2 block">
-                            Detailed Feedback *
+                            Detalles de la corrección *
                         </Label>
                         <Textarea
                             id="feedback"
-                            placeholder="Be specific about what needs to change. Example: 'Please reshoot with better natural lighting and add trending audio in the background...'"
+                            placeholder="Sé específico sobre qué quieres cambiar. Ejemplo: 'Por favor, grábalo con mejor iluminación natural y añade el audio en tendencia.'"
                             value={feedback}
                             onChange={(e) => setFeedback(e.target.value)}
                             className="min-h-[120px]"
                         />
                         <p className="text-xs text-muted-foreground mt-2">
-                            Clear, constructive feedback helps creators deliver exactly what you need.
+                            Aportar feedback directo y constructivo le ayuda a los creadores a entenderte mejor.
                         </p>
                     </div>
 
                     {selectedCategories.length > 0 && (
                         <div className="flex flex-wrap gap-2">
-                            <span className="text-sm text-muted-foreground">Selected:</span>
+                            <span className="text-sm text-muted-foreground">Seleccionado:</span>
                             {selectedCategories.map(catId => {
                                 const category = editCategories.find(c => c.id === catId);
                                 return (
@@ -185,7 +195,7 @@ export function RequestEditsDialog({
 
                 <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
                     <Button variant="ghost" onClick={onClose} disabled={loading}>
-                        Cancel
+                        Cancelar
                     </Button>
                     <Button
                         variant="default"
@@ -193,7 +203,7 @@ export function RequestEditsDialog({
                         disabled={loading || !feedback.trim()}
                     >
                         {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                        Send Edit Request
+                        Enviar Solicitud
                     </Button>
                 </div>
             </DialogContent>
