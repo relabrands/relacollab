@@ -19,6 +19,7 @@ interface CampaignWithDeliverables {
     type: string;
     quantity: number;
     required: boolean;
+    platform?: "instagram" | "tiktok";
   }>;
   netPayment?: number;
 }

@@ -29,6 +29,7 @@ interface DeliverableItem {
     type: string;
     quantity: number;
     required: boolean;
+    platform?: "instagram" | "tiktok";
 }
 
 interface CampaignWithDeliverables {
@@ -116,6 +117,7 @@ export function DeliverableSubmissionDialog({
             number: number;
             required: boolean;
             key: string;
+            platform?: "instagram" | "tiktok";
             submitted?: SubmittedContent;
         }> = [];
 
@@ -137,6 +139,7 @@ export function DeliverableSubmissionDialog({
                     number: counter,
                     required: deliverable.required,
                     key,
+                    platform: deliverable.platform,
                     submitted: existing,
                 });
             }
@@ -528,28 +531,30 @@ export function DeliverableSubmissionDialog({
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                                                        <Button
-                                                            variant={selectedMedia ? "default" : "outline"}
-                                                            size="sm"
-                                                            onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
-                                                            disabled={loading}
-                                                            className={`${selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? "bg-green-600 hover:bg-green-700 text-white" : ""} w-full md:w-auto justify-center`}
-                                                        >
-                                                            {selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? (
-                                                                <>
-                                                                    <Check className="w-4 h-4 mr-2" />
-                                                                    Cambiar IG
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Upload className="w-4 h-4 mr-2" />
-                                                                    Seleccionar Instagram
-                                                                </>
-                                                            )}
-                                                        </Button>
+                                                        {(!slot.platform || slot.platform === "instagram") && (
+                                                            <Button
+                                                                variant={selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? "default" : "outline"}
+                                                                size="sm"
+                                                                onClick={() => handleOpenInstagramPicker(slot.key, slot.type)}
+                                                                disabled={loading}
+                                                                className={`${selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? "bg-green-600 hover:bg-green-700 text-white" : ""} w-full md:w-auto justify-center`}
+                                                            >
+                                                                {selectedMedia && (selectedMedia as any).platform !== 'tiktok' ? (
+                                                                    <>
+                                                                        <Check className="w-4 h-4 mr-2" />
+                                                                        Cambiar IG
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Upload className="w-4 h-4 mr-2" />
+                                                                        Seleccionar Instagram
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        )}
 
                                                         {/* Only show TikTok for video types */}
-                                                        {["Video", "Reel", "Post"].includes(slot.type) && (
+                                                        {(!slot.platform || slot.platform === "tiktok") && ["Video", "Reel", "Post"].includes(slot.type) && (
                                                             <Button
                                                                 variant={selectedMedia && (selectedMedia as any).platform === 'tiktok' ? "default" : "outline"}
                                                                 size="sm"
