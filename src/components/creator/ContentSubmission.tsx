@@ -415,15 +415,20 @@ export function ContentSubmission() {
                                         {submission.revisionHistory[submission.revisionHistory.length - 1].notes}
                                       </div>
                                       {submission.status === "revision_requested" && (
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          className="mt-3 w-full text-xs font-medium"
-                                          onClick={() => handleResubmit(campaign, submission)}
-                                        >
-                                          <Upload className="w-4 h-4 mr-1.5" />
-                                          Reenviar Contenido Corregido
-                                        </Button>
+                                        <div className="mt-3">
+                                          <p className="text-xs text-red-600/80 dark:text-red-400/80 mb-2 font-medium">
+                                            💡 Recuerda que puedes contactar a la marca mediante el chat flotante si necesitas aclarar alguna duda antes de volver a grabar.
+                                          </p>
+                                          <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            className="w-full text-xs font-medium"
+                                            onClick={() => handleResubmit(campaign, submission)}
+                                          >
+                                            <Upload className="w-4 h-4 mr-1.5" />
+                                            Reenviar Contenido Corregido
+                                          </Button>
+                                        </div>
                                       )}
                                     </div>
                                   )}
