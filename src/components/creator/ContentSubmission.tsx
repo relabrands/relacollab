@@ -373,7 +373,7 @@ export function ContentSubmission() {
                                 )}
                                 <div className="flex-1">
                                   <div className="font-medium">
-                                    {deliverable.type} #{deliverableNumber}
+                                    {deliverable.type} #{deliverableNumber} {deliverable.platform ? `- ${deliverable.platform.charAt(0).toUpperCase() + deliverable.platform.slice(1)}` : ""}
                                   </div>
                                   <div className="flex items-center gap-2 mt-1">
                                     <Badge variant={deliverable.required ? "default" : "outline"} className="text-xs">

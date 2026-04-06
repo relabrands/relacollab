@@ -464,7 +464,7 @@ export function DeliverableSubmissionDialog({
 
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-medium text-sm md:text-base">
-                                                        {slot.type} #{slot.number}
+                                                        {slot.type} #{slot.number} {slot.platform ? `- ${slot.platform.charAt(0).toUpperCase() + slot.platform.slice(1)}` : ""}
                                                     </div>
                                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                         <Badge variant={slot.required ? "default" : "outline"} className="text-[10px] md:text-xs">
