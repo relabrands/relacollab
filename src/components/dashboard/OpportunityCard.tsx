@@ -217,7 +217,7 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, onVie
                 if ((opportunity.status === 'expired' || (opportunity.endDate && new Date(opportunity.endDate) < new Date()))) {
                   return;
                 }
-                if (opportunity.isPending && onViewDetails) {
+                if (onViewDetails) {
                   onViewDetails();
                 } else {
                   handleApply(e);

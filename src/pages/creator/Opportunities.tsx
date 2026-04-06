@@ -570,6 +570,7 @@ export default function Opportunities() {
                     <OpportunityCard
                       opportunity={opportunity}
                       onAccept={(id) => handleApply(id)}
+                      onViewDetails={() => handleCardClick(opportunity)}
                     />
                     {/* Block interaction if applying */}
                     {processingId === opportunity.id && (

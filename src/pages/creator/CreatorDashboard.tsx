@@ -3,19 +3,29 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { OpportunityCard } from "@/components/dashboard/OpportunityCard";
+import { OpportunityDetailsDialog } from "@/components/dashboard/OpportunityDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Inbox, DollarSign, TrendingUp, CheckCircle, ArrowRight, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, limit, doc, getDoc, addDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
+import { toast } from "sonner";
 
 export default function CreatorDashboard() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [profileCompletion, setProfileCompletion] = useState(0);
   const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const handleCardClick = (opportunity: any) => {
+    setSelectedOpportunity(opportunity);
+    setIsDialogOpen(true);
+  };
   const [stats, setStats] = useState<{
     title: string;
     value: string | number;
@@ -162,6 +172,7 @@ export default function CreatorDashboard() {
           if (matchResult.score > 0 || isInvited) {
             matchedOpportunities.push({
               id: campaignId,
+              title: campaignData.name || "Campaña sin título",
               ...campaignData,
               matchScore: matchResult.score,
               matchBreakdown: matchResult.breakdown,
@@ -218,6 +229,108 @@ export default function CreatorDashboard() {
     fetchData();
   }, [user]);
 
+  const handleApply = async (campaignId: string) => {
+    if (!user || processingId) return;
+
+    // Find campaign details
+    const campaign = opportunities.find(op => op.id === campaignId);
+    if (!campaign) return;
+
+    setProcessingId(campaignId);
+
+    try {
+      const isInvitation = campaign.isInvited;
+      const invitationId = campaign.invitationId;
+
+      await addDoc(collection(db, "applications"), {
+        campaignId: campaignId,
+        creatorId: user.uid,
+        brandId: campaign.brandId,
+        status: isInvitation ? "approved" : "pending",
+        isInvitation: !!isInvitation,
+        createdAt: new Date().toISOString(),
+        campaignData: {
+          title: campaign.title,
+          name: campaign.name || campaign.title,
+          image: campaign.images?.[0] || ""
+        },
+        creatorData: {
+          id: user.uid,
+          email: user.email,
+          name: user.displayName,
+          avatar: user.photoURL
+        }
+      });
+
+      // Increment applicationCount on campaign (for non-invited applications)
+      if (!isInvitation) {
+        await updateDoc(doc(db, "campaigns", campaignId), {
+          applicationCount: increment(1)
+        });
+      }
+
+      if (isInvitation && invitationId) {
+        await updateDoc(doc(db, "invitations", invitationId), {
+          status: "accepted"
+        });
+
+        // Also increment approvedCount for accepted invitations
+        await updateDoc(doc(db, "campaigns", campaignId), {
+          approvedCount: increment(1)
+        });
+      }
+
+      // ====== CREATE CONTRACT IN FIRESTORE ======
+      try {
+        await addDoc(collection(db, "contracts"), {
+          campaignId: campaignId,
+          creatorId: user.uid,
+          brandId: campaign.brandId,
+          status: isInvitation ? "active" : "pending",
+          signedByCreatorAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          campaign: {
+            title: campaign.title || campaign.name || "",
+            description: campaign.description || "",
+            deliverables: campaign.deliverables || [],
+            compensationType: campaign.compensationType || campaign.rewardType || "exchange",
+            creatorPayment: campaign.creatorPayment || campaign.budget || 0,
+            exchangeDetails: campaign.exchangeDetails || "",
+            deadline: campaign.deadline || campaign.endDate || "",
+            location: campaign.location || "",
+          },
+          brand: {
+            displayName: campaign.brandName || campaign.brandProfile?.displayName || "Marca",
+            email: campaign.brandProfile?.email || "",
+            logo: campaign.brandLogo || "",
+          },
+          creator: {
+            displayName: user.displayName || user.email || "Creador",
+            email: user.email || "",
+            avatar: user.photoURL || "",
+          },
+        });
+      } catch (_contractError) {
+        // Contract creation failed silently — don't block the application
+      }
+
+      toast.success(campaign.isInvited ? "¡Invitación Aceptada!" : "¡Solicitud Enviada!", {
+        description: campaign.isInvited ? "Contrato firmado. Ahora estás colaborando en esta campaña." : "La marca ha sido notificada. Tu contrato se activará al ser aprobado.",
+      });
+
+      // Optimistically update UI
+      setOpportunities(prev => prev.filter(p => p.id !== campaignId));
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Ocurrió un error", {
+        description: "Por favor intenta de nuevo en un momento."
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
 
   if (loading) {
     return (
@@ -259,8 +372,17 @@ export default function CreatorDashboard() {
         {opportunities.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full overflow-hidden mb-8">
             {opportunities.map((opportunity) => (
-              <div key={opportunity.id} className="w-full">
-                 <OpportunityCard opportunity={opportunity} />
+              <div key={opportunity.id} className="w-full relative">
+                 <OpportunityCard 
+                   opportunity={opportunity} 
+                   onAccept={(id) => handleApply(id)}
+                   onViewDetails={() => handleCardClick(opportunity)} 
+                 />
+                 {processingId === opportunity.id && (
+                   <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-xl z-20 w-full h-full">
+                     <Loader2 className="animate-spin" />
+                   </div>
+                 )}
               </div>
             ))}
           </div>
@@ -301,6 +423,13 @@ export default function CreatorDashboard() {
           </div>
         )}
       </main>
+      
+      <OpportunityDetailsDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        opportunity={selectedOpportunity}
+        onAccept={() => selectedOpportunity && handleApply(selectedOpportunity.id)}
+      />
     </div>
   );
 }
