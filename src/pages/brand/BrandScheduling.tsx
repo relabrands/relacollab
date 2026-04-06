@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar as CalendarIcon, MapPin, Clock, Filter, Search, User, ChevronRight } from "lucide-react";
+import { format, isSameDay, parseISO } from "date-fns";
+import { CheckCircle, Clock, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Filter, Search, User } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { collection, query, where, getDocs, doc, getDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Link } from "react-router-dom";
-import { format, isSameDay } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,12 +55,12 @@ export default function BrandScheduling() {
                 const campaignsSnapshot = await getDocs(campaignsQuery);
                 const campaignIds: string[] = [];
 
-                campaignsSnapshot.docs.forEach(doc => {
-                    campaignIds.push(doc.id);
-                    campaignsList.push({ id: doc.id, name: doc.data().name });
+                for (const campaignDoc of campaignsSnapshot.docs) {
+                    const data = campaignDoc.data();
+                    campaignIds.push(campaignDoc.id);
+                    campaignsList.push({ id: campaignDoc.id, name: data.name });
 
-                    // Add Deadline Event
-                    const data = doc.data();
+                    // Add Deadline Event with Progress check
                     const deadlineField = data.deadline || data.endDate;
 
                     if (deadlineField) {
@@ -70,20 +71,53 @@ export default function BrandScheduling() {
                             deadlineDate = new Date(deadlineField);
                         }
 
-                        // Only add if future or recent past
-                        // newEvents.push({ ... }) -> We might want to see all deadlines?
-                        // Let's add them.
+                        // NEW: Calculate progress for this campaign
+                        let statsText = "Fecha Límite";
+                        let isAllCompleted = false;
+                        try {
+                            const appsQ = query(
+                                collection(db, "applications"),
+                                where("campaignId", "==", campaignDoc.id),
+                                where("status", "==", "approved")
+                            );
+                            const appsSnap = await getDocs(appsQ);
+                            const totalApprovedApps = appsSnap.size;
+                            
+                            if (totalApprovedApps > 0) {
+                                let totalDelivered = 0;
+                                for (const app of appsSnap.docs) {
+                                    const appData = app.data();
+                                    const subsQ = query(
+                                        collection(db, "content_submissions"),
+                                        where("campaignId", "==", campaignDoc.id),
+                                        where("creatorId", "==", appData.creatorId)
+                                    );
+                                    const subsSnap = await getDocs(subsQ);
+                                    const subs = subsSnap.docs.map(d => d.data());
+                                    
+                                    // Basic check: at least one approved submission per creator
+                                    // or check against deliverables count if needed.
+                                    // For brand summary, let's just see if they have approved content.
+                                    if (subs.some(s => s.status === "approved")) {
+                                        totalDelivered++;
+                                    }
+                                }
+                                statsText = `${totalDelivered}/${totalApprovedApps} Entregados`;
+                                isAllCompleted = totalDelivered >= totalApprovedApps;
+                            }
+                        } catch (e) {}
+
                         newEvents.push({
-                            id: `deadline_${doc.id}`,
+                            id: `deadline_${campaignDoc.id}`,
                             type: "deadline",
-                            title: `${data.name} (Fecha Límite)`,
+                            title: isAllCompleted ? `${data.name} (Completado)` : `${data.name} (${statsText})`,
                             creatorName: "Todos los Creadores",
                             date: deadlineDate,
-                            status: "active",
-                            campaignId: doc.id
+                            status: isAllCompleted ? "completed" : "active",
+                            campaignId: campaignDoc.id
                         });
                     }
-                });
+                }
 
                 setCampaigns(campaignsList);
 
@@ -255,15 +289,22 @@ export default function BrandScheduling() {
                                                     </div>
                                                 )}
 
-                                                <div>
+                                                <div className="flex-1 text-left">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <Badge variant={event.type === 'visit' ? "default" : "secondary"} className="text-xs">
-                                                            {event.type === 'visit' ? "Visita" : "Fecha Límite"}
+                                                        <Badge variant={event.type === 'visit' ? "default" : "secondary"}
+                                                            className={
+                                                                event.type === 'visit' 
+                                                                    ? "bg-blue-500 hover:bg-blue-600" 
+                                                                    : event.status === 'completed'
+                                                                        ? "bg-green-500 hover:bg-green-600 text-white"
+                                                                        : "bg-orange-500 hover:bg-orange-600 text-white"
+                                                            }>
+                                                            {event.type === 'visit' ? "Visita" : event.status === 'completed' ? "Completado" : "Fecha Límite"}
                                                         </Badge>
-                                                        {event.status === 'confirmed' && <Badge variant="default" className="text-xs bg-green-500 hover:bg-green-600">Confirmada</Badge>}
+                                                        {event.status === 'completed' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                                                        <span className="text-sm text-muted-foreground">{event.creatorName}</span>
                                                     </div>
                                                     <h3 className="font-semibold text-lg">{event.title}</h3>
-                                                    <p className="text-sm text-muted-foreground">{event.creatorName}</p>
 
                                                     {event.type === 'visit' && (
                                                         <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">

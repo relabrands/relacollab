@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Link } from "react-router-dom";
 import { format, isSameDay, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface ScheduleEvent {
     id: string;
@@ -96,41 +97,80 @@ export default function CreatorScheduling() {
                     const campaignId = appData.campaignId;
 
                     if (campaignId) {
-                        const campaignDoc = await getDoc(doc(db, "campaigns", campaignId));
-                        if (campaignDoc.exists()) {
-                            const campaignData = campaignDoc.data();
+                        try {
+                            const campaignDoc = await getDoc(doc(db, "campaigns", campaignId));
+                            if (campaignDoc.exists()) {
+                                const campaignData = campaignDoc.data();
 
-                            // Check for deadline or endDate
-                            const deadlineField = campaignData.deadline || campaignData.endDate;
+                                // Check for deadline or endDate
+                                const deadlineField = campaignData.deadline || campaignData.endDate;
 
-                            if (deadlineField) {
-                                let deadlineDate: Date;
-                                // Handle Timestamp or string
-                                if (deadlineField instanceof Timestamp) {
-                                    deadlineDate = deadlineField.toDate();
-                                } else {
-                                    deadlineDate = new Date(deadlineField);
+                                if (deadlineField) {
+                                    let deadlineDate: Date;
+                                    // Handle Timestamp or string
+                                    if (deadlineField instanceof Timestamp) {
+                                        deadlineDate = deadlineField.toDate();
+                                    } else {
+                                        deadlineDate = new Date(deadlineField);
+                                    }
+
+                                    // Fetch brand name
+                                    let brandName = campaignData.brandName || "Marca";
+                                    if (!brandName && campaignData.brandId) {
+                                        const bDoc = await getDoc(doc(db, "users", campaignData.brandId));
+                                        if (bDoc.exists()) brandName = bDoc.data().displayName || bDoc.data().brandName;
+                                    }
+
+                                    // NEW: Check content submission status for this campaign
+                                    let isCompleted = false;
+                                    try {
+                                        const submissionsQuery = query(
+                                            collection(db, "content_submissions"),
+                                            where("campaignId", "==", campaignId),
+                                            where("creatorId", "==", user.uid)
+                                        );
+                                        const submissionsSnap = await getDocs(submissionsQuery);
+                                        const submissions = submissionsSnap.docs.map(d => d.data());
+                                        
+                                        // Group by slot
+                                        const slotsMap = new Map();
+                                        submissions.forEach(s => {
+                                            const slotId = `${s.deliverableType}_${s.deliverableNumber}`;
+                                            if (!slotsMap.has(slotId) || (s.updatedAt || s.createdAt) > (slotsMap.get(slotId).updatedAt || slotsMap.get(slotId).createdAt)) {
+                                                slotsMap.set(slotId, s);
+                                            }
+                                        });
+                                        
+                                        const latestSubmissions = Array.from(slotsMap.values());
+                                        const deliverables = campaignData.deliverables || [];
+                                        const totalRequired = deliverables
+                                            .filter((d: any) => d.required)
+                                            .reduce((sum: number, d: any) => sum + (d.quantity || 1), 0);
+                                        
+                                        const totalApproved = latestSubmissions.filter(s => s.status === "approved").length;
+                                        
+                                        if (totalApproved >= totalRequired && totalRequired > 0) {
+                                            isCompleted = true;
+                                        }
+                                    } catch (e) {}
+
+                                    newEvents.push({
+                                        id: `deadline_${campaignId}`,
+                                        type: "deadline",
+                                        title: isCompleted ? `${campaignData.name} (Entregado)` : `${campaignData.name} (Fecha Límite)`,
+                                        brandName: brandName,
+                                        date: deadlineDate,
+                                        status: isCompleted ? "completed" : "active",
+                                        campaignId: campaignId
+                                    });
+                                    
+                                    // Only count as active delivery if not completed
+                                    if (!isCompleted) {
+                                        dCount++;
+                                    }
                                 }
-
-                                // Fetch brand name
-                                let brandName = campaignData.brandName || "Marca";
-                                if (!brandName && campaignData.brandId) {
-                                    const bDoc = await getDoc(doc(db, "users", campaignData.brandId));
-                                    if (bDoc.exists()) brandName = bDoc.data().displayName || bDoc.data().brandName;
-                                }
-
-                                newEvents.push({
-                                    id: `deadline_${campaignId}`,
-                                    type: "deadline",
-                                    title: `${campaignData.name} (Fecha Límite)`,
-                                    brandName: brandName,
-                                    date: deadlineDate,
-                                    status: "active",
-                                    campaignId: campaignId
-                                });
-                                dCount++;
                             }
-                        }
+                        } catch (e) {}
                     }
                 }
 
@@ -254,10 +294,17 @@ export default function CreatorScheduling() {
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <Badge variant={event.type === 'visit' ? "default" : "secondary"}
-                                                                className={event.type === 'visit' ? "bg-blue-500 hover:bg-blue-600" : "bg-orange-500 hover:bg-orange-600 text-white"}>
-                                                                {event.type === 'visit' ? "Visita" : "Fecha Límite"}
+                                                                className={
+                                                                    event.type === 'visit' 
+                                                                        ? "bg-blue-500 hover:bg-blue-600" 
+                                                                        : event.status === 'completed'
+                                                                            ? "bg-green-500 hover:bg-green-600 text-white"
+                                                                            : "bg-orange-500 hover:bg-orange-600 text-white"
+                                                                }>
+                                                                {event.type === 'visit' ? "Visita" : event.status === 'completed' ? "Contenido Entregado" : "Fecha Límite"}
                                                             </Badge>
                                                             {event.status === 'confirmed' && <Badge className="bg-green-500 hover:bg-green-600 border-transparent text-white text-xs">Confirmada</Badge>}
+                                                            {event.status === 'completed' && <CheckCircle className="w-4 h-4 text-green-500" />}
                                                             <span className="text-sm text-muted-foreground">{event.brandName}</span>
                                                         </div>
                                                         <h3 className="font-semibold text-lg">{event.title}</h3>
@@ -321,9 +368,14 @@ export default function CreatorScheduling() {
                                 {upcomingEvents.length > 0 ? (
                                     upcomingEvents.map(event => (
                                         <div key={`upcoming_${event.id}`} className="flex items-center gap-4 p-3 rounded-lg border bg-card/50 hover:bg-card transition-colors">
-                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${event.type === 'visit' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                                event.type === 'visit' 
+                                                    ? 'bg-blue-100 text-blue-600' 
+                                                    : event.status === 'completed'
+                                                        ? 'bg-green-100 text-green-600'
+                                                        : 'bg-orange-100 text-orange-600'
                                                 }`}>
-                                                {event.type === 'visit' ? <MapPin className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                                                {event.type === 'visit' ? <MapPin className="w-5 h-5" /> : event.status === 'completed' ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <h4 className="font-medium truncate">{event.title}</h4>
@@ -331,8 +383,11 @@ export default function CreatorScheduling() {
                                                     {format(event.date, "MMM d")} • {event.brandName}
                                                 </p>
                                             </div>
-                                            <Badge variant="outline" className="ml-2">
-                                                {event.type === 'visit' ? 'Visita' : 'Fecha Límite'}
+                                            <Badge variant="outline" className={cn(
+                                                "ml-2",
+                                                event.status === 'completed' && "border-green-500 text-green-600 bg-green-50"
+                                            )}>
+                                                {event.type === 'visit' ? 'Visita' : event.status === 'completed' ? 'Entregado' : 'Fecha Límite'}
                                             </Badge>
                                         </div>
                                     ))
