@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { Search, DollarSign, FileText, CheckCircle, Download, ExternalLink, Loader2 as Loader, Eye, Upload, CreditCard, Building2, User } from "lucide-react";
+import { Search, DollarSign, FileText, CheckCircle, Download, ExternalLink, Loader2 as Loader, Eye, Upload, CreditCard, Building2, User, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { collection, query, getDocs, doc, updateDoc, orderBy, getDoc, where, writeBatch, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -74,6 +74,7 @@ interface Payout {
     paidAt?: any;
     createdAt: any;
     receiptUrl?: string;
+    exchangeDetails?: string;
     // Bank details fetched on demand
     bankDetails?: {
         bankName: string;
@@ -160,7 +161,8 @@ export default function AdminFinance() {
                 return {
                     id: doc.id,
                     ...data,
-                    amount: data.netAmount || data.amount || 0
+                    amount: (data.type === 'exchange') ? 0 : (data.netAmount || data.amount || 0),
+                    exchangeDetails: data.exchangeDetails || "Producto/Servicio"
                 };
             }) as Payout[];
 
@@ -593,14 +595,26 @@ export default function AdminFinance() {
                                             ) : (
                                                 groupedPayouts.map((group) => (
                                                     <tr key={group.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                                                        <td className="p-4">
+                                                        <td className="p-4 font-medium">
                                                             {group.payouts.length > 1 ? (
                                                                 <div className="flex flex-col">
-                                                                    <span className="font-medium text-primary">Transfer Bundle</span>
-                                                                    <span className="text-xs text-muted-foreground">{group.payouts.length} campaigns combined</span>
+                                                                    <span>Transfer Bundle</span>
+                                                                    <span className="text-[10px] text-muted-foreground">({group.payouts.length} campaigns combined)</span>
                                                                 </div>
                                                             ) : (
-                                                                <span className="font-medium">{group.payouts[0]?.campaignName || "Unknown"}</span>
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-semibold">{group.payouts[0].campaignName}</span>
+                                                                    {group.payouts[0].type === 'exchange' ? (
+                                                                        <div className="flex items-center gap-1.5 mt-1">
+                                                                            <Gift className="w-3 h-3 text-primary" />
+                                                                            <span className="text-[11px] text-primary font-medium bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+                                                                                {group.payouts[0].exchangeDetails}
+                                                                            </span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-[10px] text-muted-foreground uppercase tracking-tight font-medium mt-0.5">Campaña Monetaria</span>
+                                                                    )}
+                                                                </div>
                                                             )}
                                                         </td>
                                                         <td className="p-4">{group.creatorName}</td>
@@ -792,14 +806,14 @@ export default function AdminFinance() {
 
                 {/* --- Payout Details Dialog --- */}
                 <Dialog open={isPayoutDetailsOpen} onOpenChange={setIsPayoutDetailsOpen}>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle>{selectedPayoutGroup?.status === 'paid' ? 'Payout Details' : 'Process Payout'}</DialogTitle>
+                    <DialogContent className="max-w-2xl p-0 overflow-hidden flex flex-col max-h-[90vh]">
+                        <DialogHeader className="p-6 pb-2">
+                            <DialogTitle>{selectedPayoutGroup?.status === 'paid' || selectedPayoutGroup?.status === 'completed' ? 'Payout Details' : 'Process Payout'}</DialogTitle>
                             <DialogDescription>Review distribution and bank details.</DialogDescription>
                         </DialogHeader>
 
                         {selectedPayoutGroup && (
-                            <div className="space-y-6 mt-2">
+                            <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-6">
                                 {/* Amount & Summary */}
                                 <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/20">
                                     <div>
@@ -815,11 +829,22 @@ export default function AdminFinance() {
                                 {/* Campaign Distribution Breakdown */}
                                 <div className="space-y-3">
                                     <h4 className="font-semibold text-sm text-muted-foreground px-1">Campaign Distribution</h4>
-                                    <div className="bg-muted/30 rounded-lg p-3 space-y-2 border border-border">
-                                        {selectedPayoutGroup.payouts.map((p, idx) => (
-                                            <div key={p.id} className="flex justify-between items-center text-sm">
-                                                <span className="text-foreground">{p.campaignName}</span>
-                                                <span className="font-medium">{formatCurrency(p.amount)}</span>
+                                    <div className="bg-muted/30 rounded-xl p-4 space-y-3 border border-border/50">
+                                        {selectedPayoutGroup.payouts.map((p) => (
+                                            <div key={p.id} className="flex justify-between items-start text-sm gap-4">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-foreground font-semibold">{p.campaignName}</span>
+                                                    {p.type === 'exchange' && (
+                                                        <div className="flex items-center gap-1.5 text-[11px] text-primary font-medium">
+                                                            <Gift className="w-3.5 h-3.5" />
+                                                            <span>{p.exchangeDetails}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="font-bold text-md block">{formatCurrency(p.amount)}</span>
+                                                    {p.type === 'exchange' && <span className="text-[10px] text-muted-foreground uppercase">Intercambio</span>}
+                                                </div>
                                             </div>
                                         ))}
                                         <div className="h-px bg-border my-1" />
@@ -840,29 +865,29 @@ export default function AdminFinance() {
                                     {isLoadingBankDetails ? (
                                         <div className="p-8 flex justify-center"><Loader className="animate-spin w-6 h-6" /></div>
                                     ) : selectedPayoutGroup.bankDetails ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-xl">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-xl border border-border/50">
                                             <div>
-                                                <Label className="text-xs text-muted-foreground">Bank</Label>
-                                                <p className="font-medium">{selectedPayoutGroup.bankDetails.bankName}</p>
+                                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Bank</Label>
+                                                <p className="font-semibold">{selectedPayoutGroup.bankDetails.bankName}</p>
                                             </div>
                                             <div>
-                                                <Label className="text-xs text-muted-foreground">Account Type</Label>
-                                                <p className="font-medium capitalize">{selectedPayoutGroup.bankDetails.accountType}</p>
+                                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Account Type</Label>
+                                                <p className="font-semibold capitalize">{selectedPayoutGroup.bankDetails.accountType}</p>
                                             </div>
                                             <div>
-                                                <Label className="text-xs text-muted-foreground">Account Number</Label>
+                                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Account Number</Label>
                                                 <div className="flex items-center gap-2">
-                                                    <p className="font-mono font-medium text-lg">{selectedPayoutGroup.bankDetails.accountNumber}</p>
+                                                    <p className="font-mono font-bold text-lg text-primary">{selectedPayoutGroup.bankDetails.accountNumber}</p>
                                                 </div>
                                             </div>
                                             <div>
-                                                <Label className="text-xs text-muted-foreground">ID (RNC/Cedula)</Label>
-                                                <p className="font-medium">{selectedPayoutGroup.bankDetails.identityDocument}</p>
+                                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">ID (RNC/Cedula)</Label>
+                                                <p className="font-semibold">{selectedPayoutGroup.bankDetails.identityDocument}</p>
                                             </div>
-                                            <div className="col-span-2">
-                                                <Label className="text-xs text-muted-foreground">Account Holder</Label>
-                                                <p className="font-medium flex items-center gap-2">
-                                                    <User className="w-3 h-3" />
+                                            <div className="col-span-1 md:col-span-2">
+                                                <Label className="text-xs text-muted-foreground uppercase tracking-wider">Account Holder</Label>
+                                                <p className="font-semibold flex items-center gap-2 text-md">
+                                                    <User className="w-4 h-4 text-primary" />
                                                     {selectedPayoutGroup.bankDetails.accountHolder}
                                                 </p>
                                             </div>
@@ -911,13 +936,14 @@ export default function AdminFinance() {
                             </div>
                         )}
 
-                        <DialogFooter className="gap-2">
-                            <Button variant="outline" onClick={() => setIsPayoutDetailsOpen(false)}>Cancel</Button>
+                        <DialogFooter className="p-6 pt-2 border-t flex-col sm:flex-row gap-2">
+                            <Button variant="outline" onClick={() => setIsPayoutDetailsOpen(false)} className="w-full sm:w-auto">Cancel</Button>
                             {selectedPayoutGroup?.status !== 'paid' && selectedPayoutGroup?.status !== 'completed' && (
                                 <Button
                                     variant="hero"
                                     onClick={handleMarkPayoutPaid}
                                     disabled={isSubmittingPayout || !payoutReceiptUrl}
+                                    className="w-full sm:w-auto"
                                 >
                                     {isSubmittingPayout && <Loader className="w-4 h-4 mr-2 animate-spin" />}
                                     Mark all as Paid
