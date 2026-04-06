@@ -28,7 +28,10 @@ import {
   BarChart2,
   Edit,
   Star,
-  MessageSquareShare
+  MessageSquareShare,
+  Clock,
+  AlertCircle,
+  CheckCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { addDoc, updateDoc, getDocs } from "firebase/firestore";
@@ -41,6 +44,7 @@ import { RequestEditsDialog } from "@/components/brand/RequestEditsDialog";
 
 interface ContentItem {
   id: string;
+  campaignId: string;
   creatorId: string;
   creatorName: string;
   creatorAvatar: string;
@@ -61,6 +65,13 @@ interface ContentItem {
     interactions: number;
     updatedAt?: string;
   };
+  revisionHistory?: {
+    requestedAt: string;
+    requestedBy: string;
+    notes: string;
+    previousMediaUrl?: string;
+    resubmittedAt?: string;
+  }[];
 }
 
 interface ContentCardProps {
@@ -87,6 +98,7 @@ function ContentCard({ content, onStatusChange, onApproveClick, onRefreshMetrics
   };
 
   const [imgError, setImgError] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   return (
     <Card className="glass-card overflow-hidden group hover:shadow-elevated transition-all duration-300">
@@ -254,20 +266,67 @@ function ContentCard({ content, onStatusChange, onApproveClick, onRefreshMetrics
           </div>
         )}
 
-        {/* Submitted Date */}
-        <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
-            {content.submittedAt}
+          {/* Submitted Date */}
+          <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {content.submittedAt}
+            </div>
+            {content.metrics?.updatedAt && (
+              <span className="text-[10px] opacity-70">
+                Actualizado {new Date(content.metrics.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
           </div>
-          {content.metrics?.updatedAt && (
-            <span className="text-[10px] opacity-70">
-              Actualizado {new Date(content.metrics.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
+
+          {/* History Collapsible */}
+          {content.revisionHistory && content.revisionHistory.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowHistory(!showHistory); }}
+                className="flex items-center justify-center w-full gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                <Clock className="w-3.5 h-3.5" />
+                {showHistory ? "Ocultar Historial" : `Ver Historial (${content.revisionHistory.length})`}
+              </button>
+              
+              {showHistory && (
+                <div className="mt-3 space-y-3 max-h-[220px] overflow-y-auto pr-1">
+                   {content.revisionHistory.map((rev, index) => (
+                      <div key={index} className="flex flex-col gap-2 text-xs">
+                        <div className="p-2.5 bg-red-50 dark:bg-red-950/20 rounded-md border border-red-100 dark:border-red-900/30">
+                           <div className="flex items-center gap-1.5 mb-1.5">
+                             <AlertCircle className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                             <span className="font-semibold text-red-800 dark:text-red-300">Revisión #{index + 1}</span>
+                             <span className="ml-auto text-[10px] text-red-600/70">{new Date(rev.requestedAt).toLocaleDateString()}</span>
+                           </div>
+                           <div className="text-red-700/90 dark:text-red-400/90 bg-white/50 dark:bg-black/20 p-2 rounded whitespace-pre-wrap">{rev.notes}</div>
+                        </div>
+                        
+                        {rev.resubmittedAt && (
+                           <div className="p-2.5 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-100 dark:border-blue-900/30 ml-4 relative">
+                             <div className="absolute top-0 left-[-16px] w-[12px] h-[50%] border-l-2 border-b-2 border-blue-200 dark:border-blue-800/50 rounded-bl-lg"></div>
+                             <div className="flex items-center gap-1.5 mb-1">
+                               <CheckCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                               <span className="font-semibold text-blue-800 dark:text-blue-300">Contenido Reenviado</span>
+                               <span className="ml-auto text-[10px] text-blue-600/70">{new Date(rev.resubmittedAt).toLocaleDateString()}</span>
+                             </div>
+                             {rev.previousMediaUrl && (
+                               <a href={rev.previousMediaUrl} target="_blank" rel="noopener noreferrer" className="mt-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline flex items-center gap-1">
+                                 <ExternalLink className="w-3 h-3" /> Ver entrega anterior
+                               </a>
+                             )}
+                           </div>
+                        )}
+                      </div>
+                   ))}
+                </div>
+              )}
+            </div>
           )}
-        </div>
-      </CardContent>
-    </Card >
+
+        </CardContent>
+      </Card >
   );
 }
 
@@ -354,7 +413,8 @@ export default function ContentLibrary() {
                 reach: sub.metrics?.reach || 0,
                 saved: sub.metrics?.saved || 0,
                 interactions: sub.metrics?.interactions || 0
-              }
+              },
+              revisionHistory: sub.revisionHistory || []
             } as ContentItem;
           })
         );

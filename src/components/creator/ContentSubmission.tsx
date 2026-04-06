@@ -418,19 +418,57 @@ export function ContentSubmission() {
                                     )}
                                   </div>
                                   {submission?.revisionHistory && submission.revisionHistory.length > 0 && (
-                                    <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/20 rounded-md border border-red-200">
-                                      <div className="flex items-center gap-1.5 mb-2">
-                                        <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                                        <span className="text-sm font-semibold text-red-800 dark:text-red-300">
-                                          Cambios Solicitados por la Marca
-                                        </span>
+                                    <div className="mt-4 space-y-3">
+                                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">
+                                        Historial de Cambios
                                       </div>
-                                      <div className="text-sm text-red-700 dark:text-red-400 whitespace-pre-wrap bg-white/50 dark:bg-black/20 p-2.5 rounded border border-red-100 dark:border-red-900/30">
-                                        {submission.revisionHistory[submission.revisionHistory.length - 1].notes}
+                                      <div className="space-y-4">
+                                        {submission.revisionHistory.map((rev, index) => (
+                                          <div key={index} className="flex flex-col gap-2">
+                                            {/* Revision Requested */}
+                                            <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-md border border-red-200">
+                                              <div className="flex items-center gap-1.5 mb-2">
+                                                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                                <span className="text-sm font-semibold text-red-800 dark:text-red-300">
+                                                  Cambios Solicitados (Revisión #{index + 1})
+                                                </span>
+                                                <span className="text-xs text-red-600/70 ml-auto">
+                                                  {new Date(rev.requestedAt).toLocaleDateString()}
+                                                </span>
+                                              </div>
+                                              <div className="text-sm text-red-700 dark:text-red-400 whitespace-pre-wrap bg-white/50 dark:bg-black/20 p-2.5 rounded border border-red-100 dark:border-red-900/30">
+                                                {rev.notes}
+                                              </div>
+                                            </div>
+                                            
+                                            {/* Resubmission Response */}
+                                            {rev.resubmittedAt && (
+                                              <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 ml-4 relative">
+                                                <div className="absolute top-0 left-[-16px] w-[12px] h-[50%] border-l-2 border-b-2 border-blue-200 rounded-bl-lg"></div>
+                                                <div className="flex items-center gap-1.5 mb-2">
+                                                  <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                                  <span className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                                                    Contenido Reenviado
+                                                  </span>
+                                                  <span className="text-xs text-blue-600/70 ml-auto">
+                                                    {new Date(rev.resubmittedAt).toLocaleDateString()}
+                                                  </span>
+                                                </div>
+                                                {rev.previousMediaUrl && (
+                                                  <a href={rev.previousMediaUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center">
+                                                    <ExternalLink className="w-3 h-3 mr-1" />
+                                                    Ver entrega anterior
+                                                  </a>
+                                                )}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
                                       </div>
-                                      {submission.status === "revision_requested" && (
+
+                                      {(submission.status === "revision_requested" || submission.status === "needs_revision") && (
                                         <div className="mt-4">
-                                          <div className="mb-4 p-3 bg-red-100/60 dark:bg-red-900/40 rounded border border-red-200 dark:border-red-800/40 flex items-start gap-3">
+                                          <div className="mb-3 p-3 bg-red-100/60 dark:bg-red-900/40 rounded border border-red-200 dark:border-red-800/40 flex items-start gap-3">
                                             <MessageCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
                                             <div>
                                               <p className="text-sm text-red-900 dark:text-red-300 font-semibold mb-0.5">
