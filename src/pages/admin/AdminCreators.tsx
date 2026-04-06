@@ -256,8 +256,8 @@ export default function AdminCreators() {
               animate={{ opacity: 1, y: 0 }}
               className="glass-card overflow-hidden"
             >
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="w-full flex-1 min-w-0 overflow-x-auto">
+                <table className="w-full whitespace-nowrap">
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="text-left p-4 font-medium text-muted-foreground">Creator</th>
@@ -277,11 +277,11 @@ export default function AdminCreators() {
                             <img
                               src={creator.avatar}
                               alt={creator.name}
-                              className="w-10 h-10 rounded-xl object-cover"
+                              className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
                             />
                             <div>
-                              <div className="font-medium text-sm">{creator.name}</div>
-                              <div className="text-xs text-muted-foreground">{creator.email}</div>
+                              <div className="font-medium text-sm max-w-[200px] truncate" title={creator.name}>{creator.name}</div>
+                              <div className="text-xs text-muted-foreground max-w-[200px] truncate" title={creator.email}>{creator.email}</div>
                             </div>
                           </div>
                         </td>
@@ -297,7 +297,7 @@ export default function AdminCreators() {
                             }
                           >
                             <SelectTrigger className={`w-32 h-8 text-xs font-medium capitalize ${statusColors[creator.status] || "bg-muted"}`}>
-                              <SelectValue />
+                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="active">Active</SelectItem>

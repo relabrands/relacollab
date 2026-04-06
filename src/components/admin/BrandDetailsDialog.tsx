@@ -136,8 +136,15 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                                 </Badge>
                             </DialogTitle>
                             <div className="text-sm text-muted-foreground mt-1 flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                    <Mail className="w-3 h-3" /> {brand.email}
+                                <div className="flex flex-wrap items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <Mail className="w-3 h-3" /> {brand.email}
+                                    </div>
+                                    {brand.phone && (
+                                        <div className="flex items-center gap-2">
+                                            <Phone className="w-3 h-3" /> {brand.phone}
+                                        </div>
+                                    )}
                                 </div>
                                 {brand.website && (
                                     <div className="flex items-center gap-2">

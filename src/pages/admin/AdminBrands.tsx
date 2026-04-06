@@ -370,8 +370,8 @@ export default function AdminBrands() {
           animate={{ opacity: 1, y: 0 }}
           className="glass-card overflow-hidden"
         >
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="w-full flex-1 min-w-0 overflow-x-auto">
+            <table className="w-full whitespace-nowrap">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="text-left p-4 font-medium text-muted-foreground">Brand</th>
@@ -389,13 +389,13 @@ export default function AdminBrands() {
                 <tr key={brand.id} className="border-t border-border hover:bg-muted/30 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
                         {brand.avatar ? <img src={brand.avatar} alt={brand.name} className="w-full h-full object-cover" /> : <Building2 className="w-5 h-5 text-primary" />}
                       </div>
-                      <span className="font-medium">{brand.name}</span>
+                      <span className="font-medium max-w-[200px] truncate" title={brand.name}>{brand.name}</span>
                     </div>
                   </td>
-                  <td className="p-4 text-muted-foreground">{brand.email}</td>
+                  <td className="p-4 text-muted-foreground max-w-[200px] truncate" title={brand.email}>{brand.email}</td>
                   <td className="p-4">
                     <Select
                       value={brand.plan}

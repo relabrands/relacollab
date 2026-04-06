@@ -213,7 +213,7 @@ export default function CreatorDashboard() {
       <DashboardSidebar type="creator" />
       <MobileNav type="creator" />
 
-      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
+      <main className="flex-1 min-w-0 w-full ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8 overflow-x-hidden">
         <DashboardHeader
           title={`Bienvenido de nuevo, ${user?.displayName || 'Creador'}`}
           subtitle="Aquí están tus oportunidades personalizadas"
@@ -238,9 +238,11 @@ export default function CreatorDashboard() {
         </div>
 
         {opportunities.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full overflow-hidden mb-8">
             {opportunities.map((opportunity) => (
-              <OpportunityCard key={opportunity.id} opportunity={opportunity} />
+              <div key={opportunity.id} className="w-full">
+                 <OpportunityCard opportunity={opportunity} />
+              </div>
             ))}
           </div>
         ) : (
