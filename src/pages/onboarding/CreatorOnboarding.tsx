@@ -23,7 +23,9 @@ import { CREATOR_NICHES, CREATOR_VIBES } from "@/lib/constants";
 const WHO_APPEARS = [
     "Solo yo",
     "Mi pareja",
+    "Mis hijos",
     "Mis amigos",
+    "Mascotas",
     "No aparecen personas"
 ];
 

@@ -205,18 +205,20 @@ export const calculateMatchScore = (campaign: any, creator: any): MatchScoreResu
     // 6. COMPOSITION (Max 10 points)
     // ========================================
     const whoAppearsInContent = creator.whoAppearsInContent || [];
-    const campaignVibe = campaignVibes[0] || "";
+    const campaignVibesList = (campaign.vibes || []).map((v: string) => v.toLowerCase());
 
-    // Match composition to campaign vibe
-    if (campaignVibe === "romantic" && whoAppearsInContent.includes("Mi pareja")) {
+    if (campaignVibesList.includes("maternidad") && whoAppearsInContent.includes("Mis hijos")) {
+        breakdown.composition = 10;
+        reasons.push("Match perfecto para campaña de maternidad (con hijos)");
+    } else if (campaignVibesList.includes("familia") && (whoAppearsInContent.includes("Mis hijos") || whoAppearsInContent.includes("Mi familia"))) {
+        breakdown.composition = 10;
+        reasons.push("Ideal para campañas familiares");
+    } else if (campaignVibesList.includes("mascotas") && whoAppearsInContent.includes("Mascotas")) {
+        breakdown.composition = 10;
+        reasons.push("Perfecto para contenido con mascotas");
+    } else if (campaignVibesList.includes("romantic") && whoAppearsInContent.includes("Mi pareja")) {
         breakdown.composition = 10;
         reasons.push("Perfect fit for romantic campaign");
-    } else if (campaignVibe === "family" && whoAppearsInContent.includes("Mi familia")) {
-        breakdown.composition = 10;
-        reasons.push("Perfect fit for family campaign");
-    } else if (campaignVibe === "party" && whoAppearsInContent.includes("Mis amigos")) {
-        breakdown.composition = 10;
-        reasons.push("Perfect fit for social campaign");
     } else if (whoAppearsInContent.includes("Solo yo")) {
         breakdown.composition = 5; // Neutral - works for most campaigns
     } else if (whoAppearsInContent.length > 0) {

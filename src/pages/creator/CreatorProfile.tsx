@@ -48,7 +48,9 @@ const CONTENT_FORMATS = [
 const WHO_APPEARS = [
   "Solo yo",
   "Mi pareja",
+  "Mis hijos",
   "Mis amigos",
+  "Mascotas",
   "No aparecen personas"
 ];
 
