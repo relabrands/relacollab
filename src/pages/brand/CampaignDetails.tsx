@@ -144,10 +144,25 @@ export default function CampaignDetails() {
     const totalNet = totalBudget - totalFee;
 
     // Status calculation
-    const isExpired = campaign.endDate && new Date(campaign.endDate) < new Date();
-    const isCompleted = approvedCount >= neededCount && neededCount > 0;
-    const statusLabel = isExpired ? "Expirada" : isCompleted ? "Completada" : "Activa";
-    const statusColor = isExpired ? "bg-red-100 text-red-700 border-red-200" : isCompleted ? "bg-green-100 text-green-700 border-green-200" : "bg-blue-100 text-blue-700 border-blue-200";
+    // Priority: always trust the stored campaign.status (completed / expired set by system).
+    // Only auto-derive from date when status is still 'active'.
+    const storedStatus = campaign.status as string;
+    const isDateExpired = campaign.endDate && new Date(campaign.endDate) < new Date();
+    const isCompleted = storedStatus === "completed" || (approvedCount >= neededCount && neededCount > 0);
+    const isExpired   = storedStatus === "expired"   || (!isCompleted && !!isDateExpired);
+
+    const statusLabel =
+      storedStatus === "completed"             ? "Completada" :
+      storedStatus === "expired"               ? "Expirada"   :
+      (isDateExpired && !isCompleted)          ? "Expirada"   :
+      isCompleted                              ? "Completada" :
+                                                 "Activa";
+
+    const statusColor =
+      statusLabel === "Completada" ? "bg-green-100 text-green-700 border-green-200" :
+      statusLabel === "Expirada"   ? "bg-red-100 text-red-700 border-red-200"       :
+                                     "bg-blue-100 text-blue-700 border-blue-200";
+
 
     const handleCreatorClick = (collab: any) => {
         // Map collaborator to CreatorDetails format expected by MatchDetailsDialog
