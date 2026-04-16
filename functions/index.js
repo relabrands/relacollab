@@ -1335,3 +1335,184 @@ exports.updateCreatorMetricsDaily = require('firebase-functions/v1')
         }
     });
 
+// ==========================================
+// AUTO-UPDATE CONTENT SUBMISSION METRICS (DAILY CRON)
+// Refreshes Instagram metrics for every content_submission that has a postUrl.
+// Runs at 3:00 AM EST every day to avoid prime-time API rate limits.
+// ==========================================
+
+/**
+ * Internal helper: fetches fresh metrics for a single Instagram post
+ * and updates the content_submissions document in Firestore.
+ */
+async function refreshSingleSubmissionMetrics(submissionId, postUrl, accessToken, igUserId) {
+    try {
+        // 1. Extract shortcode / post ID from URL
+        const match = postUrl.match(/instagram\.com\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
+        const postId = match ? match[2] : null;
+        if (!postId) {
+            console.warn(`[ContentMetrics] Cannot parse postId from URL: ${postUrl}`);
+            return;
+        }
+
+        // 2. Fetch recent media list and find the matching post
+        const mediaRes = await axios.get(
+            `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,like_count,comments_count,media_type,media_product_type,thumbnail_url,media_url,shortcode,video_view_count,permalink&limit=50&access_token=${accessToken}`
+        );
+        const mediaItems = mediaRes.data.data || [];
+
+        const foundPost = mediaItems.find(item =>
+            (item.permalink && item.permalink.includes(postId)) ||
+            (item.shortcode && item.shortcode === postId)
+        );
+
+        if (!foundPost) {
+            console.warn(`[ContentMetrics] Post ${postId} not found in recent media for submission ${submissionId}`);
+            return;
+        }
+
+        // 3. Build base metrics from media fields
+        let metrics = {
+            likes:        foundPost.like_count || 0,
+            comments:     foundPost.comments_count || 0,
+            views:        foundPost.video_view_count || 0,
+            reach:        0,
+            saved:        0,
+            shares:       0,
+            interactions: (foundPost.like_count || 0) + (foundPost.comments_count || 0),
+            updatedAt:    new Date().toISOString()
+        };
+
+        // 4. Fetch base insights: reach, saved, shares
+        try {
+            const insRes = await axios.get(
+                `https://graph.facebook.com/v19.0/${foundPost.id}/insights?metric=reach,saved,shares&access_token=${accessToken}`
+            );
+            const insData = insRes.data.data;
+            const getVal = (name) => {
+                const m = insData.find(x => x.name === name);
+                return m ? m.values[0].value : 0;
+            };
+            metrics.reach  = getVal('reach')  || 0;
+            metrics.saved  = getVal('saved')  || 0;
+            metrics.shares = getVal('shares') || 0;
+            const apiInter = getVal('total_interactions');
+            if (apiInter > 0) metrics.interactions = apiInter;
+        } catch (insErr) {
+            console.warn(`[ContentMetrics] Insights failed for ${foundPost.id}: ${insErr.message}`);
+        }
+
+        // 5. Try views insight for VIDEO / REEL
+        const isVideo = foundPost.media_type === 'VIDEO' || foundPost.media_product_type === 'REELS';
+        if (isVideo) {
+            try {
+                const vRes = await axios.get(
+                    `https://graph.facebook.com/v19.0/${foundPost.id}/insights?metric=views&access_token=${accessToken}`
+                );
+                const vData = vRes.data.data;
+                const vViews = vData.find(x => x.name === 'views');
+                if (vViews && vViews.values[0].value > 0) {
+                    metrics.views = vViews.values[0].value;
+                }
+            } catch (vErr) {
+                // silence — video_view_count fallback already set above
+            }
+        }
+
+        // 6. Write back to Firestore using dot-notation for nested metrics field
+        await db.collection('content_submissions').doc(submissionId).update({
+            'metrics.likes':        metrics.likes,
+            'metrics.comments':     metrics.comments,
+            'metrics.views':        metrics.views,
+            'metrics.reach':        metrics.reach,
+            'metrics.saved':        metrics.saved,
+            'metrics.shares':       metrics.shares,
+            'metrics.interactions': metrics.interactions,
+            'metrics.updatedAt':    metrics.updatedAt,
+            metricsLastFetched:     metrics.updatedAt
+        });
+
+        console.log(`[ContentMetrics] ✅ Updated submission ${submissionId} — reach:${metrics.reach} views:${metrics.views}`);
+    } catch (err) {
+        console.warn(`[ContentMetrics] ⚠️ Failed for submission ${submissionId}: ${err.message}`);
+    }
+}
+
+exports.updateContentSubmissionMetrics = require('firebase-functions/v1')
+    .runWith({ timeoutSeconds: 540, memory: '1GB' })
+    .pubsub.schedule('0 3 * * *')  // Every day at 3:00 AM EST
+    .timeZone('America/New_York')
+    .onRun(async () => {
+        console.log('[ContentMetrics] Starting daily content submission metrics refresh...');
+
+        try {
+            // 1. Fetch all submissions that have a postUrl or contentUrl
+            //    Run two queries because Firestore does not support OR conditions across different fields.
+            const [byPostUrl, byContentUrl] = await Promise.all([
+                db.collection('content_submissions').where('postUrl',    '!=', null).get(),
+                db.collection('content_submissions').where('contentUrl', '!=', null).get()
+            ]);
+
+            // Merge and de-duplicate by document ID
+            const docsMap = new Map();
+            [...byPostUrl.docs, ...byContentUrl.docs].forEach(d => docsMap.set(d.id, d));
+            const submissions = Array.from(docsMap.values());
+
+            console.log(`[ContentMetrics] Found ${submissions.length} submissions with a post URL.`);
+
+            // 2. Group by creator so we only fetch their media list ONCE per creator
+            const byCreator = new Map(); // creatorId -> [{ id, postUrl }]
+            for (const doc of submissions) {
+                const data      = doc.data();
+                const postUrl   = data.postUrl || data.contentUrl;
+                const creatorId = data.creatorId || data.userId;
+                if (!postUrl || !creatorId) continue;
+
+                if (!byCreator.has(creatorId)) byCreator.set(creatorId, []);
+                byCreator.get(creatorId).push({ id: doc.id, postUrl });
+            }
+
+            console.log(`[ContentMetrics] Processing ${byCreator.size} unique creators.`);
+
+            let updatedCount = 0;
+            let skippedCount = 0;
+
+            for (const [creatorId, subs] of byCreator.entries()) {
+                // 3. Fetch this creator's token
+                let userData;
+                try {
+                    const userDoc = await db.collection('users').doc(creatorId).get();
+                    if (!userDoc.exists) { skippedCount += subs.length; continue; }
+                    userData = userDoc.data();
+                } catch (uErr) {
+                    console.warn(`[ContentMetrics] Could not fetch user ${creatorId}: ${uErr.message}`);
+                    skippedCount += subs.length;
+                    continue;
+                }
+
+                const accessToken = userData.instagramAccessToken;
+                const igUserId    = userData.instagramId;
+
+                if (!accessToken || !igUserId) {
+                    console.warn(`[ContentMetrics] Creator ${creatorId} has no Instagram token — skipping ${subs.length} submissions.`);
+                    skippedCount += subs.length;
+                    continue;
+                }
+
+                // 4. Update each submission for this creator sequentially (avoid rate-limiting)
+                for (const sub of subs) {
+                    await refreshSingleSubmissionMetrics(sub.id, sub.postUrl, accessToken, igUserId);
+                    updatedCount++;
+                    // Small delay between posts to respect IG rate limits
+                    await new Promise(r => setTimeout(r, 300));
+                }
+
+                // Pause between creators to respect global rate limits
+                await new Promise(r => setTimeout(r, 1000));
+            }
+
+            console.log(`[ContentMetrics] Done. Updated: ${updatedCount}, Skipped: ${skippedCount}.`);
+        } catch (error) {
+            console.error('[ContentMetrics] Fatal error in scheduled job:', error);
+        }
+    });
