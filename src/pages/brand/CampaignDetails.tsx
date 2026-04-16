@@ -212,12 +212,14 @@ export default function CampaignDetails() {
                             <Trash2 className="w-4 h-4 mr-2" />
                             Eliminar
                         </Button>
-                        <Link to={`/brand/matches?campaignId=${campaign.id}`}>
-                            <Button size="sm" className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
-                                <Sparkles className="w-4 h-4 mr-2" />
-                                Ver Matches
-                            </Button>
-                        </Link>
+                        {!isCompleted && !isExpired && (
+                            <Link to={`/brand/matches?campaignId=${campaign.id}`}>
+                                <Button size="sm" className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
+                                    <Sparkles className="w-4 h-4 mr-2" />
+                                    Ver Matches
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </DashboardHeader>
 
@@ -462,9 +464,11 @@ export default function CampaignDetails() {
                                     ? "🎉 ¡Objetivo alcanzado! Has contratado a todos los creadores necesarios."
                                     : `Necesitas ${neededCount - approvedCount} creador${neededCount - approvedCount !== 1 ? "es" : ""} más para alcanzar tu objetivo.`}
                             </p>
-                            <Link to={`/brand/matches?campaignId=${campaign.id}`}>
-                                <Button className="w-full" variant="outline">Buscar Creadores</Button>
-                            </Link>
+                            {!isCompleted && !isExpired && (
+                                <Link to={`/brand/matches?campaignId=${campaign.id}`}>
+                                    <Button className="w-full" variant="outline">Buscar Creadores</Button>
+                                </Link>
+                            )}
                         </div>
 
                         {/* Details Card */}
@@ -490,29 +494,29 @@ export default function CampaignDetails() {
 
                             {/* ✅ Budget = totalBudgetPerCreator × creatorCount */}
                             <div className="pt-2">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-col gap-2">
                                     <div className="flex items-center gap-2 text-muted-foreground">
-                                        <DollarSign className="w-4 h-4" />
-                                        <span>
+                                        <DollarSign className="w-4 h-4 flex-shrink-0" />
+                                        <span className="text-sm leading-tight">
                                             {campaign.compensationType === 'hybrid' 
                                                 ? "Presupuesto Monetario + Intercambio" 
                                                 : "Presupuesto Monetario"}
                                         </span>
                                     </div>
                                     {isMonetary ? (
-                                        <div className="text-right">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
                                             <span className="font-bold text-primary text-lg">${totalBudget.toLocaleString()}</span>
                                             <div className="flex flex-col items-end gap-1">
-                                                <p className="text-[10px] text-muted-foreground">
+                                                <p className="text-[10px] text-muted-foreground text-right">
                                                     {neededCount} creador{neededCount > 1 ? "es" : ""} × ${perCreatorGross.toLocaleString()} {campaign.minReward && campaign.maxReward ? "(máx)" : ""}
                                                 </p>
-                                                <Badge variant="secondary" className="text-[9px] h-4 font-bold bg-primary/10 text-primary border-primary/20">
+                                                <Badge variant="secondary" className="text-[9px] h-4 font-bold bg-primary/10 text-primary border-primary/20 whitespace-nowrap">
                                                     {campaign.compensationType === 'hybrid' ? "💳 Monetario + 🎁 Intercambio" : "💰 Monetario"}
                                                 </Badge>
                                             </div>
                                         </div>
                                     ) : (
-                                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 self-start">
                                             🎁 Intercambio
                                         </Badge>
                                     )}

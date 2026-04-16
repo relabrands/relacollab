@@ -135,7 +135,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
     const [hoveredRating, setHoveredRating] = useState<number>(0);
     const [reviewText, setReviewText] = useState("");
 
-    const isSettled = matchData?.status === "completed" || matchData?.finalPayment !== undefined;
+    const isSettled = matchData?.status === "completed" || matchData?.finalPayment !== undefined || campaign?.status === "completed";
 
 
     useEffect(() => {
