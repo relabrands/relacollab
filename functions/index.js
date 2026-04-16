@@ -1420,7 +1420,7 @@ async function refreshSingleSubmissionMetrics(submissionId, postUrl, accessToken
         }
 
         // 6. Write back to Firestore using dot-notation for nested metrics field
-        await db.collection('content_submissions').doc(submissionId).update({
+        const updatePayload = {
             'metrics.likes':        metrics.likes,
             'metrics.comments':     metrics.comments,
             'metrics.views':        metrics.views,
@@ -1430,7 +1430,16 @@ async function refreshSingleSubmissionMetrics(submissionId, postUrl, accessToken
             'metrics.interactions': metrics.interactions,
             'metrics.updatedAt':    metrics.updatedAt,
             metricsLastFetched:     metrics.updatedAt
-        });
+        };
+
+        // Also refresh the thumbnail URL so it doesn't expire (IG CDN URLs are short-lived)
+        const freshThumbnail = foundPost.media_type === 'VIDEO'
+            ? (foundPost.thumbnail_url || foundPost.media_url || null)
+            : (foundPost.media_url || null);
+        if (freshThumbnail) {
+            updatePayload.thumbnailUrl = freshThumbnail;
+        }
+        await db.collection('content_submissions').doc(submissionId).update(updatePayload);
 
         console.log(`[ContentMetrics] ✅ Updated submission ${submissionId} — reach:${metrics.reach} views:${metrics.views}`);
     } catch (err) {

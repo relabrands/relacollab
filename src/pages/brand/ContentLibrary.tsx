@@ -428,8 +428,8 @@ export default function ContentLibrary() {
               // Determine type from mediaType or fallback
               type: (sub.mediaType === "VIDEO" || sub.mediaType === "REELS") ? "video" : "image",
               platform: sub.platform || "instagram",
-              // Use thumbnailUrl or mediaUrl (for images)
-              thumbnail: sub.thumbnailUrl || sub.mediaUrl || "https://via.placeholder.com/400x500",
+              // Use thumbnailUrl or mediaUrl (for images). coverUrl is a fallback some older submissions use.
+              thumbnail: sub.thumbnailUrl || sub.coverUrl || sub.mediaUrl || "https://via.placeholder.com/400x500",
               postUrl: sub.contentUrl || sub.postUrl, // Handle both potential field names
               status: sub.status || "pending",
               submittedAt: sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
@@ -715,19 +715,15 @@ export default function ContentLibrary() {
     if (!content.postUrl) return;
 
     // Extract post ID
-    const match = content.postUrl.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
+    const match = content.postUrl.match(/instagram\.com\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
     const postId = match ? match[2] : null;
 
-    if (!postId || !content.creatorId) { // Need creatorId to fetch metrics (we need their token)
-      // Wait we need creatorId in content item, let's check if we have it. Yes we enriched it.
-      // But wait, in ContentLibrary we enriched creatorName but maybe didn't save creatorId?
-      // Ah, in enrichment map we use sub.userId.
-      // Let's check enrichment logic.
+    if (!postId || !content.creatorId) {
       toast.error("No se puede actualizar: falta información de la publicación");
       return;
     }
 
-    const toastId = toast.loading("Actualizando métricas...");
+    const toastId = toast.loading("Actualizando métricas y portada...");
 
     try {
       const response = await fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
@@ -739,45 +735,53 @@ export default function ContentLibrary() {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.metrics) {
-          // Update in Firestore - use dot notation for nested metrics
-          await updateDoc(doc(db, "content_submissions", content.id), {
-            "metrics.likes": data.metrics.likes || 0,
-            "metrics.comments": data.metrics.comments || 0,
-            "metrics.views": data.metrics.views || 0,
-            "metrics.reach": data.metrics.reach || 0,
-            "metrics.saved": data.metrics.saved || 0,
-            "metrics.shares": data.metrics.shares || 0,
+          const freshThumbnail = data.metrics.thumbnail || null;
+          const now = new Date().toISOString();
+
+          // Build the Firestore update — always include metrics; thumbnail only if fresh
+          const firestoreUpdate: Record<string, any> = {
+            "metrics.likes":        data.metrics.likes || 0,
+            "metrics.comments":     data.metrics.comments || 0,
+            "metrics.views":        data.metrics.views || 0,
+            "metrics.reach":        data.metrics.reach || 0,
+            "metrics.saved":        data.metrics.saved || 0,
+            "metrics.shares":       data.metrics.shares || 0,
             "metrics.interactions": data.metrics.interactions || 0,
-            "metrics.updatedAt": new Date().toISOString(),
-            metricsLastFetched: new Date().toISOString()
-          });
+            "metrics.updatedAt":    now,
+            metricsLastFetched:     now,
+          };
+          if (freshThumbnail) {
+            firestoreUpdate.thumbnailUrl = freshThumbnail;
+          }
+
+          await updateDoc(doc(db, "content_submissions", content.id), firestoreUpdate);
 
           // Update local state
           setContentList(prev => prev.map(item => {
             if (item.id === content.id) {
               return {
                 ...item,
+                ...(freshThumbnail ? { thumbnail: freshThumbnail } : {}),
                 metrics: {
                   ...item.metrics!,
-                  likes: data.metrics.likes,
-                  comments: data.metrics.comments,
-                  views: data.metrics.views || 0,
-                  reach: data.metrics.reach || 0,
-                  saved: data.metrics.saved || 0,
-                  shares: data.metrics.shares || 0,
+                  likes:        data.metrics.likes,
+                  comments:     data.metrics.comments,
+                  views:        data.metrics.views || 0,
+                  reach:        data.metrics.reach || 0,
+                  saved:        data.metrics.saved || 0,
+                  shares:       data.metrics.shares || 0,
                   interactions: data.metrics.interactions || 0,
-                  updatedAt: new Date().toISOString()
+                  updatedAt:    now
                 }
               };
             }
             return item;
           }));
-          toast.success("¡Métricas actualizadas!", { id: toastId });
+          toast.success("¡Métricas y portada actualizadas!", { id: toastId });
         } else {
           toast.error("Error al obtener las métricas", { id: toastId });
         }
       } else {
-        // Try to get error message from response
         let errorMessage = "Error del servidor";
         try {
           const errorData = await response.json();
