@@ -1,15 +1,12 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, isSupported as analyticsIsSupported } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAdcqTsle-75xm6Y701uxAAp0ZP4PCIl2s",
   authDomain: "rella-collab.firebaseapp.com",
@@ -22,8 +19,24 @@ const firebaseConfig = {
 
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
-export const analytics = getAnalytics(app);
+
+// Analytics — only supported in full browser environments (not iOS WKWebView, etc.)
+export let analytics: ReturnType<typeof getAnalytics> | null = null;
+analyticsIsSupported().then((supported) => {
+  if (supported) analytics = getAnalytics(app);
+});
+
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Firestore — experimentalAutoDetectLongPolling fixes Safari iOS CORS errors.
+// Safari WebKit blocks the default fetch-based long-poll transport; this flag
+// causes the SDK to auto-detect and fall back to a WebSocket transport instead.
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});
+
 export const storage = getStorage(app);
 export const functions = getFunctions(app, "us-central1");
