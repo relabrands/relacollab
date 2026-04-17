@@ -20,7 +20,7 @@ const firebaseConfig = {
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 
-// Analytics — only initialize in environments that support it (not iOS WKWebView in strict mode)
+// Analytics — only initialize in environments that fully support it
 export let analytics: ReturnType<typeof getAnalytics> | null = null;
 analyticsIsSupported().then((supported) => {
   if (supported) analytics = getAnalytics(app);
@@ -28,16 +28,29 @@ analyticsIsSupported().then((supported) => {
 
 export const auth = getAuth(app);
 
-// Firestore — experimentalAutoDetectLongPolling resolves the Safari iOS/WebKit error:
+// ---------------------------------------------------------
+// Firestore transport fix for iOS Safari / WebKit browsers.
+//
+// Problem: Safari on iOS blocks the Firestore WebChannel
+// transport (TYPE=xmlhttp) with:
 //   "Fetch API cannot load ... due to access control checks"
-// Safari blocks the default XMLHttpRequest long-poll transport for cross-origin domains.
-// This flag makes the SDK detect the block and switch to a WebSocket channel instead.
-// NOTE: persistentLocalCache is intentionally omitted — IndexedDB is restricted in
-// Safari private browsing / low-storage mode and causes init failures.
+// Safari's ITP treats firestore.googleapis.com as cross-site.
+//
+// Why AutoDetect didn't work: The SDK tries WebChannel first.
+// On iOS Safari the block is completely silent — the SDK
+// never detects it and the connection hangs indefinitely.
+//
+// Fix: experimentalForceLongPolling skips WebChannel entirely
+// and goes directly to a single persistent HTTP/1.1 long-poll
+// request. This pattern is NOT flagged by Safari's ITP.
+//
+// ignoreUndefinedProperties: prevents Firestore write errors
+// when React state has undefined fields not yet initialized.
+// ---------------------------------------------------------
 export const db = initializeFirestore(app, {
-  experimentalAutoDetectLongPolling: true,
+  experimentalForceLongPolling: true,
+  ignoreUndefinedProperties: true,
 });
 
 export const storage = getStorage(app);
 export const functions = getFunctions(app, "us-central1");
-
