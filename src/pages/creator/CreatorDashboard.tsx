@@ -216,13 +216,23 @@ export default function CreatorDashboard() {
           const matchResult = calculateMatchScore(campaignData, userData);
           const isInvited = !!invitationsMap[campaignId];
 
-          // Only include campaigns with score > 0 (passed compensation filter) or if invited
-          if (matchResult.score > 0 || isInvited) {
+          let effectiveScore = matchResult.score;
+          try {
+            const matchRef = doc(db, "campaigns", campaignId, "matches", user.uid);
+            const matchSnap = await getDoc(matchRef);
+            if (matchSnap.exists()) {
+              const aiPct = matchSnap.data()?.aiAnalysis?.matchPercentage;
+              if (typeof aiPct === "number") effectiveScore = aiPct;
+            }
+          } catch (_) { /* fallback to rule-based */ }
+
+          // Only include campaigns with score >= 50 or if invited
+          if (effectiveScore >= 50 || isInvited) {
             matchedOpportunities.push({
               id: campaignId,
               title: campaignData.name || "Campaña sin título",
               ...campaignData,
-              matchScore: matchResult.score,
+              matchScore: effectiveScore, // use effectiveScore here for display
               matchBreakdown: matchResult.breakdown,
               isInvited: isInvited,
               invitationId: invitationsMap[campaignId] || undefined
