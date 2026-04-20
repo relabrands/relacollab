@@ -12,6 +12,7 @@ import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useSubscription } from "@/hooks/useSubscription";
 import { SubscriptionGateModal } from "@/components/brand/SubscriptionGateModal";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function BrandDashboard() {
   const { user } = useAuth();
@@ -19,6 +20,8 @@ export default function BrandDashboard() {
   // La modal se abre si terminó de cargar y no hay suscripción activa
   const [gateOpen, setGateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [brandProfiles, setBrandProfiles] = useState<any[]>([]);
+  const [selectedBrandId, setSelectedBrandId] = useState<string>("all");
   const [stats, setStats] = useState<{
     title: string;
     value: string | number;
@@ -58,13 +61,26 @@ export default function BrandDashboard() {
     const fetchDashboardData = async () => {
       if (!user) return;
       try {
+        setLoading(true);
+        // Fetch brand profiles
+        const brandsQ = query(collection(db, "brand_profiles"), where("ownerId", "==", user.uid));
+        const brandsSnap = await getDocs(brandsQ);
+        const profiles: any[] = [];
+        brandsSnap.forEach(b => profiles.push({ id: b.id, ...b.data() }));
+        setBrandProfiles(profiles);
+
         // Fetch ALL Campaigns for accurate total counts
         const allCampaignsQuery = query(
           collection(db, "campaigns"),
           where("brandId", "==", user.uid)
         );
         const allCampaignsSnapshot = await getDocs(allCampaignsQuery);
-        const allCampaigns = allCampaignsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        let allCampaigns = allCampaignsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+
+        // Filter by selected brand if any
+        if (selectedBrandId && selectedBrandId !== "all") {
+            allCampaigns = allCampaigns.filter(c => c.brandProfileId === selectedBrandId || (!c.brandProfileId && profiles.length > 0 && profiles[0].id === selectedBrandId));
+        }
 
         // Calculate Stats
         const activeCount = allCampaigns.filter(c => c.status === 'active').length;
@@ -76,8 +92,14 @@ export default function BrandDashboard() {
           where("brandId", "==", user.uid)
         );
         const payoutsSnapshot = await getDocs(payoutsQuery);
-        const totalInvestment = payoutsSnapshot.docs.reduce((acc, doc) => {
-          const data = doc.data() as any;
+        let payouts = payoutsSnapshot.docs.map(doc => doc.data() as any);
+        
+        if (selectedBrandId && selectedBrandId !== "all") {
+            const campaignIdsSet = new Set(allCampaigns.map(c => c.id));
+            payouts = payouts.filter(p => campaignIdsSet.has(p.campaignId));
+        }
+
+        const totalInvestment = payouts.reduce((acc, data) => {
           return acc + (data.grossAmount || 0);
         }, 0);
 
@@ -141,7 +163,7 @@ export default function BrandDashboard() {
     };
 
     fetchDashboardData();
-  }, [user]);
+  }, [user, selectedBrandId]);
 
   // Abre el gate solo si terminó de cargar y NO tiene suscripción activa.
   // Si ya tiene plan activo, cierra el gate automáticamente.
@@ -177,8 +199,23 @@ export default function BrandDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Campañas Recientes</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+              <h2 className="text-xl font-semibold">Campañas Recientes</h2>
+              {brandProfiles.length > 0 && (
+                <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Todas las marcas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las marcas</SelectItem>
+                    {brandProfiles.map((bp) => (
+                      <SelectItem key={bp.id} value={bp.id}>{bp.brandName || "Sin Nombre"}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+          </div>
           <Link to="/brand/campaigns/new">
             <Button variant="hero">
               <Plus className="w-4 h-4" />

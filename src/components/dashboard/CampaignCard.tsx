@@ -22,6 +22,9 @@ interface CampaignCardProps {
     exchangeDetails?: string;
     minReward?: number;
     maxReward?: number;
+    brandProfileName?: string;
+    brandProfileLogo?: string;
+    brandName?: string;
   };
   onClick?: () => void;
   onShare?: () => void;
@@ -120,6 +123,18 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            {(campaign.brandProfileLogo || campaign.brandName) ? (
+              <>
+                {campaign.brandProfileLogo && (
+                  <img src={campaign.brandProfileLogo} className="w-4 h-4 rounded-sm object-cover shrink-0" alt="Brand Logo" />
+                )}
+                <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider truncate">
+                  {campaign.brandProfileName || campaign.brandName}
+                </span>
+              </>
+            ) : null}
+          </div>
           <h3 className="font-semibold text-base leading-snug group-hover:text-primary transition-colors line-clamp-2">
             {campaign.name}
           </h3>

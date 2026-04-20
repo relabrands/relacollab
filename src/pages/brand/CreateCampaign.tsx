@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Sparkles, Check, Loader2, X, Plus } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { addDoc, collection, doc, getDoc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, updateDoc, getDocs, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
@@ -53,6 +53,7 @@ export default function CreateCampaign() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [credits, setCredits] = useState(0);
+  const [brandProfiles, setBrandProfiles] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     brandName: "",
@@ -127,13 +128,20 @@ export default function CreateCampaign() {
     const fetchData = async () => {
       if (!user) return;
       try {
+        const brandsQ = query(collection(db, "brand_profiles"), where("ownerId", "==", user.uid));
+        const brandsSnap = await getDocs(brandsQ);
+        const profiles: any[] = [];
+        brandsSnap.forEach(b => profiles.push({ id: b.id, ...b.data() }));
+        setBrandProfiles(profiles);
+
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setFormData(prev => ({
             ...prev,
             location: prev.location || userData.location || "",
-            brandName: prev.brandName || userData.displayName || userData.name || ""
+            brandName: prev.brandName || userData.displayName || userData.name || "",
+            brandProfileId: (prev as any).brandProfileId || (profiles.length > 0 ? profiles[0].id : "")
           }));
           setCredits(userData.credits || 0);
         }
@@ -202,6 +210,10 @@ export default function CreateCampaign() {
   const validateStep = (currentStep: number): boolean => {
     switch (currentStep) {
       case 1:
+        if (!(formData as any).brandProfileId) {
+          toast.error("Debes seleccionar una marca para la campaña");
+          return false;
+        }
         if (!formData.name.trim()) {
           toast.error("El nombre de la campaña es requerido");
           return false;
@@ -309,15 +321,9 @@ export default function CreateCampaign() {
 
     setIsSubmitting(true);
     try {
-      // Fetch brand name for consistency
-      let brandName = formData.name || "";
-      try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          brandName = userDoc.data().brandName || userDoc.data().displayName || userDoc.data().name || brandName;
-        }
-      } catch (e) {
-      }
+      const selectedBrand = brandProfiles.find(b => b.id === (formData as any).brandProfileId);
+      let brandName = selectedBrand?.brandName || formData.name || "";
+      const brandLogo = selectedBrand?.photoURL || "";
 
       // Calculate final amounts using maxReward as budget base
       const minRewardVal = Number(formData.minReward) || 0;
@@ -331,6 +337,9 @@ export default function CreateCampaign() {
       const campaignData = {
         ...formData,
         brandId: user.uid,
+        brandProfileId: selectedBrand?.id || "",
+        brandProfileName: brandName,
+        brandProfileLogo: brandLogo,
         brandName: brandName,
         status: "active",
         createdAt: new Date().toISOString(),
@@ -480,9 +489,38 @@ export default function CreateCampaign() {
                 exit={{ opacity: 0, x: -20 }}
                 className="glass-card p-5 sm:p-8"
               >
-                <h2 className="text-xl font-semibold mb-6">Información Básica</h2>
+                    <h2 className="text-xl font-semibold mb-6">Información Básica</h2>
 
                 <div className="space-y-6">
+                  <div>
+                    <Label htmlFor="brandProfile">Marca de la Campaña <span className="text-destructive">*</span></Label>
+                    {brandProfiles.length > 0 ? (
+                        <Select
+                          value={(formData as any).brandProfileId || ""}
+                          onValueChange={(val) => setFormData(prev => ({ ...prev, brandProfileId: val }))}
+                        >
+                          <SelectTrigger className="mt-2 text-left">
+                            <SelectValue placeholder="Selecciona la marca" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {brandProfiles.map(bp => (
+                              <SelectItem key={bp.id} value={bp.id}>
+                                <div className="flex items-center gap-2">
+                                  {bp.photoURL && <img src={bp.photoURL} alt="" className="w-5 h-5 rounded-sm object-cover" />}
+                                  <span>{bp.brandName || "Sin Nombre"}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                    ) : (
+                        <div className="mt-2 p-3 bg-destructive/10 text-destructive rounded-lg flex items-center justify-between">
+                            <span className="text-sm">No tienes marcas creadas. Crea una para continuar.</span>
+                            <Link to="/brand/settings" className="text-sm font-semibold underline">Ir a Configuración</Link>
+                        </div>
+                    )}
+                  </div>
+
                   <div>
                     <Label htmlFor="name">Nombre de la Campaña</Label>
                     <Input

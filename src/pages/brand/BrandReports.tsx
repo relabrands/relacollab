@@ -59,6 +59,8 @@ function fmtFull(n: number) {
 // ─── Component ────────────────────────────────────────────────────
 export default function BrandReports() {
     const { user } = useAuth();
+    const [brandProfiles, setBrandProfiles] = useState<any[]>([]);
+    const [selectedBrandId, setSelectedBrandId] = useState<string>("all");
     const [campaigns, setCampaigns] = useState<any[]>([]);
     const [selectedCampaignId, setSelectedCampaignId] = useState<string>("all");
     const [submissions, setSubmissions] = useState<any[]>([]);
@@ -70,15 +72,34 @@ export default function BrandReports() {
 
     // ─── 1. Fetch campaigns independently so dropdown always works ─
     useEffect(() => {
-        if (!user) return;
-        setIsCampaignLoading(true);
-        getDocs(query(collection(db, "campaigns"), where("brandId", "==", user.uid), orderBy("createdAt", "desc")))
-            .then((snap) => setCampaigns(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
-            .catch((err) => {
-                toast.error("Error al cargar campañas");
-            })
-            .finally(() => setIsCampaignLoading(false));
-    }, [user]);
+        const fetchBaseData = async () => {
+            if (!user) return;
+            setIsCampaignLoading(true);
+            try {
+                const brandsSnap = await getDocs(query(collection(db, "brand_profiles"), where("ownerId", "==", user.uid)));
+                const profiles = brandsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                setBrandProfiles(profiles);
+
+                const campsSnap = await getDocs(query(collection(db, "campaigns"), where("brandId", "==", user.uid), orderBy("createdAt", "desc")));
+                let allCamps = campsSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+
+                if (selectedBrandId !== "all") {
+                    allCamps = allCamps.filter(c => c.brandProfileId === selectedBrandId || (!c.brandProfileId && profiles.length > 0 && profiles[0].id === selectedBrandId));
+                }
+                setCampaigns(allCamps);
+                
+                // If the selected campaign is not in the filtered list, reset it to "all"
+                if (selectedCampaignId !== "all" && !allCamps.find(c => c.id === selectedCampaignId)) {
+                     setSelectedCampaignId("all");
+                }
+            } catch (err) {
+                toast.error("Error al cargar datos");
+            } finally {
+                setIsCampaignLoading(false);
+            }
+        };
+        fetchBaseData();
+    }, [user, selectedBrandId]);
 
     // ─── 2. Fetch submissions when campaign selection changes ──────
     useEffect(() => {
@@ -139,7 +160,7 @@ export default function BrandReports() {
                 toast.error("Error al cargar métricas");
             })
             .finally(() => setIsMetricsLoading(false));
-    }, [selectedCampaignId, campaigns, user, isCampaignLoading]);
+    }, [selectedCampaignId, campaigns, user]);
 
     // ─── Derived: aggregate metrics ───────────────────────────────
     const totals = submissions.reduce(
@@ -263,8 +284,25 @@ export default function BrandReports() {
                     subtitle="Métricas reales de contenido publicado por tus creadores"
                 />
 
-                {/* Campaign selector + download */}
+                {/* Campaign and Brand selector + download */}
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center mb-8">
+                    {brandProfiles.length > 0 && (
+                        <div className="w-full sm:w-64">
+                            <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Todas las marcas" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">🏢 Todas las marcas</SelectItem>
+                                    {brandProfiles.map((bp) => (
+                                        <SelectItem key={bp.id} value={bp.id}>
+                                            {bp.brandName || "Sin Nombre"}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                     <div className="w-full sm:w-80">
                         {isCampaignLoading ? (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
