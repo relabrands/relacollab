@@ -317,7 +317,18 @@ export default function CampaignDetails() {
 
                         {/* Description */}
                         <div className="glass-card p-6">
-                            <h3 className="text-lg font-semibold mb-4">Sobre esta Campaña</h3>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                <h3 className="text-lg font-semibold">Sobre esta Campaña</h3>
+                                {(campaign.brandProfileName || campaign.brandName) && (
+                                    <div className="flex items-center gap-2 bg-muted/30 px-3 py-1.5 rounded-full">
+                                        <span className="text-xs text-muted-foreground">Marca Asignada:</span>
+                                        {campaign.brandProfileLogo && (
+                                            <img src={campaign.brandProfileLogo} alt="Logo" className="w-5 h-5 rounded-full object-cover border border-border" />
+                                        )}
+                                        <span className="font-medium text-sm text-foreground">{campaign.brandProfileName || campaign.brandName}</span>
+                                    </div>
+                                )}
+                            </div>
                             <p className="text-muted-foreground whitespace-pre-wrap">{campaign.description}</p>
                         </div>
 
