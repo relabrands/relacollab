@@ -252,7 +252,7 @@ export default function CreateCampaign() {
           toast.error("La ubicación objetivo es requerida");
           return false;
         }
-        if (!formData.ageRange) {
+        if (!(formData.ageRange || "").trim()) {
           toast.error("El rango de edad objetivo es requerido");
           return false;
         }
@@ -746,23 +746,57 @@ export default function CreateCampaign() {
                   </div>
 
                   <div>
-                    <Label className="mb-4 block">Rango de Edad</Label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {["18-24", "25-34", "35-44", "45+"].map((age) => (
-                        <button
-                          key={age}
-                          onClick={() =>
-                            setFormData((prev) => ({ ...prev, ageRange: age }))
-                          }
-                          className={`p-3 rounded-xl border-2 text-center font-medium transition-all ${formData.ageRange === age
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-primary/50"
-                            }`}
-                        >
-                          {age}
-                        </button>
-                      ))}
+                    <Label className="mb-2 block">Rango de Edad</Label>
+                    <p className="text-xs text-muted-foreground mb-3">Selecciona uno o varios rangos, o escribe un rango personalizado</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                      {["13-17", "18-24", "25-34", "35-44", "45+"].map((age) => {
+                        const selected = (formData.ageRange || "").split(",").map(s => s.trim()).includes(age);
+                        return (
+                          <button
+                            key={age}
+                            type="button"
+                            onClick={() => {
+                              const current = (formData.ageRange || "").split(",").map(s => s.trim()).filter(Boolean);
+                              const updated = selected
+                                ? current.filter(a => a !== age)
+                                : [...current.filter(a => !a.includes("-") || ["13-17","18-24","25-34","35-44","45+"].includes(a)), age];
+                              setFormData(prev => ({ ...prev, ageRange: updated.join(", ") }));
+                            }}
+                            className={`p-3 rounded-xl border-2 text-center font-medium transition-all ${selected
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:border-primary/50"
+                              }`}
+                          >
+                            {age}
+                            {selected && <span className="block text-[10px] text-primary mt-0.5">✓</span>}
+                          </button>
+                        );
+                      })}
                     </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <Label htmlFor="customAgeRange" className="text-xs text-muted-foreground">Rango personalizado (ej: 20-45)</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            id="customAgeRange"
+                            placeholder="Ej: 20-45 o 30+"
+                            value={(formData.ageRange || "").split(",").map(s => s.trim()).filter(a => !["13-17","18-24","25-34","35-44","45+"].includes(a)).join("")}
+                            onChange={(e) => {
+                              const presets = (formData.ageRange || "").split(",").map(s => s.trim()).filter(a => ["13-17","18-24","25-34","35-44","45+"].includes(a));
+                              const custom = e.target.value.trim();
+                              const all = [...presets, ...(custom ? [custom] : [])];
+                              setFormData(prev => ({ ...prev, ageRange: all.join(", ") }));
+                            }}
+                            className="h-9 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {formData.ageRange && (
+                      <p className="text-xs text-primary font-medium mt-2 flex items-center gap-1">
+                        <span>📊</span> Seleccionado: {formData.ageRange}
+                      </p>
+                    )}
                   </div>
                 </div>
               </motion.div>

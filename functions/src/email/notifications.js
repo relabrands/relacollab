@@ -392,6 +392,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             withdrawal_approved: { subject: "✅ Retiro enviado — {{amount}}", variables: ["creatorName", "amount", "earningsUrl"], html: w("✅ Retiro Procesado", "Tu pago fue enviado", "<p>Hola <strong>{{creatorName}}</strong>, tu retiro de <strong>{{amount}}</strong> fue aprobado y enviado a tu cuenta bancaria registrada. Puede tardar 1–3 días hábiles en reflejarse.</p><div class='hl'><div class='lb'>Monto enviado</div>{{amount}}</div>", "Ver mis Ganancias", "{{earningsUrl}}") },
             new_opportunity: { subject: "✨ ¡Nueva Oportunidad! {{matchScore}} Match con {{brandName}}", variables: ["creatorName", "brandName", "campaignTitle", "matchScore", "dashboardUrl"], html: w("✨ ¡Nueva Oportunidad!", "Descubrimos un match perfecto para ti", "<p>Hola <strong>{{creatorName}}</strong>, nuestra IA encontró una campaña de <strong>{{brandName}}</strong> que hace un <strong>{{matchScore}}</strong> de match con tu perfil y audiencia.</p><div class='hl'><div class='lb'>Campaña</div>{{campaignTitle}}</div><p>Revisa los detalles y aplica antes de que se agoten los cupos.</p>", "Ver Oportunidad", "{{dashboardUrl}}") },
             onboarding_reminder: { subject: "⌛ Termina de configurar tu perfil, {{name}}!", variables: ["name", "stepMessage", "dashboardUrl"], html: w("⌛ ¡Completa tu perfil!", "Te quedaste a un paso de terminar", "<p>Hola <strong>{{name}}</strong>, notamos que no has terminado de configurar tu perfil.</p><div class='hl'><div class='lb'>Paso Pendiente</div>{{stepMessage}}</div><p>Completar tu perfil es indispensable para empezar a recibir oportunidades de campañas con las mejores marcas.</p>", "Completar Onboarding", "{{dashboardUrl}}") },
+            instagram_token_expired: { subject: "⚠️ Tu conexión de Instagram expiró — Reconecta para no perder oportunidades", variables: ["creatorName", "settingsUrl"], html: w("⚠️ Tu Instagram necesita reconexión", "Tu acceso expiró — reconéctalo en 2 minutos", "<p>Hola <strong>{{creatorName}}</strong>,</p><p>Notamos que tu conexión de Instagram ha expirado. Los tokens de acceso de Instagram duran <strong>60 días</strong> y se renuevan automáticamente si inicias sesión regularmente — pero el tuyo ha caducado.</p><div class='hl'><div class='lb'>¿Por qué importa?</div>Las marcas ven tus publicaciones recientes de Instagram cuando evalúan si trabajar contigo. Sin conexión activa, tu perfil pierde visibilidad y podrías perder oportunidades de colaboración.</div><p>Reconectar toma menos de 2 minutos. Solo ve a tu perfil y vuelve a conectar tu cuenta de Instagram.</p>", "Reconectar mi Instagram", "{{settingsUrl}}") },
         };
         const batch = db.batch();
         for (const [id, d] of Object.entries(tpls)) batch.set(db.doc(`emailTemplates/${id}`), { ...d, updatedAt: new Date().toISOString() }, { merge: true });
@@ -439,6 +440,34 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             });
         } catch (err) {
             console.error("[Email] onMatchCreated error:", err);
+        }
+    });
+    // 13. Instagram token expired — notify creator to reconnect
+    exportsObj.onInstagramTokenExpired = onDocumentUpdated("users/{userId}", async (event) => {
+        const before = event.data?.before.data();
+        const after = event.data?.after.data();
+        if (!before || !after) return;
+        // Only trigger when the flag flips to true
+        if (before.instagramTokenExpired === true || after.instagramTokenExpired !== true) return;
+        // Anti-spam: only send once per 24h
+        const notifiedAt = after.instagramTokenExpiredNotifiedAt;
+        if (notifiedAt) {
+            const hoursSince = (Date.now() - new Date(notifiedAt).getTime()) / (1000 * 60 * 60);
+            if (hoursSince < 24) return;
+        }
+        if (!after.email) return;
+        try {
+            await sendEmail(after.email, "instagram_token_expired", {
+                creatorName: after.displayName || "Creator",
+                settingsUrl: `${BASE_URL}/creator/profile`,
+            });
+            // Record that notification was sent
+            await admin.firestore().doc(`users/${event.params.userId}`).update({
+                instagramTokenExpiredNotifiedAt: new Date().toISOString(),
+            });
+            console.log(`[Email] instagram_token_expired → ${after.email}`);
+        } catch (err) {
+            console.error("[Email] onInstagramTokenExpired:", err);
         }
     });
 }

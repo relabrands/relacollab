@@ -507,6 +507,20 @@ export const seedEmailTemplates = functions.https.onRequest((req, res) => {
         ),
         variables: ["name", "stepMessage", "dashboardUrl"],
       },
+      instagram_token_expired: {
+        subject: "⚠️ Tu conexión de Instagram expiró — Reconecta para no perder oportunidades",
+        html: makeHtml(
+          "⚠️ Tu Instagram necesita reconexión",
+          "Tu acceso expiró — reconéctalo en 2 minutos",
+          `<p>Hola <strong>{{creatorName}}</strong>,</p>
+           <p>Notamos que tu conexión de Instagram ha expirado. Los tokens de acceso de Instagram duran <strong>60 días</strong> y se renuevan automáticamente si inicias sesión regularmente — pero el tuyo ha caducado.</p>
+           <div class="highlight"><div class="label">¿Por qué importa?</div>Las marcas ven tus publicaciones recientes de Instagram cuando evalúan si trabajar contigo. Sin conexión activa, tu perfil pierde visibilidad y podrías perder oportunidades de colaboración.</div>
+           <p>Reconectar toma menos de 2 minutos. Solo ve a tu perfil y vuelve a conectar tu cuenta de Instagram.</p>`,
+          "Reconectar mi Instagram",
+          "{{settingsUrl}}"
+        ),
+        variables: ["creatorName", "settingsUrl"],
+      },
     };
 
     const batch = admin.firestore().batch();
@@ -561,5 +575,39 @@ export const onMatchCreated = functions.firestore
       });
     } catch (err) {
       console.error("[Email] onMatchCreated error:", err);
+    }
+  });
+// ─── 13. Instagram Token Expired — notify creator to reconnect ───────────────
+export const onInstagramTokenExpired = functions.firestore
+  .document("users/{userId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+
+    // Only trigger when the flag flips to true
+    if (before.instagramTokenExpired === true || after.instagramTokenExpired !== true) return;
+    // Don't spam: only send once per day
+    const notifiedAt = after.instagramTokenExpiredNotifiedAt;
+    if (notifiedAt) {
+      const lastNotified = new Date(notifiedAt).getTime();
+      const hoursSince = (Date.now() - lastNotified) / (1000 * 60 * 60);
+      if (hoursSince < 24) return;
+    }
+
+    const creator = after;
+    if (!creator.email) return;
+
+    try {
+      await sendEmail(creator.email, "instagram_token_expired", {
+        creatorName: creator.displayName || "Creator",
+        settingsUrl: `${BASE_URL}/creator/profile`,
+      });
+      // Record that we sent the notification
+      await admin.firestore().doc(`users/${context.params.userId}`).update({
+        instagramTokenExpiredNotifiedAt: new Date().toISOString(),
+      });
+      console.log(`[Email] instagram_token_expired → ${creator.email}`);
+    } catch (err) {
+      console.error("[Email] onInstagramTokenExpired error:", err);
     }
   });

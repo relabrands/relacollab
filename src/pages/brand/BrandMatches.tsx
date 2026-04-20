@@ -593,7 +593,7 @@ export default function BrandMatches() {
                     handleReject(creator, isPermanent);
                   }
                 }}
-                hideActions={viewMode === 'invited' || viewMode === 'collaborating' || viewMode === 'discarded'} // Allow view content for collaborating
+                hideActions={viewMode === 'invited' || viewMode === 'collaborating'} // Only hide for invited/collaborating
                 isInvite={viewMode === 'matches' || viewMode === 'discarded'}
                 isApplicant={viewMode === 'applicants'} // Pass this prop to modify card button text
                 isCollaborating={viewMode === 'collaborating'}

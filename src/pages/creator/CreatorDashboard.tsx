@@ -5,7 +5,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { OpportunityCard } from "@/components/dashboard/OpportunityCard";
 import { OpportunityDetailsDialog } from "@/components/dashboard/OpportunityDetailsDialog";
 import { Button } from "@/components/ui/button";
-import { Inbox, DollarSign, TrendingUp, CheckCircle, ArrowRight, Loader2 } from "lucide-react";
+import { Inbox, DollarSign, TrendingUp, CheckCircle, ArrowRight, Loader2, AlertTriangle, Instagram } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { collection, query, where, getDocs, orderBy, limit, doc, getDoc, addDoc, updateDoc, increment } from "firebase/firestore";
@@ -22,6 +22,7 @@ export default function CreatorDashboard() {
   const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [igTokenExpired, setIgTokenExpired] = useState(false);
 
   const handleCardClick = (opportunity: any) => {
     setSelectedOpportunity(opportunity);
@@ -83,6 +84,11 @@ export default function CreatorDashboard() {
         }
 
         const userData = userDoc.data();
+
+        // ── Instagram token expired flag ──
+        if (userData.instagramTokenExpired === true) {
+          setIgTokenExpired(true);
+        }
 
         // Calculate Profile Completion
         let completion = 0;
@@ -397,6 +403,25 @@ export default function CreatorDashboard() {
           title={`Bienvenido de nuevo, ${user?.displayName || 'Creador'}`}
           subtitle="Aquí están tus oportunidades personalizadas"
         />
+
+        {/* Instagram Token Expired Banner */}
+        {igTokenExpired && (
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 px-5 py-4">
+            <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Tu conexión de Instagram expiró</p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-500/80 mt-0.5 leading-relaxed">
+                Las marcas no pueden ver tus publicaciones recientes. Reconecta tu cuenta para mejorar tus matches.
+              </p>
+            </div>
+            <Link to="/creator/profile">
+              <Button size="sm" className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white border-none gap-1.5">
+                <Instagram className="w-3.5 h-3.5" />
+                Reconectar
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

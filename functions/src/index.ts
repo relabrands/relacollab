@@ -7,4 +7,5 @@ export {
     sendVisitScheduledEmail,
     sendNewMessageEmail,
     sendApplicationReceivedEmail,
+    onInstagramTokenExpired,
 } from "./email/notifications";

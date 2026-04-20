@@ -227,11 +227,44 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
             const response = await axios.post(endpoint, { userId: creator.id });
             if (response.data.success) {
                 setPosts(response.data.data.slice(0, 6));
+                // Clear expired flag if it was set before (token refreshed)
+                if (platform === "instagram" && response.data.data.length > 0) {
+                    try {
+                        await import("firebase/firestore").then(({ updateDoc, doc: fsDoc }) =>
+                            updateDoc(fsDoc(db, "users", creator.id), {
+                                instagramTokenExpired: false,
+                            })
+                        );
+                    } catch (_) { /* silent */ }
+                }
             } else {
-                setError(response.data.error || `Failed to load ${platform} content`);
+                const errorMsg = response.data.error || "";
+
+                // ── Detect expired / invalid token ──────────────────────────────
+                const isTokenExpired =
+                    platform === "instagram" &&
+                    (response.data.tokenExpired === true ||
+                        errorMsg.includes("190") ||
+                        errorMsg.toLowerCase().includes("token") ||
+                        errorMsg.toLowerCase().includes("expired") ||
+                        errorMsg.toLowerCase().includes("session"));
+
+                if (isTokenExpired) {
+                    setError("token_expired");
+                    // Mark in Firestore so the Cloud Function can send the email
+                    try {
+                        const { updateDoc, doc: fsDoc } = await import("firebase/firestore");
+                        await updateDoc(fsDoc(db, "users", creator.id), {
+                            instagramTokenExpired: true,
+                            instagramTokenExpiredAt: new Date().toISOString(),
+                        });
+                    } catch (_) { /* silent */ }
+                } else {
+                    setError(errorMsg || `No se pudo cargar el contenido de ${platform}`);
+                }
             }
         } catch {
-            setError("Could not load content.");
+            setError("No se pudo cargar el contenido.");
         } finally {
             setLoadingPosts(false);
         }
@@ -622,27 +655,59 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-12 bg-muted/30 rounded-xl border border-dashed">
+                            <div className="text-center py-8 bg-muted/30 rounded-xl border border-dashed">
                                 {activePlatform === "instagram" ? (
-                                    <Instagram className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                                    <Instagram className="w-8 h-8 mx-auto text-[#E1306C] mb-3 opacity-70" />
                                 ) : (
                                     <Music2 className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                                 )}
-                                <p className="text-muted-foreground text-sm">{error || "No recent content found."}</p>
+
+                                {error === "token_expired" ? (
+                                    <>
+                                        <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-1 flex items-center justify-center gap-1.5">
+                                            <AlertTriangle className="w-4 h-4" />
+                                            Token de Instagram expirado
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto leading-relaxed">
+                                            El creador necesita reconectar su cuenta de Instagram. Se le ha enviado una notificación por correo.
+                                        </p>
+                                    </>
+                                ) : error && activePlatform === "instagram" ? (
+                                    <>
+                                        <p className="text-sm font-medium text-foreground mb-1">Vista previa no disponible</p>
+                                        <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto leading-relaxed">
+                                            Instagram limita el acceso a publicaciones de terceros. Revisa el perfil directamente para ver su contenido reciente.
+                                        </p>
+                                    </>
+                                ) : (
+                                    <p className="text-muted-foreground text-sm mb-4">{error || "No se encontró contenido reciente."}</p>
+                                )}
+
                                 {creator.instagramUsername && activePlatform === "instagram" && (
-                                    <div className="mt-4">
-                                        <Button variant="outline" size="sm" asChild>
-                                            <a
-                                                href={`https://instagram.com/${creator.instagramUsername}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-2"
-                                            >
-                                                <ExternalLink className="w-3 h-3" />
-                                                View on Instagram
-                                            </a>
-                                        </Button>
-                                    </div>
+                                    <Button variant="default" size="sm" asChild className="bg-gradient-to-r from-[#E1306C] to-[#833AB4] hover:opacity-90 border-none text-white">
+                                        <a
+                                            href={`https://instagram.com/${creator.instagramUsername}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2"
+                                        >
+                                            <Instagram className="w-3.5 h-3.5" />
+                                            Ver @{creator.instagramUsername} en Instagram
+                                        </a>
+                                    </Button>
+                                )}
+                                {creator.tiktokUsername && activePlatform === "tiktok" && (
+                                    <Button variant="outline" size="sm" asChild>
+                                        <a
+                                            href={`https://tiktok.com/@${creator.tiktokUsername}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2"
+                                        >
+                                            <ExternalLink className="w-3 h-3" />
+                                            Ver en TikTok
+                                        </a>
+                                    </Button>
                                 )}
                             </div>
                         )}

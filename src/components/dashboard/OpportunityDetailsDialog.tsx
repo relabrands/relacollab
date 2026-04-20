@@ -39,9 +39,10 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                 <DialogHeader>
                     <div className="flex items-start gap-4">
                         <img
-                            src={opportunity.brandLogo || opportunity.image || "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100&h=100&fit=crop"}
+                            src={opportunity.brandLogo || opportunity.brandProfile?.photoURL || opportunity.image || ""}
                             alt={opportunity.brandName || opportunity.brandProfile?.displayName}
-                            className="w-16 h-16 rounded-xl object-cover border"
+                            className="w-16 h-16 rounded-xl object-cover border bg-muted flex-shrink-0"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
                         <div>
                             {isExpired ? (
@@ -163,15 +164,18 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                     </div>
                 ) : (
                     <>
-                        {/* Cover Image */}
+                        {/* Cover Image — respects portrait orientation */}
                         {opportunity.coverImage && (
-                            <div className="w-full h-48 rounded-xl overflow-hidden mb-4 relative">
-                                <img
-                                    src={opportunity.coverImage}
-                                    alt={opportunity.title}
-                                    className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                            <div className="flex justify-center mb-4">
+                                <div className="relative max-h-72 overflow-hidden rounded-xl border border-border/30">
+                                    <img
+                                        src={opportunity.coverImage}
+                                        alt={opportunity.title}
+                                        className="max-h-72 w-auto max-w-full object-contain rounded-xl"
+                                        style={{ display: 'block', margin: '0 auto' }}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent rounded-xl pointer-events-none" />
+                                </div>
                             </div>
                         )}
 
@@ -361,9 +365,17 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                 {/* Campaign Goals/Objectives */}
                                 {opportunity.goal && (
                                     <div>
-                                        <h4 className="font-semibold mb-2">Objetivos de la Campaña</h4>
-                                        <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                                            {opportunity.goal}
+                                        <h4 className="font-semibold mb-2">Objetivo de la Campaña</h4>
+                                        <p className="text-muted-foreground leading-relaxed">
+                                            {opportunity.goal === 'awareness'
+                                              ? '🎯 Reconocimiento de Marca — Aumentar la visibilidad y alcance de la marca'
+                                              : opportunity.goal === 'conversion'
+                                              ? '🛍️ Conversión — Impulsar ventas, reservas o registros'
+                                              : opportunity.goal === 'engagement'
+                                              ? '❤️ Engagement — Generar interacción y comunidad alrededor de la marca'
+                                              : opportunity.goal === 'loyalty'
+                                              ? '🤝 Fidelización — Fortalecer el vínculo con clientes existentes'
+                                              : opportunity.goal}
                                         </p>
                                     </div>
                                 )}
