@@ -340,6 +340,8 @@ export default function CreateCampaign() {
         brandProfileId: selectedBrand?.id || "",
         brandProfileName: brandName,
         brandProfileLogo: brandLogo,
+        brandProfileDescription: selectedBrand?.description || "",
+        brandProfileIndustry: selectedBrand?.industry || "",
         brandName: brandName,
         status: "active",
         createdAt: new Date().toISOString(),

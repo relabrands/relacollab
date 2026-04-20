@@ -10,7 +10,7 @@ interface OpportunityCardProps {
   opportunity: {
     id: string;
     brandName: string;
-    brandLogo: string;
+    brandLogo?: string;
     title: string;
     location: string;
     reward: string;
@@ -166,8 +166,11 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, isCom
         </h3>
 
         {/* Details Line 1: Brand / Description / Goal */}
-        <p className="text-white/80 text-[13px] font-medium mb-1 drop-shadow-sm line-clamp-1">
-          {opportunity.brandName} {opportunity.goal ? ` • ${opportunity.goal}` : ''}
+        <p className="text-white/80 text-[13px] font-medium mb-1 drop-shadow-sm line-clamp-1 flex items-center gap-1.5">
+          {opportunity.brandLogo ? (
+            <img src={opportunity.brandLogo} alt="" className="w-4 h-4 rounded-sm object-cover shrink-0 ring-1 ring-white/20" />
+          ) : null}
+          <span className="truncate">{opportunity.brandName}{opportunity.goal ? ` • ${opportunity.goal}` : ''}</span>
         </p>
 
         {/* Deliverables String - mapping what we need */}

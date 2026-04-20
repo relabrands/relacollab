@@ -347,7 +347,7 @@ export function OpportunityDetailsDialog({ isOpen, onClose, opportunity, onAccep
                                 <div>
                                     <h4 className="font-semibold mb-2">Sobre la Marca</h4>
                                     <p className="text-muted-foreground leading-relaxed">
-                                        {opportunity.brandProfile?.description || opportunity.brandDescription || "Una marca líder."}
+                                        {opportunity.brandProfileDescription || opportunity.brandProfile?.description || opportunity.brandDescription || "Una marca líder."}
                                     </p>
                                 </div>
 
