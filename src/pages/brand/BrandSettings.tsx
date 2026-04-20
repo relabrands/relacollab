@@ -306,8 +306,13 @@ export default function BrandSettings() {
 
                         <Card className="max-w-3xl">
                             <CardHeader>
-                                <CardTitle>{isCreating ? "Crear Nueva Marca" : "Editar Perfil de Marca"}</CardTitle>
-                                <CardDescription>Esta información será visible para los creadores de esta marca.</CardDescription>
+                                <CardTitle>{isCreating ? `Agregar ${brands.length > 0 ? "Nueva" : "Primera"} Marca` : "Editar Perfil de Marca"}</CardTitle>
+                                <CardDescription>
+                                    {isCreating && brands.length > 0
+                                        ? "Ingresa los datos básicos de la nueva marca. La información de contacto de tu cuenta se hereda automáticamente."
+                                        : "Esta información será visible para los creadores de esta marca."
+                                    }
+                                </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 {/* Avatar Upload */}
@@ -345,25 +350,32 @@ export default function BrandSettings() {
                                             placeholder="Acme Inc."
                                         />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="contactPerson">Persona de Contacto</Label>
-                                        <Input
-                                            id="contactPerson"
-                                            value={selectedBrand?.contactPerson || ""}
-                                            onChange={(e) => handleUpdate("contactPerson", e.target.value)}
-                                            placeholder="John Doe"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone">Número de Teléfono</Label>
-                                        <Input
-                                            id="phone"
-                                            type="tel"
-                                            value={selectedBrand?.phone || ""}
-                                            onChange={(e) => handleUpdate("phone", e.target.value)}
-                                            placeholder="+1 (555) 000-0000"
-                                        />
-                                    </div>
+
+                                    {/* Contact Person & Phone: only show for first brand or when editing */}
+                                    {(!isCreating || brands.length === 0) && (
+                                        <>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="contactPerson">Persona de Contacto</Label>
+                                                <Input
+                                                    id="contactPerson"
+                                                    value={selectedBrand?.contactPerson || ""}
+                                                    onChange={(e) => handleUpdate("contactPerson", e.target.value)}
+                                                    placeholder="John Doe"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="phone">Número de Teléfono</Label>
+                                                <Input
+                                                    id="phone"
+                                                    type="tel"
+                                                    value={selectedBrand?.phone || ""}
+                                                    onChange={(e) => handleUpdate("phone", e.target.value)}
+                                                    placeholder="+1 (555) 000-0000"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+
                                     <div className="space-y-2">
                                         <Label htmlFor="website">Sitio Web</Label>
                                         <Input
