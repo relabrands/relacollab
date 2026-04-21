@@ -43,6 +43,7 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
     const [activeTab, setActiveTab] = useState("overview");
     const [loading, setLoading] = useState(true);
     const [campaigns, setCampaigns] = useState<any[]>([]);
+    const [subBrands, setSubBrands] = useState<any[]>([]);
     const [sendingReminder, setSendingReminder] = useState(false);
 
     useEffect(() => {
@@ -108,6 +109,18 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                 ...doc.data()
             }));
             setCampaigns(campaignsData);
+
+            // Fetch sub-brands
+            const sbQuery = query(
+                collection(db, "brand_profiles"),
+                where("ownerId", "==", brand.id)
+            );
+            const sbSnapshot = await getDocs(sbQuery);
+            const subBrandsData = sbSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setSubBrands(subBrandsData);
         } catch (error) {
         } finally {
             setLoading(false);
@@ -159,9 +172,10 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                 <div className="flex-1 overflow-hidden flex flex-col min-h-0">
                     <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0" onValueChange={setActiveTab}>
                         <div className="px-6 pt-4 flex-shrink-0">
-                            <TabsList className="grid w-full grid-cols-2">
+                            <TabsList className="grid w-full grid-cols-3">
                                 <TabsTrigger value="overview">Overview & Info</TabsTrigger>
-                                <TabsTrigger value="campaigns">Campaigns ({campaigns.length})</TabsTrigger>
+                                <TabsTrigger value="subbrands">Sub-marcas ({subBrands.length})</TabsTrigger>
+                                <TabsTrigger value="campaigns">Campañas ({campaigns.length})</TabsTrigger>
                             </TabsList>
                         </div>
 
@@ -286,6 +300,58 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                                         </div>
                                     </div>
                                 </div>
+                            </TabsContent>
+
+                            <TabsContent value="subbrands" className="mt-0 space-y-4">
+                                {loading ? (
+                                    <div className="flex h-40 items-center justify-center">
+                                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                                    </div>
+                                ) : subBrands.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {subBrands.map((sb) => (
+                                            <Card key={sb.id} className="overflow-hidden border border-border">
+                                                <CardContent className="p-4 flex flex-col gap-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
+                                                            {sb.logo ? (
+                                                                <img src={sb.logo} alt={sb.name} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <Building2 className="w-6 h-6 text-primary" />
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="font-semibold truncate text-lg">{sb.name}</div>
+                                                            <div className="text-xs text-muted-foreground truncate">{sb.industry || 'Sin industria especificada'}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground/80 line-clamp-2">
+                                                        {sb.description || 'Sin descripción'}
+                                                    </div>
+                                                    {(sb.website || sb.socialLinks) && (
+                                                        <div className="flex flex-wrap gap-2 pt-2 border-t text-xs">
+                                                            {sb.website && (
+                                                                <a href={sb.website} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline inline-flex items-center gap-1">
+                                                                    <Globe className="w-3 h-3" /> Sitio Web
+                                                                </a>
+                                                            )}
+                                                            {sb.socialLinks?.instagram && (
+                                                                <a href={`https://instagram.com/${sb.socialLinks.instagram}`} target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:underline">
+                                                                    IG: {sb.socialLinks.instagram}
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border border-dashed rounded-xl">
+                                        <Building2 className="w-10 h-10 mb-3 opacity-20" />
+                                        <p>Esta marca no tiene sub-marcas creadas aún.</p>
+                                    </div>
+                                )}
                             </TabsContent>
 
                             <TabsContent value="campaigns" className="mt-0">
