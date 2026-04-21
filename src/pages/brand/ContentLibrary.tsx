@@ -42,6 +42,7 @@ import { collection, query, where, getDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { RequestEditsDialog } from "@/components/brand/RequestEditsDialog";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 interface ContentItem {
   id: string;
@@ -336,6 +337,7 @@ function ContentCard({ content, onStatusChange, onApproveClick, onRefreshMetrics
 
 export default function ContentLibrary() {
   const { user } = useAuth();
+  const { limits, loading: limitsLoading } = usePlanLimits();
   const [loading, setLoading] = useState(true);
   const [contentList, setContentList] = useState<ContentItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -488,8 +490,32 @@ export default function ContentLibrary() {
     return num.toString();
   };
 
-  if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
+    if (loading || limitsLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
+    if (!limits.contentLibraryEnabled) {
+        return (
+            <div className="flex min-h-screen bg-background">
+                <DashboardSidebar type="brand" />
+                <MobileNav type="brand" />
+                <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8 flex flex-col items-center justify-center text-center">
+                    <div className="max-w-md p-8 border rounded-2xl bg-white shadow-sm space-y-4">
+                        <div className="w-16 h-16 mx-auto bg-muted/50 rounded-2xl flex items-center justify-center">
+                            <svg className="w-8 h-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        </div>
+                        <h2 className="text-xl font-bold">Librería de Contenido Bloqueada</h2>
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                            El acceso centralizado a todo el contenido generado por los creadores requiere de un plan superior.
+                        </p>
+                        <Button className="w-full mt-4 bg-[#534AB7] hover:bg-[#534AB7]/90 text-white" onClick={() => window.open('https://buy.stripe.com/test_8wM8xm0o3eJmaT66oo', '_blank')}>
+                            Mejorar Plan
+                        </Button>
+                    </div>
+                </main>
+            </div>
+        );
+    }
   // Handler for status updates
   const handleStatusChange = async (id: string, newStatus: "approved" | "rejected", providedRating?: number, providedReview?: string, finalPaymentAmount?: number) => {
     try {

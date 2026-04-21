@@ -58,6 +58,7 @@ const PLAN_LABELS: Record<PlanKey, { label: string; price: string; color: string
 };
 
 const NUMERIC_LIMITS: { key: keyof PlanLimits; label: string; hint: string }[] = [
+  { key: "maxBrands",              label: "Marcas permitidas",         hint: "-1 = ilimitado" },
   { key: "maxActiveCampaigns",     label: "Campañas activas",          hint: "-1 = ilimitado" },
   { key: "maxTotalCampaigns",      label: "Campañas totales",          hint: "-1 = ilimitado" },
   { key: "maxMatchesPerCampaign",  label: "Matches por campaña",       hint: "-1 = ilimitado" },

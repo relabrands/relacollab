@@ -2,6 +2,8 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { UpgradePrompt } from "@/components/brand/UpgradePrompt";
 import { Button } from "@/components/ui/button";
 import { Loader2, Instagram, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -12,6 +14,7 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recha
 
 export default function BrandAnalytics() {
     const { user } = useAuth();
+    const { limits, loading: limitsLoading } = usePlanLimits();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any[]>([]);
     const [stats, setStats] = useState({
@@ -250,7 +253,32 @@ export default function BrandAnalytics() {
         });
     };
 
-    if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
+    if (loading || limitsLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
+
+    if (!limits.analyticsEnabled) {
+        return (
+            <div className="flex min-h-screen bg-background">
+                <DashboardSidebar type="brand" />
+                <MobileNav type="brand" />
+                <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8 flex flex-col items-center justify-center text-center">
+                    <div className="max-w-md p-8 border rounded-2xl bg-white shadow-sm space-y-4">
+                        <div className="w-16 h-16 mx-auto bg-muted/50 rounded-2xl flex items-center justify-center">
+                            <svg className="w-8 h-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-xl font-bold">Analíticas Avanzadas Bloqueadas</h2>
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                            El análisis en tiempo real y la métrica de rendimiento de campañas detallada están disponibles en planes superiores.
+                        </p>
+                        <Button className="w-full mt-4 bg-[#534AB7] hover:bg-[#534AB7]/90 text-white" onClick={() => window.open('https://buy.stripe.com/test_8wM8xm0o3eJmaT66oo', '_blank')}>
+                            Mejorar a Plan Growth
+                        </Button>
+                    </div>
+                </main>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen bg-background">

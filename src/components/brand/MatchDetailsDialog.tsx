@@ -65,6 +65,7 @@ interface MatchDetailsDialogProps {
     isApplicant?: boolean;
     isCollaborating?: boolean;
     onApprove?: () => void;
+    limits?: any;
 }
 
 interface AiAnalysis {
@@ -113,7 +114,7 @@ const getMatchLabel = (pct: number) => {
     return "Low Match";
 };
 
-export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isApplicant, isCollaborating, onApprove }: MatchDetailsDialogProps) {
+export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isApplicant, isCollaborating, onApprove, limits }: MatchDetailsDialogProps) {
     const { user } = useAuth();
     const [loadingPosts, setLoadingPosts] = useState(false);
     const [posts, setPosts] = useState<InstagramMedia[]>([]);
@@ -355,7 +356,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                 <div className="space-y-6 py-2">
 
                     {/* ─── AI Match Intelligence ─── */}
-                    {!isCollaborating && (
+                    {!isCollaborating && limits?.aiMatchEnabled && (
                         <div className="space-y-3">
                             <h3 className="font-semibold flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
                                 <Sparkles className="w-4 h-4 text-primary" />

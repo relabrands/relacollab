@@ -67,7 +67,10 @@ export default function BrandDashboard() {
   const handleNewCampaign = (e: React.MouseEvent) => {
     e.preventDefault();
     const activeCampaigns = typeof stats[0].value === 'number' ? stats[0].value : 0;
-    if (!isWithinLimit(activeCampaigns, limits.maxActiveCampaigns)) {
+    const totalMatch = stats[0].change.match(/\d+/);
+    const totalCampaigns = totalMatch ? parseInt(totalMatch[0]) : 0;
+    
+    if (!isWithinLimit(activeCampaigns, limits.maxActiveCampaigns) || !isWithinLimit(totalCampaigns, limits.maxTotalCampaigns)) {
         setUpgradeOpen(true);
         return;
     }
@@ -265,7 +268,7 @@ export default function BrandDashboard() {
       <UpgradePrompt
         open={upgradeOpen}
         onOpenChange={setUpgradeOpen}
-        reason={`Tu plan actual permite máximo ${limits.maxActiveCampaigns === 1 ? "1 campaña activa" : `${limits.maxActiveCampaigns} campañas activas`}. Actualiza tu plan para crear más campañas.`}
+        reason={`Has alcanzado el límite de tu plan (Activas: ${limits.maxActiveCampaigns === -1 ? 'Ilimitadas' : limits.maxActiveCampaigns}, Totales: ${limits.maxTotalCampaigns === -1 ? 'Ilimitadas' : limits.maxTotalCampaigns}). Actualiza tu plan para crear más.`}
         recommendedPlan={recommendedUpgrade()}
       />
     </div>

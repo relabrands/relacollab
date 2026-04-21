@@ -59,7 +59,9 @@ export default function BrandCampaigns() {
         const activeCampaigns = campaigns.filter(
             (c) => c.status === "active" || c.status === "published"
         ).length;
-        if (!isWithinLimit(activeCampaigns, limits.maxActiveCampaigns)) {
+        const totalCampaigns = campaigns.length;
+
+        if (!isWithinLimit(activeCampaigns, limits.maxActiveCampaigns) || !isWithinLimit(totalCampaigns, limits.maxTotalCampaigns)) {
             setUpgradeOpen(true);
             return;
         }
@@ -150,9 +152,7 @@ export default function BrandCampaigns() {
                         {filter !== "all" ? (
                             <Button variant="link" onClick={() => setFilter("all")}>Limpiar filtros</Button>
                         ) : (
-                            <Link to="/brand/campaigns/new">
-                                <Button variant="outline">Crea tu primera campaña</Button>
-                            </Link>
+                            <Button variant="outline" onClick={handleNewCampaign}>Crea tu primera campaña</Button>
                         )}
                     </div>
                 )}
@@ -183,7 +183,7 @@ export default function BrandCampaigns() {
             <UpgradePrompt
                 open={upgradeOpen}
                 onOpenChange={setUpgradeOpen}
-                reason={`Tu plan actual permite máximo ${limits.maxActiveCampaigns === 1 ? "1 campaña activa" : `${limits.maxActiveCampaigns} campañas activas`}. Actualiza tu plan para crear más campañas.`}
+                reason={`Has alcanzado el límite de tu plan (Activas: ${limits.maxActiveCampaigns === -1 ? 'Ilimitadas' : limits.maxActiveCampaigns}, Totales: ${limits.maxTotalCampaigns === -1 ? 'Ilimitadas' : limits.maxTotalCampaigns}). Actualiza tu plan para crear más.`}
                 recommendedPlan={recommendedUpgrade()}
             />
         </div>

@@ -25,8 +25,11 @@ const formatNumber = (num: number) => {
 };
 
 
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+
 export default function BrandMatches() {
   const { user } = useAuth();
+  const { limits } = usePlanLimits();
   const [searchParams, setSearchParams] = useSearchParams();
   const campaignId = searchParams.get("campaignId");
 
@@ -146,17 +149,19 @@ export default function BrandMatches() {
 
             // ── Fetch existing AI analysis from the matches subcollection ──
             let aiAnalysis: any = null;
-            try {
-              const matchRef = doc(db, "campaigns", activeCampaign.id, "matches", appDoc.id.includes(appData.creatorId) ? appData.creatorId : appData.creatorId);
-              const matchSnap = await getDoc(matchRef);
-              if (matchSnap.exists()) {
-                const mData = matchSnap.data();
-                if (mData.aiAnalysis?.matchPercentage !== undefined) {
-                  aiAnalysis = mData.aiAnalysis;
+            if (limits.aiMatchEnabled) {
+              try {
+                const matchRef = doc(db, "campaigns", activeCampaign.id, "matches", appDoc.id.includes(appData.creatorId) ? appData.creatorId : appData.creatorId);
+                const matchSnap = await getDoc(matchRef);
+                if (matchSnap.exists()) {
+                  const mData = matchSnap.data();
+                  if (mData.aiAnalysis?.matchPercentage !== undefined) {
+                    aiAnalysis = mData.aiAnalysis;
+                  }
                 }
+              } catch (e) {
+                // AI analysis not available – fall back to calculated score
               }
-            } catch (e) {
-              // AI analysis not available – fall back to calculated score
             }
 
             // Find submission for this creator
@@ -246,23 +251,25 @@ export default function BrandMatches() {
           .sort((a, b) => b.matchScore - a.matchScore);
 
         // 4. Pre-fetch existing AI analysis from Firestore matches subcollection
-        const aiPromises = matchedCreators.map(async (creator: any) => {
-          try {
-            const matchRef = doc(db, "campaigns", activeCampaign.id, "matches", creator.id);
-            const matchSnap = await getDoc(matchRef);
-            if (matchSnap.exists()) {
-              const matchData = matchSnap.data();
-              if (matchData.aiAnalysis?.matchPercentage !== undefined) {
-                return { id: creator.id, aiAnalysis: matchData.aiAnalysis };
-              }
-            }
-          } catch (_) { /* Ignore individual fetch errors */ }
-          return { id: creator.id, aiAnalysis: null };
-        });
-
-        const aiResults = await Promise.all(aiPromises);
         const aiMap: Record<string, any> = {};
-        aiResults.forEach(r => { if (r.aiAnalysis) aiMap[r.id] = r.aiAnalysis; });
+        if (limits.aiMatchEnabled) {
+          const aiPromises = matchedCreators.map(async (creator: any) => {
+            try {
+              const matchRef = doc(db, "campaigns", activeCampaign.id, "matches", creator.id);
+              const matchSnap = await getDoc(matchRef);
+              if (matchSnap.exists()) {
+                const matchData = matchSnap.data();
+                if (matchData.aiAnalysis?.matchPercentage !== undefined) {
+                  return { id: creator.id, aiAnalysis: matchData.aiAnalysis };
+                }
+              }
+            } catch (_) { /* Ignore individual fetch errors */ }
+            return { id: creator.id, aiAnalysis: null };
+          });
+
+          const aiResults = await Promise.all(aiPromises);
+          aiResults.forEach(r => { if (r.aiAnalysis) aiMap[r.id] = r.aiAnalysis; });
+        }
 
         // Merge AI data, re-sort by AI score
         matchedCreators = matchedCreators.map((c: any) => ({
@@ -272,6 +279,17 @@ export default function BrandMatches() {
           displayScore: aiMap[c.id]?.matchPercentage ?? c.matchScore,
         })).sort((a: any, b: any) => b.displayScore - a.displayScore);
 
+        // Enforce maxMonthlyApplications limit visually for applicants
+        let finalApplications = allApplications;
+        if (limits.maxMonthlyApplications !== -1) {
+            finalApplications = finalApplications.slice(0, limits.maxMonthlyApplications);
+        }
+        setApplicants(finalApplications.filter((a: any) => a.status === 'pending'));
+
+        // Enforce maxMatchesPerCampaign limit
+        if (limits.maxMatchesPerCampaign !== -1) {
+            matchedCreators = matchedCreators.slice(0, limits.maxMatchesPerCampaign);
+        }
 
         setCreators(matchedCreators);
       } catch (error) {
@@ -724,6 +742,7 @@ export default function BrandMatches() {
           campaign={activeCampaign}
           isApplicant={viewMode === 'applicants'} // Pass context to dialog
           isCollaborating={viewMode === 'collaborating' || viewMode === 'completed'}
+          limits={limits}
           onApprove={() => {
             if (viewMode === 'applicants') {
               handleApproveApplicant(selectedCreator);
