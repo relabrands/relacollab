@@ -14,11 +14,18 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { SubscriptionGateModal } from "@/components/brand/SubscriptionGateModal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+import { UpgradePrompt } from "@/components/brand/UpgradePrompt";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { useNavigate } from "react-router-dom";
+
 export default function BrandDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { limits, isWithinLimit, recommendedUpgrade } = usePlanLimits();
   const { plan, isActive, loading: subLoading } = useSubscription();
   // La modal se abre si terminó de cargar y no hay suscripción activa
   const [gateOpen, setGateOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [brandProfiles, setBrandProfiles] = useState<any[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string>("all");
@@ -56,6 +63,16 @@ export default function BrandDashboard() {
     },
   ]);
   const [recentCampaigns, setRecentCampaigns] = useState<any[]>([]);
+
+  const handleNewCampaign = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const activeCampaigns = typeof stats[0].value === 'number' ? stats[0].value : 0;
+    if (!isWithinLimit(activeCampaigns, limits.maxActiveCampaigns)) {
+        setUpgradeOpen(true);
+        return;
+    }
+    navigate("/brand/campaigns/new");
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -216,12 +233,10 @@ export default function BrandDashboard() {
                 </Select>
               )}
           </div>
-          <Link to="/brand/campaigns/new">
-            <Button variant="hero">
-              <Plus className="w-4 h-4" />
-              Crear Campaña
-            </Button>
-          </Link>
+          <Button variant="hero" onClick={handleNewCampaign}>
+            <Plus className="w-4 h-4 mr-2" />
+            Crear Campaña
+          </Button>
         </div>
 
         {/* Campaigns Grid */}
@@ -234,9 +249,7 @@ export default function BrandDashboard() {
         ) : (
           <div className="text-center py-12 bg-white rounded-lg border border-dashed">
             <p className="text-muted-foreground mb-4">Aún no hay campañas.</p>
-            <Link to="/brand/campaigns/new">
-              <Button variant="outline">Crea tu primera campaña</Button>
-            </Link>
+            <Button variant="outline" onClick={handleNewCampaign}>Crea tu primera campaña</Button>
           </div>
         )}
       </main>
@@ -246,6 +259,14 @@ export default function BrandDashboard() {
         open={gateOpen}
         onOpenChange={setGateOpen}
         dismissible={false}
+      />
+
+      {/* Upgrade Prompt */}
+      <UpgradePrompt
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        reason={`Tu plan actual permite máximo ${limits.maxActiveCampaigns === 1 ? "1 campaña activa" : `${limits.maxActiveCampaigns} campañas activas`}. Actualiza tu plan para crear más campañas.`}
+        recommendedPlan={recommendedUpgrade()}
       />
     </div>
   );
