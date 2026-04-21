@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Loader2, Plus, Edit, Trash2, ArrowLeft, Image as ImageIcon } from "lucide-react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { UpgradePrompt } from "@/components/brand/UpgradePrompt";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +59,8 @@ const emptyBrandProfile = (ownerId: string): BrandProfile => ({
 
 export default function BrandSettings() {
     const { user } = useAuth();
+    const { limits, isWithinLimit, recommendedUpgrade } = usePlanLimits();
+    const [upgradeOpen, setUpgradeOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [brands, setBrands] = useState<BrandProfile[]>([]);
@@ -190,6 +194,15 @@ export default function BrandSettings() {
         }
     };
 
+    const handleNewBrand = () => {
+        if (!isWithinLimit(brands.length, limits.maxBrands)) {
+            setUpgradeOpen(true);
+            return;
+        }
+        setSelectedBrand(emptyBrandProfile(user!.uid));
+        setIsCreating(true);
+    };
+
     const handleDeleteBrand = async (brandId: string) => {
         if (!brandId) return;
         try {
@@ -221,10 +234,7 @@ export default function BrandSettings() {
                                 <h2 className="text-xl font-semibold tracking-tight">Mis Marcas</h2>
                                 <p className="text-sm text-muted-foreground">Administra las marcas bajo tu cuenta corporativa.</p>
                             </div>
-                            <Button onClick={() => {
-                                setSelectedBrand(emptyBrandProfile(user!.uid));
-                                setIsCreating(true);
-                            }}>
+                            <Button onClick={handleNewBrand}>
                                 <Plus className="w-4 h-4 mr-2" />
                                 Agregar Marca
                             </Button>
@@ -234,10 +244,7 @@ export default function BrandSettings() {
                             <div className="text-center py-12 border rounded-lg bg-card/50">
                                 <h3 className="text-lg font-medium">No tienes marcas registradas</h3>
                                 <p className="text-muted-foreground mt-1 mb-4">Comienza creando tu primer perfil de marca para lanzar campañas.</p>
-                                <Button onClick={() => {
-                                    setSelectedBrand(emptyBrandProfile(user!.uid));
-                                    setIsCreating(true);
-                                }}>
+                                <Button onClick={handleNewBrand}>
                                     Crear mi primera marca
                                 </Button>
                             </div>
@@ -457,6 +464,13 @@ export default function BrandSettings() {
                     </div>
                 )}
             </main>
+            
+            <UpgradePrompt
+                open={upgradeOpen}
+                onOpenChange={setUpgradeOpen}
+                reason={`Tu plan actual permite máximo ${limits.maxBrands === 1 ? "1 marca" : `${limits.maxBrands} marcas`}. Actualiza tu plan para registrar más marcas.`}
+                recommendedPlan={recommendedUpgrade()}
+            />
         </div>
     );
 }

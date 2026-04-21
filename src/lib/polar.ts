@@ -32,6 +32,7 @@ export const PLANS: Record<PlanKey, Plan> = {
     priceLabel: "Gratis",
     description: "Para marcas que están empezando a explorar el UGC.",
     features: [
+      "1 marca",
       "1 campaña activa",
       "3 matches por IA",
       "Dashboard básico",
@@ -47,6 +48,7 @@ export const PLANS: Record<PlanKey, Plan> = {
     priceLabel: "$89/mes",
     description: "Para marcas con campañas recurrentes y equipos en crecimiento.",
     features: [
+      "Hasta 5 marcas",
       "3 campañas activas",
       "10 matches por campaña",
       "Dashboard + reportes",
@@ -63,6 +65,7 @@ export const PLANS: Record<PlanKey, Plan> = {
     priceLabel: "$249/mes",
     description: "Para agencias y marcas con alto volumen de campañas.",
     features: [
+      "Marcas ilimitadas",
       "Campañas ilimitadas",
       "Matches ilimitados por IA",
       "Acceso API",

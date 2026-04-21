@@ -4,6 +4,7 @@ import { db } from "@/lib/firebase";
 import { useSubscription } from "@/hooks/useSubscription";
 
 export interface PlanLimits {
+  maxBrands: number;
   maxActiveCampaigns: number;   // -1 = ilimitado
   maxTotalCampaigns: number;
   maxMatchesPerCampaign: number;
@@ -19,6 +20,7 @@ export interface PlanLimits {
 // Límites por defecto en caso de que Firestore no tenga el doc aún
 export const DEFAULT_LIMITS: Record<string, PlanLimits> = {
   starter: {
+    maxBrands: 1,
     maxActiveCampaigns: 1,
     maxTotalCampaigns: 3,
     maxMatchesPerCampaign: 5,
@@ -31,6 +33,7 @@ export const DEFAULT_LIMITS: Record<string, PlanLimits> = {
     teamMembersEnabled: false,
   },
   growth: {
+    maxBrands: 5,
     maxActiveCampaigns: 5,
     maxTotalCampaigns: 20,
     maxMatchesPerCampaign: 25,
@@ -43,6 +46,7 @@ export const DEFAULT_LIMITS: Record<string, PlanLimits> = {
     teamMembersEnabled: false,
   },
   pro: {
+    maxBrands: -1,
     maxActiveCampaigns: -1,
     maxTotalCampaigns: -1,
     maxMatchesPerCampaign: -1,
