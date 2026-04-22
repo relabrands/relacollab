@@ -13,6 +13,7 @@ import { db } from "@/lib/firebase";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { toast } from "sonner";
 import { startOfMonth, endOfMonth, isAfter, isBefore } from "date-fns";
+import { ProfileCompleteBanner } from "@/components/creator/ProfileCompleteBanner";
 
 export default function CreatorDashboard() {
   const { user } = useAuth();
@@ -23,6 +24,8 @@ export default function CreatorDashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [igTokenExpired, setIgTokenExpired] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [showMissingDetails, setShowMissingDetails] = useState(false);
 
   const handleCardClick = (opportunity: any) => {
     setSelectedOpportunity(opportunity);
@@ -111,6 +114,19 @@ export default function CreatorDashboard() {
         if (userData.collaborationPreference) completion += 10;
 
         setProfileCompletion(completion);
+
+        // Detect missing fields for banner
+        const missing: string[] = [];
+        if (!userData.bio) missing.push("Biografía");
+        if (!userData.location) missing.push("Ubicación");
+        if (!userData.phone) missing.push("Teléfono");
+        if (!userData.photoURL) missing.push("Foto de perfil");
+        if (!userData.niche) missing.push("Nicho principal");
+        if (!userData.contentFormats?.length) missing.push("Formatos de contenido");
+        if (!userData.experienceTime) missing.push("Tiempo de experiencia");
+        if (!userData.collaborationPreference) missing.push("Preferencia de colaboración");
+        if (!userData.instagramConnected && !userData.tiktokConnected) missing.push("Red social conectada (Instagram o TikTok)");
+        setMissingFields(missing);
 
         // 2. Fetch all creator's applications to filter them out
         const applicationsQuery = query(
@@ -432,6 +448,9 @@ export default function CreatorDashboard() {
             </Link>
           </div>
         )}
+
+        {/* Profile Incomplete Banner */}
+        <ProfileCompleteBanner completion={profileCompletion} missingFields={missingFields} />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

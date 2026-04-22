@@ -8,6 +8,8 @@ import { motion } from "framer-motion";
 import { Filter, SlidersHorizontal, Sparkles, Loader2, Clock } from "lucide-react";
 import { collection, query, where, getDocs, orderBy, doc, getDoc, addDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useCreatorProfileCompletion } from "@/hooks/useCreatorProfileCompletion";
+import { ProfileCompleteBanner } from "@/components/creator/ProfileCompleteBanner";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -33,6 +35,7 @@ import { Label } from "@/components/ui/label";
 
 export default function Opportunities() {
   const { user } = useAuth();
+  const { completion: profileCompletion, missingFields } = useCreatorProfileCompletion();
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'paid' | 'experience' | 'pending'>('all');
@@ -402,6 +405,10 @@ export default function Opportunities() {
           title="Oportunidades"
           subtitle="Campañas que coinciden con tu perfil y estilo"
         />
+
+        {/* Profile Incomplete Banner */}
+        <ProfileCompleteBanner completion={profileCompletion} missingFields={missingFields} />
+
 
         {/* AI Info */}
         <motion.div
