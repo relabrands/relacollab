@@ -30,6 +30,7 @@ import { BrandDetailsDialog } from "@/components/admin/BrandDetailsDialog";
 interface Brand {
   id: string;
   name: string;
+  companyName?: string;
   email: string;
   plan: string;
   credits: number;
@@ -147,6 +148,7 @@ export default function AdminBrands() {
           avatar: data.photoURL || data.avatar,
           website: data.website,
           industry: data.industry,
+          companyName: data.companyName || data.brandName || data.displayName,
           companySize: data.companySize,
           location: data.location,
           phone: data.phone,
@@ -280,18 +282,18 @@ export default function AdminBrands() {
     <div className="flex min-h-screen bg-background">
       <AdminSidebar />
 
-      <main className="flex-1 ml-64 p-8">
+      <main className="flex-1 md:ml-64 p-4 md:p-8 min-w-0 transition-all duration-300">
         <DashboardHeader
           title="Manage Brands"
           subtitle="Add, edit, and manage brand accounts"
         />
 
         {/* Actions Bar */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="relative w-80">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search brands..."
+              placeholder="Buscar marcas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -300,9 +302,9 @@ export default function AdminBrands() {
 
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button variant="hero">
-                <Plus className="w-4 h-4" />
-                Add Brand
+              <Button variant="hero" className="w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Nueva Marca
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -374,14 +376,14 @@ export default function AdminBrands() {
             <table className="w-full whitespace-nowrap">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="text-left p-4 font-medium text-muted-foreground">Brand</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground">Compañía / Marca</th>
                   <th className="text-left p-4 font-medium text-muted-foreground">Email</th>
                   <th className="text-left p-4 font-medium text-muted-foreground">Plan</th>
-                  <th className="text-left p-4 font-medium text-muted-foreground">Credits</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground">Créditos</th>
                   <th className="text-left p-4 font-medium text-muted-foreground">Onboarding</th>
-                  <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-                  <th className="text-left p-4 font-medium text-muted-foreground">Campaigns</th>
-                  <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground">Estado</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground">Campañas</th>
+                  <th className="text-right p-4 font-medium text-muted-foreground pr-8">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -392,7 +394,12 @@ export default function AdminBrands() {
                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
                         {brand.avatar ? <img src={brand.avatar} alt={brand.name} className="w-full h-full object-cover" /> : <Building2 className="w-5 h-5 text-primary" />}
                       </div>
-                      <span className="font-medium max-w-[200px] truncate" title={brand.name}>{brand.name}</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium max-w-[200px] truncate" title={brand.name}>{brand.name}</span>
+                        {brand.industry && (
+                          <span className="text-xs text-muted-foreground truncate max-w-[200px]">{brand.industry}</span>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="p-4 text-muted-foreground max-w-[200px] truncate" title={brand.email}>{brand.email}</td>
@@ -445,11 +452,12 @@ export default function AdminBrands() {
                     </Select>
                   </td>
                   <td className="p-4">{brand.campaigns}</td>
-                  <td className="p-4">
-                    <div className="flex items-center justify-end gap-2">
+                  <td className="p-4 pr-8">
+                    <div className="flex items-center justify-end gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
                         onClick={() => handleViewDetails(brand)}
                       >
                         <Eye className="w-4 h-4" />
@@ -457,6 +465,7 @@ export default function AdminBrands() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
                         onClick={() => {
                           setSelectedBrand(brand);
                           setIsEditOpen(true);
@@ -467,7 +476,7 @@ export default function AdminBrands() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-destructive hover:text-destructive"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
                         onClick={() => handleDeleteBrand(brand)}
                       >
                         <Trash2 className="w-4 h-4" />
