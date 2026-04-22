@@ -25,6 +25,7 @@ export default function CreatorDashboard() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [igTokenExpired, setIgTokenExpired] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [missingOptionalFields, setMissingOptionalFields] = useState<string[]>([]);
   const [showMissingDetails, setShowMissingDetails] = useState(false);
 
   const handleCardClick = (opportunity: any) => {
@@ -117,16 +118,24 @@ export default function CreatorDashboard() {
 
         // Detect missing fields for banner
         const missing: string[] = [];
-        if (!userData.bio) missing.push("Biografía");
-        if (!userData.location) missing.push("Ubicación");
-        if (!userData.phone) missing.push("Teléfono");
-        if (!userData.photoURL) missing.push("Foto de perfil");
-        if (!userData.niche) missing.push("Nicho principal");
-        if (!userData.contentFormats?.length) missing.push("Formatos de contenido");
-        if (!userData.experienceTime) missing.push("Tiempo de experiencia");
-        if (!userData.collaborationPreference) missing.push("Preferencia de colaboración");
-        if (!userData.instagramConnected && !userData.tiktokConnected) missing.push("Red social conectada (Instagram o TikTok)");
+        if (!userData.bio)                         missing.push("📝 Biografía");
+        if (!userData.location)                    missing.push("📍 Ubicación");
+        if (!userData.phone)                       missing.push("📞 Teléfono");
+        if (!userData.photoURL)                    missing.push("🧑 Foto de perfil");
+        if (!userData.categories?.length)          missing.push("🏷️ Categorías de contenido");
+        if (!userData.contentFormats?.length)      missing.push("🎥 Formatos de contenido");
+        if (!userData.vibes?.length)               missing.push("✨ Estilo / Vibe");
+        if (!userData.whoAppearsInContent?.length) missing.push("👥 Quién aparece en el contenido");
+        if (!userData.experienceTime)              missing.push("📅 Tiempo de experiencia");
+        if (!userData.collaborationPreference)     missing.push("🤝 Preferencia de colaboración");
+        if (!userData.instagramConnected && !userData.tiktokConnected)
+                                                   missing.push("📱 Red social conectada (Instagram o TikTok)");
         setMissingFields(missing);
+
+        // Optional fields (not scored)
+        const optional: string[] = [];
+        if (!userData.shippingAddress?.street)     optional.push("📦 Dirección de envío (para intercambios)");
+        setMissingOptionalFields(optional);
 
         // 2. Fetch all creator's applications to filter them out
         const applicationsQuery = query(
@@ -450,7 +459,11 @@ export default function CreatorDashboard() {
         )}
 
         {/* Profile Incomplete Banner */}
-        <ProfileCompleteBanner completion={profileCompletion} missingFields={missingFields} />
+        <ProfileCompleteBanner
+          completion={profileCompletion}
+          missingFields={missingFields}
+          optionalFields={missingOptionalFields}
+        />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

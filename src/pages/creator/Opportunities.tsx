@@ -35,7 +35,7 @@ import { Label } from "@/components/ui/label";
 
 export default function Opportunities() {
   const { user } = useAuth();
-  const { completion: profileCompletion, missingFields } = useCreatorProfileCompletion();
+  const { completion: profileCompletion, missingFields, optionalFields } = useCreatorProfileCompletion();
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'paid' | 'experience' | 'pending'>('all');
@@ -407,8 +407,11 @@ export default function Opportunities() {
         />
 
         {/* Profile Incomplete Banner */}
-        <ProfileCompleteBanner completion={profileCompletion} missingFields={missingFields} />
-
+        <ProfileCompleteBanner
+          completion={profileCompletion}
+          missingFields={missingFields}
+          optionalFields={optionalFields}
+        />
 
         {/* AI Info */}
         <motion.div
