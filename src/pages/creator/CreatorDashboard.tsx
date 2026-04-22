@@ -130,11 +130,11 @@ export default function CreatorDashboard() {
         if (!userData.collaborationPreference)     missing.push("🤝 Preferencia de colaboración");
         if (!userData.instagramConnected && !userData.tiktokConnected)
                                                    missing.push("📱 Red social conectada (Instagram o TikTok)");
+        if (!userData.shippingAddress?.street)     missing.push("📦 Logística de Envíos (Dirección)");
         setMissingFields(missing);
 
         // Optional fields (not scored)
         const optional: string[] = [];
-        if (!userData.shippingAddress?.street)     optional.push("📦 Dirección de envío (para intercambios)");
         setMissingOptionalFields(optional);
 
         // 2. Fetch all creator's applications to filter them out

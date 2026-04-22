@@ -321,6 +321,10 @@ export default function CreateCampaign() {
                 toast.error("La ciudad del establecimiento es requerida");
                 return false;
               }
+              if (formData.requiresVisit && !formData.establishmentInstructions?.trim()) {
+                toast.error("Las instrucciones de visita son requeridas (ej: cómo reservar)");
+                return false;
+              }
               if (formData.visitDays.length === 0) {
                 toast.error("Selecciona al menos un día disponible para visitas");
                 return false;
@@ -331,11 +335,11 @@ export default function CreateCampaign() {
               toast.error("Selecciona el método de entrega del producto");
               return false;
             }
-            if (formData.productDeliveryMethod === "shipping" && !formData.shippingService.trim()) {
+            if (formData.productDeliveryMethod === "shipping" && !formData.shippingService?.trim()) {
               toast.error("Especifica el servicio de mensajería a utilizar");
               return false;
             }
-            if (formData.productDeliveryMethod === "pickup" && !formData.pickupAddress.trim()) {
+            if (formData.productDeliveryMethod === "pickup" && !formData.pickupAddress?.trim()) {
               toast.error("La dirección de recogida es requerida");
               return false;
             }

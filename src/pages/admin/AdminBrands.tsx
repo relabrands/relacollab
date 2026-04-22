@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { collection, query, where, getDocs, doc, updateDoc, deleteDoc, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { BrandDetailsDialog } from "@/components/admin/BrandDetailsDialog";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 
 interface Brand {
   id: string;
@@ -281,8 +282,9 @@ export default function AdminBrands() {
   return (
     <div className="flex min-h-screen bg-background">
       <AdminSidebar />
+      <MobileNav type="admin" />
 
-      <main className="flex-1 md:ml-64 p-4 md:p-8 min-w-0 transition-all duration-300">
+      <main className="flex-1 md:ml-64 p-4 md:p-8 min-w-0 pb-20 md:pb-8 transition-all duration-300">
         <DashboardHeader
           title="Manage Brands"
           subtitle="Add, edit, and manage brand accounts"
@@ -370,9 +372,10 @@ export default function AdminBrands() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-card overflow-hidden"
+          className="glass-card overflow-hidden border-none sm:border"
         >
-          <div className="w-full flex-1 min-w-0 overflow-x-auto">
+          <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-primary/10">
+            <div className="min-w-[1000px]">
             <table className="w-full whitespace-nowrap">
               <thead className="bg-muted/50">
                 <tr>
@@ -488,6 +491,7 @@ export default function AdminBrands() {
             </tbody>
           </table>
         </div>
+      </div>
 
           {filteredBrands.length === 0 && (
             <div className="p-12 text-center">

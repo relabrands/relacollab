@@ -34,7 +34,7 @@ export function AdminSidebar() {
   const { logout } = useAuth();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar text-sidebar-foreground flex flex-col">
+    <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-sidebar text-sidebar-foreground flex-col">
       {/* Logo */}
       <Link to="/" className="flex items-center px-6 py-6">
         <img

@@ -16,6 +16,9 @@ import {
     Calendar,
     Sparkles,
     LogOut,
+    Building2,
+    DollarSign,
+    Mail,
 } from "lucide-react";
 import {
     Sheet,
@@ -27,7 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 interface MobileNavProps {
-    type: "brand" | "creator";
+    type: "brand" | "creator" | "admin";
 }
 
 const brandMainItems = [
@@ -59,11 +62,26 @@ const creatorMoreItems = [
     { icon: Settings, label: "Settings", path: "/creator/settings" },
 ];
 
+const adminMainItems = [
+    { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
+    { icon: Building2, label: "Brands", path: "/admin/brands" },
+    { icon: Users, label: "Creators", path: "/admin/creators" },
+    { icon: FileText, label: "Campaigns", path: "/admin/campaigns" },
+];
+
+const adminMoreItems = [
+    { icon: CreditCard, label: "Subscriptions", path: "/admin/subscriptions" },
+    { icon: DollarSign, label: "Finance", path: "/admin/finance" },
+    { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
+    { icon: Mail, label: "Emails", path: "/admin/email-templates" },
+    { icon: Settings, label: "Settings", path: "/admin/settings" },
+];
+
 export function MobileNav({ type }: MobileNavProps) {
     const location = useLocation();
     const { logout } = useAuth();
-    const navItems = type === "brand" ? brandMainItems : creatorMainItems;
-    const moreItems = type === "brand" ? brandMoreItems : creatorMoreItems;
+    const navItems = type === "brand" ? brandMainItems : type === "creator" ? creatorMainItems : adminMainItems;
+    const moreItems = type === "brand" ? brandMoreItems : type === "creator" ? creatorMoreItems : adminMoreItems;
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-lg border-t border-border z-50 md:hidden pb-safe">

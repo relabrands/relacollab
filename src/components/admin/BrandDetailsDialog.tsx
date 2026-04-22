@@ -321,28 +321,33 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                                                             )}
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <div className="font-semibold truncate text-lg">{sb.brandName}</div>
-                                                            <div className="text-xs text-muted-foreground truncate">{sb.industry || 'Sin industria especificada'}</div>
+                                                            <div className="font-semibold text-lg">{sb.brandName || sb.name || sb.displayName || "Sin nombre"}</div>
+                                                            <div className="text-xs text-muted-foreground truncate">{sb.industry || sb.niche || 'Sin industria especificada'}</div>
                                                         </div>
                                                     </div>
-                                                    <div className="text-xs text-muted-foreground/80 line-clamp-2">
-                                                        {sb.description || 'Sin descripción'}
+                                                    <div className="text-xs text-muted-foreground/80 line-clamp-3">
+                                                        {sb.description || sb.bio || 'Sin descripción'}
                                                     </div>
-                                                    {(sb.website || sb.instagram || sb.location) && (
-                                                        <div className="flex flex-wrap gap-3 pt-2 border-t text-xs">
+                                                    {(sb.website || sb.instagram || sb.tiktok || sb.location) && (
+                                                        <div className="flex flex-wrap gap-3 pt-2 border-t text-[10px] sm:text-xs">
                                                             {sb.website && (
                                                                 <a href={sb.website.startsWith('http') ? sb.website : `https://${sb.website}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
-                                                                    <Globe className="w-3 h-3" /> Sitio Web
+                                                                    <Globe className="w-2.5 h-2.5" /> Web
                                                                 </a>
                                                             )}
                                                             {sb.instagram && (
                                                                 <a href={`https://instagram.com/${sb.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:underline inline-flex items-center gap-1">
-                                                                    <span className="font-medium">IG:</span> {sb.instagram}
+                                                                    <span className="font-medium">IG:</span> {sb.instagram.length > 15 ? sb.instagram.substring(0, 12) + '...' : sb.instagram}
+                                                                </a>
+                                                            )}
+                                                            {sb.tiktok && (
+                                                                <a href={`https://tiktok.com/@${sb.tiktok.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline inline-flex items-center gap-1">
+                                                                    <span className="font-medium">TT:</span> {sb.tiktok.length > 15 ? sb.tiktok.substring(0, 12) + '...' : sb.tiktok}
                                                                 </a>
                                                             )}
                                                             {sb.location && (
-                                                                <div className="text-muted-foreground inline-flex items-center gap-1">
-                                                                    <MapPin className="w-3 h-3" /> {sb.location}
+                                                                <div className="text-muted-foreground inline-flex items-center gap-1 truncate max-w-[100px]">
+                                                                    <MapPin className="w-2.5 h-2.5" /> {sb.location}
                                                                 </div>
                                                             )}
                                                         </div>

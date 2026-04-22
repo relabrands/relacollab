@@ -183,79 +183,78 @@ export default function AdminCampaigns() {
                             <Loader2 className="w-8 h-8 animate-spin text-primary" />
                         </div>
                     ) : (
-                        <table className="w-full">
-                            <thead className="bg-muted/50">
-                                <tr>
-                                    <th className="text-left p-4 font-medium text-muted-foreground">Campaign</th>
-                                    <th className="text-left p-4 font-medium text-muted-foreground">Brand</th>
-                                    <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-                                    <th className="text-left p-4 font-medium text-muted-foreground">Budget</th>
-                                    <th className="text-left p-4 font-medium text-muted-foreground">Applications</th>
-                                    <th className="text-left p-4 font-medium text-muted-foreground">Created</th>
-                                    <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredCampaigns.map((campaign) => (
-                                    <tr key={campaign.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                                        <td className="p-4 font-medium max-w-[200px] truncate" title={campaign.title}>
-                                            <div className="flex items-center gap-2">
-                                                <FileText className="w-4 h-4 text-muted-foreground" />
-                                                {campaign.title}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex items-center gap-2">
-                                                <Building2 className="w-4 h-4 text-muted-foreground" />
-                                                {campaign.brandName}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <Select
-                                                value={campaign.status}
-                                                onValueChange={(value) => handleChangeStatus(campaign.id, value)}
-                                            >
-                                                <SelectTrigger className={`w-28 h-8 text-xs font-medium capitalize ${statusColors[campaign.status] || "bg-muted"}`}>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="active">Active</SelectItem>
-                                                    <SelectItem value="paused">Paused</SelectItem>
-                                                    <SelectItem value="completed">Completed</SelectItem>
-                                                    <SelectItem value="expired">Expired</SelectItem>
-                                                    <SelectItem value="draft">Draft</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </td>
-                                        <td className="p-4 text-muted-foreground">{campaign.budget}</td>
-                                        <td className="p-4">{campaign.applications}</td>
-                                        <td className="p-4 text-muted-foreground">{campaign.createdAt}</td>
-                                        <td className="p-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => handleViewDetails(campaign)}
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-destructive hover:text-destructive"
-                                                    onClick={() => {
-                                                        setCampaignToDelete(campaign);
-                                                        setIsDeleteDialogOpen(true);
-                                                    }}
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </td>
+                        <div className="overflow-x-auto w-full">
+                            <table className="w-full min-w-[1000px]">
+                                <thead className="bg-muted/50">
+                                    <tr>
+                                        <th className="text-left p-4 font-medium text-muted-foreground whitespace-nowrap">Campaign</th>
+                                        <th className="text-left p-4 font-medium text-muted-foreground whitespace-nowrap">Brand</th>
+                                        <th className="text-left p-4 font-medium text-muted-foreground whitespace-nowrap">Status</th>
+                                        <th className="text-left p-4 font-medium text-muted-foreground whitespace-nowrap">Budget</th>
+                                        <th className="text-left p-4 font-medium text-muted-foreground whitespace-nowrap">Applications</th>
+                                        <th className="text-left p-4 font-medium text-muted-foreground whitespace-nowrap">Created</th>
+                                        <th className="text-right p-4 font-medium text-muted-foreground whitespace-nowrap">Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {filteredCampaigns.map((campaign) => (
+                                        <tr key={campaign.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                                            <td className="p-4 font-medium max-w-[200px] truncate" title={campaign.title}>
+                                                <div className="flex items-center gap-2">
+                                                    <FileText className="w-4 h-4 text-muted-foreground" />
+                                                    {campaign.title}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Building2 className="w-4 h-4 text-muted-foreground" />
+                                                    {campaign.brandName}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <Select
+                                                    value={campaign.status}
+                                                    onValueChange={(value) => handleChangeStatus(campaign.id, value)}
+                                                >
+                                                    <SelectTrigger className={`w-28 h-8 text-xs font-medium capitalize ${statusColors[campaign.status] || "bg-muted"}`}>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="active">Active</SelectItem>
+                                                        <SelectItem value="paused">Paused</SelectItem>
+                                                        <SelectItem value="completed">Completed</SelectItem>
+                                                        <SelectItem value="expired">Expired</SelectItem>
+                                                        <SelectItem value="draft">Draft</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </td>
+                                            <td className="p-4 text-muted-foreground">{campaign.budget}</td>
+                                            <td className="p-4">{campaign.applications}</td>
+                                            <td className="p-4 text-muted-foreground">{campaign.createdAt}</td>
+                                            <td className="p-4 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleViewDetails(campaign)}
+                                                        className="p-2 hover:bg-muted rounded-full transition-colors"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        className="p-2 hover:bg-destructive/10 text-destructive rounded-full transition-colors"
+                                                        onClick={() => {
+                                                            setCampaignToDelete(campaign);
+                                                            setIsDeleteDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
 
                     {!loading && filteredCampaigns.length === 0 && (
