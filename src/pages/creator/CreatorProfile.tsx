@@ -129,6 +129,14 @@ export default function CreatorProfile() {
     hasBrandExperience: false
   });
 
+  // Shipping address (private — only shared with matched brands)
+  const [shippingAddress, setShippingAddress] = useState({
+    street: "",
+    sector: "",
+    city: "",
+    reference: ""
+  });
+
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
@@ -173,6 +181,16 @@ export default function CreatorProfile() {
             collaborationPreference: data.collaborationPreference || "",
             hasBrandExperience: data.hasBrandExperience || false
           });
+
+          // Load shipping address
+          if (data.shippingAddress) {
+            setShippingAddress({
+              street: data.shippingAddress.street || "",
+              sector: data.shippingAddress.sector || "",
+              city: data.shippingAddress.city || "",
+              reference: data.shippingAddress.reference || ""
+            });
+          }
         }
       } catch (error) {
         toast.error("Error al cargar los datos del perfil");
@@ -359,6 +377,13 @@ export default function CreatorProfile() {
         experienceTime: professionalData.experienceTime,
         collaborationPreference: professionalData.collaborationPreference,
         hasBrandExperience: professionalData.hasBrandExperience,
+        // Shipping address (private field)
+        shippingAddress: {
+          street: shippingAddress.street,
+          sector: shippingAddress.sector,
+          city: shippingAddress.city,
+          reference: shippingAddress.reference
+        },
         updatedAt: new Date().toISOString(),
       });
       toast.success("¡Perfil guardado exitosamente!");
@@ -790,6 +815,83 @@ export default function CreatorProfile() {
               >
                 {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Guardar Cambios
+              </Button>
+            </motion.div>
+
+            {/* Shipping Address Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="glass-card p-6"
+            >
+              <div className="flex items-start justify-between mb-1">
+                <h2 className="text-lg font-semibold">📦 Logística de Envíos</h2>
+                <span className="flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">
+                  🔒 Privado
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">
+                ¿A dónde te enviamos los productos de intercambio? Tu dirección completa <strong>solo será compartida con las marcas</strong> con las que aceptes colaborar. Públicamente solo verán tu ciudad y sector.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="shippingStreet">Calle y número</Label>
+                  <Input
+                    id="shippingStreet"
+                    value={shippingAddress.street}
+                    onChange={(e) => setShippingAddress(prev => ({ ...prev, street: e.target.value }))}
+                    placeholder="Ej: Calle Las Damas #12"
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="shippingSector">Sector / Barrio</Label>
+                  <Input
+                    id="shippingSector"
+                    value={shippingAddress.sector}
+                    onChange={(e) => setShippingAddress(prev => ({ ...prev, sector: e.target.value }))}
+                    placeholder="Ej: Piantini, Gazcue..."
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="shippingCity">Ciudad</Label>
+                  <Input
+                    id="shippingCity"
+                    value={shippingAddress.city}
+                    onChange={(e) => setShippingAddress(prev => ({ ...prev, city: e.target.value }))}
+                    placeholder="Ej: Santo Domingo"
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="shippingReference">Referencia <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+                  <Input
+                    id="shippingReference"
+                    value={shippingAddress.reference}
+                    onChange={(e) => setShippingAddress(prev => ({ ...prev, reference: e.target.value }))}
+                    placeholder="Ej: Frente al Supermercado Nacional"
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-muted/40 rounded-lg border border-border/50">
+                <p className="text-xs text-muted-foreground">
+                  🔒 <strong>Privacidad garantizada:</strong> Tu dirección completa estará oculta hasta que aceptes una colaboración con una marca. Solo se mostrará públicamente tu ciudad y sector.
+                </p>
+              </div>
+
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={handleSaveProfile}
+                disabled={isSaving}
+              >
+                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Guardar Dirección
               </Button>
             </motion.div>
 

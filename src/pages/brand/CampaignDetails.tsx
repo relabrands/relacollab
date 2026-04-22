@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
     Calendar, Users, DollarSign, ArrowLeft, Target, Sparkles,
-    Loader2, MapPin, Briefcase, FileCheck, UserCheck, Edit2, Trash2, AlertTriangle, CreditCard
+    Loader2, MapPin, Briefcase, FileCheck, UserCheck, Edit2, Trash2, AlertTriangle, CreditCard, Package, Copy, Check
 } from "lucide-react";
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
@@ -42,6 +42,36 @@ export default function CampaignDetails() {
     // Delete state
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Shipping data modal state
+    const [shippingModalCreator, setShippingModalCreator] = useState<any>(null);
+    const [isCopied, setIsCopied] = useState(false);
+
+    const handleCopyDelivery = (creator: any) => {
+        const addr = creator.shippingAddress;
+        const isExchange = campaign?.compensationType === "exchange" || campaign?.compensationType === "hybrid";
+        const logistics = isExchange ? [
+            campaign?.exchangeDeliveryType === "establishment" ? `📍 Establecimiento: ${campaign?.establishmentAddress || ""}` : "",
+            campaign?.exchangeDeliveryType === "product" && campaign?.productDeliveryMethod === "shipping"
+                ? `🚚 Mensajería: ${campaign?.shippingService || ""}` : "",
+            campaign?.exchangeDeliveryType === "product" && campaign?.productDeliveryMethod === "pickup"
+                ? `📍 Recogida en: ${campaign?.pickupAddress || ""}` : "",
+        ].filter(Boolean).join("\n") : "";
+
+        const text = [
+            `📦 Datos de Envío — ${creator.displayName || "Creador"}`,
+            addr?.street ? `Calle: ${addr.street}` : "",
+            addr?.sector ? `Sector: ${addr.sector}` : "",
+            addr?.city ? `Ciudad: ${addr.city}` : "",
+            addr?.reference ? `Referencia: ${addr.reference}` : "",
+            creator.phone ? `📞 Tel: ${creator.phone}` : "",
+            logistics ? `\n🔧 Logística:\n${logistics}` : "",
+        ].filter(Boolean).join("\n");
+
+        navigator.clipboard.writeText(text);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    };
 
     useEffect(() => {
         const fetchCampaignData = async () => {
@@ -287,28 +317,44 @@ export default function CampaignDetails() {
                                 </h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {collaborators.map((c) => (
-                                        <div 
-                                            key={c.id} 
-                                            onClick={() => handleCreatorClick(c)}
-                                            className="flex items-center gap-3 p-3 rounded-xl bg-white/50 dark:bg-white/5 border border-border/40 hover:border-primary/30 transition-all group cursor-pointer"
+                                        <div
+                                            key={c.id}
+                                            className="flex flex-col gap-2 p-3 rounded-xl bg-white/50 dark:bg-white/5 border border-border/40 hover:border-primary/30 transition-all"
                                         >
-                                            <div className="w-10 h-10 rounded-full overflow-hidden bg-muted ring-2 ring-primary/10 group-hover:ring-primary/30 transition-all">
-                                                {c.photoURL ? (
-                                                    <img src={c.photoURL} alt={c.displayName} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-primary/10">
-                                                        <Users className="w-5 h-5" />
+                                            <div
+                                                onClick={() => handleCreatorClick(c)}
+                                                className="flex items-center gap-3 group cursor-pointer"
+                                            >
+                                                <div className="w-10 h-10 rounded-full overflow-hidden bg-muted ring-2 ring-primary/10 group-hover:ring-primary/30 transition-all flex-shrink-0">
+                                                    {c.photoURL ? (
+                                                        <img src={c.photoURL} alt={c.displayName} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-primary/10">
+                                                            <Users className="w-5 h-5" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{c.displayName || "Creador"}</p>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <Badge variant="outline" className="text-[10px] h-4 bg-emerald-50 text-emerald-600 border-emerald-200">
+                                                            Activo
+                                                        </Badge>
+                                                        {c.shippingAddress?.city && (
+                                                            <span className="text-[10px] text-muted-foreground">{c.shippingAddress.city}{c.shippingAddress.sector ? `, ${c.shippingAddress.sector}` : ""}</span>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{c.displayName || "Creador"}</p>
-                                                <div className="flex items-center gap-1.5 mt-0.5">
-                                                    <Badge variant="outline" className="text-[10px] h-4 bg-emerald-50 text-emerald-600 border-emerald-200">
-                                                        Activo
-                                                    </Badge>
                                                 </div>
                                             </div>
+                                            {(campaign?.compensationType === "exchange" || campaign?.compensationType === "hybrid") && (
+                                                <button
+                                                    onClick={() => setShippingModalCreator(c)}
+                                                    className="flex items-center gap-1.5 w-full justify-center text-xs text-primary border border-primary/20 rounded-lg py-1.5 hover:bg-primary/5 transition-all"
+                                                >
+                                                    <Package className="w-3.5 h-3.5" />
+                                                    Ver Datos de Envío
+                                                </button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -571,6 +617,80 @@ export default function CampaignDetails() {
                     </div>
                 </div>
             </main>
+
+            {/* ── Shipping Data Modal ────────────────────── */}
+            <Dialog open={!!shippingModalCreator} onOpenChange={(o) => { if (!o) setShippingModalCreator(null); }}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Package className="w-5 h-5 text-primary" />
+                            Datos de Envío — {shippingModalCreator?.displayName || "Creador"}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Dirección completa compartida por el match aprobado.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {shippingModalCreator && (
+                        <div className="space-y-4">
+                            {/* Creator address */}
+                            {shippingModalCreator.shippingAddress?.street ? (
+                                <div className="p-4 bg-muted/30 rounded-xl space-y-2">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">📍 Dirección del Creador</p>
+                                    <p className="text-sm"><strong>Calle:</strong> {shippingModalCreator.shippingAddress.street}</p>
+                                    {shippingModalCreator.shippingAddress.sector && <p className="text-sm"><strong>Sector:</strong> {shippingModalCreator.shippingAddress.sector}</p>}
+                                    {shippingModalCreator.shippingAddress.city && <p className="text-sm"><strong>Ciudad:</strong> {shippingModalCreator.shippingAddress.city}</p>}
+                                    {shippingModalCreator.shippingAddress.reference && <p className="text-sm"><strong>Referencia:</strong> {shippingModalCreator.shippingAddress.reference}</p>}
+                                    {shippingModalCreator.phone && <p className="text-sm"><strong>📞 Teléfono:</strong> {shippingModalCreator.phone}</p>}
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                    <p className="text-sm text-amber-700">⚠️ Este creador aún no ha registrado su dirección de envío. Puedes contactarlo directamente.</p>
+                                </div>
+                            )}
+
+                            {/* Campaign logistics */}
+                            {(campaign?.compensationType === "exchange" || campaign?.compensationType === "hybrid") && (
+                                <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl space-y-2">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">🔧 Logística de la Campaña</p>
+                                    {campaign.exchangeDeliveryType === "establishment" && (
+                                        <>
+                                            <p className="text-sm"><strong>Tipo:</strong> 🏪 Establecimiento</p>
+                                            {campaign.establishmentAddress && <p className="text-sm"><strong>Dirección:</strong> {campaign.establishmentAddress}</p>}
+                                            {campaign.establishmentInstructions && <p className="text-sm"><strong>Instrucciones:</strong> {campaign.establishmentInstructions}</p>}
+                                        </>
+                                    )}
+                                    {campaign.exchangeDeliveryType === "product" && (
+                                        <>
+                                            <p className="text-sm"><strong>Tipo:</strong> 📦 Producto Físico</p>
+                                            {campaign.productDeliveryMethod === "shipping" && <p className="text-sm"><strong>Método:</strong> 🚚 Envío — {campaign.shippingService}</p>}
+                                            {campaign.productDeliveryMethod === "pickup" && (
+                                                <>
+                                                    <p className="text-sm"><strong>Método:</strong> 📍 Recogida por el creador</p>
+                                                    {campaign.pickupAddress && <p className="text-sm"><strong>Dirección de recogida:</strong> {campaign.pickupAddress}</p>}
+                                                    {campaign.pickupSchedule && <p className="text-sm"><strong>Horario:</strong> {campaign.pickupSchedule}</p>}
+                                                </>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <DialogFooter className="flex gap-2">
+                        <Button variant="outline" onClick={() => setShippingModalCreator(null)}>Cerrar</Button>
+                        <Button
+                            variant="default"
+                            onClick={() => shippingModalCreator && handleCopyDelivery(shippingModalCreator)}
+                            className="gap-2"
+                        >
+                            {isCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            {isCopied ? "¡Copiado!" : "Copiar para Delivery"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* ── Delete Confirmation Dialog ────────────────────── */}
             <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

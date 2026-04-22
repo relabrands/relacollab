@@ -83,6 +83,14 @@ export default function CreateCampaign() {
     visitEndTime: "17:00",
     visitDuration: "60", // minutes
     contentDeadlineDays: "3", // days after visit
+    // Exchange Delivery Logistics
+    exchangeDeliveryType: "" as "" | "establishment" | "product",
+    establishmentAddress: "",
+    establishmentInstructions: "",
+    productDeliveryMethod: "" as "" | "shipping" | "pickup",
+    shippingService: "",
+    pickupAddress: "",
+    pickupSchedule: "",
     // Deliverables
     deliverables: [] as Array<{
       type: string;
@@ -295,8 +303,46 @@ export default function CreateCampaign() {
         }
         return true;
 
-      case 5:
-        if (formData.requiresVisit) {
+      case 5: {
+        const isExchange = formData.compensationType === "exchange" || formData.compensationType === "hybrid";
+        if (isExchange) {
+          if (!formData.exchangeDeliveryType) {
+            toast.error("Selecciona cómo entregarás el intercambio");
+            return false;
+          }
+          if (formData.exchangeDeliveryType === "establishment") {
+            if (!formData.establishmentAddress.trim()) {
+              toast.error("La dirección del establecimiento es requerida");
+              return false;
+            }
+            // Visit scheduling validations
+            if (formData.requiresVisit) {
+              if (!formData.visitCity.trim()) {
+                toast.error("La ciudad del establecimiento es requerida");
+                return false;
+              }
+              if (formData.visitDays.length === 0) {
+                toast.error("Selecciona al menos un día disponible para visitas");
+                return false;
+              }
+            }
+          } else if (formData.exchangeDeliveryType === "product") {
+            if (!formData.productDeliveryMethod) {
+              toast.error("Selecciona el método de entrega del producto");
+              return false;
+            }
+            if (formData.productDeliveryMethod === "shipping" && !formData.shippingService.trim()) {
+              toast.error("Especifica el servicio de mensajería a utilizar");
+              return false;
+            }
+            if (formData.productDeliveryMethod === "pickup" && !formData.pickupAddress.trim()) {
+              toast.error("La dirección de recogida es requerida");
+              return false;
+            }
+          }
+        }
+        // Non-exchange visit validations
+        if (!isExchange && formData.requiresVisit) {
           if (!formData.visitLocation.trim() || !formData.visitCity.trim()) {
             toast.error("La dirección y ciudad de la visita son requeridas");
             return false;
@@ -307,6 +353,7 @@ export default function CreateCampaign() {
           }
         }
         return true;
+      }
 
       default:
         return true;
@@ -1163,15 +1210,159 @@ export default function CreateCampaign() {
                 exit={{ opacity: 0, x: -20 }}
                 className="glass-card p-5 sm:p-8"
               >
-                <h2 className="text-xl font-semibold mb-6">Visita y Programación</h2>
+                <h2 className="text-xl font-semibold mb-2">Visita y Programación</h2>
+                <p className="text-sm text-muted-foreground mb-6">
+                  {(formData.compensationType === "exchange" || formData.compensationType === "hybrid")
+                    ? "Indica cómo se realizará la entrega del intercambio y si se requiere visita."
+                    : "Configura si el creador debe visitar tu establecimiento."}
+                </p>
 
                 <div className="space-y-6">
-                  {/* Requires Visit Toggle */}
+
+                  {/* ── EXCHANGE LOGISTICS (only for exchange/hybrid) ── */}
+                  {(formData.compensationType === "exchange" || formData.compensationType === "hybrid") && (
+                    <div className="space-y-4 p-5 bg-amber-50 border border-amber-200 rounded-xl">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">📦</span>
+                        <h3 className="font-semibold text-amber-900">Logística de Entrega del Intercambio</h3>
+                        <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-medium ml-auto">Obligatorio</span>
+                      </div>
+                      <p className="text-sm text-amber-700">¿Cómo se entregará el intercambio al creador?</p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Option A: Establishment */}
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, exchangeDeliveryType: "establishment", requiresVisit: true }))}
+                          className={`p-4 rounded-xl border-2 text-left transition-all ${formData.exchangeDeliveryType === "establishment"
+                            ? "border-amber-500 bg-amber-100"
+                            : "border-border hover:border-amber-300 bg-white"}`}
+                        >
+                          <div className="text-2xl mb-2">🏪</div>
+                          <p className="font-semibold text-sm">Establecimiento / Restaurante</p>
+                          <p className="text-xs text-muted-foreground mt-1">El creador visita tu local para disfrutar o recoger el intercambio.</p>
+                        </button>
+
+                        {/* Option B: Physical product */}
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, exchangeDeliveryType: "product" }))}
+                          className={`p-4 rounded-xl border-2 text-left transition-all ${formData.exchangeDeliveryType === "product"
+                            ? "border-amber-500 bg-amber-100"
+                            : "border-border hover:border-amber-300 bg-white"}`}
+                        >
+                          <div className="text-2xl mb-2">📦</div>
+                          <p className="font-semibold text-sm">Producto Físico</p>
+                          <p className="text-xs text-muted-foreground mt-1">Envías un producto al creador o él pasa a buscarlo.</p>
+                        </button>
+                      </div>
+
+                      {/* ESTABLISHMENT sub-fields */}
+                      {formData.exchangeDeliveryType === "establishment" && (
+                        <div className="space-y-4 pt-2">
+                          <div>
+                            <Label htmlFor="establishmentAddress">Dirección del Establecimiento <span className="text-red-500">*</span></Label>
+                            <Input
+                              id="establishmentAddress"
+                              placeholder="Ej: Av. Winston Churchill #123, Piantini"
+                              value={formData.establishmentAddress}
+                              onChange={(e) => setFormData(prev => ({ ...prev, establishmentAddress: e.target.value }))}
+                              className="mt-2"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="establishmentInstructions">Instrucciones de Visita <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+                            <textarea
+                              id="establishmentInstructions"
+                              placeholder="Ej: Preguntar por María en recepción, reservar con 24h de antelación..."
+                              value={formData.establishmentInstructions}
+                              onChange={(e) => setFormData(prev => ({ ...prev, establishmentInstructions: e.target.value }))}
+                              className="mt-2 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* PRODUCT sub-fields */}
+                      {formData.exchangeDeliveryType === "product" && (
+                        <div className="space-y-4 pt-2">
+                          <div>
+                            <Label className="mb-3 block">Método de entrega del producto <span className="text-red-500">*</span></Label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, productDeliveryMethod: "shipping" }))}
+                                className={`p-3 rounded-lg border-2 text-left transition-all ${formData.productDeliveryMethod === "shipping"
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border hover:border-primary/50"}`}
+                              >
+                                <p className="font-medium text-sm">🚚 Envío al creador</p>
+                                <p className="text-xs text-muted-foreground mt-1">Tú le envías el producto directamente.</p>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, productDeliveryMethod: "pickup" }))}
+                                className={`p-3 rounded-lg border-2 text-left transition-all ${formData.productDeliveryMethod === "pickup"
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border hover:border-primary/50"}`}
+                              >
+                                <p className="font-medium text-sm">📍 Recogida por el creador</p>
+                                <p className="text-xs text-muted-foreground mt-1">El creador pasa a recogerlo en tu local.</p>
+                              </button>
+                            </div>
+                          </div>
+
+                          {formData.productDeliveryMethod === "shipping" && (
+                            <div>
+                              <Label htmlFor="shippingService">Servicio de mensajería <span className="text-red-500">*</span></Label>
+                              <Input
+                                id="shippingService"
+                                placeholder="Ej: Mensajería propia, PedidosYa, moto propio..."
+                                value={formData.shippingService}
+                                onChange={(e) => setFormData(prev => ({ ...prev, shippingService: e.target.value }))}
+                                className="mt-2"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">La dirección del creador estará disponible al aceptar la colaboración.</p>
+                            </div>
+                          )}
+
+                          {formData.productDeliveryMethod === "pickup" && (
+                            <div className="space-y-3">
+                              <div>
+                                <Label htmlFor="pickupAddress">Dirección de recogida <span className="text-red-500">*</span></Label>
+                                <Input
+                                  id="pickupAddress"
+                                  placeholder="Ej: Calle Las Mercedes #45, Zona Colonial"
+                                  value={formData.pickupAddress}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, pickupAddress: e.target.value }))}
+                                  className="mt-2"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="pickupSchedule">Horario disponible <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+                                <Input
+                                  id="pickupSchedule"
+                                  placeholder="Ej: Lunes a Viernes de 9am a 5pm"
+                                  value={formData.pickupSchedule}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, pickupSchedule: e.target.value }))}
+                                  className="mt-2"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── REQUIRES VISIT TOGGLE (always visible) ── */}
                   <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
                     <div>
                       <Label className="text-base font-medium">¿Requiere visita del creador?</Label>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Activa si el creador necesita ir a tu local o ubicación específica
+                        {(formData.compensationType === "exchange" || formData.compensationType === "hybrid")
+                          ? "Si elegiste Establecimiento, esto ya está activado automaticamente."
+                          : "Activa si el creador necesita ir a tu local o ubicación específica."}
                       </p>
                     </div>
                     <Button
@@ -1186,16 +1377,25 @@ export default function CreateCampaign() {
 
                   {formData.requiresVisit && (
                     <div className="space-y-6 p-6 bg-primary/5 rounded-xl border border-primary/10">
-                      {/* Visit Location */}
+                      {/* Visit Location — use establishmentAddress if establishment */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="visitLocation">Dirección / Local</Label>
+                          <Label htmlFor="visitLocation">
+                            {formData.exchangeDeliveryType === "establishment" ? "Dirección (ya configurada arriba)" : "Dirección / Local"}
+                          </Label>
                           <Input
                             id="visitLocation"
                             placeholder="Ej: Calle Principal #123"
-                            value={formData.visitLocation}
-                            onChange={(e) => setFormData(prev => ({ ...prev, visitLocation: e.target.value }))}
+                            value={formData.exchangeDeliveryType === "establishment" ? formData.establishmentAddress : formData.visitLocation}
+                            onChange={(e) => {
+                              if (formData.exchangeDeliveryType === "establishment") {
+                                setFormData(prev => ({ ...prev, establishmentAddress: e.target.value }));
+                              } else {
+                                setFormData(prev => ({ ...prev, visitLocation: e.target.value }));
+                              }
+                            }}
                             className="mt-2"
+                            disabled={formData.exchangeDeliveryType === "establishment"}
                           />
                         </div>
                         <div>
@@ -1301,7 +1501,7 @@ export default function CreateCampaign() {
                     </div>
                   )}
 
-                  {!formData.requiresVisit && (
+                  {!formData.requiresVisit && !(formData.compensationType === "exchange" || formData.compensationType === "hybrid") && (
                     <div className="text-center py-8 text-muted-foreground">
                       <p>Esta campaña no requiere visita física del creador</p>
                       <p className="text-sm mt-2">El creador puede crear el contenido remotamente</p>
@@ -1310,6 +1510,7 @@ export default function CreateCampaign() {
                 </div>
               </motion.div>
             )}
+
           </AnimatePresence>
 
           {/* Navigation */}
