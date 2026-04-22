@@ -314,31 +314,36 @@ export function BrandDetailsDialog({ brand, isOpen, onClose }: BrandDetailsDialo
                                                 <CardContent className="p-4 flex flex-col gap-3">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
-                                                            {sb.logo ? (
-                                                                <img src={sb.logo} alt={sb.name} className="w-full h-full object-cover" />
+                                                            {sb.photoURL ? (
+                                                                <img src={sb.photoURL} alt={sb.brandName} className="w-full h-full object-cover" />
                                                             ) : (
                                                                 <Building2 className="w-6 h-6 text-primary" />
                                                             )}
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <div className="font-semibold truncate text-lg">{sb.name}</div>
+                                                            <div className="font-semibold truncate text-lg">{sb.brandName}</div>
                                                             <div className="text-xs text-muted-foreground truncate">{sb.industry || 'Sin industria especificada'}</div>
                                                         </div>
                                                     </div>
                                                     <div className="text-xs text-muted-foreground/80 line-clamp-2">
                                                         {sb.description || 'Sin descripción'}
                                                     </div>
-                                                    {(sb.website || sb.socialLinks) && (
-                                                        <div className="flex flex-wrap gap-2 pt-2 border-t text-xs">
+                                                    {(sb.website || sb.instagram || sb.location) && (
+                                                        <div className="flex flex-wrap gap-3 pt-2 border-t text-xs">
                                                             {sb.website && (
-                                                                <a href={sb.website} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline inline-flex items-center gap-1">
+                                                                <a href={sb.website.startsWith('http') ? sb.website : `https://${sb.website}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
                                                                     <Globe className="w-3 h-3" /> Sitio Web
                                                                 </a>
                                                             )}
-                                                            {sb.socialLinks?.instagram && (
-                                                                <a href={`https://instagram.com/${sb.socialLinks.instagram}`} target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:underline">
-                                                                    IG: {sb.socialLinks.instagram}
+                                                            {sb.instagram && (
+                                                                <a href={`https://instagram.com/${sb.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:underline inline-flex items-center gap-1">
+                                                                    <span className="font-medium">IG:</span> {sb.instagram}
                                                                 </a>
+                                                            )}
+                                                            {sb.location && (
+                                                                <div className="text-muted-foreground inline-flex items-center gap-1">
+                                                                    <MapPin className="w-3 h-3" /> {sb.location}
+                                                                </div>
                                                             )}
                                                         </div>
                                                     )}
