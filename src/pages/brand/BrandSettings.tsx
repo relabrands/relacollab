@@ -311,7 +311,7 @@ export default function BrandSettings() {
                                             value={userDoc?.displayName || ""}
                                             onChange={(e) => handleUpdateUserField("displayName", e.target.value)}
                                             placeholder="Tu nombre"
-                                            className="bg-background/50 border-white/10"
+                                            className="bg-background/50 border-border/50"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -322,7 +322,7 @@ export default function BrandSettings() {
                                                 id="email"
                                                 value={user?.email || ""}
                                                 disabled
-                                                className="pl-10 bg-muted/30 border-white/5 cursor-not-allowed"
+                                                className="pl-10 bg-muted/50 border-border/50 cursor-not-allowed"
                                             />
                                         </div>
                                         <p className="text-[10px] text-muted-foreground italic">El correo no puede ser modificado por seguridad.</p>
@@ -399,7 +399,7 @@ export default function BrandSettings() {
                                             value={userDoc?.brandName || ""}
                                             onChange={(e) => handleUpdateUserField("brandName", e.target.value)}
                                             placeholder="Nombre corporativo"
-                                            className="bg-background/50 border-white/10"
+                                            className="bg-background/50 border-border/50"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -408,7 +408,7 @@ export default function BrandSettings() {
                                             value={userDoc?.industry || ""} 
                                             onValueChange={(val) => handleUpdateUserField("industry", val)}
                                         >
-                                            <SelectTrigger className="bg-background/50 border-white/10">
+                                            <SelectTrigger className="bg-background/50 border-border/50">
                                                 <SelectValue placeholder="Seleccionar industria" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -436,7 +436,7 @@ export default function BrandSettings() {
                                                 value={userDoc?.website || ""}
                                                 onChange={(e) => handleUpdateUserField("website", e.target.value)}
                                                 placeholder="https://empresa.com"
-                                                className="pl-10 bg-background/50 border-white/10"
+                                                className="pl-10 bg-background/50 border-border/50"
                                             />
                                         </div>
                                     </div>
@@ -449,7 +449,7 @@ export default function BrandSettings() {
                                                 value={userDoc?.location || ""}
                                                 onChange={(e) => handleUpdateUserField("location", e.target.value)}
                                                 placeholder="Ciudad, País"
-                                                className="pl-10 bg-background/50 border-white/10"
+                                                className="pl-10 bg-background/50 border-border/50"
                                             />
                                         </div>
                                     </div>
@@ -460,7 +460,7 @@ export default function BrandSettings() {
                                             value={userDoc?.contactPerson || ""}
                                             onChange={(e) => handleUpdateUserField("contactPerson", e.target.value)}
                                             placeholder="Nombre del responsable"
-                                            className="bg-background/50 border-white/10"
+                                            className="bg-background/50 border-border/50"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -471,7 +471,7 @@ export default function BrandSettings() {
                                             value={userDoc?.phone || ""}
                                             onChange={(e) => handleUpdateUserField("phone", e.target.value)}
                                             placeholder="+1 ..."
-                                            className="bg-background/50 border-white/10"
+                                            className="bg-background/50 border-border/50"
                                         />
                                     </div>
                                 </div>
@@ -482,7 +482,7 @@ export default function BrandSettings() {
                                         value={userDoc?.description || ""}
                                         onChange={(e) => handleUpdateUserField("description", e.target.value)}
                                         placeholder="Breve descripción de la compañía..."
-                                        className="min-h-[120px] bg-background/50 border-white/10"
+                                        className="min-h-[120px] bg-background/50 border-border/50"
                                     />
                                 </div>
                                 <div className="flex justify-end pt-2">
@@ -532,7 +532,7 @@ export default function BrandSettings() {
                                             <Card key={brand.id} className="glass-card hover-glow group transition-all duration-300">
                                                 <CardHeader className="pb-4">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                                                        <div className="w-14 h-14 rounded-2xl bg-muted/50 border border-border/50 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
                                                             {brand.photoURL ? (
                                                                 <img src={brand.photoURL} alt={brand.brandName} className="w-full h-full object-cover" />
                                                             ) : (
@@ -554,7 +554,7 @@ export default function BrandSettings() {
                                                     </div>
                                                 </CardHeader>
                                                 <div className="px-6 pb-6 flex gap-2">
-                                                    <Button variant="secondary" className="flex-1 bg-white/5 hover:bg-white/10" onClick={() => {
+                                                    <Button variant="secondary" className="flex-1 bg-muted/50 hover:bg-muted" onClick={() => {
                                                         setSelectedBrand(brand);
                                                         setIsCreating(false);
                                                     }}>
@@ -567,7 +567,7 @@ export default function BrandSettings() {
                                                                 <Trash2 className="w-4 h-4" />
                                                             </Button>
                                                         </AlertDialogTrigger>
-                                                        <AlertDialogContent className="glass-card border-none ring-1 ring-white/10">
+                                                        <AlertDialogContent className="glass-card border-none ring-1 ring-border/50">
                                                             <AlertDialogHeader>
                                                                 <AlertDialogTitle>¿Eliminar {brand.brandName}?</AlertDialogTitle>
                                                                 <AlertDialogDescription>
@@ -575,7 +575,7 @@ export default function BrandSettings() {
                                                                 </AlertDialogDescription>
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
-                                                                <AlertDialogCancel className="bg-white/5">Cancelar</AlertDialogCancel>
+                                                                <AlertDialogCancel className="bg-muted hover:bg-muted/80">Cancelar</AlertDialogCancel>
                                                                 <AlertDialogAction onClick={() => handleDeleteBrand(brand.id!)} className="bg-destructive hover:bg-destructive/90">
                                                                     Eliminar
                                                                 </AlertDialogAction>
@@ -593,11 +593,11 @@ export default function BrandSettings() {
                                 <Button variant="ghost" onClick={() => {
                                     setSelectedBrand(null);
                                     setIsCreating(false);
-                                }} className="mb-2 -ml-3 text-muted-foreground hover:bg-white/5">
+                                }} className="mb-2 -ml-3 text-muted-foreground hover:bg-muted">
                                     <ArrowLeft className="w-4 h-4 mr-2" /> Volver a mis marcas
                                 </Button>
 
-                                <Card className="glass-card max-w-3xl border-none ring-1 ring-white/10">
+                                <Card className="glass-card max-w-3xl border border-border/50">
                                     <CardHeader>
                                         <CardTitle className="text-2xl">{isCreating ? `Agregar Nuevo Perfil de Marca` : "Editar Perfil de Marca"}</CardTitle>
                                         <CardDescription>
@@ -609,7 +609,7 @@ export default function BrandSettings() {
                                     </CardHeader>
                                     <CardContent className="space-y-8 pt-4">
                                         {/* Avatar Upload */}
-                                        <div className="flex flex-col sm:flex-row items-center gap-8 p-6 rounded-2xl bg-white/5 border border-white/5">
+                                        <div className="flex flex-col sm:flex-row items-center gap-8 p-6 rounded-2xl bg-muted/30 border border-border/50">
                                             <div className="relative group">
                                                 <img
                                                     src={selectedBrand?.photoURL || "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&h=200&fit=crop"}
@@ -629,7 +629,7 @@ export default function BrandSettings() {
                                                     Este logo se mostrará a los creadores cuando invites a participar en campañas.
                                                 </p>
                                                 <div className="flex flex-wrap justify-center sm:justify-start gap-2 pt-2">
-                                                    <Button variant="outline" size="sm" onClick={handleChangePhoto} className="border-white/10 bg-white/5">
+                                                    <Button variant="outline" size="sm" onClick={handleChangePhoto} className="border-border/50 bg-background hover:bg-muted">
                                                         Subir nueva imagen
                                                     </Button>
                                                 </div>
@@ -651,14 +651,14 @@ export default function BrandSettings() {
                                                     value={selectedBrand?.brandName || ""}
                                                     onChange={(e) => handleUpdate("brandName", e.target.value)}
                                                     placeholder="Ej: Secalia Polvo"
-                                                    className="bg-background/50 border-white/10 h-11"
+                                                    className="bg-background/50 border-border/50 h-11"
                                                 />
                                             </div>
 
                                             <div className="space-y-2">
                                                 <Label htmlFor="industry">Categoría / Industria</Label>
                                                 <Select value={selectedBrand?.industry || ""} onValueChange={(val) => handleUpdate("industry", val)}>
-                                                    <SelectTrigger className="bg-background/50 border-white/10 h-11">
+                                                    <SelectTrigger className="bg-background/50 border-border/50 h-11">
                                                         <SelectValue placeholder="Seleccionar" />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -686,7 +686,7 @@ export default function BrandSettings() {
                                                     value={selectedBrand?.website || ""}
                                                     onChange={(e) => handleUpdate("website", e.target.value)}
                                                     placeholder="www.larca.com"
-                                                    className="bg-background/50 border-white/10 h-11"
+                                                    className="bg-background/50 border-border/50 h-11"
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -698,7 +698,7 @@ export default function BrandSettings() {
                                                         value={selectedBrand?.instagram || ""}
                                                         onChange={(e) => handleUpdate("instagram", e.target.value)}
                                                         placeholder="marca_official"
-                                                        className="pl-8 bg-background/50 border-white/10 h-11"
+                                                        className="pl-8 bg-background/50 border-border/50 h-11"
                                                     />
                                                 </div>
                                             </div>
@@ -710,7 +710,7 @@ export default function BrandSettings() {
                                                     value={selectedBrand?.contactPerson || ""}
                                                     onChange={(e) => handleUpdate("contactPerson", e.target.value)}
                                                     placeholder="Nombre del responsable"
-                                                    className="bg-background/50 border-white/10 h-11"
+                                                    className="bg-background/50 border-border/50 h-11"
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -721,7 +721,7 @@ export default function BrandSettings() {
                                                     value={selectedBrand?.phone || ""}
                                                     onChange={(e) => handleUpdate("phone", e.target.value)}
                                                     placeholder="+1 ..."
-                                                    className="bg-background/50 border-white/10 h-11"
+                                                    className="bg-background/50 border-border/50 h-11"
                                                 />
                                             </div>
                                             
@@ -732,7 +732,7 @@ export default function BrandSettings() {
                                                     value={selectedBrand?.location || ""}
                                                     onChange={(e) => handleUpdate("location", e.target.value)}
                                                     placeholder="Santo Domingo, RD"
-                                                    className="bg-background/50 border-white/10 h-11"
+                                                    className="bg-background/50 border-border/50 h-11"
                                                 />
                                             </div>
                                         </div>
@@ -744,7 +744,7 @@ export default function BrandSettings() {
                                                 value={selectedBrand?.description || ""}
                                                 onChange={(e) => handleUpdate("description", e.target.value)}
                                                 placeholder="Describe brevemente qué hace a esta marca única..."
-                                                className="min-h-[140px] bg-background/50 border-white/10 resize-none"
+                                                className="min-h-[140px] bg-background/50 border-border/50 resize-none"
                                             />
                                         </div>
 
@@ -752,7 +752,7 @@ export default function BrandSettings() {
                                             <Button 
                                                 variant="outline" 
                                                 onClick={() => setSelectedBrand(null)} 
-                                                className="border-white/10 order-2 sm:order-1"
+                                                className="border-border/50 order-2 sm:order-1 hover:bg-muted"
                                             >
                                                 Cancelar
                                             </Button>
