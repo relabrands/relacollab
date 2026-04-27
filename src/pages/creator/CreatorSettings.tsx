@@ -9,9 +9,10 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/AuthContext";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { sendPasswordResetEmail } from "firebase/auth";
 import { toast } from "sonner";
-import { Loader2, Mail, Bell, Lock, Eye, Shield } from "lucide-react";
+import { Loader2, Mail, Bell, Lock, Eye, Shield, ShieldCheck } from "lucide-react";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 
 export default function CreatorSettings() {
@@ -90,6 +91,17 @@ export default function CreatorSettings() {
         }
     };
 
+    const handleResetPassword = async () => {
+        if (!user?.email) return;
+        try {
+            await sendPasswordResetEmail(auth, user.email);
+            toast.success("Se ha enviado un correo para restablecer tu contraseña");
+        } catch (error) {
+            console.error("Error sending reset email:", error);
+            toast.error("Error al enviar el correo de restablecimiento");
+        }
+    };
+
     return (
         <div className="flex min-h-screen bg-background">
             <DashboardSidebar type="creator" />
@@ -152,6 +164,43 @@ export default function CreatorSettings() {
                                             Mi Perfil
                                         </a>
                                     </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Security */}
+                        <Card className="glass-card overflow-hidden">
+                            <CardHeader className="pb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-amber-500/10">
+                                        <ShieldCheck className="w-5 h-5 text-amber-500" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-xl">Seguridad</CardTitle>
+                                        <CardDescription>Protege el acceso a tu cuenta</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-6 pt-4">
+                                <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-3">
+                                    <div className="flex items-start gap-4">
+                                        <div className="mt-1">
+                                            <ShieldCheck className="w-5 h-5 text-amber-500" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h4 className="font-medium text-amber-900 dark:text-amber-200">Restablecer Contraseña</h4>
+                                            <p className="text-sm text-muted-foreground">
+                                                Te enviaremos un correo electrónico con un enlace seguro para que puedas crear una nueva contraseña.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        onClick={handleResetPassword}
+                                        className="w-full border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-600 transition-all"
+                                    >
+                                        Enviar correo de restablecimiento
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>

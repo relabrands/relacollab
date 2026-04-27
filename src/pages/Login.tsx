@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { auth } from "@/lib/firebase";
+import { sendPasswordResetEmail } from "firebase/auth";
 
 const Login = () => {
     const [role, setRole] = useState<UserRole>("brand");
@@ -39,6 +41,24 @@ const Login = () => {
             toast.error("Credenciales inválidas");
         } finally {
             setIsLoggingIn(false);
+        }
+    };
+
+    const handleForgotPassword = async () => {
+        if (!email) {
+            toast.error("Por favor, introduce tu correo electrónico primero.");
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, email);
+            toast.success("Te hemos enviado un correo para restablecer tu contraseña.");
+        } catch (error: any) {
+            console.error("Error sending reset email:", error);
+            if (error.code === 'auth/user-not-found') {
+                toast.error("No se encontró ninguna cuenta con este correo.");
+            } else {
+                toast.error("Error al enviar el correo. Intenta de nuevo.");
+            }
         }
     };
 
@@ -267,6 +287,15 @@ const Login = () => {
                                     required
                                     className="h-11"
                                 />
+                                <div className="flex justify-end pt-1">
+                                    <button 
+                                        type="button" 
+                                        onClick={handleForgotPassword}
+                                        className="text-[13px] font-medium text-primary hover:text-primary/80 hover:underline transition-colors"
+                                    >
+                                        ¿Olvidaste tu contraseña?
+                                    </button>
+                                </div>
                                 <Button type="submit" className="w-full h-11 mt-1" disabled={isLoggingIn}>
                                     {isLoggingIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Entrar
