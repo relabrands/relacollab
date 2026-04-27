@@ -39,6 +39,7 @@ const TEMPLATE_LABELS: Record<string, { name: string; description: string; badge
     withdrawal_approved: { name: "Retiro Enviado", description: "El retiro fue aprobado y enviado", badge: "Creador" },
     new_opportunity: { name: "Nueva Oportunidad", description: "El creador recibe un nuevo match de campaña", badge: "Creador" },
     onboarding_reminder: { name: "Recordatorio Onboarding", description: "Enviado al creador para que complete su onboarding", badge: "Creador" },
+    password_reset: { name: "Restablecer Contraseña", description: "El usuario solicita cambiar su contraseña", badge: "Todos" },
 };
 
 export default function AdminEmailTemplates() {
@@ -170,6 +171,7 @@ export default function AdminEmailTemplates() {
                 withdrawal_approved: { subject: "✅ Retiro enviado — {{amount}}", variables: ["creatorName", "amount", "earningsUrl"], html: w("✅ Retiro Procesado", "Tu pago fue enviado", "<p>Hola <strong>{{creatorName}}</strong>, tu retiro de <strong>{{amount}}</strong> fue aprobado y enviado a tu cuenta bancaria registrada. Puede tardar 1–3 días hábiles en reflejarse.</p><div class='hl'><div class='lb'>Monto enviado</div>{{amount}}</div>", "Ver mis Ganancias", "{{earningsUrl}}") },
                 new_opportunity: { subject: "✨ ¡Nueva Oportunidad! {{matchScore}} Match con {{brandName}}", variables: ["creatorName", "brandName", "campaignTitle", "matchScore", "dashboardUrl"], html: w("✨ ¡Nueva Oportunidad!", "Descubrimos un match perfecto para ti", "<p>Hola <strong>{{creatorName}}</strong>, nuestra IA encontró una campaña de <strong>{{brandName}}</strong> que hace un <strong>{{matchScore}}</strong> de match con tu perfil y audiencia.</p><div class='hl'><div class='lb'>Campaña</div>{{campaignTitle}}</div>", "Ver Oportunidad", "{{dashboardUrl}}") },
                 onboarding_reminder: { subject: "⌛ Termina de configurar tu perfil, {{name}}!", variables: ["name", "stepMessage", "dashboardUrl"], html: w("⌛ ¡Completa tu perfil!", "Te quedaste a un paso de terminar", "<p>Hola <strong>{{name}}</strong>, notamos que no has terminado de configurar tu perfil.</p><div class='hl'><div class='lb'>Paso Pendiente</div>{{stepMessage}}</div><p>Completar tu perfil es indispensable para empezar a recibir oportunidades de campañas con las mejores marcas.</p>", "Completar Onboarding", "{{dashboardUrl}}") },
+                password_reset: { subject: "🔒 Restablece tu contraseña - RELA Collab", variables: ["name", "resetUrl"], html: w("🔒 Restablecer Contraseña", "Solicitud de cambio de contraseña", "<p>Hola <strong>{{name}}</strong>, hemos recibido una solicitud para cambiar tu contraseña.</p><p>Si no realizaste esta solicitud, puedes ignorar este correo de forma segura.</p>", "Cambiar mi Contraseña", "{{resetUrl}}") },
             };
 
             const batch = writeBatch(db);

@@ -9,8 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/AuthContext";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { auth, db, functions } from "@/lib/firebase";
+import { httpsCallable } from "firebase/functions";
 import { toast } from "sonner";
 import { Loader2, Mail, Bell, Lock, Eye, Shield, ShieldCheck } from "lucide-react";
 import { MobileNav } from "@/components/dashboard/MobileNav";
@@ -94,7 +94,8 @@ export default function CreatorSettings() {
     const handleResetPassword = async () => {
         if (!user?.email) return;
         try {
-            await sendPasswordResetEmail(auth, user.email);
+            const requestReset = httpsCallable(functions, "requestPasswordReset");
+            await requestReset({ email: user.email });
             toast.success("Se ha enviado un correo para restablecer tu contraseña");
         } catch (error) {
             console.error("Error sending reset email:", error);

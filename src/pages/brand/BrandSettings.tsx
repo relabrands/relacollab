@@ -9,13 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect, useRef } from "react";
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc, deleteDoc } from "firebase/firestore";
-import { db, storage } from "@/lib/firebase";
+import { auth, db, functions } from "@/lib/firebase";
+import { httpsCallable } from "firebase/functions";
 import { toast } from "sonner";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { Loader2, Plus, Edit, Trash2, ArrowLeft, Image as ImageIcon, MapPin, ShieldCheck, Mail, User, Building2, Globe } from "lucide-react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { UpgradePrompt } from "@/components/brand/UpgradePrompt";
@@ -254,7 +253,8 @@ export default function BrandSettings() {
     const handleResetPassword = async () => {
         if (!user?.email) return;
         try {
-            await sendPasswordResetEmail(auth, user.email);
+            const requestReset = httpsCallable(functions, "requestPasswordReset");
+            await requestReset({ email: user.email });
             toast.success("Se ha enviado un correo para restablecer tu contraseña");
         } catch (error) {
             console.error("Error sending reset email:", error);

@@ -8,8 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { auth } from "@/lib/firebase";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { auth, functions } from "@/lib/firebase";
+import { httpsCallable } from "firebase/functions";
 
 const Login = () => {
     const [role, setRole] = useState<UserRole>("brand");
@@ -50,7 +50,8 @@ const Login = () => {
             return;
         }
         try {
-            await sendPasswordResetEmail(auth, email);
+            const requestReset = httpsCallable(functions, "requestPasswordReset");
+            await requestReset({ email });
             toast.success("Te hemos enviado un correo para restablecer tu contraseña.");
         } catch (error: any) {
             console.error("Error sending reset email:", error);
