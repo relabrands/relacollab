@@ -40,6 +40,17 @@ export default function Opportunities() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'paid' | 'experience' | 'pending'>('all');
 
+  // Helper function to resolve legacy and new compensation types
+  const resolveRewardType = (campaignData: any) => {
+    if (campaignData.compensationType === 'monetary') return 'paid';
+    if (campaignData.compensationType === 'exchange') return 'experience';
+    if (campaignData.compensationType === 'hybrid') return 'hybrid';
+    // Legacy fallback
+    if (campaignData.reward === 'paid') return 'paid';
+    if (campaignData.reward === 'experience') return 'experience';
+    return 'hybrid';
+  };
+
   // Filters State
   const [searchQuery, setSearchQuery] = useState("");
   const [filterLocation, setFilterLocation] = useState("all");
@@ -123,7 +134,7 @@ export default function Opportunities() {
               isInvited: true,
               matchScore: effectiveScore,
               effectiveScore: effectiveScore,
-              rewardType: campaignData.reward === 'paid' ? 'paid' : (campaignData.reward === 'experience' ? 'experience' : 'hybrid'),
+              rewardType: resolveRewardType(campaignData),
               brandProfile: brandData
             };
           }
@@ -164,7 +175,7 @@ export default function Opportunities() {
             title: data.name,
             matchScore: score,
             isInvited: false,
-            rewardType: data.reward === 'paid' ? 'paid' : (data.reward === 'experience' ? 'experience' : 'hybrid'),
+            rewardType: resolveRewardType(data),
             brandProfile: brandData
           };
         }));
@@ -230,7 +241,7 @@ export default function Opportunities() {
               brandLogo: campaignData.brandProfileLogo || brandData.photoURL || brandData.avatar || campaignData.brandLogo || "",
               title: campaignData.name || "Untitled Campaign",
               appliedAt: appData.createdAt,
-              rewardType: campaignData.reward === 'paid' ? 'paid' : (campaignData.reward === 'experience' ? 'experience' : 'hybrid'),
+              rewardType: resolveRewardType(campaignData),
               brandProfile: brandData,
               isPending: true
             };
