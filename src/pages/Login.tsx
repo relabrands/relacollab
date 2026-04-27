@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -18,6 +19,12 @@ const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoggingIn, setIsLoggingIn] = useState(false);
+    
+    // Password reset state
+    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+    const [resetEmail, setResetEmail] = useState("");
+    const [isResetting, setIsResetting] = useState(false);
+
     const { loginWithEmail, registerWithEmail, updateRole, logout, user, role: userRole } = useAuth();
     const navigate = useNavigate();
 
@@ -44,15 +51,19 @@ const Login = () => {
         }
     };
 
-    const handleForgotPassword = async () => {
-        if (!email) {
-            toast.error("Por favor, introduce tu correo electrónico primero.");
+    const submitPasswordReset = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!resetEmail) {
+            toast.error("Por favor, introduce tu correo electrónico.");
             return;
         }
+        setIsResetting(true);
         try {
             const requestReset = httpsCallable(functions, "requestPasswordReset");
-            await requestReset({ email });
+            await requestReset({ email: resetEmail });
             toast.success("Te hemos enviado un correo para restablecer tu contraseña.");
+            setIsResetDialogOpen(false);
+            setResetEmail("");
         } catch (error: any) {
             console.error("Error sending reset email:", error);
             if (error.code === 'auth/user-not-found') {
@@ -60,6 +71,8 @@ const Login = () => {
             } else {
                 toast.error("Error al enviar el correo. Intenta de nuevo.");
             }
+        } finally {
+            setIsResetting(false);
         }
     };
 
@@ -291,7 +304,7 @@ const Login = () => {
                                 <div className="flex justify-end pt-1">
                                     <button 
                                         type="button" 
-                                        onClick={handleForgotPassword}
+                                        onClick={() => setIsResetDialogOpen(true)}
                                         className="text-[13px] font-medium text-primary hover:text-primary/80 hover:underline transition-colors"
                                     >
                                         ¿Olvidaste tu contraseña?
@@ -388,6 +401,32 @@ const Login = () => {
                     </p>
                 </motion.div>
             </div>
+            {/* Password Reset Dialog */}
+            <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Restablecer contraseña</DialogTitle>
+                        <DialogDescription>
+                            Ingresa tu correo electrónico y te enviaremos un enlace para crear una nueva contraseña.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={submitPasswordReset} className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                            <Input
+                                type="email"
+                                placeholder="tu@correo.com"
+                                value={resetEmail}
+                                onChange={(e) => setResetEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={isResetting}>
+                            {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Enviar enlace de restablecimiento
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
