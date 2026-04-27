@@ -393,6 +393,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             new_opportunity: { subject: "✨ ¡Nueva Oportunidad! {{matchScore}} Match con {{brandName}}", variables: ["creatorName", "brandName", "campaignTitle", "matchScore", "dashboardUrl"], html: w("✨ ¡Nueva Oportunidad!", "Descubrimos un match perfecto para ti", "<p>Hola <strong>{{creatorName}}</strong>, nuestra IA encontró una campaña de <strong>{{brandName}}</strong> que hace un <strong>{{matchScore}}</strong> de match con tu perfil y audiencia.</p><div class='hl'><div class='lb'>Campaña</div>{{campaignTitle}}</div><p>Revisa los detalles y aplica antes de que se agoten los cupos.</p>", "Ver Oportunidad", "{{dashboardUrl}}") },
             onboarding_reminder: { subject: "⌛ Termina de configurar tu perfil, {{name}}!", variables: ["name", "stepMessage", "dashboardUrl"], html: w("⌛ ¡Completa tu perfil!", "Te quedaste a un paso de terminar", "<p>Hola <strong>{{name}}</strong>, notamos que no has terminado de configurar tu perfil.</p><div class='hl'><div class='lb'>Paso Pendiente</div>{{stepMessage}}</div><p>Completar tu perfil es indispensable para empezar a recibir oportunidades de campañas con las mejores marcas.</p>", "Completar Onboarding", "{{dashboardUrl}}") },
             instagram_token_expired: { subject: "⚠️ Tu conexión de Instagram expiró — Reconecta para no perder oportunidades", variables: ["creatorName", "settingsUrl"], html: w("⚠️ Tu Instagram necesita reconexión", "Tu acceso expiró — reconéctalo en 2 minutos", "<p>Hola <strong>{{creatorName}}</strong>,</p><p>Notamos que tu conexión de Instagram ha expirado. Los tokens de acceso de Instagram duran <strong>60 días</strong> y se renuevan automáticamente si inicias sesión regularmente — pero el tuyo ha caducado.</p><div class='hl'><div class='lb'>¿Por qué importa?</div>Las marcas ven tus publicaciones recientes de Instagram cuando evalúan si trabajar contigo. Sin conexión activa, tu perfil pierde visibilidad y podrías perder oportunidades de colaboración.</div><p>Reconectar toma menos de 2 minutos. Solo ve a tu perfil y vuelve a conectar tu cuenta de Instagram.</p>", "Reconectar mi Instagram", "{{settingsUrl}}") },
+            password_reset: { subject: "🔒 Restablece tu contraseña - RELA Collab", variables: ["name", "resetUrl"], html: w("🔒 Restablecer Contraseña", "Solicitud de cambio de contraseña", "<p>Hola <strong>{{name}}</strong>, hemos recibido una solicitud para cambiar tu contraseña.</p><p>Si no realizaste esta solicitud, puedes ignorar este correo de forma segura.</p>", "Cambiar mi Contraseña", "{{resetUrl}}") },
         };
         const batch = db.batch();
         for (const [id, d] of Object.entries(tpls)) batch.set(db.doc(`emailTemplates/${id}`), { ...d, updatedAt: new Date().toISOString() }, { merge: true });
@@ -468,6 +469,42 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             console.log(`[Email] instagram_token_expired → ${after.email}`);
         } catch (err) {
             console.error("[Email] onInstagramTokenExpired:", err);
+        }
+    });
+    // 14. Custom Password Reset via Resend
+    exportsObj.requestPasswordReset = functions.https.onCall(async (request) => {
+        const { email } = request.data || request;
+        if (!email) {
+            throw new functions.https.HttpsError("invalid-argument", "El email es requerido");
+        }
+
+        try {
+            // Generate the reset link using Firebase Admin SDK
+            const resetUrl = await admin.auth().generatePasswordResetLink(email);
+
+            // Get the user by email to get their display name
+            const userRecord = await admin.auth().getUserByEmail(email);
+            let displayName = userRecord.displayName;
+
+            if (!displayName) {
+                // Try to find the user in Firestore to get displayName
+                const usersSnap = await admin.firestore().collection("users").where("email", "==", email).get();
+                if (!usersSnap.empty) {
+                    displayName = usersSnap.docs[0].data().displayName;
+                }
+            }
+            
+            // Send the custom email using Resend and our template
+            await sendEmail(email, "password_reset", {
+                name: displayName || "Usuario",
+                resetUrl: resetUrl
+            });
+
+            return { success: true };
+        } catch (error) {
+            console.error("[Email] requestPasswordReset error:", error);
+            // Return success to prevent email enumeration attacks, even if not found
+            return { success: true };
         }
     });
 }
