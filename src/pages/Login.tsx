@@ -66,7 +66,7 @@ const Login = () => {
             setResetEmail("");
         } catch (error: any) {
             console.error("Error sending reset email:", error);
-            if (error.code === 'auth/user-not-found') {
+            if (error.code === 'auth/user-not-found' || error.code === 'not-found') {
                 toast.error("No se encontró ninguna cuenta con este correo.");
             } else {
                 toast.error("Error al enviar el correo. Intenta de nuevo.");

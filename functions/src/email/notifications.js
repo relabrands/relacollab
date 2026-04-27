@@ -503,8 +503,10 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             return { success: true };
         } catch (error) {
             console.error("[Email] requestPasswordReset error:", error);
-            // Return success to prevent email enumeration attacks, even if not found
-            return { success: true };
+            if (error && error.code === "auth/user-not-found") {
+                throw new functions.https.HttpsError("not-found", "No se encontró ninguna cuenta con este correo.");
+            }
+            throw new functions.https.HttpsError("internal", "Error al enviar el correo.");
         }
     });
 }
