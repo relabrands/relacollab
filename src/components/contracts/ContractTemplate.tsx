@@ -175,9 +175,22 @@ export function ContractTemplate({ contract, showDownload = false }: ContractTem
                                 <span className="text-right">{campaign.exchangeDetails}</span>
                             </div>
                         )}
-                        <div className="flex justify-between items-center py-1">
-                            <span className="font-semibold">Momento de pago:</span>
-                            <span>Al aprobarse el contenido entregado</span>
+                        <div className="flex justify-between items-start py-1 gap-4">
+                            <span className="font-semibold shrink-0">Momento de compensación:</span>
+                            <span className="text-right flex flex-col gap-1">
+                                {campaign.compensationType === 'monetary' && (
+                                    <span>Pago: Al culminar la campaña y aprobarse el contenido final.</span>
+                                )}
+                                {campaign.compensationType === 'exchange' && (
+                                    <span>Producto: Envío/retiro dentro de los 5 días tras ser aprobado en la campaña.</span>
+                                )}
+                                {campaign.compensationType === 'hybrid' && (
+                                    <>
+                                        <span>Producto: Envío/retiro dentro de los 5 días tras ser aprobado en la campaña.</span>
+                                        <span>Pago: Al culminar la campaña y aprobarse el contenido final.</span>
+                                    </>
+                                )}
+                            </span>
                         </div>
                     </div>
                 </section>
@@ -187,7 +200,8 @@ export function ContractTemplate({ contract, showDownload = false }: ContractTem
                     <h3 className="text-base font-bold uppercase tracking-wide border-b border-gray-300 pb-1">V. Términos y Condiciones</h3>
                     <ol className="list-decimal pl-5 space-y-2 text-sm font-sans text-gray-700 leading-relaxed">
                         <li>El Creador se compromete a entregar el contenido acordado antes de la fecha límite establecida y a cumplir con las especificaciones creativas indicadas por la Marca.</li>
-                        <li>La Marca se compromete a realizar el pago acordado dentro de los 5 días hábiles siguientes a la aprobación del contenido entregado.</li>
+                        <li>En caso de incluir intercambio de producto, la Marca se compromete a enviar o coordinar la entrega del mismo al Creador dentro de los 5 días hábiles posteriores a su aprobación en la campaña, para que pueda realizar el contenido.</li>
+                        <li>En caso de incluir compensación monetaria, la Marca se compromete a realizar el pago acordado dentro de los 5 días hábiles siguientes a la culminación de la campaña y la aprobación del contenido entregado por el Creador.</li>
                         <li>El contenido creado otorga a la Marca una licencia de uso no exclusiva para fines de marketing y publicidad por un período de 12 meses a partir de la entrega.</li>
                         <li>El Creador retiene los derechos morales sobre su contenido y podrá mostrarlo en su portafolio personal.</li>
                         <li>Cualquier modificación a los entregables debe acordarse mutuamente y por escrito a través de la plataforma RELA Collab.</li>
