@@ -1069,6 +1069,30 @@ export default function CreatorProfile() {
               </div>
             </div>
 
+            {/* API Trust Badge */}
+            <div className="rounded-xl border border-border/40 bg-muted/20 px-4 py-3 flex flex-col items-center gap-3">
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Conexiones seguras · APIs oficiales
+              </div>
+              <div className="flex items-center gap-4">
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/3840px-Meta_Platforms_Inc._logo.svg.png"
+                  alt="Meta"
+                  className="h-4 w-auto object-contain opacity-50 dark:brightness-0 dark:invert"
+                />
+                <span className="text-border">·</span>
+                <div className="flex items-center gap-1.5 opacity-50">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.32 6.32 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+                  <span className="text-xs font-bold">TikTok</span>
+                </div>
+              </div>
+              <p className="text-[9px] text-muted-foreground text-center leading-relaxed">
+                Tus credenciales nunca son almacenadas por RELA Collab.
+                <a href="/como-conectar-mi-cuenta-de-instagram" className="underline ml-1 hover:text-foreground transition-colors">¿Cómo funciona?</a>
+              </p>
+            </div>
+
             {/* AI Profile Analysis Link */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">

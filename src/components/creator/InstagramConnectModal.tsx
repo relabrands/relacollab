@@ -2,7 +2,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Instagram, ShieldCheck, CheckCircle2, Layout, Lock } from "lucide-react";
+import { Instagram, ShieldCheck, CheckCircle2, Layout, Lock, BookOpen } from "lucide-react";
 
 interface InstagramConnectModalProps {
     isOpen: boolean;
@@ -70,17 +70,42 @@ export const InstagramConnectModal: React.FC<InstagramConnectModalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 justify-center text-xs text-zinc-400 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-100 dark:border-zinc-800">
-                        <Lock className="h-3 w-3" />
+                        <Lock className="h-3 w-3 shrink-0" />
                         <span>Es posible que debas iniciar sesión en Facebook para continuar.</span>
+                    </div>
+
+                    {/* API Trust Badge */}
+                    <div className="flex flex-col items-center gap-2 pt-1">
+                        <div className="flex items-center gap-3">
+                            <img
+                                src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/3840px-Meta_Platforms_Inc._logo.svg.png"
+                                alt="Meta"
+                                className="h-4 w-auto object-contain opacity-40 brightness-0"
+                            />
+                            <span className="text-zinc-300">·</span>
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Official Meta API</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 text-center">
+                            Conexión segura — RELA Collab nunca almacena tus contraseñas.{" "}
+                            <a href="/como-conectar-mi-cuenta-de-instagram" target="_blank" className="underline hover:text-zinc-600 transition-colors">Ver guía paso a paso</a>
+                        </p>
                     </div>
                 </div>
 
-                <DialogFooter className="flex-col gap-2 sm:gap-0">
+                <DialogFooter className="flex-col gap-2">
                     <Button
                         onClick={onConfirm}
                         className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-6 rounded-xl shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
                     >
                         Empezar
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        className="w-full text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 gap-2"
+                        onClick={() => window.open('/como-conectar-mi-cuenta-de-instagram', '_blank')}
+                    >
+                        <BookOpen className="h-4 w-4" />
+                        Ver tutorial paso a paso
                     </Button>
                 </DialogFooter>
             </DialogContent>

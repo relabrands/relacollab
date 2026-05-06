@@ -18,11 +18,11 @@ export function Footer() {
 
               {/* Meta */}
               <div className="flex items-center gap-3 bg-sidebar-foreground/5 border border-sidebar-foreground/10 rounded-xl px-5 py-3 hover:bg-sidebar-foreground/10 transition-colors">
-                {/* Meta wordmark SVG */}
-                <svg viewBox="0 0 74 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-auto opacity-80">
-                  <path d="M7.2 5.6C3.22 5.6 0 9.52 0 14.8c0 4.16 1.96 7.2 4.96 7.2 1.68 0 2.92-.72 4.44-2.76l.2.28c1.44 2.08 2.56 2.48 3.88 2.48 1.6 0 2.76-.92 3.56-2.24l.4.6c1.12 1.64 2.36 1.64 3.16 1.64 3.72 0 6.4-3.44 6.4-8.56 0-4.72-2.44-7.84-6.04-7.84-2.08 0-3.64.96-5.12 3.28-.88-2.04-2.2-3.28-4.64-3.28zm.24 2.72c1.64 0 2.6 1.2 3.48 3.92-.92 1.6-1.6 2.24-2.56 2.24-1.44 0-2.32-1.48-2.32-3.84 0-1.52.6-2.32 1.4-2.32zm12.12.24c1.72 0 2.72 1.68 2.72 4.64 0 3.12-.96 4.88-2.6 4.88-.84 0-1.56-.56-2.44-1.96.72-1.56 1.04-3.04 1.04-4.76 0-1.04-.12-1.96-.32-2.52.4-.16.8-.28 1.6-.28zm-6.36 2c.12.72.2 1.48.2 2.28 0 1.24-.2 2.36-.56 3.32-.56-1.32-.96-2.76-.96-4.32 0-.52.04-1 .12-1.44.44.04.84.08 1.2.16z" fill="white" fillOpacity="0.85"/>
-                  <text x="26" y="17" fontFamily="system-ui, -apple-system, sans-serif" fontSize="13" fontWeight="700" fill="white" fillOpacity="0.85">Meta</text>
-                </svg>
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/3840px-Meta_Platforms_Inc._logo.svg.png"
+                  alt="Meta"
+                  className="h-5 w-auto object-contain opacity-85 brightness-0 invert"
+                />
                 <div className="text-left">
                   <div className="text-[10px] font-bold text-sidebar-foreground/70 leading-none">Official API</div>
                   <div className="text-[9px] text-sidebar-foreground/40 leading-none mt-0.5">Instagram · Facebook</div>

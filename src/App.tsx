@@ -22,6 +22,7 @@ import PendingApproval from "./pages/PendingApproval";
 import Business from "./pages/Business";
 import Pricing from "./pages/Pricing";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import HowToConnectInstagram from "./pages/HowToConnectInstagram";
 
 // Brand pages
 import BrandDashboard from "./pages/brand/BrandDashboard";
@@ -82,6 +83,7 @@ const App = () => (
             <Route path="/business" element={<Business />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/success" element={<PaymentSuccess />} />
+            <Route path="/como-conectar-mi-cuenta-de-instagram" element={<HowToConnectInstagram />} />
 
             {/* Onboarding Routes */}
             <Route path="/onboarding" element={<OnboardingLayout />}>
