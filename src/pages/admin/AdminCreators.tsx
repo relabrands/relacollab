@@ -12,9 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { motion } from "framer-motion";
-import { Search, Eye, Ban, CheckCircle, Users, Loader2 } from "lucide-react";
+import { Search, Eye, Ban, CheckCircle, Users, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CreatorDetailsDialog } from "@/components/admin/CreatorDetailsDialog";
 import { MobileNav } from "@/components/dashboard/MobileNav";
@@ -188,6 +188,17 @@ export default function AdminCreators() {
     }
   };
 
+  const handleDelete = async (creator: Creator) => {
+    if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente a ${creator.name}? Esta acción no se puede deshacer.`)) return;
+    try {
+      await deleteDoc(doc(db, "users", creator.id));
+      setCreators(creators.filter((c) => c.id !== creator.id));
+      toast.success(`Creador eliminado correctamente`);
+    } catch (error) {
+      toast.error("Error al eliminar el creador");
+    }
+  };
+
   const handleViewDetails = (creator: Creator) => {
     setSelectedCreator(creator);
     setIsDetailsOpen(true);
@@ -334,6 +345,15 @@ export default function AdminCreators() {
                                 <Ban className="w-4 h-4" />
                               </Button>
                             )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDelete(creator)}
+                              title="Eliminar usuario"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </td>
                       </tr>
