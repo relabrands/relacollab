@@ -85,6 +85,12 @@ const Login = () => {
         setIsLoggingIn(true);
         try {
             const finalRole = await registerWithEmail(email, password, name, selectedRole);
+            
+            // Track CompleteRegistration event
+            if (typeof window !== 'undefined' && (window as any).fbq) {
+                (window as any).fbq('track', 'CompleteRegistration');
+            }
+
             if (finalRole) {
                 navigate(`/${finalRole}`);
             } else {
