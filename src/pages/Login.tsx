@@ -112,6 +112,12 @@ const Login = () => {
         setIsLoggingIn(true);
         try {
             const updatedRole = await updateRole(role);
+            
+            // Track CompleteRegistration event
+            if (typeof window !== 'undefined' && (window as any).fbq) {
+                (window as any).fbq('track', 'CompleteRegistration');
+            }
+
             if (updatedRole) {
                 toast.success("Perfil actualizado correctamente");
                 navigate(`/${updatedRole}`);
