@@ -120,6 +120,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
                 campaignTitle: camp.name || "Campaign",
                 matchesUrl: `${BASE_URL}/brand/matches`
             });
+            console.log(`[Email] onApplicationCreated: Sent ${templateId} to ${brand.email}`);
         } catch (err) { console.error("[Email] onApplicationCreated:", err); }
     });
 
@@ -402,12 +403,23 @@ function registerEmailNotifications(functions, admin, exportsObj) {
     }));
 
     // 12. Creator receives new opportunity match
-    exportsObj.onMatchCreated = onDocumentCreated("campaigns/{campaignId}/matches/{creatorId}", async (event) => {
-        const match = event.data?.data();
-        if (!match || !match.aiAnalysis || !match.aiAnalysis.matchPercentage) return;
+    exportsObj.onMatchCreated = onDocumentUpdated("campaigns/{campaignId}/matches/{creatorId}", async (event) => {
+        const before = event.data?.before?.data();
+        const after = event.data?.after?.data();
+        if (!after || !after.aiAnalysis || !after.aiAnalysis.matchPercentage) return;
+
+        // Ensure we only notify once the match is completed
+        if (after.aiStatus !== 'completed') return;
 
         // Only notify if it's a strongly matched opportunity (>= 75%)
-        if (match.aiAnalysis.matchPercentage < 75) return;
+        if (after.aiAnalysis.matchPercentage < 75) return;
+
+        // Prevent multiple emails for the same match via a flag
+        if (after.notifiedCreator) return;
+
+        // If it was already completed and >= 75 in the previous state, don't send again
+        const wasAlreadyStrongMatch = before && before.aiStatus === 'completed' && before.aiAnalysis?.matchPercentage >= 75;
+        if (wasAlreadyStrongMatch) return;
 
         try {
             const { campaignId, creatorId } = event.params;
@@ -436,9 +448,15 @@ function registerEmailNotifications(functions, admin, exportsObj) {
                 creatorName: creator.displayName || "Creator",
                 brandName: brand?.brandName || brand?.displayName || "Brand",
                 campaignTitle: campaign.name || "Campaign",
-                matchScore: `${match.aiAnalysis.matchPercentage}%`,
+                matchScore: `${after.aiAnalysis.matchPercentage}%`,
                 dashboardUrl: `${BASE_URL}/creator/opportunities`,
             });
+
+            // Flag as notified
+            await admin.firestore().doc(`campaigns/${campaignId}/matches/${creatorId}`).update({
+                notifiedCreator: true
+            });
+            console.log(`[Email] onMatchCreated: Sent match email to ${creator.email} for campaign ${campaignId}`);
         } catch (err) {
             console.error("[Email] onMatchCreated error:", err);
         }
