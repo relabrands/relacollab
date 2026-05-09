@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, MapPin, Phone, Instagram, Globe, Calendar, DollarSign, Award, AlertCircle, CheckCircle2, Clock, Send, Heart, MessageCircle, Eye, Activity } from "lucide-react";
+import { Mail, MapPin, Phone, Instagram, Globe, Calendar, DollarSign, Award, AlertCircle, CheckCircle2, Clock, Send, Heart, MessageCircle, Eye, Activity, Users } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "@/lib/firebase";
 import { toast } from "sonner";
