@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, MapPin, Phone, Instagram, Globe, Calendar, DollarSign, Award, AlertCircle, CheckCircle2, Clock, Send } from "lucide-react";
+import { Mail, MapPin, Phone, Instagram, Globe, Calendar, DollarSign, Award, AlertCircle, CheckCircle2, Clock, Send, Heart, MessageCircle, Eye, Activity } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "@/lib/firebase";
 import { toast } from "sonner";
@@ -164,32 +164,85 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
                             </div>
                         )}
 
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {/* Generic Stats Grid */}
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
                                 <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                                    <Instagram className="w-3 h-3" /> Followers
-                                </div>
-                                <div className="font-semibold">{creator.followers}</div>
-                            </div>
-                            <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
-                                <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                                    <Award className="w-3 h-3" /> Engagement
-                                </div>
-                                <div className="font-semibold">{creator.engagement}</div>
-                            </div>
-                            <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
-                                <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" /> Campaigns
+                                    <Calendar className="w-3 h-3" /> Colaboraciones
                                 </div>
                                 <div className="font-semibold">{creatorApps.length}</div>
                             </div>
                             <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
                                 <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                                    <DollarSign className="w-3 h-3" /> Earnings
+                                    <DollarSign className="w-3 h-3" /> Ganancias
                                 </div>
-                                <div className="font-semibold">{creator.earnings}</div>
+                                <div className="font-semibold">{creator.earnings || "$0"}</div>
                             </div>
+                        </div>
+
+                        {/* Detailed Social Metrics */}
+                        <div className="space-y-4">
+                            {/* Instagram */}
+                            {creator.instagramConnected && creator.instagramMetrics && (
+                                <div className="bg-pink-500/10 p-4 rounded-xl border border-pink-500/20">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Instagram className="w-5 h-5 text-pink-500" />
+                                        <h4 className="font-medium text-pink-700 dark:text-pink-400">Métricas de Instagram</h4>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <div className="bg-background/50 p-2 rounded-lg">
+                                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Users className="w-3 h-3" /> Seguidores</div>
+                                            <div className="font-semibold">{creator.instagramMetrics.followers ? (creator.instagramMetrics.followers >= 10000 ? (creator.instagramMetrics.followers / 1000).toFixed(1) + 'K' : creator.instagramMetrics.followers) : 'N/A'}</div>
+                                        </div>
+                                        <div className="bg-background/50 p-2 rounded-lg">
+                                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Activity className="w-3 h-3" /> Engagement</div>
+                                            <div className="font-semibold">{creator.instagramMetrics.engagementRate ? parseFloat(creator.instagramMetrics.engagementRate).toFixed(2) + '%' : 'N/A'}</div>
+                                        </div>
+                                        <div className="bg-background/50 p-2 rounded-lg">
+                                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Heart className="w-3 h-3" /> Prom. Likes</div>
+                                            <div className="font-semibold">{creator.instagramMetrics.averageLikes ? (creator.instagramMetrics.averageLikes >= 1000 ? (creator.instagramMetrics.averageLikes / 1000).toFixed(1) + 'K' : creator.instagramMetrics.averageLikes) : 'N/A'}</div>
+                                        </div>
+                                        <div className="bg-background/50 p-2 rounded-lg">
+                                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><MessageCircle className="w-3 h-3" /> Prom. Comentarios</div>
+                                            <div className="font-semibold">{creator.instagramMetrics.averageComments || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TikTok */}
+                            {creator.tiktokConnected && creator.tiktokMetrics && (
+                                <div className="bg-black/5 dark:bg-white/10 p-4 rounded-xl border border-black/10 dark:border-white/10">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="w-5 h-5 bg-black text-white text-[10px] font-bold flex items-center justify-center rounded-md">Tk</div>
+                                        <h4 className="font-medium">Métricas de TikTok</h4>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <div className="bg-background/50 p-2 rounded-lg">
+                                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Users className="w-3 h-3" /> Seguidores</div>
+                                            <div className="font-semibold">{creator.tiktokMetrics.followers ? (creator.tiktokMetrics.followers >= 10000 ? (creator.tiktokMetrics.followers / 1000).toFixed(1) + 'K' : creator.tiktokMetrics.followers) : 'N/A'}</div>
+                                        </div>
+                                        <div className="bg-background/50 p-2 rounded-lg">
+                                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Activity className="w-3 h-3" /> Engagement</div>
+                                            <div className="font-semibold">{creator.tiktokMetrics.engagementRate ? parseFloat(creator.tiktokMetrics.engagementRate).toFixed(2) + '%' : 'N/A'}</div>
+                                        </div>
+                                        <div className="bg-background/50 p-2 rounded-lg">
+                                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Heart className="w-3 h-3" /> Prom. Likes</div>
+                                            <div className="font-semibold">{creator.tiktokMetrics.averageLikes ? (creator.tiktokMetrics.averageLikes >= 1000 ? (creator.tiktokMetrics.averageLikes / 1000).toFixed(1) + 'K' : creator.tiktokMetrics.averageLikes) : 'N/A'}</div>
+                                        </div>
+                                        <div className="bg-background/50 p-2 rounded-lg">
+                                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Eye className="w-3 h-3" /> Prom. Vistas</div>
+                                            <div className="font-semibold">{creator.tiktokMetrics.averageViews ? (creator.tiktokMetrics.averageViews >= 1000 ? (creator.tiktokMetrics.averageViews / 1000).toFixed(1) + 'K' : creator.tiktokMetrics.averageViews) : 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {(!creator.instagramConnected && !creator.tiktokConnected) && (
+                                <div className="bg-muted/30 p-4 rounded-xl border border-border/50 text-center">
+                                    <p className="text-sm text-muted-foreground">No hay redes sociales conectadas.</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Onboarding Data (if pending) */}

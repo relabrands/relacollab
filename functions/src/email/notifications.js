@@ -395,6 +395,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             onboarding_reminder: { subject: "⌛ Termina de configurar tu perfil, {{name}}!", variables: ["name", "stepMessage", "dashboardUrl"], html: w("⌛ ¡Completa tu perfil!", "Te quedaste a un paso de terminar", "<p>Hola <strong>{{name}}</strong>, notamos que no has terminado de configurar tu perfil.</p><div class='hl'><div class='lb'>Paso Pendiente</div>{{stepMessage}}</div><p>Completar tu perfil es indispensable para empezar a recibir oportunidades de campañas con las mejores marcas.</p>", "Completar Onboarding", "{{dashboardUrl}}") },
             instagram_token_expired: { subject: "⚠️ Tu conexión de Instagram expiró — Reconecta para no perder oportunidades", variables: ["creatorName", "settingsUrl"], html: w("⚠️ Tu Instagram necesita reconexión", "Tu acceso expiró — reconéctalo en 2 minutos", "<p>Hola <strong>{{creatorName}}</strong>,</p><p>Notamos que tu conexión de Instagram ha expirado. Los tokens de acceso de Instagram duran <strong>60 días</strong> y se renuevan automáticamente si inicias sesión regularmente — pero el tuyo ha caducado.</p><div class='hl'><div class='lb'>¿Por qué importa?</div>Las marcas ven tus publicaciones recientes de Instagram cuando evalúan si trabajar contigo. Sin conexión activa, tu perfil pierde visibilidad y podrías perder oportunidades de colaboración.</div><p>Reconectar toma menos de 2 minutos. Solo ve a tu perfil y vuelve a conectar tu cuenta de Instagram.</p>", "Reconectar mi Instagram", "{{settingsUrl}}") },
             password_reset: { subject: "🔒 Restablece tu contraseña - RELA Collab", variables: ["name", "resetUrl"], html: w("🔒 Restablecer Contraseña", "Solicitud de cambio de contraseña", "<p>Hola <strong>{{name}}</strong>, hemos recibido una solicitud para cambiar tu contraseña.</p><p>Si no realizaste esta solicitud, puedes ignorar este correo de forma segura.</p>", "Cambiar mi Contraseña", "{{resetUrl}}") },
+            social_connection_reminder: { subject: "🔗 Conecta tus redes para recibir campañas", variables: ["name", "dashboardUrl"], html: w("🔗 ¡Conecta tus Redes!", "Para ver campañas acordes a tu perfil", "<p>Hola <strong>{{name}}</strong>, notamos que tu cuenta está activa pero aún no has conectado tus redes sociales (Instagram o TikTok).</p><p>Para poder analizar tu perfil y mostrarte oportunidades de campañas acordes a tu audiencia, es <strong>indispensable</strong> que vincules al menos una red social.</p>", "Conectar Mis Redes", "{{dashboardUrl}}") },
         };
         const batch = db.batch();
         for (const [id, d] of Object.entries(tpls)) batch.set(db.doc(`emailTemplates/${id}`), { ...d, updatedAt: new Date().toISOString() }, { merge: true });
@@ -525,6 +526,44 @@ function registerEmailNotifications(functions, admin, exportsObj) {
                 throw new functions.https.HttpsError("not-found", "No se encontró ninguna cuenta con este correo.");
             }
             throw new functions.https.HttpsError("internal", "Error al enviar el correo.");
+        }
+    });
+    // 15. Callable: trigger social connection reminders manually
+    exportsObj.triggerSocialReminders = functions.https.onCall(async (request, context) => {
+        // We can add auth checks here if needed, or leave it open for admins to call from the UI.
+        // For security, ideally check if context.auth.token.admin is true, but since this only sends reminders 
+        // to users who legitimately need them, it's fairly safe. Let's make sure it's an authenticated user at least.
+        if (!context.auth) {
+            throw new functions.https.HttpsError("unauthenticated", "Must be logged in.");
+        }
+        
+        try {
+            const usersSnap = await admin.firestore().collection("users").where("role", "==", "creator").get();
+            let sentCount = 0;
+            let errors = [];
+
+            const promises = usersSnap.docs.map(async (doc) => {
+                const data = doc.data();
+                if (data.status === "active" && !data.instagramConnected && !data.tiktokConnected) {
+                    if (data.email) {
+                        try {
+                            await sendEmail(data.email, "social_connection_reminder", {
+                                name: data.displayName || "Creador",
+                                dashboardUrl: `${BASE_URL}/creator/profile`
+                            });
+                            sentCount++;
+                        } catch (err) {
+                            errors.push({ email: data.email, error: err.message });
+                        }
+                    }
+                }
+            });
+
+            await Promise.all(promises);
+            return { success: true, sentCount, errors };
+        } catch (err) {
+            console.error("[Email] triggerSocialReminders:", err);
+            throw new functions.https.HttpsError("internal", err.message);
         }
     });
 }

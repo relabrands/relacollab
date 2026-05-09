@@ -12,10 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { motion } from "framer-motion";
-import { Search, Eye, Ban, CheckCircle, Users, Loader2, Trash2 } from "lucide-react";
+import { Search, Eye, Ban, CheckCircle, Users, Loader2, Trash2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "@/lib/firebase";
 import { CreatorDetailsDialog } from "@/components/admin/CreatorDetailsDialog";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 
@@ -51,6 +52,10 @@ interface Creator {
   collaborationPreference?: string;
   hasBrandExperience?: boolean;
   onboardingCompleted?: boolean;
+  instagramMetrics?: any;
+  tiktokMetrics?: any;
+  instagramConnected?: boolean;
+  tiktokConnected?: boolean;
 }
 
 const statusColors: Record<string, string> = {
@@ -68,6 +73,7 @@ export default function AdminCreators() {
 
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [sendingReminders, setSendingReminders] = useState(false);
 
   useEffect(() => {
     fetchCreators();
@@ -135,7 +141,11 @@ export default function AdminCreators() {
           experienceTime: data.experienceTime,
           collaborationPreference: data.collaborationPreference,
           hasBrandExperience: data.hasBrandExperience,
-          onboardingCompleted: data.onboardingCompleted
+          onboardingCompleted: data.onboardingCompleted,
+          instagramMetrics: data.instagramMetrics,
+          tiktokMetrics: data.tiktokMetrics,
+          instagramConnected: data.instagramConnected,
+          tiktokConnected: data.tiktokConnected
         } as Creator;
       });
       setCreators(creatorsData);
@@ -204,6 +214,26 @@ export default function AdminCreators() {
     setIsDetailsOpen(true);
   };
 
+  const handleSendSocialReminders = async () => {
+    if (!confirm("¿Enviar correos recordatorios a todos los creadores activos que no han conectado sus redes?")) return;
+    setSendingReminders(true);
+    try {
+      const triggerSocialReminders = httpsCallable(functions, "triggerSocialReminders");
+      const result = await triggerSocialReminders();
+      const data = result.data as { success: boolean; sentCount: number; errors: any[] };
+      if (data.success) {
+        toast.success(`Se enviaron ${data.sentCount} correos.`);
+        if (data.errors && data.errors.length > 0) {
+          console.warn("Algunos correos fallaron:", data.errors);
+        }
+      }
+    } catch (error: any) {
+      toast.error(`Error al enviar correos: ${error.message}`);
+    } finally {
+      setSendingReminders(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <AdminSidebar />
@@ -258,6 +288,16 @@ export default function AdminCreators() {
               </div>
 
               <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleSendSocialReminders}
+                  disabled={sendingReminders}
+                  className="hidden md:flex gap-2"
+                >
+                  {sendingReminders ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                  Recordar Conectar Redes
+                </Button>
                 <span className="text-sm text-muted-foreground">
                   {filteredCreators.length} creators
                 </span>
