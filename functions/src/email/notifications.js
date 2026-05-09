@@ -530,13 +530,6 @@ function registerEmailNotifications(functions, admin, exportsObj) {
     });
     // 15. Callable: trigger social connection reminders manually
     exportsObj.triggerSocialReminders = functions.https.onCall(async (request, context) => {
-        // We can add auth checks here if needed, or leave it open for admins to call from the UI.
-        // For security, ideally check if context.auth.token.admin is true, but since this only sends reminders 
-        // to users who legitimately need them, it's fairly safe. Let's make sure it's an authenticated user at least.
-        if (!context.auth) {
-            throw new functions.https.HttpsError("unauthenticated", "Must be logged in.");
-        }
-        
         try {
             const usersSnap = await admin.firestore().collection("users").where("role", "==", "creator").get();
             let sentCount = 0;
