@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { CheckCircle, Zap, ArrowRight, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -32,6 +34,7 @@ export function SubscriptionGateModal({
 }: SubscriptionGateModalProps) {
   const { user } = useAuth();
   const { plan: activePlan, isActive } = useSubscription();
+  const [isAnnual, setIsAnnual] = useState(false);
   const planKeys: PlanKey[] = ["starter", "growth", "pro"];
 
   const handleSelect = async (key: PlanKey) => {
@@ -45,8 +48,12 @@ export function SubscriptionGateModal({
         }
       }
       onOpenChange(false); // Cierra el gate inmediatamente
+    } else if (key === "growth" && isAnnual) {
+      window.open(POLAR_CHECKOUT_URLS.growthAnnual, "_blank");
+    } else if (key === "pro" && isAnnual) {
+      window.open(POLAR_CHECKOUT_URLS.proAnnual, "_blank");
     } else {
-      // Planes de pago — abre Polar checkout en nueva pestaña
+      // Planes de pago mensuales — abre Polar checkout en nueva pestaña
       window.open(POLAR_CHECKOUT_URLS[key], "_blank");
     }
   };
@@ -81,10 +88,42 @@ export function SubscriptionGateModal({
           <h2 className="text-2xl font-bold text-white mb-2">
             Activa tu suscripción RELA Collab
           </h2>
-          <p className="text-white/50 text-sm max-w-md mx-auto">
+          <p className="text-white/50 text-sm max-w-md mx-auto mb-5">
             Conecta tu marca con los mejores creadores UGC de República Dominicana.
             Empieza gratis y escala cuando estés listo.
           </p>
+
+          {/* ── Billing Toggle ── */}
+          <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-2 py-1.5 border border-white/10">
+            <button
+              onClick={() => setIsAnnual(false)}
+              className={cn(
+                "px-4 py-1 rounded-full text-xs font-semibold transition-all duration-300",
+                !isAnnual
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-white/60 hover:text-white"
+              )}
+            >
+              Mensual
+            </button>
+            <button
+              onClick={() => setIsAnnual(true)}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-1 rounded-full text-xs font-semibold transition-all duration-300",
+                isAnnual
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-white/60 hover:text-white"
+              )}
+            >
+              Anual
+              <span
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white leading-none"
+                style={{ background: "#16a34a" }}
+              >
+                -10%
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Cards */}
@@ -94,6 +133,8 @@ export function SubscriptionGateModal({
               const plan = PLANS[key];
               const isCurrent = isActive && activePlan === key;
               const dark = plan.highlighted;
+              const showAnnualPrice = isAnnual && plan.priceMonthly > 0;
+              const displayPrice = showAnnualPrice ? plan.priceAnnual : plan.priceMonthly;
 
               return (
                 <div
@@ -133,19 +174,57 @@ export function SubscriptionGateModal({
                     >
                       {plan.name}
                     </p>
-                    <div className="flex items-end gap-1">
-                      <span className="text-2xl font-bold">
-                        {plan.price === 0 ? "Gratis" : `$${plan.price}`}
-                      </span>
-                      {plan.price > 0 && (
-                        <span
-                          className="text-xs mb-0.5"
-                          style={{ color: dark ? "#a5b4fc" : "var(--muted-foreground)" }}
+
+                    {/* Price row */}
+                    <div className="flex items-end gap-1.5 mb-0.5">
+                      <AnimatePresence mode="wait">
+                        <motion.span
+                          key={showAnnualPrice ? "annual" : "monthly"}
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 6 }}
+                          transition={{ duration: 0.18 }}
+                          className="text-2xl font-bold tabular-nums"
                         >
-                          /mes
-                        </span>
+                          {plan.price === 0 ? "Gratis" : `$${displayPrice.toFixed(2)}`}
+                        </motion.span>
+                      </AnimatePresence>
+
+                      {plan.price > 0 && (
+                        <div className="flex items-end gap-1 mb-0.5">
+                          <span
+                            className="text-xs"
+                            style={{ color: dark ? "#a5b4fc" : "var(--muted-foreground)" }}
+                          >
+                            /mes
+                          </span>
+                          {showAnnualPrice && (
+                            <span
+                              className="text-xs line-through"
+                              style={{ color: dark ? "#a5b4fc" : "var(--muted-foreground)" }}
+                            >
+                              ${plan.priceMonthly}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
+
+                    {/* Annual billing note */}
+                    {showAnnualPrice && (
+                      <AnimatePresence>
+                        <motion.p
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.18 }}
+                          className="text-[10px] font-medium"
+                          style={{ color: dark ? "#34d399" : TEAL }}
+                        >
+                          Facturado ${plan.annualTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })} al año
+                        </motion.p>
+                      </AnimatePresence>
+                    )}
                   </div>
 
                   {/* Features */}

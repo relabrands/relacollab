@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle, Zap, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PLANS, type PlanKey } from "@/lib/polar";
@@ -12,10 +14,17 @@ const TEAL = "#0F6E56";
 
 export default function Pricing() {
   const { plan: activePlan, loading } = useSubscription();
+  const [isAnnual, setIsAnnual] = useState(false);
   const planKeys: PlanKey[] = ["starter", "growth", "pro"];
 
   const handleSelect = (key: PlanKey) => {
-    window.open(POLAR_CHECKOUT_URLS[key], "_blank");
+    if (key === "growth" && isAnnual) {
+      window.open(POLAR_CHECKOUT_URLS.growthAnnual, "_blank");
+    } else if (key === "pro" && isAnnual) {
+      window.open(POLAR_CHECKOUT_URLS.proAnnual, "_blank");
+    } else {
+      window.open(POLAR_CHECKOUT_URLS[key], "_blank");
+    }
   };
 
   return (
@@ -61,9 +70,41 @@ export default function Pricing() {
             tu marca
           </span>
         </h1>
-        <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+        <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-10">
           Conecta con creadores verificados usando IA. Sin contratos largos, cancela cuando quieras.
         </p>
+
+        {/* ── Billing Toggle ── */}
+        <div className="inline-flex items-center gap-3 bg-muted/60 rounded-full px-2 py-1.5 border border-border/60 backdrop-blur-sm">
+          <button
+            onClick={() => setIsAnnual(false)}
+            className={cn(
+              "px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300",
+              !isAnnual
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Mensual
+          </button>
+          <button
+            onClick={() => setIsAnnual(true)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300",
+              isAnnual
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Anual
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white leading-none"
+              style={{ background: "#16a34a" }}
+            >
+              -10%
+            </span>
+          </button>
+        </div>
       </section>
 
       {/* ── Cards ── */}
@@ -73,6 +114,8 @@ export default function Pricing() {
             const plan = PLANS[key];
             const isCurrent = !loading && activePlan === key;
             const dark = plan.highlighted;
+            const showAnnualPrice = isAnnual && plan.priceMonthly > 0;
+            const displayPrice = showAnnualPrice ? plan.priceAnnual : plan.priceMonthly;
 
             return (
               <div
@@ -112,19 +155,58 @@ export default function Pricing() {
                   >
                     {plan.name}
                   </p>
-                  <div className="flex items-end gap-1 mb-2">
-                    <span className="text-4xl font-bold">
-                      {plan.price === 0 ? "Gratis" : `$${plan.price}`}
-                    </span>
-                    {plan.price > 0 && (
-                      <span
-                        className="text-sm mb-1.5"
-                        style={{ color: dark ? "#a5b4fc" : "var(--muted-foreground)" }}
+
+                  {/* Price row */}
+                  <div className="flex items-end gap-2 mb-1">
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={showAnnualPrice ? "annual" : "monthly"}
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 8 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-4xl font-bold tabular-nums"
                       >
-                        /mes
-                      </span>
+                        {plan.price === 0 ? "Gratis" : `$${displayPrice.toFixed(2)}`}
+                      </motion.span>
+                    </AnimatePresence>
+
+                    {plan.price > 0 && (
+                      <div className="flex items-end gap-1.5 mb-1.5">
+                        <span
+                          className="text-sm"
+                          style={{ color: dark ? "#a5b4fc" : "var(--muted-foreground)" }}
+                        >
+                          /mes
+                        </span>
+                        {showAnnualPrice && (
+                          <span
+                            className="text-sm line-through"
+                            style={{ color: dark ? "#a5b4fc" : "var(--muted-foreground)" }}
+                          >
+                            ${plan.priceMonthly}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
+
+                  {/* Annual billing note */}
+                  {showAnnualPrice && (
+                    <AnimatePresence>
+                      <motion.p
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-xs font-medium mb-2"
+                        style={{ color: dark ? "#34d399" : TEAL }}
+                      >
+                        Facturado ${plan.annualTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })} al año
+                      </motion.p>
+                    </AnimatePresence>
+                  )}
+
                   <p
                     className="text-sm leading-relaxed"
                     style={{ color: dark ? "#c4b5fd" : "var(--muted-foreground)" }}

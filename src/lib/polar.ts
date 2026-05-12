@@ -16,6 +16,12 @@ export interface Plan {
   productId: string;
   name: string;
   price: number;
+  /** Monthly price (same as price) */
+  priceMonthly: number;
+  /** Annual price per month (10% off) */
+  priceAnnual: number;
+  /** Annual billing total */
+  annualTotal: number;
   priceLabel: string;
   description: string;
   features: string[];
@@ -29,6 +35,9 @@ export const PLANS: Record<PlanKey, Plan> = {
     productId: import.meta.env.VITE_POLAR_PRODUCT_ID_STARTER as string,
     name: "Starter",
     price: 0,
+    priceMonthly: 0,
+    priceAnnual: 0,
+    annualTotal: 0,
     priceLabel: "Gratis",
     description: "Para marcas que están empezando a explorar el UGC.",
     features: [
@@ -45,6 +54,9 @@ export const PLANS: Record<PlanKey, Plan> = {
     productId: import.meta.env.VITE_POLAR_PRODUCT_ID_GROWTH as string,
     name: "Growth",
     price: 89,
+    priceMonthly: 89,
+    priceAnnual: 80.10,
+    annualTotal: 961.20,
     priceLabel: "$89/mes",
     description: "Para marcas con campañas recurrentes y equipos en crecimiento.",
     features: [
@@ -62,6 +74,9 @@ export const PLANS: Record<PlanKey, Plan> = {
     productId: import.meta.env.VITE_POLAR_PRODUCT_ID_PRO as string,
     name: "Pro",
     price: 249,
+    priceMonthly: 249,
+    priceAnnual: 224.10,
+    annualTotal: 2689.20,
     priceLabel: "$249/mes",
     description: "Para agencias y marcas con alto volumen de campañas.",
     features: [
