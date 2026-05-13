@@ -74,6 +74,7 @@ export default function CreateCampaign() {
     startDate: "",
     endDate: "",
     creatorCount: "1",
+    targetAgeRange: [] as string[], // For Instagram audience demographic matching
     // Visit/Scheduling fields
     requiresVisit: false,
     visitLocation: "",
@@ -167,6 +168,7 @@ export default function CreateCampaign() {
               maxReward: data.maxReward?.toString() || "",
               budget: data.budget?.toString() || "",
               creatorCount: data.creatorCount?.toString() || "1",
+              targetAgeRange: Array.isArray(data.targetAgeRange) ? data.targetAgeRange : [],
             }));
           } else {
             toast.error("Campaña no encontrada.");
@@ -412,6 +414,7 @@ export default function CreateCampaign() {
         approvedCount: 0,
         applicationCount: 0,
         coverImage: formData.coverImage,
+        targetAgeRange: formData.targetAgeRange || [],
       };
 
       if (isEditing && id) {
@@ -796,60 +799,59 @@ export default function CreateCampaign() {
                     />
                   </div>
 
-                  <div>
-                    <Label className="mb-2 block">Rango de Edad</Label>
-                    <p className="text-xs text-muted-foreground mb-3">Selecciona uno o varios rangos, o escribe un rango personalizado</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                      {["13-17", "18-24", "25-34", "35-44", "45+"].map((age) => {
-                        const selected = (formData.ageRange || "").split(",").map(s => s.trim()).includes(age);
+                  {/* Target Audience Age (for demographic matching) */}
+                  <div className="border-t pt-6">
+                    <Label className="mb-1 block text-base font-semibold">Rango de Edad de tu Audiencia Objetivo</Label>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Selecciona los rangos que representan a tu cliente ideal. Usaremos esto para priorizar creadores cuya audiencia real coincida.
+                    </p>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {(["13-17", "18-24", "25-34", "35-44", "45-54", "55+"] as const).map((range) => {
+                        const isSelected = formData.targetAgeRange.includes(range);
                         return (
                           <button
-                            key={age}
+                            key={range}
                             type="button"
                             onClick={() => {
-                              const current = (formData.ageRange || "").split(",").map(s => s.trim()).filter(Boolean);
-                              const updated = selected
-                                ? current.filter(a => a !== age)
-                                : [...current.filter(a => !a.includes("-") || ["13-17","18-24","25-34","35-44","45+"].includes(a)), age];
-                              setFormData(prev => ({ ...prev, ageRange: updated.join(", ") }));
+                              setFormData(prev => ({
+                                ...prev,
+                                targetAgeRange: isSelected
+                                  ? prev.targetAgeRange.filter(r => r !== range)
+                                  : [...prev.targetAgeRange, range],
+                              }));
                             }}
-                            className={`p-3 rounded-xl border-2 text-center font-medium transition-all ${selected
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border hover:border-primary/50"
-                              }`}
+                            className={`relative py-3 px-2 rounded-xl border-2 text-center font-semibold text-sm transition-all ${
+                              isSelected
+                                ? "border-primary bg-primary/10 text-primary shadow-sm"
+                                : "border-border hover:border-primary/40 text-muted-foreground hover:text-foreground"
+                            }`}
                           >
-                            {age}
-                            {selected && <span className="block text-[10px] text-primary mt-0.5">✓</span>}
+                            <span>{range}</span>
+                            {isSelected && (
+                              <span className="absolute top-1 right-1.5 text-[9px] font-bold text-primary">✓</span>
+                            )}
                           </button>
                         );
                       })}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <Label htmlFor="customAgeRange" className="text-xs text-muted-foreground">Rango personalizado (ej: 20-45)</Label>
-                        <div className="flex gap-2 mt-1">
-                          <Input
-                            id="customAgeRange"
-                            placeholder="Ej: 20-45 o 30+"
-                            value={(formData.ageRange || "").split(",").map(s => s.trim()).filter(a => !["13-17","18-24","25-34","35-44","45+"].includes(a)).join("")}
-                            onChange={(e) => {
-                              const presets = (formData.ageRange || "").split(",").map(s => s.trim()).filter(a => ["13-17","18-24","25-34","35-44","45+"].includes(a));
-                              const custom = e.target.value.trim();
-                              const all = [...presets, ...(custom ? [custom] : [])];
-                              setFormData(prev => ({ ...prev, ageRange: all.join(", ") }));
-                            }}
-                            className="h-9 text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    {formData.ageRange && (
-                      <p className="text-xs text-primary font-medium mt-2 flex items-center gap-1">
-                        <span>📊</span> Seleccionado: {formData.ageRange}
+                    {formData.targetAgeRange.length > 0 ? (
+                      <p className="text-xs text-primary font-medium mt-3 flex items-center gap-1.5">
+                        <span>🎯</span>
+                        <span>Audiencia objetivo: <strong>{formData.targetAgeRange.join(", ")}</strong></span>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, targetAgeRange: [] }))}
+                          className="text-muted-foreground hover:text-destructive transition-colors ml-1 text-[11px]"
+                        >
+                          (limpiar)
+                        </button>
                       </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-2">Sin selección = todas las edades son válidas</p>
                     )}
                   </div>
                 </div>
+
               </motion.div>
             )}
 

@@ -44,12 +44,18 @@ interface CreatorDetails {
         engagementRate?: number;
         avgViews?: number;
     };
+    instagramAudienceDemographics?: {
+        age?: Record<string, number>;
+        gender?: { M?: number; F?: number; U?: number };
+        lastUpdated?: string;
+    };
     matchBreakdown?: {
         compensation?: boolean;
         contentType?: number;
         niche?: number;
         experience?: number;
         socialMetrics?: number;
+        audienceAge?: number;
         composition?: number;
         demographics?: number;
         availability?: number;
@@ -601,7 +607,92 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                         </div>
                     </div>
 
-                    {/* ─── Recent Content ─── */}
+                    {/* ─── Audience Age Demographics ─── */}
+                    {activePlatform === "instagram" && (() => {
+                        const ageData = creator.instagramAudienceDemographics?.age;
+                        const targetAges: string[] = campaign?.targetAgeRange || [];
+                        if (!ageData || Object.keys(ageData).length === 0) return null;
+
+                        // Sort age ranges by natural order
+                        const AGE_ORDER = ["13-17", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
+                        const sorted = AGE_ORDER
+                            .filter(k => ageData[k] !== undefined)
+                            .map(k => ({ range: k, pct: ageData[k] }));
+
+                        // Calculate target alignment
+                        const expandedTargets = new Set<string>();
+                        targetAges.forEach(r => {
+                            if (r === "55+") { expandedTargets.add("55-64"); expandedTargets.add("65+"); }
+                            else if (r === "45-54") expandedTargets.add("45-54");
+                            else expandedTargets.add(r);
+                        });
+                        const alignedPct = sorted
+                            .filter(({ range }) => expandedTargets.size === 0 || expandedTargets.has(range))
+                            .reduce((s, { pct }) => s + pct, 0);
+
+                        const maxPct = Math.max(...sorted.map(x => x.pct), 1);
+
+                        return (
+                            <div className="mt-4 pt-4 border-t">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                        <BarChart2 className="w-3.5 h-3.5" />
+                                        Audiencia por Edad
+                                    </h4>
+                                    {creator.instagramAudienceDemographics?.gender && (
+                                        <span className="text-[11px] text-muted-foreground">
+                                            👩 {creator.instagramAudienceDemographics.gender.F ?? 0}% · 👨 {creator.instagramAudienceDemographics.gender.M ?? 0}%
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    {sorted.map(({ range, pct }) => {
+                                        const isTarget = expandedTargets.size > 0 && expandedTargets.has(range);
+                                        const barWidth = Math.round((pct / maxPct) * 100);
+                                        return (
+                                            <div key={range} className="flex items-center gap-2">
+                                                <span className={`text-[11px] w-12 text-right shrink-0 font-medium ${
+                                                    isTarget ? "text-primary" : "text-muted-foreground"
+                                                }`}>{range}</span>
+                                                <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all ${
+                                                            isTarget
+                                                                ? "bg-primary/80"
+                                                                : "bg-muted-foreground/30"
+                                                        }`}
+                                                        style={{ width: `${barWidth}%` }}
+                                                    />
+                                                </div>
+                                                <span className={`text-[11px] w-9 shrink-0 font-semibold ${
+                                                    isTarget ? "text-primary" : "text-muted-foreground"
+                                                }`}>{pct.toFixed(1)}%</span>
+                                                {isTarget && <span className="text-[10px] text-primary font-bold">🎯</span>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {targetAges.length > 0 && (
+                                    <div className={`mt-3 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${
+                                        alignedPct >= 50
+                                            ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                                            : alignedPct >= 25
+                                            ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                                            : "bg-red-500/10 text-red-600 border border-red-500/20"
+                                    }`}>
+                                        <span className="text-base">{alignedPct >= 50 ? "✅" : alignedPct >= 25 ? "⚠️" : "❌"}</span>
+                                        <span>
+                                            <strong>{alignedPct.toFixed(0)}%</strong> de la audiencia coincide con tu objetivo
+                                            ({targetAges.join(", ")})
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
+
                     <div>
                         <h3 className="font-semibold flex items-center gap-2 mb-4 text-sm uppercase tracking-wider text-muted-foreground">
                             {activePlatform === "instagram" ? <Instagram className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}

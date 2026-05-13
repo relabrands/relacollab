@@ -121,15 +121,62 @@ exports.auth = functions.https.onRequest((req, res) => {
 
                 const expiresAt = Date.now() + (60 * 24 * 60 * 60 * 1000); // approx 60 days
 
+                // --- Fetch Audience Demographics (age + gender) ---
+                let audienceDemographics = null;
+                try {
+                    const insightsRes = await axios.get(
+                        `https://graph.facebook.com/v19.0/${igUserId}/insights`,
+                        {
+                            params: {
+                                metric: 'audience_gender_age',
+                                period: 'lifetime',
+                                access_token: longLivedAccessToken
+                            }
+                        }
+                    );
+                    const rawData = insightsRes.data?.data?.[0]?.value || {};
+                    // rawData looks like: { "F.13-17": 2.5, "M.18-24": 15.3, ... }
+                    const ageGroups = {};
+                    const genderSplit = { M: 0, F: 0, U: 0 };
+                    Object.entries(rawData).forEach(([key, pct]) => {
+                        const [gender, ageRange] = key.split('.');
+                        if (ageRange) {
+                            ageGroups[ageRange] = (ageGroups[ageRange] || 0) + pct;
+                        }
+                        if (gender === 'M' || gender === 'F' || gender === 'U') {
+                            genderSplit[gender] = (genderSplit[gender] || 0) + pct;
+                        }
+                    });
+                    // Normalize age group percentages to always sum to 100
+                    const total = Object.values(ageGroups).reduce((s, v) => s + v, 0);
+                    if (total > 0) {
+                        Object.keys(ageGroups).forEach(k => {
+                            ageGroups[k] = parseFloat(((ageGroups[k] / total) * 100).toFixed(1));
+                        });
+                    }
+                    audienceDemographics = {
+                        age: ageGroups,
+                        gender: {
+                            M: parseFloat(genderSplit.M.toFixed(1)),
+                            F: parseFloat(genderSplit.F.toFixed(1)),
+                            U: parseFloat(genderSplit.U.toFixed(1))
+                        },
+                        lastUpdated: new Date().toISOString()
+                    };
+                    console.log(`[Auth] Fetched audience demographics for ${userId}:`, JSON.stringify(ageGroups));
+                } catch (demoErr) {
+                    console.warn(`[Auth] Could not fetch audience demographics: ${demoErr.message}`);
+                }
+
                 // Save to Firestore if userId provided
                 if (userId) {
-                    await db.collection("users").doc(userId).set({
+                    const firestoreUpdate = {
                         socialHandles: { instagram: userData.username },
                         instagramConnected: true,
                         instagramId: igUserId,
                         instagramUsername: userData.username,
-                        instagramName: userData.name || userData.username, // New
-                        instagramProfilePicture: userData.profile_picture_url, // New
+                        instagramName: userData.name || userData.username,
+                        instagramProfilePicture: userData.profile_picture_url,
                         instagramAccessToken: longLivedAccessToken,
                         instagramTokenExpiresAt: expiresAt,
                         instagramMetrics: {
@@ -139,7 +186,11 @@ exports.auth = functions.https.onRequest((req, res) => {
                             avgComments: avgComments,
                             lastUpdated: new Date().toISOString()
                         }
-                    }, { merge: true });
+                    };
+                    if (audienceDemographics) {
+                        firestoreUpdate.instagramAudienceDemographics = audienceDemographics;
+                    }
+                    await db.collection("users").doc(userId).set(firestoreUpdate, { merge: true });
                 }
 
                 return res.json({
@@ -836,6 +887,33 @@ exports.analyzeCreatorMatch = onDocumentWritten("campaigns/{campaignId}/matches/
             }
         });
 
+        // --- Prepare audience demographics context for AI ---
+        const audienceDemographics = creator.instagramAudienceDemographics || null;
+        const targetAgeRange = campaign.targetAgeRange || []; // e.g. ["25-34", "35-44", "45+"]
+
+        let audienceAgeContext = "No disponible";
+        let ageAlignmentNote = "";
+        if (audienceDemographics?.age && Object.keys(audienceDemographics.age).length > 0) {
+            const ageEntries = Object.entries(audienceDemographics.age)
+                .sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))
+                .map(([range, pct]) => `${range}: ${pct}%`)
+                .join(', ');
+            audienceAgeContext = ageEntries;
+
+            if (targetAgeRange.length > 0) {
+                // Normalize "45+" to cover 45-54, 55-64, 65+
+                const expandedRanges = new Set();
+                targetAgeRange.forEach(r => {
+                    if (r === '45+') { expandedRanges.add('45-54'); expandedRanges.add('55-64'); expandedRanges.add('65+'); }
+                    else { expandedRanges.add(r); }
+                });
+                const alignedPct = Object.entries(audienceDemographics.age)
+                    .filter(([range]) => expandedRanges.has(range))
+                    .reduce((sum, [, pct]) => sum + pct, 0);
+                ageAlignmentNote = `El ${alignedPct.toFixed(0)}% de su audiencia está en el rango objetivo de la campaña (${targetAgeRange.join(', ')}). ${alignedPct >= 50 ? '✅ Alta alineación demográfica.' : alignedPct >= 25 ? '⚠️ Alineación parcial.' : '❌ Baja alineación con el público objetivo.'}`;
+            }
+        }
+
         const prompt = `
 Actúa como un experto en Marketing de Influencers. Tu tarea es analizar la compatibilidad entre un Creador y una Campaña de Marca.
 
@@ -846,6 +924,7 @@ DATOS DE LA CAMPAÑA:
 - Vibe de Marca: ${campaign.vibes ? campaign.vibes.join(', ') : 'General'}
 - Tipo de Compensación: ${campaignCompType === 'exchange' ? 'Intercambio (Producto)' : 'Pago Monetario'}
 - Detalles Compensación: ${campaign.exchangeDetails || campaign.creatorPayment + ' USD'}
+- Rango de edad objetivo de la audiencia: ${targetAgeRange.length > 0 ? targetAgeRange.join(', ') : 'No especificado (todas las edades)'}
 
 DATOS DEL CREADOR:
 - Bio: ${creator.bio || "No disponible"}
@@ -854,14 +933,19 @@ DATOS DEL CREADOR:
 - Nota de Compensación (Calculada): ${compensationNote}
 - Es Deal Breaker la compensación: ${compensationMatch ? 'NO' : 'SÍ'}
 
+DEMOGRAFÍA REAL DE LA AUDIENCIA DEL CREADOR (datos de Instagram Insights):
+- Distribución por edad: ${audienceAgeContext}
+- Género: ${audienceDemographics?.gender ? `Mujer: ${audienceDemographics.gender.F}%, Hombre: ${audienceDemographics.gender.M}%` : 'No disponible'}
+${ageAlignmentNote ? `- Alineación con objetivo de campaña: ${ageAlignmentNote}` : ''}
+
 CONTENIDO RECIENTE (Últimos 15 posts):
 ${JSON.stringify(postsData)}
 
 TAREA:
-1. Determina el % de Match (0-100%). Si la compensación es un Deal Breaker, el match debe ser bajo (<50%).
+1. Determina el % de Match (0-100%). Si la compensación es un Deal Breaker, el match debe ser bajo (<50%). Si el rango de edad objetivo está especificado y la alineación demográfica es baja (<25%), penaliza el match significativamente.
 2. Predice las métricas PROMEDIO que este creador generaría **específicamente para esta campaña** (vistas, likes, comentarios). Basa esto en el promedio de sus posts recientes.
-3. Redacta un análisis persuasivo siguiendo ESTRICTAMENTE este formato de plantilla:
-   "Match del [X]% - [Perfil/Nicho]: [Nota sobre compensación]. Basado en sus últimos [N] videos de [temática detectada], se predice un impacto de [V] vistas, [L] likes y [C] comentarios para tu campaña. Su audiencia [describe audiencia inferida] y tono [describe tono] encajan [bien/mal] con el Brand Vibe de tu marca."
+3. Redacta un análisis persuasivo incluyendo la información demográfica si está disponible, siguiendo ESTRICTAMENTE este formato de plantilla:
+   "Match del [X]% - [Perfil/Nicho]: [Nota sobre compensación]. Basado en sus últimos [N] videos de [temática detectada], se predice un impacto de [V] vistas, [L] likes y [C] comentarios para tu campaña. Su audiencia [describe audiencia con datos demográficos reales si disponibles] y tono [describe tono] encajan [bien/mal] con el Brand Vibe de tu marca."
 
 FORMATO EXCLUSIVO JSON:
 Responde SOLO con este objeto JSON raw, sin markdown formatting si es posible:
@@ -1209,12 +1293,45 @@ async function refreshInstagramMetricsForUser(userId, igUserId, longLivedAccessT
             }
         };
 
+        // --- Refresh Audience Demographics (cron) ---
+        try {
+            const demoRes = await axios.get(
+                `https://graph.facebook.com/v19.0/${igUserId}/insights`,
+                {
+                    params: {
+                        metric: 'audience_gender_age',
+                        period: 'lifetime',
+                        access_token: longLivedAccessToken
+                    }
+                }
+            );
+            const rawData = demoRes.data?.data?.[0]?.value || {};
+            const ageGroups = {};
+            const genderSplit = { M: 0, F: 0, U: 0 };
+            Object.entries(rawData).forEach(([key, pct]) => {
+                const [gender, ageRange] = key.split('.');
+                if (ageRange) ageGroups[ageRange] = (ageGroups[ageRange] || 0) + pct;
+                if (gender === 'M' || gender === 'F' || gender === 'U') genderSplit[gender] = (genderSplit[gender] || 0) + pct;
+            });
+            const total = Object.values(ageGroups).reduce((s, v) => s + v, 0);
+            if (total > 0) Object.keys(ageGroups).forEach(k => { ageGroups[k] = parseFloat(((ageGroups[k] / total) * 100).toFixed(1)); });
+            updateData.instagramAudienceDemographics = {
+                age: ageGroups,
+                gender: { M: parseFloat(genderSplit.M.toFixed(1)), F: parseFloat(genderSplit.F.toFixed(1)), U: parseFloat(genderSplit.U.toFixed(1)) },
+                lastUpdated: new Date().toISOString()
+            };
+            console.log(`[MetricsUpdate] Refreshed audience demographics for ${userId}`);
+        } catch (demoErr) {
+            console.warn(`[MetricsUpdate] Could not refresh audience demographics for ${userId}: ${demoErr.message}`);
+        }
+
         await db.collection("users").doc(userId).set(updateData, { merge: true });
         console.log(`[MetricsUpdate] Successfully updated Instagram for ${userId}`);
     } catch (error) {
         console.warn(`[MetricsUpdate] Failed to update Instagram for ${userId}:`, error.message);
     }
 }
+
 
 async function refreshTikTokMetricsForUser(userId, openId, accessToken, refreshToken, tokenExpiresAt, userDocData) {
     try {

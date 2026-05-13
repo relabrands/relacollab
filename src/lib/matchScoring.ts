@@ -2,16 +2,25 @@ export interface MatchScoreResult {
     score: number;
     reasons: string[];
     breakdown: {
-        compensation: boolean;  // NEW: Must match (eliminatory)
-        contentType: number;    // NEW: Max 25
-        niche: number;          // Was "vibe" - Max 20
-        experience: number;     // NEW: Max 15
-        socialMetrics: number;  // Was "engagement" - Max 15
-        composition: number;    // NEW: Max 10
-        demographics: number;   // Was "location" - Max 10
-        availability: number;   // NEW: Max 5
+        compensation: boolean;  // Must match (eliminatory)
+        contentType: number;    // Max 25
+        niche: number;          // Max 20
+        experience: number;     // Max 15
+        socialMetrics: number;  // Max 15
+        audienceAge: number;    // Max 15 — NEW: audience age demographic match
+        composition: number;    // Max 10
+        demographics: number;   // Location — Max 10
+        availability: number;   // Max 5
     };
 }
+
+// Maps "45+" shorthand to the actual Instagram age buckets returned by the API
+const AGE_RANGE_ALIASES: Record<string, string[]> = {
+    "45+": ["45-54", "55-64", "65+"],
+    "35+": ["35-44", "45-54", "55-64", "65+"],
+    "25+": ["25-34", "35-44", "45-54", "55-64", "65+"],
+    "18+": ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"],
+};
 
 export const calculateMatchScore = (campaign: any, creator: any): MatchScoreResult => {
     let score = 0;
@@ -22,6 +31,7 @@ export const calculateMatchScore = (campaign: any, creator: any): MatchScoreResu
         niche: 0,
         experience: 0,
         socialMetrics: 0,
+        audienceAge: 0,
         composition: 0,
         demographics: 0,
         availability: 0
@@ -202,8 +212,50 @@ export const calculateMatchScore = (campaign: any, creator: any): MatchScoreResu
     score += breakdown.socialMetrics;
 
     // ========================================
-    // 6. COMPOSITION (Max 10 points)
+    // 5.5 AUDIENCE AGE MATCH (Max 15 points)
     // ========================================
+    const targetAgeRange: string[] = campaign.targetAgeRange || [];
+    const audienceAge = creator.instagramAudienceDemographics?.age || null;
+
+    if (targetAgeRange.length === 0) {
+        // No age requirement — neutral score
+        breakdown.audienceAge = 10;
+    } else if (!audienceAge || Object.keys(audienceAge).length === 0) {
+        // No demographic data yet — partial neutral
+        breakdown.audienceAge = 7;
+    } else {
+        // Expand shorthand aliases ("45+" → "45-54", "55-64", "65+")
+        const expandedRanges = new Set<string>();
+        targetAgeRange.forEach((r: string) => {
+            const aliases = AGE_RANGE_ALIASES[r];
+            if (aliases) {
+                aliases.forEach(a => expandedRanges.add(a));
+            } else {
+                expandedRanges.add(r);
+            }
+        });
+
+        // Sum percentages within the targeted ranges
+        const alignedPct = Object.entries(audienceAge)
+            .filter(([range]) => expandedRanges.has(range))
+            .reduce((sum, [, pct]) => sum + (pct as number), 0);
+
+        if (alignedPct >= 60) {
+            breakdown.audienceAge = 15;
+            reasons.push(`✓ ${alignedPct.toFixed(0)}% de la audiencia está en el rango objetivo`);
+        } else if (alignedPct >= 40) {
+            breakdown.audienceAge = 10;
+            reasons.push(`${alignedPct.toFixed(0)}% de audiencia en rango objetivo`);
+        } else if (alignedPct >= 20) {
+            breakdown.audienceAge = 5;
+        } else {
+            breakdown.audienceAge = 0;
+            reasons.push(`⚠️ Solo ${alignedPct.toFixed(0)}% de la audiencia coincide con el rango objetivo`);
+        }
+    }
+    score += breakdown.audienceAge;
+
+
     const whoAppearsInContent = creator.whoAppearsInContent || [];
     const campaignVibesList = (campaign.vibes || []).map((v: string) => v.toLowerCase());
 
