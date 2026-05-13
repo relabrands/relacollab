@@ -10,8 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Check, Loader2, LogOut, Instagram, Globe, Facebook, Linkedin } from "lucide-react";
-
-// Removed unused Plan interface
+import { CREATOR_NICHES } from "@/lib/constants";
 
 const TOTAL_STEPS = 2;
 
@@ -185,18 +184,11 @@ export default function BrandOnboarding() {
                                 <Select value={formData.industry} onValueChange={val => update("industry", val)}>
                                     <SelectTrigger><SelectValue placeholder="Selecciona industria" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="fashion">Moda</SelectItem>
-                                        <SelectItem value="beauty">Belleza</SelectItem>
-                                        <SelectItem value="tech">Tecnología</SelectItem>
-                                        <SelectItem value="food">Alimentos & Bebidas</SelectItem>
-                                        <SelectItem value="fitness">Fitness</SelectItem>
-                                        <SelectItem value="lifestyle">Estilo de Vida</SelectItem>
-                                        <SelectItem value="travel">Viajes</SelectItem>
-                                        <SelectItem value="hospitality">Hospitalidad</SelectItem>
-                                        <SelectItem value="retail">Retail</SelectItem>
-                                        <SelectItem value="health">Salud</SelectItem>
-                                        <SelectItem value="entertainment">Entretenimiento</SelectItem>
-                                        <SelectItem value="other">Otro</SelectItem>
+                                        {CREATOR_NICHES.map(niche => (
+                                            <SelectItem key={niche.id} value={niche.id}>
+                                                {niche.label}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>

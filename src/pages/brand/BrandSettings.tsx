@@ -18,6 +18,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { UpgradePrompt } from "@/components/brand/UpgradePrompt";
+import { CREATOR_NICHES } from "@/lib/constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -412,17 +413,11 @@ export default function BrandSettings() {
                                                 <SelectValue placeholder="Seleccionar industria" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="fashion">Moda</SelectItem>
-                                                <SelectItem value="beauty">Belleza</SelectItem>
-                                                <SelectItem value="tech">Tecnología</SelectItem>
-                                                <SelectItem value="food">Alimentos & Bebidas</SelectItem>
-                                                <SelectItem value="fitness">Fitness</SelectItem>
-                                                <SelectItem value="lifestyle">Estilo de Vida</SelectItem>
-                                                <SelectItem value="travel">Viajes</SelectItem>
-                                                <SelectItem value="hospitality">Hospitalidad</SelectItem>
-                                                <SelectItem value="retail">Retail</SelectItem>
-                                                <SelectItem value="health">Salud</SelectItem>
-                                                <SelectItem value="other">Otro</SelectItem>
+                                                {CREATOR_NICHES.map(niche => (
+                                                    <SelectItem key={niche.id} value={niche.id}>
+                                                        {niche.label}
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
