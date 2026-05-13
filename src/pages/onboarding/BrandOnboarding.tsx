@@ -186,7 +186,7 @@ export default function BrandOnboarding() {
                                     <SelectContent>
                                         {CREATOR_NICHES.map(niche => (
                                             <SelectItem key={niche.id} value={niche.id}>
-                                                {niche.label}
+                                                <span>{niche.label}</span>
                                             </SelectItem>
                                         ))}
                                     </SelectContent>

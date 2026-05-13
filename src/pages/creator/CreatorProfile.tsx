@@ -603,7 +603,9 @@ export default function CreatorProfile() {
                   </SelectTrigger>
                   <SelectContent>
                     {CREATOR_NICHES.map(niche => (
-                      <SelectItem key={niche.id} value={niche.id}>{niche.label}</SelectItem>
+                      <SelectItem key={niche.id} value={niche.id}>
+                        <span>{niche.label}</span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
