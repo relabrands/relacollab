@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect, useRef } from "react";
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc, deleteDoc } from "firebase/firestore";
-import { auth, db, functions } from "@/lib/firebase";
+import { auth, db, functions, storage } from "@/lib/firebase";
 import { httpsCallable } from "firebase/functions";
 import { toast } from "sonner";
 import { MobileNav } from "@/components/dashboard/MobileNav";
