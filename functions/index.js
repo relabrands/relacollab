@@ -128,38 +128,39 @@ exports.auth = functions.https.onRequest((req, res) => {
                         `https://graph.facebook.com/v19.0/${igUserId}/insights`,
                         {
                             params: {
-                                metric: 'audience_gender_age',
+                                metric: 'follower_demographics',
                                 period: 'lifetime',
+                                metric_type: 'total_value',
+                                breakdown: 'age,gender',
                                 access_token: longLivedAccessToken
                             }
                         }
                     );
-                    const rawData = insightsRes.data?.data?.[0]?.value || {};
-                    // rawData looks like: { "F.13-17": 2.5, "M.18-24": 15.3, ... }
+                    // New API format: data[0].total_value.breakdowns[0].results[]
+                    const results = insightsRes.data?.data?.[0]?.total_value?.breakdowns?.[0]?.results || [];
                     const ageGroups = {};
-                    const genderSplit = { M: 0, F: 0, U: 0 };
-                    Object.entries(rawData).forEach(([key, pct]) => {
-                        const [gender, ageRange] = key.split('.');
-                        if (ageRange) {
-                            ageGroups[ageRange] = (ageGroups[ageRange] || 0) + pct;
-                        }
+                    const genderCounts = { M: 0, F: 0, U: 0 };
+                    let totalCount = 0;
+                    results.forEach(({ dimension_values, value }) => {
+                        const [age, gender] = dimension_values;
+                        ageGroups[age] = (ageGroups[age] || 0) + value;
                         if (gender === 'M' || gender === 'F' || gender === 'U') {
-                            genderSplit[gender] = (genderSplit[gender] || 0) + pct;
+                            genderCounts[gender] = (genderCounts[gender] || 0) + value;
                         }
+                        totalCount += value;
                     });
-                    // Normalize age group percentages to always sum to 100
-                    const total = Object.values(ageGroups).reduce((s, v) => s + v, 0);
-                    if (total > 0) {
+                    // Convert raw counts to percentages
+                    if (totalCount > 0) {
                         Object.keys(ageGroups).forEach(k => {
-                            ageGroups[k] = parseFloat(((ageGroups[k] / total) * 100).toFixed(1));
+                            ageGroups[k] = parseFloat(((ageGroups[k] / totalCount) * 100).toFixed(1));
                         });
                     }
                     audienceDemographics = {
                         age: ageGroups,
                         gender: {
-                            M: parseFloat(genderSplit.M.toFixed(1)),
-                            F: parseFloat(genderSplit.F.toFixed(1)),
-                            U: parseFloat(genderSplit.U.toFixed(1))
+                            F: parseFloat(((genderCounts.F / totalCount) * 100).toFixed(1)),
+                            M: parseFloat(((genderCounts.M / totalCount) * 100).toFixed(1)),
+                            U: parseFloat(((genderCounts.U / totalCount) * 100).toFixed(1))
                         },
                         lastUpdated: new Date().toISOString()
                     };
@@ -1299,25 +1300,33 @@ async function refreshInstagramMetricsForUser(userId, igUserId, longLivedAccessT
                 `https://graph.facebook.com/v19.0/${igUserId}/insights`,
                 {
                     params: {
-                        metric: 'audience_gender_age',
+                        metric: 'follower_demographics',
                         period: 'lifetime',
+                        metric_type: 'total_value',
+                        breakdown: 'age,gender',
                         access_token: longLivedAccessToken
                     }
                 }
             );
-            const rawData = demoRes.data?.data?.[0]?.value || {};
+            // New API format: data[0].total_value.breakdowns[0].results[]
+            const results = demoRes.data?.data?.[0]?.total_value?.breakdowns?.[0]?.results || [];
             const ageGroups = {};
-            const genderSplit = { M: 0, F: 0, U: 0 };
-            Object.entries(rawData).forEach(([key, pct]) => {
-                const [gender, ageRange] = key.split('.');
-                if (ageRange) ageGroups[ageRange] = (ageGroups[ageRange] || 0) + pct;
-                if (gender === 'M' || gender === 'F' || gender === 'U') genderSplit[gender] = (genderSplit[gender] || 0) + pct;
+            const genderCounts = { M: 0, F: 0, U: 0 };
+            let totalCount = 0;
+            results.forEach(({ dimension_values, value }) => {
+                const [age, gender] = dimension_values;
+                ageGroups[age] = (ageGroups[age] || 0) + value;
+                if (gender === 'M' || gender === 'F' || gender === 'U') genderCounts[gender] = (genderCounts[gender] || 0) + value;
+                totalCount += value;
             });
-            const total = Object.values(ageGroups).reduce((s, v) => s + v, 0);
-            if (total > 0) Object.keys(ageGroups).forEach(k => { ageGroups[k] = parseFloat(((ageGroups[k] / total) * 100).toFixed(1)); });
+            if (totalCount > 0) Object.keys(ageGroups).forEach(k => { ageGroups[k] = parseFloat(((ageGroups[k] / totalCount) * 100).toFixed(1)); });
             updateData.instagramAudienceDemographics = {
                 age: ageGroups,
-                gender: { M: parseFloat(genderSplit.M.toFixed(1)), F: parseFloat(genderSplit.F.toFixed(1)), U: parseFloat(genderSplit.U.toFixed(1)) },
+                gender: {
+                    F: parseFloat(((genderCounts.F / totalCount) * 100).toFixed(1)),
+                    M: parseFloat(((genderCounts.M / totalCount) * 100).toFixed(1)),
+                    U: parseFloat(((genderCounts.U / totalCount) * 100).toFixed(1))
+                },
                 lastUpdated: new Date().toISOString()
             };
             console.log(`[MetricsUpdate] Refreshed audience demographics for ${userId}`);

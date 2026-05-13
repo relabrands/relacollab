@@ -211,7 +211,9 @@ export default function CampaignDetails() {
             tiktokUsername: collab.tiktokUsername,
             instagramMetrics: collab.instagramMetrics,
             tiktokMetrics: collab.tiktokMetrics,
+            instagramAudienceDemographics: collab.instagramAudienceDemographics || null,
             aiAnalysis: null
+
         };
         setSelectedCreator(creatorDetails);
         setIsCreatorDialogOpen(true);
