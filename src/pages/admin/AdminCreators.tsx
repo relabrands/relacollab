@@ -56,6 +56,8 @@ interface Creator {
   tiktokMetrics?: any;
   instagramConnected?: boolean;
   tiktokConnected?: boolean;
+  createdAtStr: string;
+  createdAtTs: number;
 }
 
 const statusColors: Record<string, string> = {
@@ -70,6 +72,8 @@ export default function AdminCreators() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "pending" | "suspended">("all");
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
 
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -119,6 +123,19 @@ export default function AdminCreators() {
         const followersCount = data.instagramMetrics?.followers || data.instagramFollowers || 0;
         const engagementRate = data.instagramMetrics?.engagementRate || data.engagementRate || 0;
 
+        let createdAtStr = "N/A";
+        let createdAtTs = 0;
+        if (data.createdAt) {
+          const d = data.createdAt.seconds ? new Date(data.createdAt.seconds * 1000) : new Date(data.createdAt);
+          if (!isNaN(d.getTime())) {
+            createdAtStr = d.toLocaleString('es-DO', {
+              day: '2-digit', month: 'short', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            });
+            createdAtTs = d.getTime();
+          }
+        }
+
         return {
           id: docSnap.id,
           name: data.displayName || data.name || "Unknown Creator",
@@ -145,7 +162,9 @@ export default function AdminCreators() {
           instagramMetrics: data.instagramMetrics,
           tiktokMetrics: data.tiktokMetrics,
           instagramConnected: data.instagramConnected,
-          tiktokConnected: data.tiktokConnected
+          tiktokConnected: data.tiktokConnected,
+          createdAtStr,
+          createdAtTs
         } as Creator;
       });
       setCreators(creatorsData);
@@ -163,9 +182,25 @@ export default function AdminCreators() {
 
       const matchesStatus = statusFilter === "all" || creator.status === statusFilter;
 
-      return matchesSearch && matchesStatus;
+      let matchesDate = true;
+      const now = Date.now();
+      const ONE_DAY = 24 * 60 * 60 * 1000;
+      
+      if (dateFilter === "today") {
+        matchesDate = (now - creator.createdAtTs) <= ONE_DAY;
+      } else if (dateFilter === "week") {
+        matchesDate = (now - creator.createdAtTs) <= 7 * ONE_DAY;
+      } else if (dateFilter === "month") {
+        matchesDate = (now - creator.createdAtTs) <= 30 * ONE_DAY;
+      }
+
+      return matchesSearch && matchesStatus && matchesDate;
     }
-  );
+  ).sort((a, b) => {
+    if (sortBy === "newest") return b.createdAtTs - a.createdAtTs;
+    if (sortBy === "oldest") return a.createdAtTs - b.createdAtTs;
+    return 0;
+  });
 
   const handleChangeStatus = async (creatorId: string, newStatus: string) => {
     try {
@@ -276,15 +311,39 @@ export default function AdminCreators() {
             </div>
 
             {/* Actions Bar */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="relative w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search creators..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div className="relative w-full md:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar creadores..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                <Select value={dateFilter} onValueChange={(val: any) => setDateFilter(val)}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Fecha" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Cualquier fecha</SelectItem>
+                    <SelectItem value="today">Últimas 24h</SelectItem>
+                    <SelectItem value="week">Últimos 7 días</SelectItem>
+                    <SelectItem value="month">Últimos 30 días</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={sortBy} onValueChange={(val: any) => setSortBy(val)}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Más recientes</SelectItem>
+                    <SelectItem value="oldest">Más antiguos</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex items-center gap-3">
@@ -314,6 +373,7 @@ export default function AdminCreators() {
                   <thead className="bg-muted/50">
                     <tr>
                       <th className="text-left p-4 font-medium text-muted-foreground">Creator</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Registro</th>
                       <th className="text-left p-4 font-medium text-muted-foreground">Followers</th>
                       <th className="text-left p-4 font-medium text-muted-foreground">Engagement</th>
                       <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
@@ -338,6 +398,7 @@ export default function AdminCreators() {
                             </div>
                           </div>
                         </td>
+                        <td className="p-4 text-sm text-muted-foreground">{creator.createdAtStr}</td>
                         <td className="p-4 font-medium text-sm">{creator.followers}</td>
                         <td className="p-4 text-sm">
                           <span className="text-success font-medium">{creator.engagement}</span>
