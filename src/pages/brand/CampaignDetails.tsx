@@ -87,7 +87,19 @@ export default function CampaignDetails() {
                     // 1. Fetch applications
                     const appsQuery = query(collection(db, "applications"), where("campaignId", "==", id));
                     const appsSnapshot = await getDocs(appsQuery);
-                    const allApps = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const allAppsRaw = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                    // Filter out applications from creators whose account is not active
+                    const activeApps: any[] = [];
+                    for (const app of allAppsRaw) {
+                        try {
+                            const creatorSnap = await getDoc(doc(db, "users", (app as any).creatorId));
+                            if (creatorSnap.exists() && creatorSnap.data().status === 'active') {
+                                activeApps.push(app);
+                            }
+                        } catch (_) { /* skip if user doc not found */ }
+                    }
+                    const allApps = activeApps;
 
                     setApplicationsCount(allApps.length);
                     const approvedApps = allApps.filter((a: any) =>
@@ -96,20 +108,24 @@ export default function CampaignDetails() {
                     setApprovedCount(allApps.filter((a: any) => a.status === "approved").length);
                     setCollaboratingCount(approvedApps.length);
 
-                    // 2. Fetch collaborator profiles
+                    // 2. Fetch collaborator profiles (only active creators)
                     if (approvedApps.length > 0) {
                         const creatorIds = [...new Set(approvedApps.map((a: any) => a.creatorId))];
-                        // Fetch users in chunks if necessary (max 30 for 'in' operator)
-                        // but here we likely have few collaborators (1-10+)
                         const userProfiles: any[] = [];
                         for (let i = 0; i < creatorIds.length; i += 10) {
                             const chunk = creatorIds.slice(i, i + 10);
                             const usersQuery = query(collection(db, "users"), where("__name__", "in", chunk));
                             const usersSnap = await getDocs(usersQuery);
-                            usersSnap.forEach(uDoc => userProfiles.push({ id: uDoc.id, ...uDoc.data() }));
+                            usersSnap.forEach(uDoc => {
+                                // Only include active creators
+                                if (uDoc.data().status === 'active') {
+                                    userProfiles.push({ id: uDoc.id, ...uDoc.data() });
+                                }
+                            });
                         }
                         setCollaborators(userProfiles);
                     }
+
 
                     // 3. Check for paid invoice
                     const invoicesQuery = query(

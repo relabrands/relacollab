@@ -171,6 +171,7 @@ export default function BrandMatches() {
               ...creatorData,
               id: creatorDoc.id, // Creator ID
               applicationId: appDoc.id, // Application Ref
+              creatorStatus: creatorData.status, // for filtering
               matchScore: score,
               displayScore: aiAnalysis?.matchPercentage ?? score,
               aiAnalysis,
@@ -194,7 +195,9 @@ export default function BrandMatches() {
           return null;
         });
 
-        const allApplications = (await Promise.all(applicationPromises)).filter(Boolean);
+        const allApplications = (await Promise.all(applicationPromises)).filter(Boolean)
+          // Hide applicants whose user account is not active (e.g. admin set to pending)
+          .filter((c: any) => c.creatorStatus === 'active');
         setAllApplications(allApplications);
 
         // Filter into buckets
