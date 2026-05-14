@@ -637,80 +637,96 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                             ? { bg: "from-amber-500/15 to-amber-500/5", border: "border-amber-500/30", text: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500", label: "Alineación media" }
                             : { bg: "from-red-500/15 to-red-500/5", border: "border-red-500/30", text: "text-red-600 dark:text-red-400", dot: "bg-red-500", label: "Baja alineación" };
 
+                        const AGE_COLORS: Record<string, { bar: string; text: string; bg: string }> = {
+                            "13-17": { bar: "#a78bfa", text: "text-violet-400",  bg: "bg-violet-400" },
+                            "18-24": { bar: "#60a5fa", text: "text-blue-400",    bg: "bg-blue-400" },
+                            "25-34": { bar: "#34d399", text: "text-emerald-400", bg: "bg-emerald-400" },
+                            "35-44": { bar: "#f59e0b", text: "text-amber-400",   bg: "bg-amber-400" },
+                            "45-54": { bar: "#f97316", text: "text-orange-400",  bg: "bg-orange-400" },
+                            "55-64": { bar: "#f43f5e", text: "text-rose-400",    bg: "bg-rose-400" },
+                            "65+":   { bar: "#ec4899", text: "text-pink-400",    bg: "bg-pink-400" },
+                        };
+
                         return (
-                            <div className="rounded-2xl border border-border/60 overflow-hidden bg-gradient-to-br from-background to-muted/20">
-                                {/* Card header */}
-                                <div className="px-5 py-4 flex items-center justify-between border-b border-border/40 bg-muted/30">
+                            <div className="rounded-2xl border border-border/60 overflow-hidden">
+                                {/* Header */}
+                                <div className="px-5 py-3.5 flex items-center justify-between border-b border-border/40 bg-muted/40">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                                        <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
                                             <Users className="w-3.5 h-3.5 text-primary" />
                                         </div>
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-foreground">Audiencia por Edad</h4>
-                                            <p className="text-[11px] text-muted-foreground">Distribución Instagram · {sorted.length} rangos</p>
-                                        </div>
+                                        <span className="text-sm font-semibold">Audiencia por Edad</span>
                                     </div>
                                     {genderData && (
-                                        <div className="flex items-center gap-2">
-                                            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-pink-500/10 text-pink-500 border border-pink-500/20">
-                                                ♀ {genderData.F ?? 0}%
-                                            </span>
-                                            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
-                                                ♂ {genderData.M ?? 0}%
-                                            </span>
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className="font-semibold text-pink-500">♀ {genderData.F ?? 0}%</span>
+                                            <div className="w-20 h-2 rounded-full overflow-hidden bg-blue-400/30 flex">
+                                                <div className="h-full bg-pink-400" style={{ width: `${genderData.F ?? 0}%` }} />
+                                            </div>
+                                            <span className="font-semibold text-blue-500">♂ {genderData.M ?? 0}%</span>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Bars */}
-                                <div className="px-5 py-4 space-y-3">
+                                {/* Vertical bar chart */}
+                                <div className="px-5 pt-5 pb-2">
+                                    <div className="flex items-end gap-2" style={{ height: "120px" }}>
+                                        {sorted.map(({ range, pct }) => {
+                                            const isTarget = expandedTargets.size > 0 && expandedTargets.has(range);
+                                            const isTop = pct === maxPct;
+                                            const barH = Math.max(Math.round((pct / maxPct) * 100), 4);
+                                            const col = AGE_COLORS[range] || { bar: "#94a3b8", text: "text-slate-400", bg: "bg-slate-400" };
+                                            return (
+                                                <div key={range} className="flex-1 flex flex-col items-center gap-1">
+                                                    <span className={`text-[10px] font-bold tabular-nums ${isTop ? col.text : "text-muted-foreground/60"}`}>
+                                                        {pct >= 1 ? `${pct.toFixed(0)}%` : "<1%"}
+                                                    </span>
+                                                    <div className="w-full flex flex-col justify-end" style={{ height: "82px" }}>
+                                                        <div
+                                                            className={`w-full rounded-t-md transition-all duration-700 relative ${isTarget ? "ring-2 ring-offset-1 ring-primary/60" : ""}`}
+                                                            style={{
+                                                                height: `${barH}%`,
+                                                                background: isTarget
+                                                                    ? `linear-gradient(to top, ${col.bar}, ${col.bar}bb)`
+                                                                    : `linear-gradient(to top, ${col.bar}88, ${col.bar}44)`,
+                                                            }}
+                                                        >
+                                                            {isTarget && (
+                                                                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary shadow-sm" />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <span className={`text-[9px] font-semibold text-center ${isTarget ? "text-primary" : "text-muted-foreground"}`}>{range}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Legend */}
+                                <div className="px-5 pb-4 flex flex-wrap gap-x-3 gap-y-1">
                                     {sorted.map(({ range, pct }) => {
+                                        const col = AGE_COLORS[range] || { bar: "#94a3b8", text: "text-slate-400", bg: "bg-slate-400" };
                                         const isTarget = expandedTargets.size > 0 && expandedTargets.has(range);
-                                        const isTop = pct === maxPct;
-                                        const barWidth = Math.round((pct / maxPct) * 100);
                                         return (
-                                            <div key={range} className="flex items-center gap-3">
-                                                <span className={`text-[11px] w-11 text-right shrink-0 font-semibold tabular-nums ${
-                                                    isTarget ? "text-primary" : "text-muted-foreground"
-                                                }`}>{range}</span>
-                                                <div className="flex-1 h-5 bg-muted/60 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full rounded-full transition-all duration-700 ${
-                                                            isTarget
-                                                                ? "bg-gradient-to-r from-primary to-primary/70"
-                                                                : isTop
-                                                                ? "bg-gradient-to-r from-muted-foreground/50 to-muted-foreground/30"
-                                                                : "bg-muted-foreground/25"
-                                                        }`}
-                                                        style={{ width: `${barWidth}%` }}
-                                                    />
-                                                </div>
-                                                <div className="flex items-center gap-1.5 w-16 justify-end shrink-0">
-                                                    <span className={`text-xs font-bold tabular-nums ${
-                                                        isTarget ? "text-primary" : "text-muted-foreground"
-                                                    }`}>{pct.toFixed(1)}%</span>
-                                                    {isTarget && (
-                                                        <span className="w-4 h-4 rounded-full bg-primary flex items-center justify-center shrink-0">
-                                                            <Target className="w-2.5 h-2.5 text-primary-foreground" />
-                                                        </span>
-                                                    )}
-                                                </div>
+                                            <div key={range} className={`flex items-center gap-1.5 text-[11px] ${isTarget ? "font-bold" : "font-medium"}`}>
+                                                <span className={`w-2 h-2 rounded-full shrink-0 ${col.bg}`} />
+                                                <span className="text-muted-foreground">{range}</span>
+                                                <span className={isTarget ? col.text : "text-muted-foreground/60"}>{pct.toFixed(1)}%</span>
+                                                {isTarget && <span className="text-[10px]">🎯</span>}
                                             </div>
                                         );
                                     })}
                                 </div>
 
-                                {/* Alignment summary */}
+                                {/* Alignment badge */}
                                 {targetAges.length > 0 && (
-                                    <div className={`mx-5 mb-5 px-4 py-3 rounded-xl bg-gradient-to-r ${alignStyle.bg} border ${alignStyle.border} flex items-center justify-between`}>
-                                        <div className="flex items-center gap-2.5">
-                                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${alignStyle.dot}`} />
-                                            <div>
-                                                <p className={`text-xs font-bold ${alignStyle.text}`}>{alignStyle.label}</p>
-                                                <p className="text-[11px] text-muted-foreground">Objetivo: {targetAges.join(", ")}</p>
-                                            </div>
+                                    <div className={`mx-4 mb-4 px-4 py-3 rounded-xl bg-gradient-to-r ${alignStyle.bg} border ${alignStyle.border} flex items-center justify-between`}>
+                                        <div>
+                                            <p className={`text-sm font-bold ${alignStyle.text}`}>{alignStyle.label}</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">Objetivo: {targetAges.join(", ")}</p>
                                         </div>
-                                        <div className={`text-2xl font-black ${alignStyle.text}`}>
+                                        <div className={`text-3xl font-black ${alignStyle.text}`}>
                                             {alignedPct.toFixed(0)}%
                                         </div>
                                     </div>
