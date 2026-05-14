@@ -145,6 +145,11 @@ export default function CreatorDashboard() {
         const applicationsSnap = await getDocs(applicationsQuery);
         const appliedCampaignIds = applicationsSnap.docs.map(doc => doc.data().campaignId);
 
+        // Gate: must have at least one connected social account to see opportunities
+        if (!userData.instagramConnected && !userData.tiktokConnected) {
+          setOpportunities([]);
+        } else {
+
         // Count active campaigns (approved applications) by verifying campaign existence and completion status
         const approvedApps = applicationsSnap.docs.filter(
           doc => doc.data().status === "approved"
@@ -279,6 +284,8 @@ export default function CreatorDashboard() {
         const avgMatchScore = topOpportunities.length > 0
           ? Math.round(topOpportunities.reduce((sum, opp) => sum + opp.matchScore, 0) / topOpportunities.length)
           : 0;
+
+        } // end else (has social accounts)
 
         // 5. Fetch Earnings (Historical Totals from payouts collection)
         const payoutsQuery = query(

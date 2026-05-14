@@ -214,6 +214,8 @@ export default function BrandMatches() {
           .map(doc => ({ id: doc.id, ...doc.data() }))
           // Must have a display name
           .filter((c: any) => c.displayName)
+          // Must be active (admin-controlled status)
+          .filter((c: any) => c.status === 'active')
           // Must have at least 1 connected social account
           .filter((c: any) => c.instagramConnected === true || c.tiktokConnected === true)
           // Respect privacy: skip creators who explicitly set publicProfile to false

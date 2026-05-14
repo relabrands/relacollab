@@ -38,6 +38,7 @@ export default function Opportunities() {
   const { completion: profileCompletion, missingFields, optionalFields } = useCreatorProfileCompletion();
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [noSocialAccounts, setNoSocialAccounts] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'paid' | 'experience' | 'pending'>('all');
 
   // Helper function to resolve legacy and new compensation types
@@ -78,11 +79,19 @@ export default function Opportunities() {
         setAppliedCampaignIds(appliedIds);
 
         // 0.5 Fetch Current Creator Profile for Matching
-        let creatorProfile = {};
+        let creatorProfile: any = {};
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
           creatorProfile = userDocSnap.data();
+        }
+
+        // Gate: must have at least one connected social account to see opportunities
+        if (!creatorProfile.instagramConnected && !creatorProfile.tiktokConnected) {
+          setOpportunities([]);
+          setNoSocialAccounts(true);
+          setLoading(false);
+          return;
         }
 
 
@@ -608,6 +617,21 @@ export default function Opportunities() {
                   </div>
                 </motion.div>
               ))}
+            </div>
+          </div>
+        ) : noSocialAccounts ? (
+          <div className="text-center py-16 border rounded-xl bg-white/5 mx-2 w-full">
+            <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Filter className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold">Conecta tus redes sociales</h3>
+              <p className="text-muted-foreground text-sm">
+                Para ver las oportunidades disponibles necesitas conectar al menos una red social (Instagram o TikTok) en tu perfil.
+              </p>
+              <a href="/creator/profile">
+                <Button className="mt-2">Conectar redes sociales</Button>
+              </a>
             </div>
           </div>
         ) : (
