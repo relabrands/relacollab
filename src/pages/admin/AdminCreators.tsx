@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { motion } from "framer-motion";
-import { Search, Eye, Ban, CheckCircle, Users, Loader2, Trash2, Mail } from "lucide-react";
+import { Search, Eye, Ban, CheckCircle, Users, Loader2, Trash2, Mail, Instagram, SlidersHorizontal, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -128,10 +128,14 @@ export default function AdminCreators() {
         if (data.createdAt) {
           const d = data.createdAt.seconds ? new Date(data.createdAt.seconds * 1000) : new Date(data.createdAt);
           if (!isNaN(d.getTime())) {
+            // Compact: "14 may · 18:21" or "14 may 2025 · 08:00" if different year
+            const now = new Date();
+            const sameYear = d.getFullYear() === now.getFullYear();
             createdAtStr = d.toLocaleString('es-DO', {
-              day: '2-digit', month: 'short', year: 'numeric',
+              day: '2-digit', month: 'short',
+              ...(!sameYear ? { year: 'numeric' } : {}),
               hour: '2-digit', minute: '2-digit'
-            });
+            }).replace(',', ' ·');
             createdAtTs = d.getTime();
           }
         }
@@ -276,8 +280,8 @@ export default function AdminCreators() {
 
       <main className="flex-1 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <DashboardHeader
-          title="Manage Creators"
-          subtitle="View and manage creator accounts"
+          title="Creadores"
+          subtitle="Gestiona las cuentas de creadores registrados"
         />
 
         {loading ? (
@@ -287,78 +291,85 @@ export default function AdminCreators() {
           </div>
         ) : (
           <>
-            {/* Status Filter Tabs */}
-            <div className="mb-6 flex gap-2">
-              {[
-                { key: "all" as const, label: "Todos", count: creators.length },
-                { key: "active" as const, label: "Activos", count: creators.filter(c => c.status === "active").length },
-                { key: "pending" as const, label: "Pendientes", count: creators.filter(c => c.status === "pending").length },
-                { key: "suspended" as const, label: "Suspendidos", count: creators.filter(c => c.status === "suspended").length }
-              ].map(tab => (
-                <Button
-                  key={tab.key}
-                  variant={statusFilter === tab.key ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setStatusFilter(tab.key)}
-                  className="gap-2"
-                >
-                  {tab.label}
-                  <Badge variant={statusFilter === tab.key ? "secondary" : "outline"} className="ml-1">
-                    {tab.count}
-                  </Badge>
-                </Button>
-              ))}
-            </div>
+            {/* ── Top control bar ── */}
+            <div className="mb-6 space-y-3">
+              {/* Row 1: status tabs + action button */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: "all" as const, label: "Todos", count: creators.length },
+                    { key: "active" as const, label: "Activos", count: creators.filter(c => c.status === "active").length },
+                    { key: "pending" as const, label: "Pendientes", count: creators.filter(c => c.status === "pending").length },
+                    { key: "suspended" as const, label: "Suspendidos", count: creators.filter(c => c.status === "suspended").length }
+                  ].map(tab => (
+                    <Button
+                      key={tab.key}
+                      variant={statusFilter === tab.key ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter(tab.key)}
+                      className="gap-1.5 h-8"
+                    >
+                      {tab.label}
+                      <Badge
+                        variant="secondary"
+                        className={`ml-0.5 h-5 px-1.5 text-[11px] ${statusFilter === tab.key ? "bg-white/20 text-white" : ""}`}
+                      >
+                        {tab.count}
+                      </Badge>
+                    </Button>
+                  ))}
+                </div>
 
-            {/* Actions Bar */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <div className="relative w-full md:w-64">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSendSocialReminders}
+                  disabled={sendingReminders}
+                  className="hidden md:flex gap-2 h-8"
+                >
+                  {sendingReminders ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                  Recordar Conectar Redes
+                </Button>
+              </div>
+
+              {/* Row 2: search + date filter + sort + count */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar creadores..."
+                    placeholder="Buscar por nombre o email..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 w-64 h-9"
                   />
                 </div>
 
                 <Select value={dateFilter} onValueChange={(val: any) => setDateFilter(val)}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Fecha" />
+                  <SelectTrigger className="w-[150px] h-9 gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                    <SelectValue placeholder="Período" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Cualquier fecha</SelectItem>
-                    <SelectItem value="today">Últimas 24h</SelectItem>
+                    <SelectItem value="today">Últimas 24 h</SelectItem>
                     <SelectItem value="week">Últimos 7 días</SelectItem>
                     <SelectItem value="month">Últimos 30 días</SelectItem>
                   </SelectContent>
                 </Select>
 
                 <Select value={sortBy} onValueChange={(val: any) => setSortBy(val)}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Ordenar por" />
+                  <SelectTrigger className="w-[145px] h-9 gap-1.5">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+                    <SelectValue placeholder="Ordenar" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="newest">Más recientes</SelectItem>
                     <SelectItem value="oldest">Más antiguos</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
 
-              <div className="flex items-center gap-3">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleSendSocialReminders}
-                  disabled={sendingReminders}
-                  className="hidden md:flex gap-2"
-                >
-                  {sendingReminders ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                  Recordar Conectar Redes
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  {filteredCreators.length} creators
+                <span className="text-sm text-muted-foreground ml-auto">
+                  {filteredCreators.length} de {creators.length} creadores
                 </span>
               </div>
             </div>
@@ -372,86 +383,129 @@ export default function AdminCreators() {
                 <table className="w-full whitespace-nowrap">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="text-left p-4 font-medium text-muted-foreground">Creator</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground">Registro</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground">Followers</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground">Engagement</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground text-center">Active Collabs</th>
-                      <th className="text-left p-4 font-medium text-muted-foreground">Earnings</th>
-                      <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Creator</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Registro</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Redes</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Followers</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Engagement</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Estado</th>
+                      <th className="text-center p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Collabs</th>
+                      <th className="text-right p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredCreators.map((creator) => (
-                      <tr key={creator.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                        <td className="p-4">
+                      <tr key={creator.id} className="border-t border-border hover:bg-muted/30 transition-colors group">
+                        {/* Creator */}
+                        <td className="p-3">
                           <div className="flex items-center gap-3">
                             <img
                               src={creator.avatar}
                               alt={creator.name}
-                              className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
+                              className="w-9 h-9 rounded-lg object-cover flex-shrink-0 ring-1 ring-border"
                             />
-                            <div>
-                              <div className="font-medium text-sm max-w-[200px] truncate" title={creator.name}>{creator.name}</div>
-                              <div className="text-xs text-muted-foreground max-w-[200px] truncate" title={creator.email}>{creator.email}</div>
+                            <div className="min-w-0">
+                              <div className="font-medium text-sm truncate max-w-[160px]" title={creator.name}>{creator.name}</div>
+                              <div className="text-xs text-muted-foreground truncate max-w-[160px]" title={creator.email}>{creator.email}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="p-4 text-sm text-muted-foreground">{creator.createdAtStr}</td>
-                        <td className="p-4 font-medium text-sm">{creator.followers}</td>
-                        <td className="p-4 text-sm">
-                          <span className="text-success font-medium">{creator.engagement}</span>
+
+                        {/* Registro */}
+                        <td className="p-3">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{creator.createdAtStr}</span>
                         </td>
-                        <td className="p-4">
+
+                        {/* Redes conectadas */}
+                        <td className="p-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                              creator.instagramConnected ? 'bg-pink-500/10 text-pink-500' : 'bg-muted text-muted-foreground'
+                            }`}>
+                              <Instagram className="w-3 h-3" />
+                              {creator.instagramConnected ? 'IG' : '-'}
+                            </span>
+                            <span className={`inline-flex items-center text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                              creator.tiktokConnected ? 'bg-sky-500/10 text-sky-500' : 'bg-muted text-muted-foreground'
+                            }`}>
+                              TT {creator.tiktokConnected ? '✓' : '-'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Followers */}
+                        <td className="p-3 font-medium text-sm">{creator.followers}</td>
+
+                        {/* Engagement */}
+                        <td className="p-3 text-sm">
+                          <span className={creator.engagement === '0%' ? 'text-muted-foreground' : 'text-emerald-500 font-medium'}>
+                            {creator.engagement}
+                          </span>
+                        </td>
+
+                        {/* Status */}
+                        <td className="p-3">
                           <Select
                             value={creator.status}
                             onValueChange={(value: "active" | "pending" | "suspended") =>
                               handleChangeStatus(creator.id, value)
                             }
                           >
-                            <SelectTrigger className={`w-32 h-8 text-xs font-medium capitalize ${statusColors[creator.status] || "bg-muted"}`}>
-                               <SelectValue />
+                            <SelectTrigger className={`w-28 h-7 text-xs font-semibold capitalize border-0 ${
+                              statusColors[creator.status] || 'bg-muted'
+                            }`}>
+                              <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="suspended">Suspended</SelectItem>
+                              <SelectItem value="active">Activo</SelectItem>
+                              <SelectItem value="pending">Pendiente</SelectItem>
+                              <SelectItem value="suspended">Suspendido</SelectItem>
                             </SelectContent>
                           </Select>
                         </td>
-                        <td className="p-4 text-center text-sm">{creator.campaigns}</td>
-                        <td className="p-4 font-medium text-sm">{creator.earnings}</td>
-                        <td className="p-4">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleViewDetails(creator)}>
+
+                        {/* Collabs */}
+                        <td className="p-3 text-center">
+                          <span className={`text-sm font-medium ${
+                            creator.campaigns > 0 ? 'text-foreground' : 'text-muted-foreground'
+                          }`}>{creator.campaigns}</span>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="p-3">
+                          <div className="flex items-center justify-end gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                              title="Ver detalles"
+                              onClick={() => handleViewDetails(creator)}
+                            >
                               <Eye className="w-4 h-4" />
                             </Button>
                             {creator.status === "suspended" ? (
                               <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-success hover:text-success"
+                                variant="ghost" size="icon"
+                                className="h-8 w-8 hover:bg-success/10 text-muted-foreground hover:text-success"
+                                title="Activar"
                                 onClick={() => handleActivate(creator)}
                               >
                                 <CheckCircle className="w-4 h-4" />
                               </Button>
                             ) : (
                               <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
+                                variant="ghost" size="icon"
+                                className="h-8 w-8 hover:bg-orange-500/10 text-muted-foreground hover:text-orange-500"
+                                title="Suspender"
                                 onClick={() => handleSuspend(creator)}
                               >
                                 <Ban className="w-4 h-4" />
                               </Button>
                             )}
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              variant="ghost" size="icon"
+                              className="h-8 w-8 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                              title="Eliminar"
                               onClick={() => handleDelete(creator)}
-                              title="Eliminar usuario"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
