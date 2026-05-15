@@ -127,20 +127,20 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, isCom
               {/* Plus sign */}
               <div className="inline-flex items-center justify-center font-bold text-white/80 text-xs">+</div>
               {/* Product/Exchange part */}
-              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-white w-max max-w-[150px] sm:max-w-[200px]">
-                <span className="text-orange-400">🎁</span>
-                <span className="truncate">{opportunity.exchangeDetails || "Intercambio"}</span>
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-white max-w-[150px] sm:max-w-[200px]">
+                <span className="text-orange-400 shrink-0">🎁</span>
+                <span className="truncate min-w-0">{opportunity.exchangeDetails || "Intercambio"}</span>
               </div>
             </>
           ) : (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-xs font-semibold text-white w-max max-w-full">
+            <div className="flex flex-wrap items-center gap-1.5 w-full">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-xs font-semibold text-white max-w-full">
                 {opportunity.compensationType === "monetary" || opportunity.rewardType === "paid" ? (
                   <span className="text-green-400 shrink-0">💵</span>
                 ) : (
                   <span className="text-orange-400 shrink-0">🎁</span>
                 )}
-                <span className="truncate">
+                <span className="truncate min-w-0">
                   {opportunity.compensationType === 'monetary'
                     ? (opportunity.minReward && opportunity.maxReward
                       ? `$${opportunity.minReward.toLocaleString()} – $${opportunity.maxReward.toLocaleString()} USD`
