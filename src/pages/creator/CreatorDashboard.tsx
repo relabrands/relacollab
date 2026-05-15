@@ -145,6 +145,12 @@ export default function CreatorDashboard() {
         const applicationsSnap = await getDocs(applicationsQuery);
         const appliedCampaignIds = applicationsSnap.docs.map(doc => doc.data().campaignId);
 
+        let activeCount = 0;
+        let totalCount = 0;
+        let matchedOpportunities: any[] = [];
+        let topOpportunities: any[] = [];
+        let avgMatchScore = 0;
+
         // Gate: must have at least one connected social account to see opportunities
         if (!userData.instagramConnected && !userData.tiktokConnected) {
           setOpportunities([]);
@@ -155,7 +161,6 @@ export default function CreatorDashboard() {
           doc => doc.data().status === "approved"
         );
 
-        let activeCount = 0;
         const activePromises = approvedApps.map(async (appDoc) => {
           try {
             const campaignId = appDoc.data().campaignId;
@@ -206,7 +211,7 @@ export default function CreatorDashboard() {
 
         const activeResults = await Promise.all(activePromises);
         activeCount = activeResults.filter(Boolean).length;
-        const totalCount = approvedApps.length;
+        totalCount = approvedApps.length;
 
         // 2.5 Fetch Invitations
         const invitationsQuery = query(
@@ -230,7 +235,7 @@ export default function CreatorDashboard() {
         // 4. Filter out campaigns already applied to and calculate match scores
         const { calculateMatchScore } = await import("@/lib/matchScoring");
 
-        const matchedOpportunities = [];
+        matchedOpportunities = [];
         for (const campaignDoc of campaignsSnap.docs) {
           const campaignId = campaignDoc.id;
 
@@ -276,12 +281,12 @@ export default function CreatorDashboard() {
           if (!a.isInvited && b.isInvited) return 1;
           return b.matchScore - a.matchScore;
         });
-        const topOpportunities = matchedOpportunities.slice(0, 4);
+        topOpportunities = matchedOpportunities.slice(0, 4);
 
         setOpportunities(topOpportunities);
 
         // Calculate average match score
-        const avgMatchScore = topOpportunities.length > 0
+        avgMatchScore = topOpportunities.length > 0
           ? Math.round(topOpportunities.reduce((sum, opp) => sum + opp.matchScore, 0) / topOpportunities.length)
           : 0;
 
