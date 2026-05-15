@@ -134,13 +134,13 @@ export function OpportunityCard({ opportunity, onAccept, isActive = false, isCom
             </>
           ) : (
             <div className="flex flex-wrap items-center gap-1.5">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-xs font-semibold text-white w-max">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-xs font-semibold text-white w-max max-w-full">
                 {opportunity.compensationType === "monetary" || opportunity.rewardType === "paid" ? (
-                  <span className="text-green-400">💵</span>
+                  <span className="text-green-400 shrink-0">💵</span>
                 ) : (
-                  <span className="text-orange-400">🎁</span>
+                  <span className="text-orange-400 shrink-0">🎁</span>
                 )}
-                <span>
+                <span className="truncate">
                   {opportunity.compensationType === 'monetary'
                     ? (opportunity.minReward && opportunity.maxReward
                       ? `$${opportunity.minReward.toLocaleString()} – $${opportunity.maxReward.toLocaleString()} USD`
