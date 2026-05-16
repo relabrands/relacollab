@@ -101,7 +101,8 @@ export default function CampaignDetails() {
                     }
                     const allApps = activeApps;
 
-                    setApplicationsCount(allApps.length);
+                    const pendingApps = allApps.filter((a: any) => !a.status || a.status === "pending");
+                    setApplicationsCount(pendingApps.length);
                     const approvedApps = allApps.filter((a: any) =>
                         ["approved", "active", "collaborating"].includes(a.status)
                     );

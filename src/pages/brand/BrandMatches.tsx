@@ -201,7 +201,7 @@ export default function BrandMatches() {
         setAllApplications(allApplications);
 
         // Filter into buckets
-        setApplicants(allApplications.filter((a: any) => a.status === 'pending'));
+        setApplicants(allApplications.filter((a: any) => a.status === 'pending' || !a.status));
         setCollaborators(allApplications.filter((a: any) => (a.status === 'approved' || a.status === 'accepted') && a.submissionStatus !== 'approved'));
         setCompletedCreators(allApplications.filter((a: any) => (a.status === 'approved' || a.status === 'accepted') && a.submissionStatus === 'approved'));
 
@@ -291,7 +291,7 @@ export default function BrandMatches() {
         if (limits.maxMonthlyApplications !== -1) {
             finalApplications = finalApplications.slice(0, limits.maxMonthlyApplications);
         }
-        setApplicants(finalApplications.filter((a: any) => a.status === 'pending'));
+        setApplicants(finalApplications.filter((a: any) => a.status === 'pending' || !a.status));
 
         // Enforce maxMatchesPerCampaign limit
         if (limits.maxMatchesPerCampaign !== -1) {

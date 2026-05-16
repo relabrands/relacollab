@@ -127,7 +127,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
     // 3. Creator: invitation received
     exportsObj.onInvitationCreated = onDocumentCreated("invitations/{invId}", async (event) => {
         const inv = event.data?.data();
-        if (!inv) return;
+        if (!inv || inv.status === "discarded") return;
         try {
             const [creatorSnap, campSnap] = await Promise.all([
                 admin.firestore().doc(`users/${inv.creatorId}`).get(),

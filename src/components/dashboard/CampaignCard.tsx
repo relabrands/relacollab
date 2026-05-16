@@ -60,13 +60,38 @@ export function CampaignCard({ campaign, onClick, onShare }: CampaignCardProps) 
           where("campaignId", "==", campaign.id)
         );
         const appsSnapshot = await getDocs(appsQuery);
-        const apps = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const appsRaw = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        const apps = [];
+        if (appsRaw.length > 0) {
+            const creatorIds = [...new Set(appsRaw.map((a: any) => a.creatorId))];
+            const activeCreatorIds = new Set();
+            
+            for (let i = 0; i < creatorIds.length; i += 10) {
+                const chunk = creatorIds.slice(i, i + 10);
+                const usersQuery = query(collection(db, "users"), where("__name__", "in", chunk));
+                const usersSnap = await getDocs(usersQuery);
+                usersSnap.forEach(uDoc => {
+                    if (uDoc.data().status === 'active') {
+                        activeCreatorIds.add(uDoc.id);
+                    }
+                });
+            }
+
+            for (const app of appsRaw) {
+                if (activeCreatorIds.has((app as any).creatorId)) {
+                    apps.push(app);
+                }
+            }
+        }
+
+        const pendingCount = apps.filter((a: any) => !a.status || a.status === "pending").length;
         const approvedCount = apps.filter((a: any) => 
           a.status === "approved" || a.status === "active" || a.status === "collaborating" || a.status === "completed"
         ).length;
         
         setStats({
-          applications: apps.length,
+          applications: pendingCount,
           approved: approvedCount,
         });
 
