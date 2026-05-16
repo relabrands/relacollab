@@ -161,8 +161,9 @@ export default function Opportunities() {
         );
 
         const querySnapshot = await getDocs(q);
-        const generalOpportunities = await Promise.all(querySnapshot.docs.map(async (docSnap) => {
+        const generalOpportunities = (await Promise.all(querySnapshot.docs.map(async (docSnap) => {
           const data = docSnap.data();
+          if (data.visibility === "private") return null;
 
           // Fetch Brand Details
           let brandData: any = {};
@@ -187,7 +188,7 @@ export default function Opportunities() {
             rewardType: resolveRewardType(data),
             brandProfile: brandData
           };
-        }));
+        }))).filter(Boolean);
 
         // Filter invitations that might have corresponding applications (redundancy check)
         const filteredInvitations = resolvedInvitations.filter((op: any) => !appliedIds.has(op.id));

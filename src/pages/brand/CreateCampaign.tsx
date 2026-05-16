@@ -61,6 +61,7 @@ export default function CreateCampaign() {
     description: "",
     coverImage: "",
     goal: "",
+    visibility: "public",
     vibes: [] as string[],
     contentTypes: [] as string[],
     location: "",
@@ -410,6 +411,7 @@ export default function CreateCampaign() {
 
         budget: parseFloat(formData.budget) || 0,
         creatorCount: creatorCount,
+        visibility: formData.visibility || "public",
         creditCost: 1,
         approvedCount: 0,
         applicationCount: 0,
@@ -708,6 +710,55 @@ export default function CreateCampaign() {
                         }
                         className="mt-2"
                       />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="mb-4 block">Visibilidad de la Campaña *</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, visibility: "public" }))}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          formData.visibility === "public"
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            formData.visibility === "public" ? "border-primary" : "border-muted-foreground/30"
+                          }`}>
+                            {formData.visibility === "public" && <div className="w-2 h-2 bg-primary rounded-full" />}
+                          </div>
+                          <span className="font-medium">Pública</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground pl-6">
+                          Visible en el feed de oportunidades. Los creadores pueden verla y aplicar.
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, visibility: "private" }))}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          formData.visibility === "private"
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            formData.visibility === "private" ? "border-primary" : "border-muted-foreground/30"
+                          }`}>
+                            {formData.visibility === "private" && <div className="w-2 h-2 bg-primary rounded-full" />}
+                          </div>
+                          <span className="font-medium">Privada</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground pl-6">
+                          Oculta en el feed. Solo accesible mediante invitaciones directas de la marca.
+                        </div>
+                      </button>
                     </div>
                   </div>
                 </div>

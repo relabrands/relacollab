@@ -251,6 +251,8 @@ export default function CreatorDashboard() {
           const matchResult = calculateMatchScore(campaignData, userData);
           const isInvited = !!invitationsMap[campaignId];
 
+          if (campaignData.visibility === "private" && !isInvited) continue;
+
           let effectiveScore = matchResult.score;
           try {
             const matchRef = doc(db, "campaigns", campaignId, "matches", user.uid);
