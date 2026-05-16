@@ -714,51 +714,86 @@ export default function CreateCampaign() {
                   </div>
 
                   <div>
-                    <Label className="mb-4 block">Visibilidad de la Campaña *</Label>
+                    <div className="mb-4">
+                      <Label className="block font-semibold text-base">Visibilidad de la Campaña</Label>
+                      <p className="text-sm text-muted-foreground mt-1">¿Quién puede ver y postularse a esta campaña?</p>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                      {/* === PÚBLICA === */}
                       <button
                         type="button"
                         onClick={() => setFormData((prev) => ({ ...prev, visibility: "public" }))}
-                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        className={`relative p-5 rounded-2xl border-2 text-left transition-all duration-200 ${
                           formData.visibility === "public"
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-primary/50"
+                            ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 shadow-md shadow-emerald-500/10"
+                            : "border-border hover:border-emerald-400/60 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/10"
                         }`}
                       >
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                            formData.visibility === "public" ? "border-primary" : "border-muted-foreground/30"
-                          }`}>
-                            {formData.visibility === "public" && <div className="w-2 h-2 bg-primary rounded-full" />}
+                        {formData.visibility === "public" && (
+                          <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                           </div>
-                          <span className="font-medium">Pública</span>
+                        )}
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${
+                            formData.visibility === "public" ? "bg-emerald-500/15" : "bg-muted"
+                          }`}>
+                            🌐
+                          </div>
+                          <div>
+                            <div className="font-semibold text-base">Pública</div>
+                            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                              formData.visibility === "public"
+                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                                : "bg-muted text-muted-foreground"
+                            }`}>Recomendado</span>
+                          </div>
                         </div>
-                        <div className="text-sm text-muted-foreground pl-6">
-                          Visible en el feed de oportunidades. Los creadores pueden verla y aplicar.
-                        </div>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          <li className="flex items-start gap-2"><span className="text-emerald-500 mt-0.5 shrink-0">✓</span> Aparece en el feed de oportunidades</li>
+                          <li className="flex items-start gap-2"><span className="text-emerald-500 mt-0.5 shrink-0">✓</span> Los creadores pueden ver y aplicar directamente</li>
+                          <li className="flex items-start gap-2"><span className="text-emerald-500 mt-0.5 shrink-0">✓</span> Maximiza el alcance y número de aplicaciones</li>
+                        </ul>
                       </button>
 
+                      {/* === PRIVADA === */}
                       <button
                         type="button"
                         onClick={() => setFormData((prev) => ({ ...prev, visibility: "private" }))}
-                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                        className={`relative p-5 rounded-2xl border-2 text-left transition-all duration-200 ${
                           formData.visibility === "private"
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-primary/50"
+                            ? "border-violet-500 bg-violet-50/60 dark:bg-violet-950/30 shadow-md shadow-violet-500/10"
+                            : "border-border hover:border-violet-400/60 hover:bg-violet-50/20 dark:hover:bg-violet-950/10"
                         }`}
                       >
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                            formData.visibility === "private" ? "border-primary" : "border-muted-foreground/30"
-                          }`}>
-                            {formData.visibility === "private" && <div className="w-2 h-2 bg-primary rounded-full" />}
+                        {formData.visibility === "private" && (
+                          <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                           </div>
-                          <span className="font-medium">Privada</span>
+                        )}
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${
+                            formData.visibility === "private" ? "bg-violet-500/15" : "bg-muted"
+                          }`}>
+                            🔒
+                          </div>
+                          <div>
+                            <div className="font-semibold text-base">Privada</div>
+                            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                              formData.visibility === "private"
+                                ? "bg-violet-500/15 text-violet-700 dark:text-violet-400"
+                                : "bg-muted text-muted-foreground"
+                            }`}>Solo invitados</span>
+                          </div>
                         </div>
-                        <div className="text-sm text-muted-foreground pl-6">
-                          Oculta en el feed. Solo accesible mediante invitaciones directas de la marca.
-                        </div>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          <li className="flex items-start gap-2"><span className="text-violet-500 mt-0.5 shrink-0">✓</span> Oculta en el feed general de creadores</li>
+                          <li className="flex items-start gap-2"><span className="text-violet-500 mt-0.5 shrink-0">✓</span> Tú eliges a quién invitar desde tu sección de <strong className="text-foreground">Matches</strong></li>
+                          <li className="flex items-start gap-2"><span className="text-violet-500 mt-0.5 shrink-0">✓</span> Control total sobre quién colabora contigo</li>
+                        </ul>
                       </button>
+
                     </div>
                   </div>
                 </div>
