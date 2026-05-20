@@ -5,7 +5,7 @@ import { MatchScore } from "@/components/dashboard/MatchScore";
 import {
     Instagram, MapPin, Users, TrendingUp, Sparkles, Loader2,
     ExternalLink, Check, Eye, Music2, ThumbsUp, ThumbsDown, Star, MessageSquareShare, CheckCircle2,
-    Target, BarChart2, MessageSquare, Zap, AlertTriangle, DollarSign
+    Target, BarChart2, MessageSquare, Zap, AlertTriangle, DollarSign, FileText
 
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -31,6 +31,8 @@ interface CreatorDetails {
     bio: string;
     instagramUsername?: string;
     tiktokUsername?: string;
+    mediaKitUrl?: string;
+    mediaKitFileName?: string;
     instagramMetrics?: {
         followers: number;
         engagementRate: number;
@@ -734,6 +736,39 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                             </div>
                         );
                     })()}
+
+                    {/* ─── Media Kit / Portfolio ─── */}
+                    {creator.mediaKitUrl && (
+                        <div className="rounded-2xl border border-primary/20 overflow-hidden">
+                            <div className="px-5 py-3 bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/10 flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-primary" />
+                                <h3 className="font-semibold text-sm">Media Kit / Portafolio</h3>
+                                <span className="ml-auto text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Compartido por el creador</span>
+                            </div>
+                            <div className="px-5 py-4 flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                    <FileText className="w-6 h-6 text-primary" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{creator.mediaKitFileName || "Media Kit"}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        Este creador compartó su portafolio y estadísticas de colaboraciones anteriores.
+                                    </p>
+                                </div>
+                                <Button variant="default" size="sm" asChild className="flex-shrink-0">
+                                    <a
+                                        href={creator.mediaKitUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5"
+                                    >
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                        Ver Media Kit
+                                    </a>
+                                </Button>
+                            </div>
+                        </div>
+                    )}
 
                     <div>
                         <h3 className="font-semibold flex items-center gap-2 mb-4 text-sm uppercase tracking-wider text-muted-foreground">

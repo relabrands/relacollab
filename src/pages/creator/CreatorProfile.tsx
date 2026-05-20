@@ -23,6 +23,10 @@ import {
   Plus,
   Loader2,
   X,
+  Upload,
+  FileText,
+  ExternalLink,
+  Trash2,
 } from "lucide-react";
 import {
   Dialog,
@@ -71,8 +75,12 @@ const COLLABORATION_TYPES = [
 export default function CreatorProfile() {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaKitInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [mediaKitUrl, setMediaKitUrl] = useState("");
+  const [mediaKitFileName, setMediaKitFileName] = useState("");
+  const [isUploadingMediaKit, setIsUploadingMediaKit] = useState(false);
 
   const [profile, setProfile] = useState<any>({
     name: "",
@@ -190,6 +198,12 @@ export default function CreatorProfile() {
               city: data.shippingAddress.city || "",
               reference: data.shippingAddress.reference || ""
             });
+          }
+
+          // Load media kit
+          if (data.mediaKitUrl) {
+            setMediaKitUrl(data.mediaKitUrl);
+            setMediaKitFileName(data.mediaKitFileName || "Media Kit");
           }
         }
       } catch (error) {
@@ -462,6 +476,68 @@ export default function CreatorProfile() {
       toast.success("¡Foto de perfil actualizada!", { id: toastId });
     } catch (error) {
       toast.error("Error al subir foto", { id: toastId });
+    }
+  };
+
+  const handleMediaKitUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Accept PDFs and images
+    const allowed = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      toast.error("Formato no soportado. Sube un PDF o imagen (JPG, PNG, WEBP).");
+      return;
+    }
+
+    const MAX_MB = 10;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      toast.error(
+        `El archivo supera los ${MAX_MB} MB. Por favor comprime tu Media Kit antes de subirlo.`,
+        { description: "Puedes usar herramientas gratuitas como Smallpdf, ILovePDF o TinyPNG para reducir el tamaño." }
+      );
+      return;
+    }
+
+    setIsUploadingMediaKit(true);
+    const toastId = toast.loading("Subiendo Media Kit...");
+
+    try {
+      const storageRef = ref(storage, `media_kits/${user.uid}/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      await updateDoc(doc(db, "users", user.uid), {
+        mediaKitUrl: downloadURL,
+        mediaKitFileName: file.name,
+        mediaKitUploadedAt: new Date().toISOString(),
+      });
+
+      setMediaKitUrl(downloadURL);
+      setMediaKitFileName(file.name);
+      toast.success("¡Media Kit subido exitosamente!", { id: toastId });
+    } catch (error) {
+      toast.error("Error al subir el Media Kit", { id: toastId });
+    } finally {
+      setIsUploadingMediaKit(false);
+      // Reset input so same file can be re-uploaded
+      if (mediaKitInputRef.current) mediaKitInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveMediaKit = async () => {
+    if (!user || !confirm("¿Estás seguro de que deseas eliminar tu Media Kit?")) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        mediaKitUrl: deleteField(),
+        mediaKitFileName: deleteField(),
+        mediaKitUploadedAt: deleteField(),
+      });
+      setMediaKitUrl("");
+      setMediaKitFileName("");
+      toast.success("Media Kit eliminado.");
+    } catch {
+      toast.error("Error al eliminar el Media Kit.");
     }
   };
 
@@ -897,60 +973,104 @@ export default function CreatorProfile() {
               </Button>
             </motion.div>
 
-            {/* Custom Content Categories */}
+            {/* Media Kit / Portfolio */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
               className="glass-card p-6"
             >
-              <h2 className="text-lg font-semibold mb-4">Etiquetas Personalizadas</h2>
-              <p className="text-muted-foreground text-sm mb-4">
-                Si sientes que te faltaron categorías para definirte, añadelas aquí (opcional)
-              </p>
+              {/* Header */}
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-primary" />
+                    Media Kit / Portafolio
+                  </h2>
+                </div>
+                <span className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                  👁 Visible para marcas
+                </span>
+              </div>
 
-              <div className="flex flex-wrap gap-2">
-                {Array.from(new Set([...selectedCategories])).map(
-                  (category) => (
-                    <Badge
-                      key={category}
-                      variant="secondary"
-                      className={`cursor-pointer transition-all hover:scale-105 ${selectedCategories.includes(category)
-                        ? "bg-primary/10 text-primary border-primary/20"
-                        : "hover:bg-primary/5"
-                        }`}
-                      onClick={() => handleCategoryToggle(category)}
+              {/* Motivation banner */}
+              <div className="mt-3 mb-5 p-4 rounded-xl bg-gradient-to-r from-primary/8 to-accent/8 border border-primary/15">
+                <p className="text-sm font-medium text-foreground mb-1">🚀 ¡Aumenta tus posibilidades de ser seleccionado!</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Los creadores con Media Kit tienen <strong className="text-primary">3x más probabilidades</strong> de ser aprobados por una marca.
+                  Incluye estadísticas, ejemplos de colaboraciones anteriores y tarifas para destacarte.
+                </p>
+              </div>
+
+              {mediaKitUrl ? (
+                <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-muted/30">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{mediaKitFileName || "Media Kit"}</p>
+                    <p className="text-xs text-muted-foreground">Subido · visible para marcas</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={mediaKitUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Ver
+                      </a>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:bg-destructive/10 h-8 w-8"
+                      onClick={handleRemoveMediaKit}
                     >
-                      {category}
-                    </Badge>
-                  )
-                )}
-                {isAddingCategory ? (
-                  <div className="flex items-center gap-2 mt-1 w-full max-w-xs">
-                    <Input
-                      placeholder="Nueva categoría..."
-                      value={customCategory}
-                      onChange={(e) => setCustomCategory(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAddCustomCategory()}
-                      autoFocus
-                      className="h-8 text-sm"
-                    />
-                    <Button size="sm" onClick={handleAddCustomCategory}>Agregar</Button>
-                    <Button size="icon" variant="ghost" onClick={() => setIsAddingCategory(false)} className="h-8 w-8">
-                      <X className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className="cursor-pointer hover:bg-muted"
-                    onClick={() => setIsAddingCategory(true)}
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Agregar
-                  </Badge>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => mediaKitInputRef.current?.click()}
+                  className="border-2 border-dashed border-primary/30 rounded-xl p-8 text-center cursor-pointer hover:border-primary/60 hover:bg-primary/3 transition-all group"
+                >
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-primary/20 transition-colors">
+                    <Upload className="w-6 h-6 text-primary" />
+                  </div>
+                  <p className="font-medium text-sm mb-1">Sube tu Media Kit o Portafolio</p>
+                  <p className="text-xs text-muted-foreground">
+                    PDF o imagen · Máximo <strong>10 MB</strong>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Si supera ese límite, comprime con{" "}
+                    <a href="https://smallpdf.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>Smallpdf</a>{" "}o{" "}
+                    <a href="https://ilovepdf.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>ILovePDF</a>.
+                  </p>
+                </div>
+              )}
+
+              <input
+                type="file"
+                ref={mediaKitInputRef}
+                className="hidden"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                onChange={handleMediaKitUpload}
+              />
+
+              {!mediaKitUrl && (
+                <Button
+                  variant="outline"
+                  className="mt-4 w-full"
+                  onClick={() => mediaKitInputRef.current?.click()}
+                  disabled={isUploadingMediaKit}
+                >
+                  {isUploadingMediaKit ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4 mr-2" />
+                  )}
+                  {isUploadingMediaKit ? "Subiendo..." : "Seleccionar archivo"}
+                </Button>
+              )}
             </motion.div>
           </div>
 

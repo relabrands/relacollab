@@ -226,6 +226,8 @@ export default function CampaignDetails() {
             bio: collab.bio || "Este creador no ha proporcionado una biografía todavía.",
             instagramUsername: collab.instagramUsername,
             tiktokUsername: collab.tiktokUsername,
+            mediaKitUrl: collab.mediaKitUrl || undefined,
+            mediaKitFileName: collab.mediaKitFileName || undefined,
             instagramMetrics: collab.instagramMetrics,
             tiktokMetrics: collab.tiktokMetrics,
             instagramAudienceDemographics: collab.instagramAudienceDemographics || null,

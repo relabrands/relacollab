@@ -67,6 +67,7 @@ export function useCreatorProfileCompletion(): ProfileCompletionResult {
         // ── Campos opcionales (no suman al score) ───────────────────────
         const optional: string[] = [];
         if (!d.shippingAddress?.street)     optional.push("📦 Dirección de envío (para intercambios)");
+        if (!d.mediaKitUrl)                 optional.push("📄 Media Kit / Portafolio (aumenta 3x tus chances de ser elegido)");
         setOptionalFields(optional);
 
       } catch (_) {
