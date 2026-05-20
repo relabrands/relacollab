@@ -636,17 +636,17 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                         const alignStyle = alignedPct >= 50
                             ? { bg: "from-emerald-500/15 to-emerald-500/5", border: "border-emerald-500/30", text: "text-emerald-600 dark:text-emerald-400", dot: "bg-emerald-500", label: "Alta alineación" }
                             : alignedPct >= 25
-                            ? { bg: "from-amber-500/15 to-amber-500/5", border: "border-amber-500/30", text: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500", label: "Alineación media" }
-                            : { bg: "from-red-500/15 to-red-500/5", border: "border-red-500/30", text: "text-red-600 dark:text-red-400", dot: "bg-red-500", label: "Baja alineación" };
+                                ? { bg: "from-amber-500/15 to-amber-500/5", border: "border-amber-500/30", text: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500", label: "Alineación media" }
+                                : { bg: "from-red-500/15 to-red-500/5", border: "border-red-500/30", text: "text-red-600 dark:text-red-400", dot: "bg-red-500", label: "Baja alineación" };
 
                         const AGE_COLORS: Record<string, { bar: string; text: string; bg: string }> = {
-                            "13-17": { bar: "#a78bfa", text: "text-violet-400",  bg: "bg-violet-400" },
-                            "18-24": { bar: "#60a5fa", text: "text-blue-400",    bg: "bg-blue-400" },
+                            "13-17": { bar: "#a78bfa", text: "text-violet-400", bg: "bg-violet-400" },
+                            "18-24": { bar: "#60a5fa", text: "text-blue-400", bg: "bg-blue-400" },
                             "25-34": { bar: "#34d399", text: "text-emerald-400", bg: "bg-emerald-400" },
-                            "35-44": { bar: "#f59e0b", text: "text-amber-400",   bg: "bg-amber-400" },
-                            "45-54": { bar: "#f97316", text: "text-orange-400",  bg: "bg-orange-400" },
-                            "55-64": { bar: "#f43f5e", text: "text-rose-400",    bg: "bg-rose-400" },
-                            "65+":   { bar: "#ec4899", text: "text-pink-400",    bg: "bg-pink-400" },
+                            "35-44": { bar: "#f59e0b", text: "text-amber-400", bg: "bg-amber-400" },
+                            "45-54": { bar: "#f97316", text: "text-orange-400", bg: "bg-orange-400" },
+                            "55-64": { bar: "#f43f5e", text: "text-rose-400", bg: "bg-rose-400" },
+                            "65+": { bar: "#ec4899", text: "text-pink-400", bg: "bg-pink-400" },
                         };
 
                         return (
@@ -752,7 +752,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium truncate">{creator.mediaKitFileName || "Media Kit"}</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        Este creador compartó su portafolio y estadísticas de colaboraciones anteriores.
+                                        Este creador compartió su portafolio y estadísticas de colaboraciones anteriores.
                                     </p>
                                 </div>
                                 <Button variant="default" size="sm" asChild className="flex-shrink-0">
