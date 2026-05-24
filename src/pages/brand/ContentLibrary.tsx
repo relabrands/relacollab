@@ -825,7 +825,7 @@ export default function ContentLibrary() {
       <DashboardSidebar type="brand" />
       <MobileNav type="brand" />
 
-      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-6 pb-24 md:pb-8">
+      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-6 pb-24 md:pb-8 overflow-x-hidden">
         <DashboardHeader
           title="Biblioteca de Contenidos"
           subtitle="Todo el contenido de los creadores de tus campañas"
@@ -872,11 +872,8 @@ export default function ContentLibrary() {
             />
           </div>
 
-          {/* Platform Filter — scrollable row */}
-          <div
-            className="flex gap-2 pb-1"
-            style={{ overflowX: 'auto', overflowY: 'visible' }}
-          >
+          {/* Platform Filter */}
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
             <Button
               variant={activePlatform === "all" ? "default" : "outline"}
               onClick={() => setActivePlatform("all")}
@@ -904,18 +901,15 @@ export default function ContentLibrary() {
           </div>
         </div>
 
-        {/* Tabs — scrollable on mobile */}
-        <div
-          className="mb-5 -mx-4 px-4 md:mx-0 md:px-0"
-          style={{ overflowX: 'auto', overflowY: 'visible' }}
-        >
+        {/* Tabs — scrollable dentro de su propio contenedor aislado */}
+        <div className="mb-5 overflow-x-auto -mx-4 px-4">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="flex-nowrap inline-flex min-w-max">
-              <TabsTrigger value="all" className="whitespace-nowrap text-xs sm:text-sm">Todos ({stats.total})</TabsTrigger>
-              <TabsTrigger value="pending" className="whitespace-nowrap text-xs sm:text-sm">Pendientes ({stats.pending})</TabsTrigger>
-              <TabsTrigger value="revision_requested" className="whitespace-nowrap text-xs sm:text-sm">Revisiones ({stats.revisions})</TabsTrigger>
-              <TabsTrigger value="approved" className="whitespace-nowrap text-xs sm:text-sm">Aprobados ({stats.approved})</TabsTrigger>
-              <TabsTrigger value="live" className="whitespace-nowrap text-xs sm:text-sm">En Vivo ({stats.live})</TabsTrigger>
+            <TabsList className="inline-flex w-max">
+              <TabsTrigger value="all" className="whitespace-nowrap text-xs">Todos ({stats.total})</TabsTrigger>
+              <TabsTrigger value="pending" className="whitespace-nowrap text-xs">Pendientes ({stats.pending})</TabsTrigger>
+              <TabsTrigger value="revision_requested" className="whitespace-nowrap text-xs">Revisiones ({stats.revisions})</TabsTrigger>
+              <TabsTrigger value="approved" className="whitespace-nowrap text-xs">Aprobados ({stats.approved})</TabsTrigger>
+              <TabsTrigger value="live" className="whitespace-nowrap text-xs">En Vivo ({stats.live})</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
