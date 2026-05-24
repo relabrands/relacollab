@@ -284,19 +284,19 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-full h-full sm:h-auto sm:max-w-2xl md:max-w-4xl sm:max-h-[90vh] overflow-y-auto rounded-none sm:rounded-2xl p-0">
                 {/* ─── Header ─── */}
-                <DialogHeader>
-                    <div className="flex items-start gap-4">
+                <DialogHeader className="px-4 sm:px-6 pt-5 pb-4 border-b border-border/50 sticky top-0 bg-background z-10">
+                    <div className="flex items-start gap-3">
                         <img
                             src={creator.avatar}
                             alt={creator.name}
-                            className="w-16 h-16 rounded-2xl object-cover border border-border/50"
+                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl object-cover border border-border/50 flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                            <DialogTitle className="text-2xl font-bold flex items-center gap-2 flex-wrap">
+                            <DialogTitle className="text-lg sm:text-2xl font-bold flex items-center gap-2 flex-wrap leading-tight">
                                 {creator.name}
-                                <div className="flex gap-1 ml-1">
+                                <div className="flex gap-1">
                                     {creator.instagramUsername && (
                                         <a
                                             href={`https://instagram.com/${creator.instagramUsername}`}
@@ -321,39 +321,39 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                                     )}
                                 </div>
                             </DialogTitle>
-                            <DialogDescription className="text-base mt-0.5">
+                            <DialogDescription className="text-xs sm:text-sm mt-0.5 line-clamp-2">
                                 {creator.bio || "No bio available"}
                             </DialogDescription>
 
-                            <div className="flex items-center gap-4 mt-2">
-                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                    <MapPin className="w-3.5 h-3.5" />
+                            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <MapPin className="w-3 h-3" />
                                     {creator.location}
                                 </div>
 
                                 {creator.averageRating !== undefined && creator.averageRating > 0 && (
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[13px] font-bold text-yellow-500 flex items-center gap-0.5">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                        <span className="text-[12px] font-bold text-yellow-500 flex items-center gap-0.5">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
                                                 <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clipRule="evenodd" />
                                             </svg>
                                             {creator.averageRating.toFixed(1)}
                                         </span>
-                                        <span className="text-xs text-muted-foreground">({creator.reviewCount} reseñas)</span>
+                                        <span className="text-[11px] text-muted-foreground">({creator.reviewCount} reseñas)</span>
                                     </div>
                                 )}
                             </div>
                         </div>
                         {/* Score badge */}
                         {isCollaborating ? (
-                            <div className="flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl font-black border-4 shadow-lg bg-primary text-primary-foreground border-primary/20">
-                                <Check className="w-8 h-8 mb-1" />
-                                <span className="text-[10px] font-semibold uppercase tracking-widest -mt-1">Collab</span>
+                            <div className="flex-shrink-0 flex flex-col items-center justify-center w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl font-black border-4 shadow-lg bg-primary text-primary-foreground border-primary/20">
+                                <Check className="w-5 h-5 sm:w-8 sm:h-8 mb-0.5" />
+                                <span className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest -mt-0.5">Collab</span>
                             </div>
                         ) : (
-                            <div className={`flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl font-black text-3xl border-4 shadow-lg bg-background ${getMatchBorderColor(displayScore)} ${getMatchColor(displayScore)}`}>
+                            <div className={`flex-shrink-0 flex flex-col items-center justify-center w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl font-black text-xl sm:text-3xl border-4 shadow-lg bg-background ${getMatchBorderColor(displayScore)} ${getMatchColor(displayScore)}`}>
                                 {displayScore}%
-                                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground -mt-1">
+                                <span className="text-[7px] sm:text-[9px] font-semibold uppercase tracking-widest text-muted-foreground -mt-0.5">
                                     {aiAnalysis?.matchPercentage !== undefined ? "AI Match" : "Match"}
                                 </span>
                             </div>
@@ -361,7 +361,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                     </div>
                 </DialogHeader>
 
-                <div className="space-y-6 py-2">
+                <div className="space-y-5 px-4 sm:px-6 py-4">
 
                     {/* ─── AI Match Intelligence ─── */}
                     {!isCollaborating && limits?.aiMatchEnabled && (
@@ -995,8 +995,8 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                     )}
 
                     {/* ─── Action Buttons ─── */}
-                    <div className="flex gap-3 pt-2">
-                        <Button className="flex-1" variant="outline" onClick={onClose}>
+                    <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-2 pb-2">
+                        <Button className="flex-1 sm:flex-none sm:w-28" variant="outline" onClick={onClose}>
                             Cerrar
                         </Button>
                         {hasRange && !isSettled ? (

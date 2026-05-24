@@ -449,46 +449,52 @@ export default function BrandMatches() {
       <DashboardSidebar type="brand" />
       <MobileNav type="brand" />
 
-      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
+      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-6 pb-24 md:pb-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <DashboardHeader
-              title={
-                viewMode === 'matches' ? "Tus Matches" :
-                  viewMode === 'applicants' ? "Solicitantes" : "Creadores Invitados"
-              }
-              subtitle={
-                viewMode === 'matches' ? "Creadores que encajan perfectamente con tus campañas" :
-                  viewMode === 'applicants' ? "Creadores que quieren trabajar contigo" : "Creadores a los que has enviado propuestas"
-              }
-            />
+          <div className="flex flex-col gap-3 mb-5">
+            {/* Header row */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+              <DashboardHeader
+                title={
+                  viewMode === 'matches' ? "Tus Matches" :
+                    viewMode === 'applicants' ? "Solicitantes" :
+                    viewMode === 'collaborating' ? "Colaborando" :
+                    viewMode === 'completed' ? "Completadas" :
+                    viewMode === 'discarded' ? "Descartados" : "Creadores Invitados"
+                }
+                subtitle={
+                  viewMode === 'matches' ? "Creadores que encajan perfectamente con tus campañas" :
+                    viewMode === 'applicants' ? "Creadores que quieren trabajar contigo" : "Creadores a los que has enviado propuestas"
+                }
+              />
 
-            {/* Campaign Selector */}
-            {campaigns.length > 0 && (
-              <div className="w-full md:w-64 space-y-2">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Buscando Matches Para:
-                </Label>
-                <Select
-                  value={activeCampaign?.id}
-                  onValueChange={(val) => {
-                    const found = campaigns.find(c => c.id === val);
-                    if (found) setActiveCampaign(found);
-                  }}
-                >
-                  <SelectTrigger className="w-full bg-background border-input">
-                    <SelectValue placeholder="Selecciona una Campaña" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {campaigns.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+              {/* Campaign Selector */}
+              {campaigns.length > 0 && (
+                <div className="w-full sm:w-56 md:w-64 space-y-1 flex-shrink-0">
+                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Campaña activa:
+                  </Label>
+                  <Select
+                    value={activeCampaign?.id}
+                    onValueChange={(val) => {
+                      const found = campaigns.find(c => c.id === val);
+                      if (found) setActiveCampaign(found);
+                    }}
+                  >
+                    <SelectTrigger className="w-full bg-background border-input h-9 text-sm">
+                      <SelectValue placeholder="Selecciona una Campaña" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {campaigns.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -497,99 +503,135 @@ export default function BrandMatches() {
           key={viewMode}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-6 mb-8 bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10"
+          className="glass-card p-4 md:p-5 mb-5 bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10"
         >
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl bg-gradient-primary flex items-center justify-center flex-shrink-0">
               {viewMode === 'applicants' ? (
-                <Users className="w-6 h-6 text-primary-foreground" />
+                <Users className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
               ) : (
-                <Sparkles className="w-6 h-6 text-primary-foreground" />
+                <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary-foreground" />
               )}
             </div>
-            <div>
-              <h3 className="font-semibold text-lg mb-2">
+            <div className="min-w-0">
+              <h3 className="font-semibold text-sm md:text-base">
                 {viewMode === 'applicants' ? "Estado de Solicitudes" : "Resumen de Match con IA"}
               </h3>
               {activeCampaign ? (
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground text-xs md:text-sm mt-0.5 line-clamp-2">
                   {viewMode === 'applicants'
-                    ? `Tienes ${applicants.length} solicitudes pendientes por revisar para ${activeCampaign.name}.`
-                    : `Encontramos ${creators.length} posibles matches para ${activeCampaign.name}.`
+                    ? `Tienes ${applicants.length} solicitudes pendientes para ${activeCampaign.name}.`
+                    : `${creators.length} posibles matches para "${activeCampaign.name}".`
                   }
                 </p>
               ) : (
-                <p className="text-muted-foreground">
-                  No se encontró ninguna campaña activa. <Link to="/brand/campaigns/new" className="text-primary hover:underline">Crear una campaña</Link> para obtener mejores matches.
+                <p className="text-muted-foreground text-xs md:text-sm mt-0.5">
+                  No hay campaña activa. <Link to="/brand/campaigns/new" className="text-primary hover:underline">Crea una campaña</Link>.
                 </p>
               )}
             </div>
           </div>
         </motion.div>
 
-        {/* Tabs / Filters */}
-        <div className="flex items-center justify-between mb-6 overflow-x-auto pb-2">
-          <div className="flex items-center gap-3">
-            <Button
-              variant={viewMode === 'matches' ? "default" : "outline"}
-              size="sm"
+        {/* Tabs / Filters — scrollable on mobile */}
+        <div className="mb-5 -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+            {/* Matches */}
+            <button
               onClick={() => setViewMode('matches')}
+              className={`snap-start flex-shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                viewMode === 'matches'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Matches
-            </Button>
-            <Button
-              variant={viewMode === 'applicants' ? "default" : "outline"}
-              size="sm"
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Matches</span>
+            </button>
+
+            {/* Solicitantes */}
+            <button
               onClick={() => setViewMode('applicants')}
-              className="relative"
+              className={`snap-start relative flex-shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                viewMode === 'applicants'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
-              <Users className="w-4 h-4 mr-2" />
-              Solicitantes
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Solicitantes</span>
               {applicants.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
-                  {applicants.length}
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
+                  {applicants.length > 9 ? '9+' : applicants.length}
                 </span>
               )}
-            </Button>
-            <Button
-              variant={viewMode === 'collaborating' ? "default" : "outline"}
-              size="sm"
+            </button>
+
+            {/* Colaborando */}
+            <button
               onClick={() => setViewMode('collaborating')}
+              className={`snap-start flex-shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                viewMode === 'collaborating'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
-              <Users className="w-4 h-4 mr-2" />
-              Colaborando ({collaborators.length})
-            </Button>
-            <Button
-              variant={viewMode === 'completed' ? "default" : "outline"}
-              size="sm"
+              <UserCheck className="w-4 h-4" />
+              <span className="hidden sm:inline">Colaborando {collaborators.length > 0 && `(${collaborators.length})`}</span>
+            </button>
+
+            {/* Completadas */}
+            <button
               onClick={() => setViewMode('completed')}
+              className={`snap-start flex-shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                viewMode === 'completed'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Completadas ({completedCreators.length})
-            </Button>
-            <Button
-              variant={viewMode === 'invited' ? "default" : "outline"}
-              size="sm"
+              <CheckCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">Completadas {completedCreators.length > 0 && `(${completedCreators.length})`}</span>
+            </button>
+
+            {/* Invitados */}
+            <button
               onClick={() => setViewMode('invited')}
+              className={`snap-start flex-shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                viewMode === 'invited'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
-              <UserCheck className="w-4 h-4 mr-2" />
-              Invitados ({approvedIds.filter(id => !collaborators.some(c => c.id === id) && !completedCreators.some(c => c.id === id)).length})
-            </Button>
-            <Button
-              variant={viewMode === 'discarded' ? "default" : "outline"}
-              size="sm"
+              <SlidersHorizontal className="w-4 h-4" />
+              <span className="hidden sm:inline">Invitados ({approvedIds.filter(id => !collaborators.some(c => c.id === id) && !completedCreators.some(c => c.id === id)).length})</span>
+            </button>
+
+            {/* Descartados */}
+            <button
               onClick={() => setViewMode('discarded')}
-              className={viewMode === 'discarded' ? "" : "text-muted-foreground hover:text-foreground"}
+              className={`snap-start flex-shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                viewMode === 'discarded'
+                  ? 'bg-destructive/90 text-white shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
-              Descartados
-            </Button>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+              <span className="hidden sm:inline">Descartados</span>
+            </button>
           </div>
+
+          {/* Mobile: show active tab label below icons */}
+          <p className="sm:hidden text-[11px] font-semibold text-center text-muted-foreground mt-1 capitalize">
+            {viewMode === 'matches' ? '✨ Matches' :
+             viewMode === 'applicants' ? `👥 Solicitantes (${applicants.length})` :
+             viewMode === 'collaborating' ? `🤝 Colaborando (${collaborators.length})` :
+             viewMode === 'completed' ? `✅ Completadas (${completedCreators.length})` :
+             viewMode === 'invited' ? '📨 Invitados' : '🚫 Descartados'}
+          </p>
         </div>
 
         {/* Creators Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
           {activeCampaign ? visibleCreators.map((creator, index) => (
             <motion.div
               key={creator.id}
