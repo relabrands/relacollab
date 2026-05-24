@@ -481,7 +481,7 @@ export default function BrandMatches() {
                       if (found) setActiveCampaign(found);
                     }}
                   >
-                    <SelectTrigger className="w-full bg-background border-input h-9 text-sm">
+                    <SelectTrigger className="w-full bg-background border-input h-9 text-sm [&>span]:truncate [&>span]:block [&>span]:text-left [&>span]:max-w-[calc(100%-1.5rem)]">
                       <SelectValue placeholder="Selecciona una Campaña" />
                     </SelectTrigger>
                     <SelectContent>
@@ -535,7 +535,11 @@ export default function BrandMatches() {
 
         {/* Tabs / Filters — scrollable on mobile */}
         <div className="mb-5 -mx-4 px-4 md:mx-0 md:px-0">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+          {/* pt-3 pb-2 gives room for the absolute-positioned notification badges */}
+          <div
+            className="flex items-center gap-2 pb-2 pt-3 snap-x snap-mandatory"
+            style={{ overflowX: 'auto', overflowY: 'visible' }}
+          >
             {/* Matches */}
             <button
               onClick={() => setViewMode('matches')}
@@ -549,23 +553,25 @@ export default function BrandMatches() {
               <span className="hidden sm:inline">Matches</span>
             </button>
 
-            {/* Solicitantes */}
-            <button
-              onClick={() => setViewMode('applicants')}
-              className={`snap-start relative flex-shrink-0 flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-                viewMode === 'applicants'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Solicitantes</span>
+            {/* Solicitantes — wrapped in relative div so badge isn't clipped */}
+            <div className="relative flex-shrink-0 snap-start">
+              <button
+                onClick={() => setViewMode('applicants')}
+                className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  viewMode === 'applicants'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">Solicitantes</span>
+              </button>
               {applicants.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold">
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold px-1 pointer-events-none z-10">
                   {applicants.length > 9 ? '9+' : applicants.length}
                 </span>
               )}
-            </button>
+            </div>
 
             {/* Colaborando */}
             <button
