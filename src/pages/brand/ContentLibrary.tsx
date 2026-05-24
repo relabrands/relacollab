@@ -164,8 +164,8 @@ function ContentCard({ content, onStatusChange, onApproveClick, onRefreshMetrics
           </div>
         )}
 
-        {/* Hover Actions */}
-        <div className="absolute bottom-3 left-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        {/* Hover Actions — always visible on touch, hover-only on desktop */}
+        <div className="absolute bottom-3 left-3 right-3 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
           {content.postUrl && (
             <Button size="sm" variant="glass" className="flex-1" asChild>
               <a href={content.postUrl} target="_blank" rel="noopener noreferrer">
@@ -182,7 +182,7 @@ function ContentCard({ content, onStatusChange, onApproveClick, onRefreshMetrics
               e.stopPropagation();
               onRefreshMetrics?.(content);
             }}
-            title="Actualizar Métricas (Obtener portada y estadísticas recientes)"
+            title="Actualizar Métricas"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -825,60 +825,63 @@ export default function ContentLibrary() {
       <DashboardSidebar type="brand" />
       <MobileNav type="brand" />
 
-      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
+      <main className="flex-1 ml-0 md:ml-64 p-4 md:p-6 pb-24 md:pb-8">
         <DashboardHeader
           title="Biblioteca de Contenidos"
           subtitle="Todo el contenido de los creadores de tus campañas"
         />
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           <Card className="glass-card">
-            <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Contenido Total</p>
-              <p className="text-2xl font-bold">{stats.total}</p>
+            <CardContent className="p-3 md:p-4">
+              <p className="text-xs md:text-sm text-muted-foreground">Contenido Total</p>
+              <p className="text-xl md:text-2xl font-bold">{stats.total}</p>
             </CardContent>
           </Card>
           <Card className="glass-card">
-            <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Publicaciones en Vivo</p>
-              <p className="text-2xl font-bold text-success">{stats.live}</p>
+            <CardContent className="p-3 md:p-4">
+              <p className="text-xs md:text-sm text-muted-foreground">En Vivo</p>
+              <p className="text-xl md:text-2xl font-bold text-success">{stats.live}</p>
             </CardContent>
           </Card>
           <Card className="glass-card">
-            <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Vistas Totales</p>
-              <p className="text-2xl font-bold">{formatNumber(stats.totalViews)}</p>
+            <CardContent className="p-3 md:p-4">
+              <p className="text-xs md:text-sm text-muted-foreground">Vistas Totales</p>
+              <p className="text-xl md:text-2xl font-bold">{formatNumber(stats.totalViews)}</p>
             </CardContent>
           </Card>
           <Card className="glass-card">
-            <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Interacción Total</p>
-              <p className="text-2xl font-bold">{formatNumber(stats.totalEngagement)}</p>
+            <CardContent className="p-3 md:p-4">
+              <p className="text-xs md:text-sm text-muted-foreground">Interacción Total</p>
+              <p className="text-xl md:text-2xl font-bold">{formatNumber(stats.totalEngagement)}</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between">
-          <div className="flex flex-1 gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por creador o campaña..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+        <div className="flex flex-col gap-3 mb-5">
+          {/* Search */}
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por creador o campaña..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 w-full"
+            />
           </div>
 
-          {/* Platform Filter */}
-          <div className="flex gap-2">
+          {/* Platform Filter — scrollable row */}
+          <div
+            className="flex gap-2 pb-1"
+            style={{ overflowX: 'auto', overflowY: 'visible' }}
+          >
             <Button
               variant={activePlatform === "all" ? "default" : "outline"}
               onClick={() => setActivePlatform("all")}
               size="sm"
+              className="flex-shrink-0"
             >
               Todos
             </Button>
@@ -886,7 +889,7 @@ export default function ContentLibrary() {
               variant={activePlatform === "instagram" ? "default" : "outline"}
               onClick={() => setActivePlatform("instagram")}
               size="sm"
-              className="gap-2"
+              className="gap-2 flex-shrink-0"
             >
               <Instagram className="w-4 h-4" /> Instagram
             </Button>
@@ -894,26 +897,31 @@ export default function ContentLibrary() {
               variant={activePlatform === "tiktok" ? "default" : "outline"}
               onClick={() => setActivePlatform("tiktok")}
               size="sm"
-              className="gap-2"
+              className="gap-2 flex-shrink-0"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg> TikTok
             </Button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList>
-            <TabsTrigger value="all">Todos ({stats.total})</TabsTrigger>
-            <TabsTrigger value="pending">Pendientes ({stats.pending})</TabsTrigger>
-            <TabsTrigger value="revision_requested">Revisiones ({stats.revisions})</TabsTrigger>
-            <TabsTrigger value="approved">Aprobados ({stats.approved})</TabsTrigger>
-            <TabsTrigger value="live">En Vivo ({stats.live})</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Tabs — scrollable on mobile */}
+        <div
+          className="mb-5 -mx-4 px-4 md:mx-0 md:px-0"
+          style={{ overflowX: 'auto', overflowY: 'visible' }}
+        >
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="flex-nowrap inline-flex min-w-max">
+              <TabsTrigger value="all" className="whitespace-nowrap text-xs sm:text-sm">Todos ({stats.total})</TabsTrigger>
+              <TabsTrigger value="pending" className="whitespace-nowrap text-xs sm:text-sm">Pendientes ({stats.pending})</TabsTrigger>
+              <TabsTrigger value="revision_requested" className="whitespace-nowrap text-xs sm:text-sm">Revisiones ({stats.revisions})</TabsTrigger>
+              <TabsTrigger value="approved" className="whitespace-nowrap text-xs sm:text-sm">Aprobados ({stats.approved})</TabsTrigger>
+              <TabsTrigger value="live" className="whitespace-nowrap text-xs sm:text-sm">En Vivo ({stats.live})</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
           {filteredContent.map((content) => (
             <ContentCard
               key={content.id}
@@ -963,7 +971,7 @@ export default function ContentLibrary() {
 
       {/* Approve & Rate Creator Dialog */}
       <Dialog open={isRatingDialogOpen} onOpenChange={setIsRatingDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none glass-card">
+        <DialogContent className="w-full h-full sm:h-auto sm:max-w-[500px] p-0 overflow-hidden border-none glass-card rounded-none sm:rounded-2xl">
           <div className="px-6 py-4 border-b border-border/50 bg-muted/30">
             <DialogHeader>
               <DialogTitle className="text-xl">Aprobar y Calificar</DialogTitle>
@@ -1093,7 +1101,7 @@ export default function ContentLibrary() {
             </div>
           </div>
 
-          <div className="p-6 bg-muted/30 border-t border-border/50 flex gap-3 justify-end">
+          <div className="p-4 sm:p-6 bg-muted/30 border-t border-border/50 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end">
             <Button variant="ghost" className="font-semibold" onClick={() => setIsRatingDialogOpen(false)}>
               Cancelar
             </Button>
