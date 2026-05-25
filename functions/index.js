@@ -863,6 +863,21 @@ exports.analyzeCreatorMatch = onDocumentWritten("campaigns/{campaignId}/matches/
             };
         });
 
+        // 3.5 Calculate actual averages to ground the AI
+        let actualAvgViews = 0, actualAvgLikes = 0, actualAvgComments = 0;
+        if (allPosts.length > 0) {
+            actualAvgViews = Math.round(allPosts.reduce((sum, p) => sum + (p.view_count || p.views || 0), 0) / allPosts.length);
+            actualAvgLikes = Math.round(allPosts.reduce((sum, p) => sum + (p.like_count || 0), 0) / allPosts.length);
+            actualAvgComments = Math.round(allPosts.reduce((sum, p) => sum + (p.comments_count || 0), 0) / allPosts.length);
+        }
+
+        let noDataWarning = "";
+        if (allPosts.length === 0) {
+            noDataWarning = "ADVERTENCIA CRÍTICA: Este creador NO tiene posts recientes o sus datos de redes están vacíos. ES OBLIGATORIO que predigas exactamente 0 en vistas, likes y comentarios. El Match Percentage debe ser menor a 20% por falta de tracción demostrable. NO ALUCINES MÉTRICAS.";
+        } else if (actualAvgViews === 0 && actualAvgLikes === 0) {
+            noDataWarning = "ADVERTENCIA CRÍTICA: Los posts recientes de este creador tienen en promedio 0 vistas y 0 interacciones. Tus métricas predichas DEBEN ser 0 o casi 0. Penaliza fuertemente el Match Percentage.";
+        }
+
         // Compensation Logic
         const campaignCompType = campaign.compensationType || "monetary"; // 'exchange', 'monetary'
         const creatorPref = creator.collaborationPreference || "Ambos"; // 'Con remuneración', 'Intercambios', 'Ambos'
@@ -941,12 +956,14 @@ ${ageAlignmentNote ? `- Alineación con objetivo de campaña: ${ageAlignmentNote
 
 CONTENIDO RECIENTE (Últimos 15 posts):
 ${JSON.stringify(postsData)}
+PROMEDIOS HISTÓRICOS REALES CALCULADOS: Vistas: ${actualAvgViews}, Likes: ${actualAvgLikes}, Comentarios: ${actualAvgComments}
+${noDataWarning}
 
 TAREA:
-1. Determina el % de Match (0-100%). Si la compensación es un Deal Breaker, el match debe ser bajo (<50%). Si el rango de edad objetivo está especificado y la alineación demográfica es baja (<25%), penaliza el match significativamente.
-2. Predice las métricas PROMEDIO que este creador generaría **específicamente para esta campaña** (vistas, likes, comentarios). Basa esto en el promedio de sus posts recientes.
-3. Redacta un análisis persuasivo incluyendo la información demográfica si está disponible, siguiendo ESTRICTAMENTE este formato de plantilla:
-   "Match del [X]% - [Perfil/Nicho]: [Nota sobre compensación]. Basado en sus últimos [N] videos de [temática detectada], se predice un impacto de [V] vistas, [L] likes y [C] comentarios para tu campaña. Su audiencia [describe audiencia con datos demográficos reales si disponibles] y tono [describe tono] encajan [bien/mal] con el Brand Vibe de tu marca."
+1. Determina el % de Match (0-100%). Si la compensación es un Deal Breaker, el match debe ser bajo (<50%). Si la alineación demográfica es baja, penaliza significativamente. ${allPosts.length === 0 || (actualAvgViews === 0 && actualAvgLikes === 0) ? "Obligatorio: Asigna un Match muy bajo (<30%) por falta de métricas." : ""}
+2. Predice las métricas PROMEDIO que este creador generaría **específicamente para esta campaña** (vistas, likes, comentarios). TUS PREDICCIONES NO DEBEN DESVIARSE IRRACIONALMENTE DE LOS PROMEDIOS HISTÓRICOS REALES (${actualAvgViews} vistas, etc.). Si el creador no tiene historial, predice 0. NUNCA alucines métricas altas si el creador tiene 0 tracción.
+3. Redacta un análisis persuasivo, incluyendo datos demográficos reales si existen, siguiendo ESTRICTAMENTE este formato:
+   "Match del [X]% - [Perfil/Nicho]: [Nota sobre compensación]. Basado en sus últimos [N] videos de [temática], se predice un impacto de [V] vistas, [L] likes y [C] comentarios para tu campaña. Su audiencia [describe audiencia con datos reales] y tono encajan [bien/mal] con el Brand Vibe de tu marca."
 
 FORMATO EXCLUSIVO JSON:
 Responde SOLO con este objeto JSON raw, sin markdown formatting si es posible:
