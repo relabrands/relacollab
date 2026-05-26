@@ -71,8 +71,7 @@ export default function CreatorOnboarding() {
         collaborationPreference: "",
         hasBrandExperience: "",
         instagramUsername: "",
-        tiktokUsername: "",
-        phone: ""
+        tiktokUsername: ""
     });
 
     const [customContentType, setCustomContentType] = useState("");
@@ -175,11 +174,7 @@ export default function CreatorOnboarding() {
                     return false;
                 }
                 return true;
-            case 5: // Social handles and Phone
-                if (!formData.phone || formData.phone.trim().length < 8) {
-                    toast.error("Por favor ingresa un número de WhatsApp/Teléfono válido");
-                    return false;
-                }
+            case 5: // Social handles (optional)
                 return true;
             default:
                 return true;
@@ -218,7 +213,6 @@ export default function CreatorOnboarding() {
                     instagram: formData.instagramUsername,
                     tiktok: formData.tiktokUsername
                 },
-                phone: formData.phone,
                 status: "pending", // Set to pending for admin approval
                 onboardingCompleted: true,
                 updatedAt: new Date().toISOString()
@@ -615,24 +609,13 @@ export default function CreatorOnboarding() {
                         className="space-y-6"
                     >
                         <div className="space-y-2">
-                            <h3 className="text-2xl font-bold">Información de Contacto y Redes</h3>
+                            <h3 className="text-2xl font-bold">Información de redes sociales</h3>
                             <p className="text-muted-foreground">
-                                Completa tu información de contacto. Las redes sociales son opcionales por ahora, pero podrás conectarlas luego en tu perfil.
+                                Opcional - Solo para fines de aprobación. Una vez aprobado, podrás conectar tus cuentas oficialmente en tu perfil.
                             </p>
                         </div>
 
                         <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="phone">WhatsApp / Teléfono <span className="text-destructive">*</span></Label>
-                                <Input
-                                    id="phone"
-                                    placeholder="+1 234 567 890"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                                />
-                                <p className="text-xs text-muted-foreground">Te contactaremos por aquí en caso de matches importantes.</p>
-                            </div>
-
                             <div className="space-y-2">
                                 <Label htmlFor="instagram">Usuario de Instagram (opcional)</Label>
                                 <div className="relative">
