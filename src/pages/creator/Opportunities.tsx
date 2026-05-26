@@ -191,7 +191,19 @@ export default function Opportunities() {
         }))).filter(Boolean);
 
         // Filter invitations that might have corresponding applications (redundancy check)
-        const filteredInvitations = resolvedInvitations.filter((op: any) => !appliedIds.has(op.id));
+        // Also ensure they have the required platform connected
+        const filteredInvitations = resolvedInvitations.filter((op: any) => {
+          if (appliedIds.has(op.id)) return false;
+
+          // Platform requirement check
+          const reqIg = op.deliverables?.some((d: any) => d.platform === "instagram" && d.required !== false);
+          const reqTk = op.deliverables?.some((d: any) => d.platform === "tiktok" && d.required !== false);
+          
+          if (reqIg && !creatorProfile.instagramConnected) return false;
+          if (reqTk && !creatorProfile.tiktokConnected) return false;
+
+          return true;
+        });
 
         // For general opportunities: also check Firestore for existing AI score
         const generalWithAiScore = await Promise.all(
@@ -213,7 +225,19 @@ export default function Opportunities() {
         );
 
         // ✅ Gate: use best available score (AI first, rule-based fallback) — must be ≥50%
-        const filteredGeneral = generalWithAiScore.filter(op => op.effectiveScore >= 50);
+        // ✅ Gate: creator must have the connected platform if the campaign strictly requires it
+        const filteredGeneral = generalWithAiScore.filter(op => {
+          if (op.effectiveScore < 50) return false;
+
+          // Platform requirement check
+          const reqIg = op.deliverables?.some((d: any) => d.platform === "instagram" && d.required !== false);
+          const reqTk = op.deliverables?.some((d: any) => d.platform === "tiktok" && d.required !== false);
+          
+          if (reqIg && !creatorProfile.instagramConnected) return false;
+          if (reqTk && !creatorProfile.tiktokConnected) return false;
+
+          return true;
+        });
 
         setOpportunities([...filteredInvitations, ...filteredGeneral]);
 
