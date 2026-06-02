@@ -20,6 +20,7 @@ interface CampaignWithDeliverables {
     quantity: number;
     required: boolean;
     platform?: "instagram" | "tiktok";
+    deliveryType?: "post" | "upload";
   }>;
   netPayment?: number;
 }
@@ -422,6 +423,11 @@ export function ContentSubmission() {
                                     <Badge variant={deliverable.required ? "default" : "outline"} className="text-xs">
                                       {deliverable.required ? "Requerido" : "Opcional"}
                                     </Badge>
+                                    {deliverable.deliveryType === "upload" && (
+                                      <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground border-border">
+                                        📦 Solo archivo (UGC)
+                                      </Badge>
+                                    )}
                                     {submission && (
                                       <Badge
                                         variant={

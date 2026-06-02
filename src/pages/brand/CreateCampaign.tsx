@@ -99,6 +99,7 @@ export default function CreateCampaign() {
       quantity: number;
       required: boolean;
       platform: "instagram" | "tiktok";
+      deliveryType?: "post" | "upload";
     }>,
   });
 
@@ -114,7 +115,7 @@ export default function CreateCampaign() {
   const handleAddDeliverable = () => {
     setFormData(prev => ({
       ...prev,
-      deliverables: [...prev.deliverables, { type: "", quantity: 1, required: true, platform: "instagram" }]
+      deliverables: [...prev.deliverables, { type: "", quantity: 1, required: true, platform: "instagram", deliveryType: "post" }]
     }));
   };
 
@@ -1040,6 +1041,24 @@ export default function CreateCampaign() {
                                   <SelectItem value="Video">🎥 Video</SelectItem>
                                   <SelectItem value="Story">📱 Historia</SelectItem>
                                   <SelectItem value="Carousel">🖼️ Carrusel</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Delivery Type Selector */}
+                            <div className="w-48 hidden md:block">
+                              <Select
+                                value={deliverable.deliveryType || "post"}
+                                onValueChange={(value) =>
+                                  handleUpdateDeliverable(index, "deliveryType", value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Forma de entrega" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="post">Publicar en Redes</SelectItem>
+                                  <SelectItem value="upload">Solo enviar archivo (UGC)</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>

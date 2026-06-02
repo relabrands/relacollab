@@ -410,8 +410,13 @@ export default function CampaignDetails() {
                                             <div className="flex flex-wrap gap-2">
                                                 {campaign.deliverables?.length > 0 ? (
                                                     campaign.deliverables.map((del: any, i: number) => (
-                                                        <Badge key={i} variant="secondary" className="capitalize">
-                                                            {del.quantity}x {del.type} {del.platform ? (del.platform.toLowerCase() === "tiktok" ? "TikTok" : "Instagram") : ""}
+                                                        <Badge key={i} variant="secondary" className="capitalize flex flex-col items-start gap-0.5 px-3 py-1.5 h-auto">
+                                                            <div className="flex items-center gap-1.5 font-semibold">
+                                                                <span>{del.quantity}x {del.type} {del.platform ? (del.platform.toLowerCase() === "tiktok" ? "TikTok" : "Instagram") : ""}</span>
+                                                            </div>
+                                                            <div className="text-[10px] text-muted-foreground/80 font-medium">
+                                                                {del.deliveryType === "upload" ? "📦 Solo archivo (UGC)" : "📱 Publicar en redes"}
+                                                            </div>
                                                         </Badge>
                                                     ))
                                                 ) : (

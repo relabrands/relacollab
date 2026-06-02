@@ -5,8 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Loader2, AlertCircle, Upload, Image } from "lucide-react";
 import { toast } from "sonner";
 import { collection, addDoc, query, where, getDocs, updateDoc, doc, arrayUnion } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useAuth } from "@/context/AuthContext";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Link } from "lucide-react";
 import { InstagramMediaPicker } from "./InstagramMediaPicker";
 
 interface InstagramMedia {
@@ -30,6 +34,7 @@ interface DeliverableItem {
     quantity: number;
     required: boolean;
     platform?: "instagram" | "tiktok";
+    deliveryType?: "post" | "upload";
 }
 
 interface CampaignWithDeliverables {
@@ -85,6 +90,7 @@ export function DeliverableSubmissionDialog({
     const [loading, setLoading] = useState(false);
     const [submittedContent, setSubmittedContent] = useState<SubmittedContent[]>([]);
     const [selectedDeliverables, setSelectedDeliverables] = useState<Map<string, InstagramMedia>>(new Map());
+    const [selectedUgc, setSelectedUgc] = useState<Map<string, { type: "file" | "link", file?: File, url?: string }>>(new Map());
     const [showInstagramPicker, setShowInstagramPicker] = useState(false);
     const [showTikTokPicker, setShowTikTokPicker] = useState(false);
     const [currentDeliverable, setCurrentDeliverable] = useState<{ key: string; type: string } | null>(null);
@@ -120,6 +126,7 @@ export function DeliverableSubmissionDialog({
             required: boolean;
             key: string;
             platform?: "instagram" | "tiktok";
+            deliveryType?: "post" | "upload";
             submitted?: SubmittedContent;
         }> = [];
 
@@ -145,6 +152,7 @@ export function DeliverableSubmissionDialog({
                             required: deliverable.required,
                             key,
                             platform: deliverable.platform,
+                            deliveryType: deliverable.deliveryType,
                             submitted: existingSubmission,
                         });
                      }
@@ -157,6 +165,7 @@ export function DeliverableSubmissionDialog({
                     required: deliverable.required,
                     key,
                     platform: deliverable.platform,
+                    deliveryType: deliverable.deliveryType,
                     submitted: existing,
                 });
             }
@@ -212,47 +221,33 @@ export function DeliverableSubmissionDialog({
     };
 
     const handleSubmitSelected = async () => {
-        if (selectedDeliverables.size === 0) {
+        if (selectedDeliverables.size === 0 && selectedUgc.size === 0) {
             toast.error("Por favor selecciona al menos un contenido para enviar");
             return;
         }
 
         setLoading(true);
         try {
-            // Process all submissions (both new and resubmissions)
-            const submissionPromises = Array.from(selectedDeliverables.entries()).map(async ([key, media]) => {
+            const allSubmissionPromises: Promise<any>[] = [];
+
+            // Process Social Media Submissions
+            const socialPromises = Array.from(selectedDeliverables.entries()).map(async ([key, media]) => {
                 const lastUnderscore = key.lastIndexOf('_');
                 const type = key.substring(0, lastUnderscore);
                 const number = parseInt(key.substring(lastUnderscore + 1), 10);
 
-                // Prefer existingSubmission if it perfectly matches the slot we are processing
-                const matchingExisting = existingSubmission?.deliverableType === type && existingSubmission?.deliverableNumber === number 
-                    ? existingSubmission 
-                    : undefined;
-
-                const existingSlotSubmissions = submittedContent.filter(
-                    s => s.deliverableType === type && s.deliverableNumber === number
-                );
-
-                const existingSlotSubmission = matchingExisting || (existingSlotSubmissions.length > 0 
-                    ? existingSlotSubmissions.sort((a, b) => {
-                        const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
-                        const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
-                        return dateB - dateA;
-                    })[0] 
-                    : undefined);
+                const existingSlotSubmission = existingSubmission?.deliverableType === type && existingSubmission?.deliverableNumber === number
+                    ? existingSubmission
+                    : submittedContent.find(s => s.deliverableType === type && s.deliverableNumber === number);
 
                 let docId = "";
                 let submissionRef: any;
 
                 if (existingSlotSubmission && existingSlotSubmission.id) {
-                    // UPDATE EXISTING SUBMISSION
                     docId = existingSlotSubmission.id;
                     submissionRef = doc(db, "content_submissions", docId);
                     
-                    const previousMediaUrl = existingSlotSubmission.contentUrl;
                     const isResubmission = existingSlotSubmission.status === "needs_revision" || existingSlotSubmission.status === "revision_requested";
-                    
                     let updatedHistory = existingSlotSubmission.revisionHistory ? [...existingSlotSubmission.revisionHistory] : [];
                     if (isResubmission && updatedHistory.length > 0) {
                         const lastIndex = updatedHistory.length - 1;
@@ -260,7 +255,7 @@ export function DeliverableSubmissionDialog({
                             updatedHistory[lastIndex] = {
                                 ...updatedHistory[lastIndex],
                                 resubmittedAt: new Date().toISOString(),
-                                previousMediaUrl: previousMediaUrl
+                                previousMediaUrl: existingSlotSubmission.contentUrl
                             };
                         }
                     }
@@ -286,7 +281,6 @@ export function DeliverableSubmissionDialog({
                         revisionHistory: updatedHistory
                     });
                 } else {
-                    // CREATE NEW SUBMISSION
                     submissionRef = await addDoc(collection(db, "content_submissions"), {
                         campaignId: campaign.id,
                         creatorId: user!.uid,
@@ -313,7 +307,7 @@ export function DeliverableSubmissionDialog({
                     });
                 }
 
-                // 2. Fetch detailed metrics immediately (Fire and forget, but we await the start)
+                // Fetch metrics
                 try {
                     const match = media.permalink.match(/instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
                     const postId = match ? match[2] : null;
@@ -328,45 +322,114 @@ export function DeliverableSubmissionDialog({
                             "metrics.updatedAt": new Date().toISOString(),
                             metricsLastFetched: new Date().toISOString()
                         });
-                    } else {
-                        // Instagram Logic
-                        if (postId) {
-                            fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ userId: user!.uid, postId })
-                            }).then(async (res) => {
-                                if (res.ok) {
-                                    const data = await res.json();
-                                    if (data.success && data.metrics) {
-                                        await updateDoc(submissionRef, {
-                                            "metrics.views": data.metrics.views || 0,
-                                            "metrics.reach": data.metrics.reach || 0,
-                                            "metrics.saved": data.metrics.saved || 0,
-                                            "metrics.shares": data.metrics.shares || 0,
-                                            "metrics.interactions": data.metrics.interactions || 0,
-                                            "metrics.likes": data.metrics.likes || 0,
-                                            "metrics.comments": data.metrics.comments || 0,
-                                            "metrics.updatedAt": new Date().toISOString(),
-                                            metricsLastFetched: new Date().toISOString()
-                                        });
-                                    }
+                    } else if (postId) {
+                        fetch("https://us-central1-rella-collab.cloudfunctions.net/getPostMetrics", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userId: user!.uid, postId })
+                        }).then(async (res) => {
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data.success && data.metrics) {
+                                    await updateDoc(submissionRef, {
+                                        "metrics.views": data.metrics.views || 0,
+                                        "metrics.reach": data.metrics.reach || 0,
+                                        "metrics.saved": data.metrics.saved || 0,
+                                        "metrics.shares": data.metrics.shares || 0,
+                                        "metrics.interactions": data.metrics.interactions || 0,
+                                        "metrics.likes": data.metrics.likes || 0,
+                                        "metrics.comments": data.metrics.comments || 0,
+                                        "metrics.updatedAt": new Date().toISOString(),
+                                        metricsLastFetched: new Date().toISOString()
+                                    });
                                 }
-                            });
-                        }
+                            }
+                        });
                     }
-                } catch (e) {
-                }
-
+                } catch (e) {}
                 return submissionRef;
             });
+            allSubmissionPromises.push(...socialPromises);
 
-            await Promise.all(submissionPromises);
-            toast.success(`Se enviaron ${selectedDeliverables.size} entregable(s)`);
+            // Process UGC Submissions
+            const ugcPromises = Array.from(selectedUgc.entries()).map(async ([key, ugc]) => {
+                const lastUnderscore = key.lastIndexOf('_');
+                const type = key.substring(0, lastUnderscore);
+                const number = parseInt(key.substring(lastUnderscore + 1), 10);
+
+                const existingSlotSubmission = existingSubmission?.deliverableType === type && existingSubmission?.deliverableNumber === number
+                    ? existingSubmission
+                    : submittedContent.find(s => s.deliverableType === type && s.deliverableNumber === number);
+
+                let finalUrl = ugc.url || "";
+                
+                // Upload file to Firebase Storage if type is file
+                if (ugc.type === "file" && ugc.file) {
+                    const storageRef = ref(storage, `content_submissions/${campaign.id}/${user!.uid}/${Date.now()}_${ugc.file.name}`);
+                    const snapshot = await uploadBytesResumable(storageRef, ugc.file);
+                    finalUrl = await getDownloadURL(snapshot.ref);
+                }
+
+                if (!finalUrl) return;
+
+                let docId = "";
+                let submissionRef: any;
+
+                if (existingSlotSubmission && existingSlotSubmission.id) {
+                    docId = existingSlotSubmission.id;
+                    submissionRef = doc(db, "content_submissions", docId);
+                    
+                    const isResubmission = existingSlotSubmission.status === "needs_revision" || existingSlotSubmission.status === "revision_requested";
+                    let updatedHistory = existingSlotSubmission.revisionHistory ? [...existingSlotSubmission.revisionHistory] : [];
+                    if (isResubmission && updatedHistory.length > 0) {
+                        const lastIndex = updatedHistory.length - 1;
+                        if (!updatedHistory[lastIndex].resubmittedAt) {
+                            updatedHistory[lastIndex] = {
+                                ...updatedHistory[lastIndex],
+                                resubmittedAt: new Date().toISOString(),
+                                previousMediaUrl: existingSlotSubmission.contentUrl
+                            };
+                        }
+                    }
+
+                    await updateDoc(submissionRef, {
+                        contentUrl: finalUrl,
+                        mediaUrl: finalUrl, // Using same for consistency
+                        thumbnailUrl: ugc.type === "file" && ugc.file?.type.startsWith("image/") ? finalUrl : "",
+                        mediaType: ugc.type === "file" && ugc.file?.type.startsWith("video/") ? "VIDEO" : "IMAGE",
+                        platform: "ugc",
+                        status: isResubmission ? "resubmitted" : "pending",
+                        updatedAt: new Date().toISOString(),
+                        revisionHistory: updatedHistory
+                    });
+                } else {
+                    submissionRef = await addDoc(collection(db, "content_submissions"), {
+                        campaignId: campaign.id,
+                        creatorId: user!.uid,
+                        userId: user!.uid,
+                        deliverableType: type,
+                        deliverableNumber: number,
+                        contentUrl: finalUrl,
+                        mediaUrl: finalUrl,
+                        thumbnailUrl: ugc.type === "file" && ugc.file?.type?.startsWith("image/") ? finalUrl : "",
+                        mediaType: ugc.type === "file" && ugc.file?.type?.startsWith("video/") ? "VIDEO" : "IMAGE",
+                        platform: "ugc",
+                        status: "pending",
+                        createdAt: new Date().toISOString()
+                    });
+                }
+                return submissionRef;
+            });
+            allSubmissionPromises.push(...ugcPromises);
+
+            await Promise.all(allSubmissionPromises);
+            toast.success(`Se enviaron ${selectedDeliverables.size + selectedUgc.size} entregable(s)`);
             setSelectedDeliverables(new Map());
+            setSelectedUgc(new Map());
             onSuccess();
             onClose();
         } catch (error) {
+            console.error("Submission Error:", error);
             toast.error("Error al enviar el contenido");
         } finally {
             setLoading(false);
@@ -499,7 +562,70 @@ export function DeliverableSubmissionDialog({
                                             </div>
 
                                             <div className="flex-shrink-0 mt-2 md:mt-0 w-full md:w-auto">
-                                                {slot.submitted ? (
+                                                {slot.deliveryType === "upload" ? (
+                                                    <div className="flex flex-col gap-3 w-full md:min-w-[280px]">
+                                                        {slot.submitted && slot.submitted.status !== "needs_revision" && slot.submitted.status !== "revision_requested" ? (
+                                                            <div className="flex flex-col gap-1 items-end">
+                                                                <div className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2 font-medium">
+                                                                    <Check className="w-4 h-4" /> Archivo Enviado
+                                                                </div>
+                                                                <a href={slot.submitted.contentUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                                                                    <Link className="w-3 h-3" /> Ver contenido
+                                                                </a>
+                                                            </div>
+                                                        ) : (
+                                                            <Tabs defaultValue="file" className="w-full" onValueChange={(v) => {
+                                                                setSelectedUgc(prev => {
+                                                                    const newMap = new Map(prev);
+                                                                    newMap.set(slot.key, { type: v as "file" | "link" });
+                                                                    return newMap;
+                                                                });
+                                                            }}>
+                                                                <TabsList className="grid w-full grid-cols-2 h-8">
+                                                                    <TabsTrigger value="file" className="text-xs">Subir Archivo</TabsTrigger>
+                                                                    <TabsTrigger value="link" className="text-xs">Subir Enlace</TabsTrigger>
+                                                                </TabsList>
+                                                                <TabsContent value="file" className="mt-2">
+                                                                    <Input 
+                                                                        type="file" 
+                                                                        accept="video/*,image/*" 
+                                                                        className="text-xs"
+                                                                        onChange={(e) => {
+                                                                            const file = e.target.files?.[0];
+                                                                            if (file) {
+                                                                                if (file.size > 50 * 1024 * 1024) {
+                                                                                    toast.error("El archivo supera el límite de 50MB. Usa la opción de Enlace Externo.");
+                                                                                    e.target.value = "";
+                                                                                    return;
+                                                                                }
+                                                                                setSelectedUgc(prev => {
+                                                                                    const newMap = new Map(prev);
+                                                                                    newMap.set(slot.key, { type: "file", file });
+                                                                                    return newMap;
+                                                                                });
+                                                                            }
+                                                                        }} 
+                                                                    />
+                                                                    <p className="text-[10px] text-muted-foreground mt-1">Máx. 50MB (Para archivos pesados usa Google Drive/Dropbox)</p>
+                                                                </TabsContent>
+                                                                <TabsContent value="link" className="mt-2">
+                                                                    <Input 
+                                                                        type="url" 
+                                                                        placeholder="https://drive.google.com/..." 
+                                                                        className="text-xs"
+                                                                        onChange={(e) => {
+                                                                            setSelectedUgc(prev => {
+                                                                                const newMap = new Map(prev);
+                                                                                newMap.set(slot.key, { type: "link", url: e.target.value });
+                                                                                return newMap;
+                                                                            });
+                                                                        }} 
+                                                                    />
+                                                                </TabsContent>
+                                                            </Tabs>
+                                                        )}
+                                                    </div>
+                                                ) : slot.submitted ? (
                                                     <div className="text-sm text-muted-foreground flex flex-col md:flex-row gap-2">
                                                         {(slot.submitted.status === "needs_revision" || slot.submitted.status === "revision_requested") && (
                                                             <>
@@ -552,7 +678,7 @@ export function DeliverableSubmissionDialog({
                                                                 ) : (
                                                                     <>
                                                                         <Upload className="w-4 h-4 mr-2" />
-                                                                        Seleccionar Instagram
+                                                                        Seleccionar IG
                                                                     </>
                                                                 )}
                                                             </Button>
