@@ -104,12 +104,36 @@ export default function CreateCampaign() {
   });
 
   const handleContentTypeToggle = (typeId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      contentTypes: prev.contentTypes.includes(typeId)
+    setFormData((prev) => {
+      const isSelected = prev.contentTypes.includes(typeId);
+      
+      const newContentTypes = isSelected
         ? prev.contentTypes.filter((t) => t !== typeId)
-        : [...prev.contentTypes, typeId],
-    }));
+        : [...prev.contentTypes, typeId];
+        
+      let newDeliverables = [...prev.deliverables];
+      const typeMapping: Record<string, string> = {
+        post: "Post",
+        video: "Video",
+        stories: "Story",
+        carousel: "Carousel"
+      };
+      const deliverableType = typeMapping[typeId] || "Post";
+      
+      if (!isSelected) {
+        // If they click the type to add it, auto-add a deliverable
+        newDeliverables.push({ type: deliverableType, quantity: 1, required: true, platform: "instagram", deliveryType: "post" });
+      } else {
+        // If they toggle it off, remove deliverables of that type to keep it clean
+        newDeliverables = newDeliverables.filter(d => d.type !== deliverableType);
+      }
+
+      return {
+        ...prev,
+        contentTypes: newContentTypes,
+        deliverables: newDeliverables
+      };
+    });
   };
 
   const handleAddDeliverable = () => {
@@ -1046,19 +1070,19 @@ export default function CreateCampaign() {
                             </div>
 
                             {/* Delivery Type Selector */}
-                            <div className="w-48 hidden md:block">
+                            <div className="w-[200px] hidden md:block">
                               <Select
                                 value={deliverable.deliveryType || "post"}
                                 onValueChange={(value) =>
                                   handleUpdateDeliverable(index, "deliveryType", value)
                                 }
                               >
-                                <SelectTrigger>
+                                <SelectTrigger className="text-xs sm:text-sm">
                                   <SelectValue placeholder="Forma de entrega" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="post">Publicar en Redes</SelectItem>
-                                  <SelectItem value="upload">Solo enviar archivo (UGC)</SelectItem>
+                                  <SelectItem value="post">📱 Publicar (Redes)</SelectItem>
+                                  <SelectItem value="upload">📁 Subir Archivo (UGC)</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
