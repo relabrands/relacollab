@@ -1110,7 +1110,7 @@ export default function CreateCampaign() {
                               {/* Delivery Type */}
                               <div className="space-y-1.5">
                                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                  📤 ¿Cómo debe entregar el creador?
+                                  📤 Entrega del creador
                                 </label>
                                 <Select
                                   value={deliverable.deliveryType || "post"}
@@ -1122,27 +1122,17 @@ export default function CreateCampaign() {
                                     <SelectValue placeholder="Forma de entrega" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="post">
-                                      <div className="flex flex-col items-start">
-                                        <span>📱 Publicar en sus redes</span>
-                                        <span className="text-xs text-muted-foreground">El creador lo sube y comparte en Instagram/TikTok</span>
-                                      </div>
-                                    </SelectItem>
-                                    <SelectItem value="upload">
-                                      <div className="flex flex-col items-start">
-                                        <span>📁 Solo enviarme el archivo</span>
-                                        <span className="text-xs text-muted-foreground">El creador te envía el archivo y tú lo publicas</span>
-                                      </div>
-                                    </SelectItem>
+                                    <SelectItem value="post">📱 Publicar en sus redes</SelectItem>
+                                    <SelectItem value="upload">📁 Solo enviarme el archivo</SelectItem>
                                   </SelectContent>
                                 </Select>
-                                {/* Contextual helper */}
                                 <p className="text-[11px] text-muted-foreground">
                                   {(deliverable.deliveryType || "post") === "post"
-                                    ? "✅ El creador publicará el contenido en su cuenta."
-                                    : "📁 Recibirás el archivo directamente para publicarlo tú."}
+                                    ? "✅ El creador lo publicará en su cuenta."
+                                    : "📁 Te enviará el archivo para que tú lo publiques."}
                                 </p>
                               </div>
+
 
                               {/* Quantity */}
                               <div className="space-y-1.5">
