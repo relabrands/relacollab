@@ -76,6 +76,7 @@ export default function CreateCampaign() {
     endDate: "",
     creatorCount: "1",
     targetAgeRange: [] as string[], // For Instagram audience demographic matching
+    targetGender: "any" as "any" | "female" | "male", // Gender segmentation
     // Visit/Scheduling fields
     requiresVisit: false,
     visitLocation: "",
@@ -960,6 +961,42 @@ export default function CreateCampaign() {
                     ) : (
                       <p className="text-xs text-muted-foreground mt-2">Sin selección = todas las edades son válidas</p>
                     )}
+                  </div>
+
+                  {/* Target Gender */}
+                  <div className="border-t pt-6">
+                    <Label className="mb-1 block text-base font-semibold">Género del Creador</Label>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      ¿Tu campaña está dirigida a un género específico? Solo verán esta campaña los creadores que cumplan el criterio.
+                    </p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {([
+                        { value: "any", label: "Cualquiera", emoji: "👥", desc: "Todos los creadores" },
+                        { value: "female", label: "Mujeres", emoji: "👩", desc: "Solo creadoras" },
+                        { value: "male", label: "Hombres", emoji: "👨", desc: "Solo creadores" },
+                      ] as const).map((opt) => {
+                        const isSelected = formData.targetGender === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, targetGender: opt.value }))}
+                            className={`relative p-4 rounded-xl border-2 text-center font-medium transition-all ${
+                              isSelected
+                                ? "border-primary bg-primary/10 text-primary shadow-sm"
+                                : "border-border hover:border-primary/40 text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <div className="text-2xl mb-1">{opt.emoji}</div>
+                            <div className="text-sm font-semibold">{opt.label}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">{opt.desc}</div>
+                            {isSelected && (
+                              <span className="absolute top-1.5 right-2 text-[9px] font-bold text-primary">✓</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 

@@ -66,6 +66,7 @@ export default function CreatorOnboarding() {
         customContentTypes: [] as string[],
         contentFormats: [] as string[],
         vibes: [] as string[],
+        gender: "" as "" | "female" | "male",
         whoAppearsInContent: [] as string[],
         experienceTime: "",
         collaborationPreference: "",
@@ -157,6 +158,10 @@ export default function CreatorOnboarding() {
                 }
                 return true;
             case 4: // Who appears, experience, collaboration
+                if (!formData.gender) {
+                    toast.error("Por favor selecciona tu género");
+                    return false;
+                }
                 if (formData.whoAppearsInContent.length === 0) {
                     toast.error("Por favor selecciona quién aparece en tu contenido");
                     return false;
@@ -202,6 +207,7 @@ export default function CreatorOnboarding() {
             await updateDoc(userRef, {
                 bio: formData.bio,
                 niche: formData.niche,
+                gender: formData.gender,
                 categories: formData.customContentTypes,
                 contentFormats: formData.contentFormats,
                 vibes: formData.vibes,
@@ -466,6 +472,35 @@ export default function CreatorOnboarding() {
                             <p className="text-muted-foreground">
                                 Ayúdanos a encontrar las mejores oportunidades para ti.
                             </p>
+                        </div>
+
+                        {/* Gender Selection */}
+                        <div className="space-y-3">
+                            <Label className="text-base font-semibold">
+                                ¿Cuál es tu género? <span className="text-red-500">*</span>
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Esto determina qué campañas verás (ej. productos femeninos o masculinos).</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                {([
+                                    { value: "female", label: "Mujer", emoji: "👩" },
+                                    { value: "male", label: "Hombre", emoji: "👨" },
+                                ] as const).map((opt) => (
+                                    <div
+                                        key={opt.value}
+                                        onClick={() => setFormData(prev => ({ ...prev, gender: opt.value }))}
+                                        className={`
+                                            p-4 rounded-xl border-2 cursor-pointer transition-all text-center
+                                            ${formData.gender === opt.value
+                                                ? 'border-primary bg-primary/10 shadow-sm'
+                                                : 'border-border hover:border-primary/50'
+                                            }
+                                        `}
+                                    >
+                                        <div className="text-3xl mb-1">{opt.emoji}</div>
+                                        <div className="font-semibold">{opt.label}</div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         {/* Who Appears */}

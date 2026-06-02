@@ -226,6 +226,8 @@ export default function Opportunities() {
 
         // ✅ Gate: use best available score (AI first, rule-based fallback) — must be ≥50%
         // ✅ Gate: creator must have the connected platform if the campaign strictly requires it
+        // ✅ Gate: gender targeting — hide campaign if targetGender doesn't match creatorProfile.gender
+        const creatorGender = creatorProfile.gender || "";
         const filteredGeneral = generalWithAiScore.filter(op => {
           if (op.effectiveScore < 50) return false;
 
@@ -235,6 +237,10 @@ export default function Opportunities() {
           
           if (reqIg && !creatorProfile.instagramConnected) return false;
           if (reqTk && !creatorProfile.tiktokConnected) return false;
+
+          // Gender filter: backward compat — no field means 'any'
+          const targetGender = op.targetGender || "any";
+          if (targetGender !== "any" && creatorGender && targetGender !== creatorGender) return false;
 
           return true;
         });

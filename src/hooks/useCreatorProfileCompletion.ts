@@ -41,14 +41,16 @@ export function useCreatorProfileCompletion(): ProfileCompletionResult {
         if (d.contentFormats?.length)       pct += 10;
         if (d.vibes?.length)                pct += 10;
         if (d.whoAppearsInContent?.length)  pct += 10;
-        if (d.experienceTime)               pct += 10;
-        if (d.collaborationPreference)      pct += 10;
+        if (d.experienceTime)               pct += 5;
+        if (d.collaborationPreference)      pct += 5;
+        if (d.gender)                       pct += 10;
         // TOTAL MAX = 100. niche NO suma — no incluir aquí.
 
         setCompletion(Math.min(pct, 100));
 
         // ── Campos requeridos faltantes (los que sí reducen el score) ───
         const missing: string[] = [];
+        if (!d.gender)                      missing.push("⚧️ Género (obligatorio para matching por género)");
         if (!d.bio)                         missing.push("📝 Biografía");
         if (!d.location)                    missing.push("📍 Ubicación");
         if (!d.phone)                       missing.push("📞 Teléfono");

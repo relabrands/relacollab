@@ -130,6 +130,7 @@ export default function CreatorDashboard() {
         if (!userData.collaborationPreference)     missing.push("🤝 Preferencia de colaboración");
         if (!userData.instagramConnected && !userData.tiktokConnected)
                                                    missing.push("📱 Red social conectada (Instagram o TikTok)");
+        if (!userData.gender)                      missing.push("⚧️ Género (requerido para matching)");
         if (!userData.shippingAddress?.street)     missing.push("📦 Logística de Envíos (Dirección)");
         setMissingFields(missing);
 
@@ -252,6 +253,11 @@ export default function CreatorDashboard() {
           const isInvited = !!invitationsMap[campaignId];
 
           if (campaignData.visibility === "private" && !isInvited) continue;
+
+          // Gender filter: backward compat — no field means 'any'
+          const targetGender = campaignData.targetGender || "any";
+          const creatorGender = userData.gender || "";
+          if (targetGender !== "any" && creatorGender && targetGender !== creatorGender) continue;
 
           let effectiveScore = matchResult.score;
           try {

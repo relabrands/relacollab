@@ -88,6 +88,7 @@ export default function CreatorProfile() {
     location: "",
     phone: "",
     bio: "",
+    gender: "" as "" | "female" | "male",
     photoURL: "", // Add photoURL to state
     instagramMetrics: null,
     instagramConnected: false,
@@ -159,6 +160,7 @@ export default function CreatorProfile() {
             location: data.location || "",
             phone: data.phone || "",
             bio: data.bio || "",
+            gender: data.gender || "",
             photoURL: data.photoURL || user.photoURL || "", // Fetch photoURL
             instagramMetrics: data.instagramMetrics || null,
             instagramConnected: data.instagramConnected || false,
@@ -378,6 +380,7 @@ export default function CreatorProfile() {
         phone: profile.phone,
         location: profile.location,
         bio: profile.bio,
+        gender: profile.gender,
         categories: selectedCategories,
         socialHandles: {
           instagram: socialHandles.instagram || "",
@@ -662,6 +665,41 @@ export default function CreatorProfile() {
                   placeholder="Cuéntale a las marcas un poco sobre ti..."
                   className="mt-2 min-h-[100px]"
                 />
+              </div>
+
+              {/* Gender */}
+              <div className="mt-4">
+                <Label className="font-semibold">
+                  Género <span className="text-red-500">*</span>
+                </Label>
+                <p className="text-xs text-muted-foreground mb-3 mt-0.5">
+                  Necesario para que las marcas puedan segmentar sus campañas por género.
+                </p>
+                <div className="grid grid-cols-2 gap-3 max-w-xs">
+                  {([
+                    { value: "female", label: "Mujer", emoji: "👩" },
+                    { value: "male", label: "Hombre", emoji: "👨" },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setProfile((prev: any) => ({ ...prev, gender: opt.value }))}
+                      className={`p-3 rounded-xl border-2 text-center transition-all ${
+                        profile.gender === opt.value
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/40"
+                      }`}
+                    >
+                      <div className="text-2xl">{opt.emoji}</div>
+                      <div className="text-sm font-medium mt-0.5">{opt.label}</div>
+                    </button>
+                  ))}
+                </div>
+                {!profile.gender && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+                    <span>⚠️</span> Seleccionar tu género es obligatorio para el matching.
+                  </p>
+                )}
               </div>
 
               {/* Niche */}
