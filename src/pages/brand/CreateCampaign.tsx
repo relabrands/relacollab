@@ -1000,11 +1000,11 @@ export default function CreateCampaign() {
 
                   {/* Deliverables Configuration */}
                   <div className="border-t pt-6">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-1">
                       <div>
-                        <Label className="block">Entregables por Creador</Label>
+                        <Label className="block text-base font-semibold">Entregables por Creador</Label>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Especifica qué contenido debe entregar cada creador
+                          Configura qué debe producir y entregar cada creador
                         </p>
                       </div>
                       <Button
@@ -1014,132 +1014,177 @@ export default function CreateCampaign() {
                         onClick={handleAddDeliverable}
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        Añadir Entregable
+                        Añadir otro
                       </Button>
                     </div>
 
                     {formData.deliverables.length === 0 ? (
-                      <div className="text-center py-8 border-2 border-dashed rounded-xl">
-                        <p className="text-muted-foreground">
-                          No se han establecido entregables. Haz clic en "Añadir Entregable" para especificar los requisitos de contenido.
-                        </p>
+                      <div className="text-center py-10 border-2 border-dashed rounded-2xl mt-4">
+                        <div className="text-3xl mb-2">📦</div>
+                        <p className="text-muted-foreground text-sm font-medium">Sin entregables configurados</p>
+                        <p className="text-muted-foreground text-xs mt-1">Selecciona un tipo de contenido arriba o usa "Añadir otro"</p>
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-4 mt-4">
                         {formData.deliverables.map((deliverable, index) => (
                           <div
                             key={index}
-                            className="flex items-center gap-3 p-4 border rounded-xl bg-muted/30"
+                            className="border border-border rounded-2xl bg-muted/20 overflow-hidden"
                           >
-                            {/* Platform Selector */}
-                            <div className="w-32">
-                              <Select
-                                value={deliverable.platform}
-                                onValueChange={(value) =>
-                                  handleUpdateDeliverable(index, "platform", value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Plataforma" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="instagram">Instagram</SelectItem>
-                                  <SelectItem value="tiktok">TikTok</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* Type Selector */}
-                            <div className="flex-1">
-                              <Select
-                                value={deliverable.type}
-                                onValueChange={(value) =>
-                                  handleUpdateDeliverable(index, "type", value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar tipo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Post">📸 Publicación</SelectItem>
-                                  <SelectItem value="Video">🎥 Video</SelectItem>
-                                  <SelectItem value="Story">📱 Historia</SelectItem>
-                                  <SelectItem value="Carousel">🖼️ Carrusel</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* Delivery Type Selector */}
-                            <div className="w-[200px] hidden md:block">
-                              <Select
-                                value={deliverable.deliveryType || "post"}
-                                onValueChange={(value) =>
-                                  handleUpdateDeliverable(index, "deliveryType", value)
-                                }
-                              >
-                                <SelectTrigger className="text-xs sm:text-sm">
-                                  <SelectValue placeholder="Forma de entrega" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="post">📱 Publicar (Redes)</SelectItem>
-                                  <SelectItem value="upload">📁 Subir Archivo (UGC)</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* Quantity */}
-                            <div className="w-24">
-                              <Input
-                                type="number"
-                                min="1"
-                                max="20"
-                                value={deliverable.quantity}
-                                onChange={(e) =>
-                                  handleUpdateDeliverable(
-                                    index,
-                                    "quantity",
-                                    parseInt(e.target.value) || 1
-                                  )
-                                }
-                                placeholder="Cant."
-                              />
-                            </div>
-
-                            {/* Required Toggle */}
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                checked={deliverable.required}
-                                onCheckedChange={(checked) =>
-                                  handleUpdateDeliverable(index, "required", checked)
-                                }
-                              />
-                              <span className="text-sm whitespace-nowrap">
-                                {deliverable.required ? "Requerido" : "Opcional"}
+                            {/* Card Header */}
+                            <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border/60">
+                              <span className="text-sm font-semibold text-foreground">
+                                Entregable #{index + 1}
                               </span>
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    checked={deliverable.required}
+                                    onCheckedChange={(checked) =>
+                                      handleUpdateDeliverable(index, "required", checked)
+                                    }
+                                  />
+                                  <span className={`text-xs font-semibold ${deliverable.required ? "text-primary" : "text-muted-foreground"}`}>
+                                    {deliverable.required ? "Requerido" : "Opcional"}
+                                  </span>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                  onClick={() => handleRemoveDeliverable(index)}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
 
-                            {/* Remove Button */}
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveDeliverable(index)}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
+                            {/* Card Body — 2-col grid on md+ */}
+                            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                              {/* Platform */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                  📲 Plataforma
+                                </label>
+                                <Select
+                                  value={deliverable.platform}
+                                  onValueChange={(value) =>
+                                    handleUpdateDeliverable(index, "platform", value)
+                                  }
+                                >
+                                  <SelectTrigger className="bg-background">
+                                    <SelectValue placeholder="Seleccionar plataforma" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="instagram">📸 Instagram</SelectItem>
+                                    <SelectItem value="tiktok">🎵 TikTok</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Content Type */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                  🎬 Tipo de Contenido
+                                </label>
+                                <Select
+                                  value={deliverable.type}
+                                  onValueChange={(value) =>
+                                    handleUpdateDeliverable(index, "type", value)
+                                  }
+                                >
+                                  <SelectTrigger className="bg-background">
+                                    <SelectValue placeholder="Seleccionar tipo" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Post">📸 Publicación (Foto/Post)</SelectItem>
+                                    <SelectItem value="Video">🎥 Video</SelectItem>
+                                    <SelectItem value="Story">📱 Historia (Story)</SelectItem>
+                                    <SelectItem value="Carousel">🖼️ Carrusel</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Delivery Type */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                  📤 ¿Cómo debe entregar el creador?
+                                </label>
+                                <Select
+                                  value={deliverable.deliveryType || "post"}
+                                  onValueChange={(value) =>
+                                    handleUpdateDeliverable(index, "deliveryType", value)
+                                  }
+                                >
+                                  <SelectTrigger className="bg-background">
+                                    <SelectValue placeholder="Forma de entrega" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="post">
+                                      <div className="flex flex-col items-start">
+                                        <span>📱 Publicar en sus redes</span>
+                                        <span className="text-xs text-muted-foreground">El creador lo sube y comparte en Instagram/TikTok</span>
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="upload">
+                                      <div className="flex flex-col items-start">
+                                        <span>📁 Solo enviarme el archivo</span>
+                                        <span className="text-xs text-muted-foreground">El creador te envía el archivo y tú lo publicas</span>
+                                      </div>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                {/* Contextual helper */}
+                                <p className="text-[11px] text-muted-foreground">
+                                  {(deliverable.deliveryType || "post") === "post"
+                                    ? "✅ El creador publicará el contenido en su cuenta."
+                                    : "📁 Recibirás el archivo directamente para publicarlo tú."}
+                                </p>
+                              </div>
+
+                              {/* Quantity */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                  🔢 Cantidad
+                                </label>
+                                <div className="flex items-center gap-3">
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="20"
+                                    value={deliverable.quantity}
+                                    onChange={(e) =>
+                                      handleUpdateDeliverable(
+                                        index,
+                                        "quantity",
+                                        parseInt(e.target.value) || 1
+                                      )
+                                    }
+                                    className="w-24 bg-background"
+                                    placeholder="1"
+                                  />
+                                  <span className="text-sm text-muted-foreground">
+                                    {deliverable.quantity === 1 ? "unidad" : "unidades"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
                     )}
 
                     {formData.deliverables.length > 0 && (
-                      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
                         <p className="text-sm text-blue-700 dark:text-blue-300">
                           💡 Los creadores enviarán cada entregable individualmente y podrán hacerlo de manera progresiva.
                         </p>
                       </div>
                     )}
                   </div>
+
 
                   {/* Compensation Type */}
                   <div>
