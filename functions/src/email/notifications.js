@@ -274,10 +274,26 @@ function registerEmailNotifications(functions, admin, exportsObj) {
                 pendingItemsText = "¡Todos los entregables requeridos para tu participación en esta campaña han sido aprobados!";
             }
 
+            let earningsText = "";
+            let buttonText = "Ver Ganancias";
+            let buttonUrl = `${BASE_URL}/creator/earnings`;
+
+            const ct = camp.compensationType || camp.rewardType || "";
+            if (ct === "exchange") {
+                earningsText = "A partir de este momento, el intercambio acordado se hará efectivo según las condiciones de la campaña.";
+                buttonText = "Ver Detalles de la Campaña";
+                buttonUrl = `${BASE_URL}/creator/campaigns`; // O apuntar a los detalles de la colaboración
+            } else {
+                earningsText = "A partir de este momento, tus ganancias se reflejarán en tu balance. Recuerda que puedes solicitar tu retiro una vez que el monto esté disponible en tu billetera.";
+            }
+
             await sendEmail(creator.email, "content_approved", { 
                 creatorName: creator.displayName || "Creator", 
                 campaignTitle: camp.name || "Campaign", 
-                earningsUrl: `${BASE_URL}/creator/earnings`,
+                earningsText: earningsText,
+                buttonText: buttonText,
+                buttonUrl: buttonUrl,
+                earningsUrl: `${BASE_URL}/creator/earnings`, // kept for backwards compatibility if still used
                 pendingItemsText: pendingItemsText 
             });
         } catch (err) { console.error("[Email] onContentApproved:", err); }
@@ -386,7 +402,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             application_rejected: { subject: "Actualización — {{campaignTitle}}", variables: ["creatorName", "campaignTitle", "opportunitiesUrl"], html: w("Actualización", "Sigue adelante", "<p>Hola <strong>{{creatorName}}</strong>, tu aplicación a <strong>{{campaignTitle}}</strong> no fue seleccionada esta vez. ¡Hay más oportunidades!</p>", "Ver Oportunidades", "{{opportunitiesUrl}}") },
             content_submitted: { subject: "📤 {{creatorName}} envió contenido — {{campaignTitle}}", variables: ["brandName", "creatorName", "campaignTitle", "postUrl", "reviewUrl"], html: w("📤 Contenido Enviado", "Listo para revisar", "<p>Hola <strong>{{brandName}}</strong>, <strong>{{creatorName}}</strong> envió contenido para <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Post URL</div>{{postUrl}}</div>", "Revisar Contenido", "{{reviewUrl}}") },
             content_revision: { subject: "✏️ Cambios solicitados — {{campaignTitle}}", variables: ["creatorName", "campaignTitle", "feedback", "contentUrl"], html: w("✏️ Revisión", "La marca tiene comentarios", "<p>Hola <strong>{{creatorName}}</strong>, la marca solicitó cambios en <strong>{{campaignTitle}}</strong>.</p><div class='hl'><div class='lb'>Feedback</div>{{feedback}}</div>", "Ver Contenido", "{{contentUrl}}") },
-            content_approved: { subject: "🎉 ¡Contenido aprobado! — {{campaignTitle}}", variables: ["creatorName", "campaignTitle", "earningsUrl"], html: w("🎉 ¡Aprobado!", "Tu pago se procesará pronto", "<p>Hola <strong>{{creatorName}}</strong>, tu contenido para <strong>{{campaignTitle}}</strong> fue aprobado.</p>", "Ver Ganancias", "{{earningsUrl}}") },
+            content_approved: { subject: "🎉 ¡Contenido aprobado! — {{campaignTitle}}", variables: ["creatorName", "campaignTitle", "earningsText", "buttonText", "buttonUrl", "pendingItemsText"], html: w("🎉 ¡Aprobado!", "Tu contenido ha pasado la revisión", "<p>Hola <strong>{{creatorName}}</strong>, tu contenido para <strong>{{campaignTitle}}</strong> fue aprobado.</p><div class='hl'><div class='lb'>Estado del Entregable</div>{{pendingItemsText}}</div><p>{{earningsText}}</p>", "{{buttonText}}", "{{buttonUrl}}") },
             new_message: { subject: "💬 Mensaje de {{senderName}} — {{campaignTitle}}", variables: ["recipientName", "senderName", "campaignTitle", "messagePreview", "messagesUrl"], html: w("💬 Nuevo Mensaje", "", "<p>Hola <strong>{{recipientName}}</strong>, <strong>{{senderName}}</strong> te escribió sobre <strong>{{campaignTitle}}</strong>:</p><div class='hl'><em>{{messagePreview}}</em></div>", "Responder", "{{messagesUrl}}") },
             visit_scheduled: { subject: "📅 Visita — {{campaignTitle}}", variables: ["creatorName", "brandName", "campaignTitle", "visitDate", "visitTime", "location", "duration", "contentDeadline", "scheduleUrl"], html: w("📅 Visita Programada", "Revisa los detalles", "<p>Hola <strong>{{creatorName}}</strong>, tu visita con <strong>{{brandName}}</strong> para <strong>{{campaignTitle}}</strong> está confirmada.</p><div class='hl'><div class='lb'>Fecha y Hora</div>{{visitDate}} · {{visitTime}}</div><div class='hl'><div class='lb'>Ubicación</div>{{location}}</div><div class='hl'><div class='lb'>Duración</div>{{duration}} minutos</div><div class='hl'><div class='lb'>Fecha límite</div>{{contentDeadline}}</div>", "Ver Agenda", "{{scheduleUrl}}") },
             withdrawal_requested: { subject: "💸 Solicitud de retiro recibida — {{amount}}", variables: ["creatorName", "amount", "earningsUrl"], html: w("💸 Solicitud de Retiro", "Hemos recibido tu solicitud", "<p>Hola <strong>{{creatorName}}</strong>, recibimos tu solicitud de retiro por <strong>{{amount}}</strong>. La procesaremos en un plazo de 2–5 días hábiles.</p><div class='hl'><div class='lb'>Monto solicitado</div>{{amount}}</div>", "Ver mis Ganancias", "{{earningsUrl}}") },
