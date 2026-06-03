@@ -280,8 +280,8 @@ function registerEmailNotifications(functions, admin, exportsObj) {
 
             const ct = camp.compensationType || camp.rewardType || "";
             if (ct === "exchange") {
-                earningsText = "A partir de este momento, el intercambio acordado se hará efectivo según las condiciones de la campaña.";
-                buttonText = "Ver Detalles de la Campaña";
+                earningsText = "¡Has completado exitosamente esta colaboración! Agradecemos mucho el esfuerzo y la calidad de tu trabajo en esta campaña de intercambio.";
+                buttonText = "Ver mis Campañas";
                 buttonUrl = `${BASE_URL}/creator/campaigns`; // O apuntar a los detalles de la colaboración
             } else {
                 earningsText = "A partir de este momento, tus ganancias se reflejarán en tu balance. Recuerda que puedes solicitar tu retiro una vez que el monto esté disponible en tu billetera.";
