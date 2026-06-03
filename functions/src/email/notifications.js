@@ -450,6 +450,12 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             const campaign = campaignDoc.data();
             if (!creator?.email || !campaign) return;
 
+            // Do not send match emails for private campaigns
+            if (campaign.visibility === "private") {
+                console.log(`[Email] onMatchCreated: Campaign ${campaignId} is private. Skipping new_opportunity email to ${creatorId}.`);
+                return;
+            }
+
             const brandDoc = await admin.firestore().doc(`users/${campaign.brandId}`).get();
             const brand = brandDoc.data();
 
