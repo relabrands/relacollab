@@ -1646,6 +1646,11 @@ exports.updateContentSubmissionMetrics = require('firebase-functions/v1')
                 const igUserId    = userData.instagramId;
 
                 if (!accessToken || !igUserId) {
+                    console.warn(`[ContentMetrics] Creator ${creatorId} has no Instagram token — skipping ${subs.length} submissions.`);
+                    skippedCount += subs.length;
+                    continue;
+                }
+
                 // 4. Update each submission for this creator sequentially (avoid rate-limiting)
                 for (const sub of subs) {
                     await refreshSingleSubmissionMetrics(sub.id, sub.postUrl, accessToken, igUserId);
