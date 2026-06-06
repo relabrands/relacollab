@@ -22,8 +22,9 @@ import axios from "axios";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HOURLY_RATE = 50;
-const CONVERSION_RATE = 0.01; // 1% of reach
-const AVG_TICKET = 60; // $60 average ticket
+const CONVERSION_RATE = 0.001; // 0.1% of reach (realistic social-to-customer rate)
+const AVG_TICKET = 2500; // RD$2,500 average ticket
+const CURRENCY = "RD$";
 
 // Hours saved per automated activity
 const AUTOMATION_HOURS = {
@@ -324,19 +325,29 @@ export default function BrandAnalytics() {
     }, [rawSubmissions, activePlatform, campMap, loading]);
 
     // ─── Fetch real comments from Instagram for approved posts ─────────────
+    // Reset comment analysis whenever platform changes so TikTok shows no stale IG data
     useEffect(() => {
+        setCommentAnalysis({ total: 0, askingForInfo: 0, positive: 0, intentVisits: 0, taggingFriends: 0, fetched: false });
+    }, [activePlatform]);
+
+    useEffect(() => {
+        // Only fetch for instagram or all; TikTok comments API not available
         if (loading || creatorPerformance.length === 0) return;
+        if (activePlatform === "tiktok") {
+            // TikTok: no comment text API — mark as fetched with 0 so we show real stats.totalComments
+            setCommentAnalysis({ total: 0, askingForInfo: 0, positive: 0, intentVisits: 0, taggingFriends: 0, fetched: true });
+            return;
+        }
 
         const fetchComments = async () => {
             setLoadingComments(true);
-            let askingForInfo = 0, positive = 0, intentVisits = 0, taggingFriends = 0, total = 0;
+            let askingForInfo = 0, positive = 0, intentVisits = 0, taggingFriends = 0, fetchedTotal = 0;
 
             try {
-                // For each creator with an IG token, fetch comments on their submitted posts
-                for (const creator of creatorPerformance) {
-                    const accessToken = creator.instagramAccessToken;
-                    const igUserId = creator.instagramId;
-                    if (!accessToken || !igUserId || !creator.postUrls?.length) continue;
+                // Only process Instagram creators
+                const igCreators = creatorPerformance.filter(c => c.instagramAccessToken && c.instagramId && c.postUrls?.length);
+                for (const creator of igCreators) {
+                    const { instagramAccessToken: accessToken, instagramId: igUserId } = creator;
 
                     // Get list of recent IG media IDs
                     let mediaItems: any[] = [];
@@ -349,8 +360,8 @@ export default function BrandAnalytics() {
                         continue;
                     }
 
-                    // For each submitted post URL, find matching media and fetch comments
-                    for (const { url } of creator.postUrls.slice(0, 3)) {
+                    // For each submitted post URL, find matching media and fetch comments (paginate up to 200)
+                    for (const { url } of creator.postUrls) {
                         if (!url) continue;
                         const match = url.match(/instagram\.com\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
                         const postId = match ? match[2] : null;
@@ -363,34 +374,40 @@ export default function BrandAnalytics() {
                         if (!foundMedia) continue;
 
                         try {
-                            const commentsRes = await axios.get(
-                                `https://graph.facebook.com/v19.0/${foundMedia.id}/comments?fields=text&limit=50&access_token=${accessToken}`
-                            );
-                            const comments: any[] = commentsRes.data?.data || [];
-                            for (const c of comments) {
-                                if (!c.text) continue;
-                                total++;
-                                const category = classifyComment(c.text);
-                                if (category === "askingForInfo") askingForInfo++;
-                                else if (category === "positive") positive++;
-                                else if (category === "intentVisits") intentVisits++;
-                                else if (category === "taggingFriends") taggingFriends++;
+                            // Fetch up to 200 comments via pagination
+                            let nextUrl: string | null =
+                                `https://graph.facebook.com/v19.0/${foundMedia.id}/comments?fields=text&limit=100&access_token=${accessToken}`;
+                            let pages = 0;
+                            while (nextUrl && pages < 2) {
+                                const commentsRes = await axios.get(nextUrl);
+                                const comments: any[] = commentsRes.data?.data || [];
+                                for (const c of comments) {
+                                    if (!c.text) continue;
+                                    fetchedTotal++;
+                                    const category = classifyComment(c.text);
+                                    if (category === "askingForInfo") askingForInfo++;
+                                    else if (category === "positive") positive++;
+                                    else if (category === "intentVisits") intentVisits++;
+                                    else if (category === "taggingFriends") taggingFriends++;
+                                }
+                                nextUrl = commentsRes.data?.paging?.next || null;
+                                pages++;
                             }
                         } catch {
-                            // Comments may not be accessible — skip silently
+                            // Comments may not be accessible (permissions) — skip silently
                         }
                     }
                 }
             } catch (err) {
                 console.warn("Comment analysis fetch error:", err);
             } finally {
-                setCommentAnalysis({ total, askingForInfo, positive, intentVisits, taggingFriends, fetched: true });
+                setCommentAnalysis({ total: fetchedTotal, askingForInfo, positive, intentVisits, taggingFriends, fetched: true });
                 setLoadingComments(false);
             }
         };
 
         fetchComments();
-    }, [creatorPerformance, loading]);
+    }, [creatorPerformance, loading, activePlatform]);
 
     // ─── Derived metrics ──────────────────────────────────────────────────
     const impactMetrics = useMemo(() => {
@@ -515,7 +532,7 @@ export default function BrandAnalytics() {
                                     Money Saved
                                 </div>
                                 <div className="text-3xl font-black tracking-tight">
-                                    ${impactMetrics.moneySaved.toLocaleString()}
+                                    {CURRENCY}{impactMetrics.moneySaved.toLocaleString()}
                                 </div>
                             </div>
                             {/* New Customers */}
@@ -535,7 +552,7 @@ export default function BrandAnalytics() {
                                     Estimated Sales
                                 </div>
                                 <div className="text-3xl font-black tracking-tight">
-                                    ${impactMetrics.estimatedSales.toLocaleString()}
+                                    {CURRENCY}{impactMetrics.estimatedSales.toLocaleString()}
                                 </div>
                             </div>
                         </div>
@@ -561,11 +578,11 @@ export default function BrandAnalytics() {
                                 <div className="flex gap-4 text-right shrink-0">
                                     <div>
                                         <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Spend</div>
-                                        <div className="text-sm font-bold">${(impactMetrics.moneySaved * 0.2).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                                        <div className="text-sm font-bold">{CURRENCY}{(impactMetrics.moneySaved * 0.2).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                                     </div>
                                     <div>
                                         <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Revenue</div>
-                                        <div className="text-sm font-bold text-emerald-500">${impactMetrics.estimatedSales.toLocaleString()}</div>
+                                        <div className="text-sm font-bold text-emerald-500">{CURRENCY}{impactMetrics.estimatedSales.toLocaleString()}</div>
                                     </div>
                                 </div>
                             </div>
@@ -586,7 +603,7 @@ export default function BrandAnalytics() {
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
                                     <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
                                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false}
-                                        tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`} />
+                                        tickFormatter={(v) => v >= 1000 ? `${CURRENCY}${(v / 1000).toFixed(0)}k` : `${CURRENCY}${v}`} />
                                     <Tooltip content={<CustomTooltip />} />
                                     <Legend
                                         wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }}
@@ -651,7 +668,7 @@ export default function BrandAnalytics() {
                             </div>
                             <div className="mt-6 pt-4 border-t border-border/30 flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">Hourly Rate</span>
-                                <span className="text-sm font-bold">${HOURLY_RATE}/hr</span>
+                                <span className="text-sm font-bold">{CURRENCY}{HOURLY_RATE}/hr</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -678,7 +695,7 @@ export default function BrandAnalytics() {
                                     </div>
                                 ) : (
                                     <div>
-                                        <div className="text-2xl font-black">{commentAnalysis.total || stats.totalComments}</div>
+                                        <div className="text-2xl font-black">{stats.totalComments}</div>
                                         <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Comments</div>
                                     </div>
                                 )}
@@ -687,29 +704,27 @@ export default function BrandAnalytics() {
                     </CardHeader>
                     <CardContent className="pt-5">
                         {(() => {
-                            // Use real fetched comments if available, otherwise fall back to totalComments count with proportional distribution
-                            const total = commentAnalysis.fetched
-                                ? commentAnalysis.total
-                                : stats.totalComments;
+                            // Always use stats.totalComments as the true total (from Firestore submission metrics).
+                            // If we fetched real comment texts (commentAnalysis.fetched && total > 0),
+                            // scale the proportions from the sample to the real total.
+                            // If fetch returned 0 (TikTok, no permissions, etc.), show 0 per category.
+                            const realTotal = stats.totalComments;
+                            const sampleTotal = commentAnalysis.fetched ? commentAnalysis.total : 0;
 
-                            const categories = commentAnalysis.fetched
-                                ? [
-                                    { key: "askingForInfo", label: "Asking for Info", count: commentAnalysis.askingForInfo, icon: Info, color: "text-blue-500", bg: "bg-blue-500/10" },
-                                    { key: "positive", label: "Positive", count: commentAnalysis.positive, icon: ThumbsUp, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                                    { key: "intentVisits", label: "Intent Visits", count: commentAnalysis.intentVisits, icon: MapPin, color: "text-orange-500", bg: "bg-orange-500/10" },
-                                    { key: "taggingFriends", label: "Tagging Friends", count: commentAnalysis.taggingFriends, icon: Tag, color: "text-violet-500", bg: "bg-violet-500/10" },
-                                ]
-                                : [
-                                    { key: "askingForInfo", label: "Asking for Info", count: Math.round(total * 0.483), icon: Info, color: "text-blue-500", bg: "bg-blue-500/10" },
-                                    { key: "positive", label: "Positive", count: Math.round(total * 0.379), icon: ThumbsUp, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                                    { key: "intentVisits", label: "Intent Visits", count: Math.round(total * 0.103), icon: MapPin, color: "text-orange-500", bg: "bg-orange-500/10" },
-                                    { key: "taggingFriends", label: "Tagging Friends", count: Math.round(total * 0.034), icon: Tag, color: "text-violet-500", bg: "bg-violet-500/10" },
+                            const scale = (n: number) =>
+                                sampleTotal > 0 ? Math.round(realTotal * (n / sampleTotal)) : 0;
+
+                            const categories = [
+                                    { key: "askingForInfo", label: "Asking for Info", count: scale(commentAnalysis.askingForInfo), icon: Info, color: "text-blue-500", bg: "bg-blue-500/10" },
+                                    { key: "positive", label: "Positive", count: scale(commentAnalysis.positive), icon: ThumbsUp, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+                                    { key: "intentVisits", label: "Intent Visits", count: scale(commentAnalysis.intentVisits), icon: MapPin, color: "text-orange-500", bg: "bg-orange-500/10" },
+                                    { key: "taggingFriends", label: "Tagging Friends", count: scale(commentAnalysis.taggingFriends), icon: Tag, color: "text-violet-500", bg: "bg-violet-500/10" },
                                 ];
 
                             return (
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     {categories.map(({ key, label, count, icon: Icon, color, bg }) => {
-                                        const pct = total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
+                                        const pct = realTotal > 0 ? ((count / realTotal) * 100).toFixed(1) : "0.0";
                                         return (
                                             <div key={key} className="rounded-xl border border-border/40 p-4 hover:border-border/70 transition-colors">
                                                 <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center mb-3`}>
