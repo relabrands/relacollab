@@ -1646,11 +1646,6 @@ exports.updateContentSubmissionMetrics = require('firebase-functions/v1')
                 const igUserId    = userData.instagramId;
 
                 if (!accessToken || !igUserId) {
-                    console.warn(`[ContentMetrics] Creator ${creatorId} has no Instagram token — skipping ${subs.length} submissions.`);
-                    skippedCount += subs.length;
-                    continue;
-                }
-
                 // 4. Update each submission for this creator sequentially (avoid rate-limiting)
                 for (const sub of subs) {
                     await refreshSingleSubmissionMetrics(sub.id, sub.postUrl, accessToken, igUserId);
@@ -1668,3 +1663,75 @@ exports.updateContentSubmissionMetrics = require('firebase-functions/v1')
             console.error('[ContentMetrics] Fatal error in scheduled job:', error);
         }
     });
+
+// ==========================================
+// ANALYZE COMMENTS — AI Sentiment & Intent
+// POST body: { comments: string[] }
+// Returns: { askingForInfo, positive, intentVisits, taggingFriends, other, total, summary }
+// ==========================================
+exports.analyzeComments = functions.https.onRequest((req, res) => {
+    return cors(req, res, async () => {
+        if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+
+        const { comments } = req.body;
+        if (!Array.isArray(comments) || comments.length === 0) {
+            return res.status(400).json({ error: 'comments array required' });
+        }
+
+        const sample = comments.slice(0, 300);
+
+        try {
+            const vertex_ai = new VertexAI({
+                project: process.env.GCLOUD_PROJECT || 'rela-collab',
+                location: 'us-central1'
+            });
+
+            const model = vertex_ai.preview.getGenerativeModel({
+                model: 'gemini-2.5-flash',
+                generationConfig: { maxOutputTokens: 2048, temperature: 0.2 }
+            });
+
+            const prompt = `
+Eres un experto en análisis de comentarios de redes sociales para marcas.
+Analiza la siguiente lista de ${sample.length} comentarios reales de una publicación de Instagram de un creador de contenido que colabora con una marca.
+
+COMENTARIOS:
+${sample.map((c, i) => `${i + 1}. ${c}`).join('\n')}
+
+TAREA:
+Clasifica CADA comentario en exactamente UNA de las siguientes categorías:
+- "askingForInfo": El usuario pregunta sobre precio, disponibilidad, dónde comprar, cómo funciona, dirección, o pide más información del producto/servicio.
+- "positive": Reacción positiva, elogio, expresión de amor o deseo hacia el producto/contenido (me encanta, qué rico, wow, emojis positivos como ❤️ 🔥 😍, etc.)
+- "intentVisits": El usuario expresa intención de visitar el lugar, ir al restaurante, asistir al evento, o ir a la tienda.
+- "taggingFriends": El comentario etiqueta a otra persona (@usuario) o recomienda a alguien que vea esto.
+- "other": Todo lo que no encaje en las categorías anteriores (comentarios irrelevantes, respuestas entre usuarios, spam, etc.)
+
+Devuelve SOLO este JSON (sin markdown, sin texto adicional):
+{
+  "askingForInfo": <número>,
+  "positive": <número>,
+  "intentVisits": <número>,
+  "taggingFriends": <número>,
+  "other": <número>,
+  "total": <número total de comentarios clasificados>,
+  "summary": "<Resumen en 1-2 oraciones en español de lo que reflejan estos comentarios sobre el interés de la audiencia>"
+}
+`;
+
+            const result = await model.generateContent(prompt);
+            let text = result.response.candidates[0].content.parts[0].text;
+
+            let clean = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+            const start = clean.indexOf('{');
+            const end = clean.lastIndexOf('}');
+            if (start !== -1 && end !== -1) clean = clean.substring(start, end + 1);
+
+            const parsed = JSON.parse(clean);
+            return res.json({ success: true, ...parsed, analyzedCount: sample.length });
+
+        } catch (err) {
+            console.error('[analyzeComments] Error:', err);
+            return res.status(500).json({ error: 'AI analysis failed', details: err.message });
+        }
+    });
+});
