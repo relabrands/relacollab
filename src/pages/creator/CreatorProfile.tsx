@@ -284,7 +284,7 @@ export default function CreatorProfile() {
   };
 
   const proceedWithInstagramConnect = () => {
-    const authUrl = "https://www.facebook.com/v19.0/dialog/oauth?client_id=1253246110020541&redirect_uri=https://relacollab.com/auth/facebook/callback&response_type=code&scope=instagram_basic,instagram_manage_insights,pages_show_list,pages_read_engagement,business_management,instagram_manage_comments,instagram_business_manage_comments";
+    const authUrl = "https://www.facebook.com/v19.0/dialog/oauth?client_id=1253246110020541&redirect_uri=https://relacollab.com/auth/facebook/callback&response_type=code&scope=instagram_basic,instagram_manage_insights,pages_show_list,pages_read_engagement,business_management,instagram_manage_comments";
     window.location.href = authUrl;
   };
 
