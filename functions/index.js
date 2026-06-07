@@ -119,6 +119,23 @@ exports.auth = functions.https.onRequest((req, res) => {
                 const avgComments = mediaItems.length > 0 ? Math.round(totalComments / mediaItems.length) : 0;
                 const engagementRate = ((avgEngagement / followers) * 100).toFixed(2);
 
+                // --- TEST CALL FOR COMMENTS PERMISSION ---
+                // Meta requires a valid API call to the /comments endpoint to enable the
+                // "Solicitar acceso avanzado" button for instagram_manage_comments / instagram_business_manage_comments.
+                if (mediaItems.length > 0) {
+                    try {
+                        const firstMediaId = mediaItems[0].id;
+                        console.log(`[Auth] Making test call to /comments for media ${firstMediaId} to unlock Meta permission...`);
+                        await axios.get(
+                            `https://graph.facebook.com/v19.0/${firstMediaId}/comments`,
+                            { params: { fields: 'id,text', limit: 1, access_token: longLivedAccessToken } }
+                        );
+                        console.log(`[Auth] Test call to /comments successful.`);
+                    } catch (commentTestErr) {
+                        console.warn(`[Auth] Test call to /comments failed (expected if permission not yet granted): ${commentTestErr.message}`);
+                    }
+                }
+
                 const expiresAt = Date.now() + (60 * 24 * 60 * 60 * 1000); // approx 60 days
 
                 // --- Fetch Audience Demographics (age + gender) ---
