@@ -652,7 +652,11 @@ function registerEmailNotifications(functions, admin, exportsObj) {
     });
 
     // 17. Cron Job: Auto-send deliverable reminders 15, 10, 5, 3, and 1 days before deadline
-    exportsObj.dailyDeliverableReminders = functions.pubsub.schedule('0 9 * * *').timeZone('America/Santo_Domingo').onRun(async (context) => {
+    const { onSchedule } = require("firebase-functions/v2/scheduler");
+    exportsObj.dailyDeliverableReminders = onSchedule({
+        schedule: "0 9 * * *",
+        timeZone: "America/Santo_Domingo"
+    }, async (event) => {
         try {
             console.log("[Email] Running dailyDeliverableReminders cron...");
             const appsSnap = await admin.firestore().collection("applications").where("status", "==", "approved").get();
