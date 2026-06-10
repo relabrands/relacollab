@@ -412,6 +412,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             instagram_token_expired: { subject: "⚠️ Tu conexión de Instagram expiró — Reconecta para no perder oportunidades", variables: ["creatorName", "settingsUrl"], html: w("⚠️ Tu Instagram necesita reconexión", "Tu acceso expiró — reconéctalo en 2 minutos", "<p>Hola <strong>{{creatorName}}</strong>,</p><p>Notamos que tu conexión de Instagram ha expirado. Los tokens de acceso de Instagram duran <strong>60 días</strong> y se renuevan automáticamente si inicias sesión regularmente — pero el tuyo ha caducado.</p><div class='hl'><div class='lb'>¿Por qué importa?</div>Las marcas ven tus publicaciones recientes de Instagram cuando evalúan si trabajar contigo. Sin conexión activa, tu perfil pierde visibilidad y podrías perder oportunidades de colaboración.</div><p>Reconectar toma menos de 2 minutos. Solo ve a tu perfil y vuelve a conectar tu cuenta de Instagram.</p>", "Reconectar mi Instagram", "{{settingsUrl}}") },
             password_reset: { subject: "🔒 Restablece tu contraseña - RELA Collab", variables: ["name", "resetUrl"], html: w("🔒 Restablecer Contraseña", "Solicitud de cambio de contraseña", "<p>Hola <strong>{{name}}</strong>, hemos recibido una solicitud para cambiar tu contraseña.</p><p>Si no realizaste esta solicitud, puedes ignorar este correo de forma segura.</p>", "Cambiar mi Contraseña", "{{resetUrl}}") },
             social_connection_reminder: { subject: "🔗 Conecta tus redes para recibir campañas", variables: ["name", "dashboardUrl"], html: w("🔗 ¡Conecta tus Redes!", "Para ver campañas acordes a tu perfil", "<p>Hola <strong>{{name}}</strong>, notamos que tu cuenta está activa pero aún no has conectado tus redes sociales (Instagram o TikTok).</p><p>Para poder analizar tu perfil y mostrarte oportunidades de campañas acordes a tu audiencia, es <strong>indispensable</strong> que vincules al menos una red social.</p>", "Conectar Mis Redes", "{{dashboardUrl}}") },
+            deliverable_reminder: { subject: "⏰ Recordatorio: Tienes entregables pendientes — {{campaignTitle}}", variables: ["creatorName", "brandName", "campaignTitle", "contentUrl"], html: w("⏰ Recordatorio de Entregables", "Asegura el éxito de tu colaboración", "<p>Hola <strong>{{creatorName}}</strong>, este es un recordatorio amistoso de que tienes entregables pendientes por subir para tu colaboración con <strong>{{brandName}}</strong> en la campaña <strong>{{campaignTitle}}</strong>.</p><p>Subir tu contenido a tiempo ayuda a mantener una excelente reputación con las marcas para futuras oportunidades.</p>", "Subir Contenido", "{{contentUrl}}") },
         };
         const batch = db.batch();
         for (const [id, d] of Object.entries(tpls)) batch.set(db.doc(`emailTemplates/${id}`), { ...d, updatedAt: new Date().toISOString() }, { merge: true });
@@ -578,6 +579,74 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             return { success: true, sentCount, errors };
         } catch (err) {
             console.error("[Email] triggerSocialReminders:", err);
+            throw new functions.https.HttpsError("internal", err.message);
+        }
+    });
+
+    // 16. Callable: trigger deliverable reminders manually
+    exportsObj.triggerDeliverableReminders = functions.https.onCall(async (request, context) => {
+        try {
+            // Find all approved applications (creators participating in campaigns)
+            const appsSnap = await admin.firestore().collection("applications").where("status", "==", "approved").get();
+            let sentCount = 0;
+            let errors = [];
+
+            const promises = appsSnap.docs.map(async (appDoc) => {
+                const app = appDoc.data();
+                
+                // Get Campaign
+                const campSnap = await admin.firestore().doc(`campaigns/${app.campaignId}`).get();
+                const camp = campSnap.data();
+                if (!camp || camp.status !== "active") return; // Only active campaigns
+                
+                // Determine required deliverables count
+                let totalRequired = 0;
+                if (Array.isArray(camp.deliverables)) {
+                    totalRequired = camp.deliverables.reduce((acc, current) => {
+                        return acc + (current.required ? Number(current.quantity) || 1 : 0);
+                    }, 0);
+                } else {
+                    totalRequired = 1; // Default
+                }
+                if (totalRequired === 0) return;
+
+                // Check submitted/approved content
+                const subsSnap = await admin.firestore().collection("content_submissions")
+                    .where("campaignId", "==", app.campaignId)
+                    .where("userId", "==", app.creatorId)
+                    .where("status", "in", ["approved", "pending", "revision_requested"])
+                    .get();
+                
+                if (subsSnap.size < totalRequired) {
+                    // They have pending deliverables! Send email.
+                    const creatorSnap = await admin.firestore().doc(`users/${app.creatorId}`).get();
+                    const creator = creatorSnap.data();
+                    if (!creator?.email) return;
+
+                    // Respect creator notification settings
+                    if (!(await canSendEmail(app.creatorId, 'deliverableReminders'))) return;
+
+                    const brandSnap = await admin.firestore().doc(`users/${camp.brandId}`).get();
+                    const brand = brandSnap.data();
+
+                    try {
+                        await sendEmail(creator.email, "deliverable_reminder", {
+                            creatorName: creator.displayName || "Creador",
+                            brandName: brand?.displayName || brand?.brandName || "la marca",
+                            campaignTitle: camp.name || "Campaña",
+                            contentUrl: `${BASE_URL}/creator/content`
+                        });
+                        sentCount++;
+                    } catch (err) {
+                        errors.push({ email: creator.email, error: err.message });
+                    }
+                }
+            });
+
+            await Promise.all(promises);
+            return { success: true, sentCount, errors };
+        } catch (err) {
+            console.error("[Email] triggerDeliverableReminders:", err);
             throw new functions.https.HttpsError("internal", err.message);
         }
     });
