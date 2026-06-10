@@ -650,6 +650,91 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             throw new functions.https.HttpsError("internal", err.message);
         }
     });
+
+    // 17. Cron Job: Auto-send deliverable reminders 15, 10, 5, 3, and 1 days before deadline
+    exportsObj.dailyDeliverableReminders = functions.pubsub.schedule('0 9 * * *').timeZone('America/Santo_Domingo').onRun(async (context) => {
+        try {
+            console.log("[Email] Running dailyDeliverableReminders cron...");
+            const appsSnap = await admin.firestore().collection("applications").where("status", "==", "approved").get();
+            let sentCount = 0;
+            const targetDays = [15, 10, 5, 3, 1];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize to start of day
+
+            const promises = appsSnap.docs.map(async (appDoc) => {
+                const app = appDoc.data();
+                
+                // Get Campaign
+                const campSnap = await admin.firestore().doc(`campaigns/${app.campaignId}`).get();
+                const camp = campSnap.data();
+                if (!camp || camp.status !== "active" || !camp.endDate) return;
+
+                const end = new Date(camp.endDate);
+                end.setHours(0, 0, 0, 0);
+
+                // Calculate difference in days
+                const msPerDay = 1000 * 60 * 60 * 24;
+                const diffMs = end.getTime() - today.getTime();
+                const diffDays = Math.round(diffMs / msPerDay);
+
+                // Only proceed if today is exactly one of the target days
+                if (!targetDays.includes(diffDays)) return;
+
+                // Determine required deliverables count
+                let totalRequired = 0;
+                if (Array.isArray(camp.deliverables)) {
+                    totalRequired = camp.deliverables.reduce((acc, current) => {
+                        return acc + (current.required ? Number(current.quantity) || 1 : 0);
+                    }, 0);
+                } else {
+                    totalRequired = 1; // Default
+                }
+                if (totalRequired === 0) return;
+
+                // Check submitted/approved content
+                const subsSnap = await admin.firestore().collection("content_submissions")
+                    .where("campaignId", "==", app.campaignId)
+                    .where("userId", "==", app.creatorId)
+                    .where("status", "in", ["approved", "pending", "revision_requested"])
+                    .get();
+                
+                if (subsSnap.size < totalRequired) {
+                    // They have pending deliverables! Send email.
+                    const creatorSnap = await admin.firestore().doc(`users/${app.creatorId}`).get();
+                    const creator = creatorSnap.data();
+                    if (!creator?.email) return;
+
+                    // Respect creator notification settings
+                    if (!(await canSendEmail(app.creatorId, 'deliverableReminders'))) return;
+
+                    const brandSnap = await admin.firestore().doc(`users/${camp.brandId}`).get();
+                    const brand = brandSnap.data();
+
+                    // Optional: modify subject if it's the last day
+                    const isUrgent = diffDays === 1;
+
+                    try {
+                        await sendEmail(creator.email, "deliverable_reminder", {
+                            creatorName: creator.displayName || "Creador",
+                            brandName: brand?.displayName || brand?.brandName || "la marca",
+                            campaignTitle: camp.name || "Campaña",
+                            contentUrl: `${BASE_URL}/creator/content`
+                        });
+                        sentCount++;
+                    } catch (err) {
+                        console.error(`[Email] Error sending deliverable_reminder to ${creator.email}:`, err);
+                    }
+                }
+            });
+
+            await Promise.all(promises);
+            console.log(`[Email] dailyDeliverableReminders finished. Sent ${sentCount} reminders.`);
+            return null;
+        } catch (err) {
+            console.error("[Email] dailyDeliverableReminders failed:", err);
+            return null;
+        }
+    });
 }
 
 module.exports = { registerEmailNotifications };
