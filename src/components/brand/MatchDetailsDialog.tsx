@@ -15,6 +15,7 @@ import { db } from "@/lib/firebase";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
 
 interface CreatorDetails {
     id: string;
@@ -123,6 +124,7 @@ const getMatchLabel = (pct: number) => {
 };
 
 export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isApplicant, isCollaborating, onApprove, limits }: MatchDetailsDialogProps) {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [loadingPosts, setLoadingPosts] = useState(false);
     const [posts, setPosts] = useState<InstagramMedia[]>([]);
@@ -883,7 +885,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                     </div>
 
                     {/* ─── Final Payment Assignment (brand, collaborating mode) ─── */}
-                    {hasRange && campaign.minReward && campaign.maxReward && !isSettled && (
+                    {hasRange && Boolean(campaign.minReward) && Boolean(campaign.maxReward) && !isSettled && (
                         <div className="rounded-2xl border border-primary/20 overflow-hidden">
                             <div className="px-5 py-3 bg-gradient-to-r from-primary/10 to-accent/10 border-b border-primary/10 flex items-center gap-2">
                                 <DollarSign className="w-4 h-4 text-primary" />
@@ -1138,7 +1140,7 @@ export function MatchDetailsDialog({ isOpen, onClose, creator, campaign, isAppli
                             <Button
                                 className="flex-1"
                                 variant={isCollaborating ? "outline" : "default"}
-                                onClick={onApprove}
+                                onClick={isCollaborating ? () => navigate("/brand/content") : onApprove}
                             >
                                 {isCollaborating ? (
                                     <Eye className="w-4 h-4 mr-2" />
