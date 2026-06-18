@@ -20,10 +20,11 @@ interface CreatorDetailsDialogProps {
     creator: any;
     isOpen: boolean;
     onClose: () => void;
-    applications?: any[]; // List of applications for this creator
+    applications?: any[];
+    onStatusChange?: (creatorId: string, newStatus: string) => void;
 }
 
-export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = [] }: CreatorDetailsDialogProps) {
+export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = [], onStatusChange }: CreatorDetailsDialogProps) {
     const [sendingReminder, setSendingReminder] = useState(false);
 
     if (!creator) return null;
@@ -107,10 +108,35 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
                                 {creator.email}
                             </div>
                         </div>
-                        <div className="ml-auto">
-                            <Badge variant={creator.status === 'active' ? 'default' : creator.status === 'pending' ? 'secondary' : 'destructive'} className="capitalize">
-                                {creator.status}
+                        <div className="ml-auto flex flex-col items-end gap-2">
+                            <Badge
+                                variant={creator.status === 'active' ? 'default' : creator.status === 'pending' ? 'secondary' : 'destructive'}
+                                className={`capitalize ${
+                                    creator.status === 'disqualified' ? 'bg-muted text-muted-foreground border-muted-foreground/20' : ''
+                                }`}
+                            >
+                                {creator.status === 'disqualified' ? 'No califica' :
+                                 creator.status === 'active' ? 'Activo' :
+                                 creator.status === 'pending' ? 'Pendiente' :
+                                 creator.status === 'suspended' ? 'Suspendido' : creator.status}
                             </Badge>
+                            {/* Quick status actions */}
+                            {onStatusChange && creator.status !== 'active' && (
+                                <button
+                                    onClick={() => onStatusChange(creator.id, 'active')}
+                                    className="text-[11px] text-success hover:underline font-medium"
+                                >
+                                    ✓ Aprobar
+                                </button>
+                            )}
+                            {onStatusChange && creator.status === 'pending' && (
+                                <button
+                                    onClick={() => onStatusChange(creator.id, 'disqualified')}
+                                    className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                                >
+                                    No califica
+                                </button>
+                            )}
                         </div>
                     </div>
                 </DialogHeader>
@@ -119,6 +145,19 @@ export function CreatorDetailsDialog({ creator, isOpen, onClose, applications = 
                     <div className="p-6 space-y-6">
 
                         {/* Onboarding Status Alert */}
+                        {/* Internal note for disqualified */}
+                        {creator.status === 'disqualified' && (
+                            <Alert className="border-muted-foreground/20 bg-muted/30">
+                                <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                                <AlertDescription>
+                                    <p className="font-medium text-muted-foreground">Uso interno — No califica</p>
+                                    <p className="text-sm mt-1 text-muted-foreground/80">
+                                        Este creador fue marcado como "No califica" por el equipo de RELA. No recibió ninguna notificación y no es visible para las marcas.
+                                    </p>
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
                         {creator.status === 'pending' && (
                             <Alert variant={isOnboardingIncomplete ? "destructive" : "default"} className="border-2">
                                 <AlertCircle className="h-4 w-4" />

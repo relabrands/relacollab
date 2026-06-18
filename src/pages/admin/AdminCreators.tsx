@@ -12,7 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { motion } from "framer-motion";
-import { Search, Eye, Ban, CheckCircle, Users, Loader2, Trash2, Mail, Instagram, SlidersHorizontal, Calendar } from "lucide-react";
+import {
+  Search, Eye, Ban, CheckCircle, Users, Loader2, Trash2, Mail,
+  Instagram, SlidersHorizontal, Calendar, LayoutList, LayoutGrid,
+  XCircle, TrendingUp, UserCheck
+} from "lucide-react";
 import { toast } from "sonner";
 import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -36,7 +40,7 @@ interface Creator {
   avatar: string;
   followers: string;
   engagement: string;
-  status: "active" | "pending" | "suspended";
+  status: "active" | "pending" | "suspended" | "disqualified";
   campaigns: number;
   earnings: string;
   location?: string;
@@ -64,6 +68,14 @@ const statusColors: Record<string, string> = {
   active: "bg-success/10 text-success",
   pending: "bg-warning/10 text-warning",
   suspended: "bg-destructive/10 text-destructive",
+  disqualified: "bg-muted text-muted-foreground",
+};
+
+const statusLabels: Record<string, string> = {
+  active: "Activo",
+  pending: "Pendiente",
+  suspended: "Suspendido",
+  disqualified: "No califica",
 };
 
 export default function AdminCreators() {
@@ -71,9 +83,10 @@ export default function AdminCreators() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "pending" | "suspended">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "pending" | "suspended" | "disqualified">("all");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
 
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -128,7 +141,6 @@ export default function AdminCreators() {
         if (data.createdAt) {
           const d = data.createdAt.seconds ? new Date(data.createdAt.seconds * 1000) : new Date(data.createdAt);
           if (!isNaN(d.getTime())) {
-            // Compact: "14 may · 18:21" or "14 may 2025 · 08:00" if different year
             const now = new Date();
             const sameYear = d.getFullYear() === now.getFullYear();
             createdAtStr = d.toLocaleString('es-DO', {
@@ -189,7 +201,7 @@ export default function AdminCreators() {
       let matchesDate = true;
       const now = Date.now();
       const ONE_DAY = 24 * 60 * 60 * 1000;
-      
+
       if (dateFilter === "today") {
         matchesDate = (now - creator.createdAtTs) <= ONE_DAY;
       } else if (dateFilter === "week") {
@@ -210,20 +222,9 @@ export default function AdminCreators() {
     try {
       await updateDoc(doc(db, "users", creatorId), { status: newStatus });
       setCreators(creators.map((c) => (c.id === creatorId ? { ...c, status: newStatus as any } : c)));
-      toast.success("Creator status updated");
+      toast.success("Estado actualizado");
     } catch (error) {
-      toast.error("Failed to update status");
-    }
-  };
-
-  const handleSuspend = async (creator: Creator) => {
-    if (!confirm(`Are you sure you want to suspend ${creator.name}?`)) return;
-    try {
-      await updateDoc(doc(db, "users", creator.id), { status: "suspended" });
-      setCreators(creators.map((c) => (c.id === creator.id ? { ...c, status: "suspended" } : c)));
-      toast.success(`${creator.name} has been suspended`);
-    } catch (error) {
-      toast.error("Failed to suspend creator");
+      toast.error("Error al actualizar el estado");
     }
   };
 
@@ -231,18 +232,41 @@ export default function AdminCreators() {
     try {
       await updateDoc(doc(db, "users", creator.id), { status: "active" });
       setCreators(creators.map((c) => (c.id === creator.id ? { ...c, status: "active" } : c)));
-      toast.success(`${creator.name} has been activated`);
+      toast.success(`${creator.name} activado`);
     } catch (error) {
-      toast.error("Failed to activate creator");
+      toast.error("Error al activar el creador");
+    }
+  };
+
+  const handleSuspend = async (creator: Creator) => {
+    if (!confirm(`¿Suspender a ${creator.name}?`)) return;
+    try {
+      await updateDoc(doc(db, "users", creator.id), { status: "suspended" });
+      setCreators(creators.map((c) => (c.id === creator.id ? { ...c, status: "suspended" } : c)));
+      toast.success(`${creator.name} suspendido`);
+    } catch (error) {
+      toast.error("Error al suspender");
+    }
+  };
+
+  // ── NEW: No email sent, purely internal ──
+  const handleDisqualify = async (creator: Creator) => {
+    if (!confirm(`¿Marcar a ${creator.name} como "No califica"? Esta acción es interna y no notifica al creador.`)) return;
+    try {
+      await updateDoc(doc(db, "users", creator.id), { status: "disqualified" });
+      setCreators(creators.map((c) => (c.id === creator.id ? { ...c, status: "disqualified" } : c)));
+      toast.success(`${creator.name} marcado como "No califica"`);
+    } catch (error) {
+      toast.error("Error al actualizar el estado");
     }
   };
 
   const handleDelete = async (creator: Creator) => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente a ${creator.name}? Esta acción no se puede deshacer.`)) return;
+    if (!confirm(`¿Eliminar permanentemente a ${creator.name}? Esta acción no se puede deshacer.`)) return;
     try {
       await deleteDoc(doc(db, "users", creator.id));
       setCreators(creators.filter((c) => c.id !== creator.id));
-      toast.success(`Creador eliminado correctamente`);
+      toast.success(`Creador eliminado`);
     } catch (error) {
       toast.error("Error al eliminar el creador");
     }
@@ -262,9 +286,6 @@ export default function AdminCreators() {
       const data = result.data as { success: boolean; sentCount: number; errors: any[] };
       if (data.success) {
         toast.success(`Se enviaron ${data.sentCount} correos.`);
-        if (data.errors && data.errors.length > 0) {
-          console.warn("Algunos correos fallaron:", data.errors);
-        }
       }
     } catch (error: any) {
       toast.error(`Error al enviar correos: ${error.message}`);
@@ -272,6 +293,14 @@ export default function AdminCreators() {
       setSendingReminders(false);
     }
   };
+
+  const tabs = [
+    { key: "all" as const,          label: "Todos",       count: creators.length },
+    { key: "pending" as const,      label: "Pendientes",  count: creators.filter(c => c.status === "pending").length },
+    { key: "active" as const,       label: "Activos",     count: creators.filter(c => c.status === "active").length },
+    { key: "disqualified" as const, label: "No califica", count: creators.filter(c => c.status === "disqualified").length },
+    { key: "suspended" as const,    label: "Suspendidos", count: creators.filter(c => c.status === "suspended").length },
+  ];
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -281,27 +310,22 @@ export default function AdminCreators() {
       <main className="flex-1 md:ml-64 p-4 md:p-8 pb-20 md:pb-8">
         <DashboardHeader
           title="Creadores"
-          subtitle="Gestiona las cuentas de creadores registrados"
+          subtitle="Gestiona y revisa las cuentas de creadores registrados"
         />
 
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-muted-foreground animate-pulse">Loading creators...</p>
+            <p className="text-muted-foreground animate-pulse">Cargando creadores...</p>
           </div>
         ) : (
           <>
             {/* ── Top control bar ── */}
             <div className="mb-6 space-y-3">
-              {/* Row 1: status tabs + action button */}
+              {/* Row 1: status tabs */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    { key: "all" as const, label: "Todos", count: creators.length },
-                    { key: "active" as const, label: "Activos", count: creators.filter(c => c.status === "active").length },
-                    { key: "pending" as const, label: "Pendientes", count: creators.filter(c => c.status === "pending").length },
-                    { key: "suspended" as const, label: "Suspendidos", count: creators.filter(c => c.status === "suspended").length }
-                  ].map(tab => (
+                  {tabs.map(tab => (
                     <Button
                       key={tab.key}
                       variant={statusFilter === tab.key ? "default" : "outline"}
@@ -320,19 +344,21 @@ export default function AdminCreators() {
                   ))}
                 </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSendSocialReminders}
-                  disabled={sendingReminders}
-                  className="hidden md:flex gap-2 h-8"
-                >
-                  {sendingReminders ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                  Recordar Conectar Redes
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSendSocialReminders}
+                    disabled={sendingReminders}
+                    className="hidden md:flex gap-2 h-8"
+                  >
+                    {sendingReminders ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                    Recordar Redes
+                  </Button>
+                </div>
               </div>
 
-              {/* Row 2: search + date filter + sort + count */}
+              {/* Row 2: search + filters + view toggle */}
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -368,165 +394,358 @@ export default function AdminCreators() {
                   </SelectContent>
                 </Select>
 
-                <span className="text-sm text-muted-foreground ml-auto">
-                  {filteredCreators.length} de {creators.length} creadores
+                <span className="text-sm text-muted-foreground">
+                  {filteredCreators.length} de {creators.length}
                 </span>
+
+                {/* View toggle */}
+                <div className="ml-auto flex items-center gap-1 border rounded-lg p-0.5 bg-muted/40">
+                  <Button
+                    variant={viewMode === "table" ? "default" : "ghost"}
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setViewMode("table")}
+                    title="Vista de tabla"
+                  >
+                    <LayoutList className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "cards" ? "default" : "ghost"}
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setViewMode("cards")}
+                    title="Vista de tarjetas"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card overflow-hidden"
-            >
-              <div className="w-full flex-1 min-w-0 overflow-x-auto">
-                <table className="w-full whitespace-nowrap">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Creator</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Registro</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Redes</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Followers</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Engagement</th>
-                      <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Estado</th>
-                      <th className="text-center p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Collabs</th>
-                      <th className="text-right p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredCreators.map((creator) => (
-                      <tr key={creator.id} className="border-t border-border hover:bg-muted/30 transition-colors group">
-                        {/* Creator */}
-                        <td className="p-3">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={creator.avatar}
-                              alt={creator.name}
-                              className="w-9 h-9 rounded-lg object-cover flex-shrink-0 ring-1 ring-border"
-                            />
-                            <div className="min-w-0">
-                              <div className="font-medium text-sm truncate max-w-[160px]" title={creator.name}>{creator.name}</div>
-                              <div className="text-xs text-muted-foreground truncate max-w-[160px]" title={creator.email}>{creator.email}</div>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Registro */}
-                        <td className="p-3">
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{creator.createdAtStr}</span>
-                        </td>
-
-                        {/* Redes conectadas */}
-                        <td className="p-3">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                              creator.instagramConnected ? 'bg-pink-500/10 text-pink-500' : 'bg-muted text-muted-foreground'
-                            }`}>
-                              <Instagram className="w-3 h-3" />
-                              {creator.instagramConnected ? 'IG' : '-'}
-                            </span>
-                            <span className={`inline-flex items-center text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                              creator.tiktokConnected ? 'bg-sky-500/10 text-sky-500' : 'bg-muted text-muted-foreground'
-                            }`}>
-                              TT {creator.tiktokConnected ? '✓' : '-'}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Followers */}
-                        <td className="p-3 font-medium text-sm">{creator.followers}</td>
-
-                        {/* Engagement */}
-                        <td className="p-3 text-sm">
-                          <span className={creator.engagement === '0%' ? 'text-muted-foreground' : 'text-emerald-500 font-medium'}>
-                            {creator.engagement}
-                          </span>
-                        </td>
-
-                        {/* Status */}
-                        <td className="p-3">
-                          <Select
-                            value={creator.status}
-                            onValueChange={(value: "active" | "pending" | "suspended") =>
-                              handleChangeStatus(creator.id, value)
-                            }
-                          >
-                            <SelectTrigger className={`w-28 h-7 text-xs font-semibold capitalize border-0 ${
-                              statusColors[creator.status] || 'bg-muted'
-                            }`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="active">Activo</SelectItem>
-                              <SelectItem value="pending">Pendiente</SelectItem>
-                              <SelectItem value="suspended">Suspendido</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-
-                        {/* Collabs */}
-                        <td className="p-3 text-center">
-                          <span className={`text-sm font-medium ${
-                            creator.campaigns > 0 ? 'text-foreground' : 'text-muted-foreground'
-                          }`}>{creator.campaigns}</span>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="p-3">
-                          <div className="flex items-center justify-end gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost" size="icon"
-                              className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
-                              title="Ver detalles"
-                              onClick={() => handleViewDetails(creator)}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            {creator.status === "suspended" ? (
-                              <Button
-                                variant="ghost" size="icon"
-                                className="h-8 w-8 hover:bg-success/10 text-muted-foreground hover:text-success"
-                                title="Activar"
-                                onClick={() => handleActivate(creator)}
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="ghost" size="icon"
-                                className="h-8 w-8 hover:bg-orange-500/10 text-muted-foreground hover:text-orange-500"
-                                title="Suspender"
-                                onClick={() => handleSuspend(creator)}
-                              >
-                                <Ban className="w-4 h-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost" size="icon"
-                              className="h-8 w-8 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                              title="Eliminar"
-                              onClick={() => handleDelete(creator)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </td>
+            {/* ── TABLE VIEW ── */}
+            {viewMode === "table" && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card overflow-hidden"
+              >
+                <div className="w-full flex-1 min-w-0 overflow-x-auto">
+                  <table className="w-full whitespace-nowrap">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Creator</th>
+                        <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Registro</th>
+                        <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Redes</th>
+                        <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Followers</th>
+                        <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Engagement</th>
+                        <th className="text-left p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Estado</th>
+                        <th className="text-center p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Collabs</th>
+                        <th className="text-right p-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {filteredCreators.map((creator) => (
+                        <tr key={creator.id} className="border-t border-border hover:bg-muted/30 transition-colors group">
+                          {/* Creator */}
+                          <td className="p-3">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={creator.avatar}
+                                alt={creator.name}
+                                className="w-9 h-9 rounded-lg object-cover flex-shrink-0 ring-1 ring-border"
+                              />
+                              <div className="min-w-0">
+                                <div className="font-medium text-sm truncate max-w-[160px]" title={creator.name}>{creator.name}</div>
+                                <div className="text-xs text-muted-foreground truncate max-w-[160px]" title={creator.email}>{creator.email}</div>
+                              </div>
+                            </div>
+                          </td>
 
-              {filteredCreators.length === 0 && (
-                <div className="p-12 text-center">
-                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold mb-2">No creators found</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Try adjusting your search
-                  </p>
+                          <td className="p-3">
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{creator.createdAtStr}</span>
+                          </td>
+
+                          <td className="p-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                                creator.instagramConnected ? 'bg-pink-500/10 text-pink-500' : 'bg-muted text-muted-foreground'
+                              }`}>
+                                <Instagram className="w-3 h-3" />
+                                {creator.instagramConnected ? 'IG' : '-'}
+                              </span>
+                              <span className={`inline-flex items-center text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                                creator.tiktokConnected ? 'bg-sky-500/10 text-sky-500' : 'bg-muted text-muted-foreground'
+                              }`}>
+                                TT {creator.tiktokConnected ? '✓' : '-'}
+                              </span>
+                            </div>
+                          </td>
+
+                          <td className="p-3 font-medium text-sm">{creator.followers}</td>
+
+                          <td className="p-3 text-sm">
+                            <span className={creator.engagement === '0%' ? 'text-muted-foreground' : 'text-emerald-500 font-medium'}>
+                              {creator.engagement}
+                            </span>
+                          </td>
+
+                          <td className="p-3">
+                            <Select
+                              value={creator.status}
+                              onValueChange={(value) => handleChangeStatus(creator.id, value)}
+                            >
+                              <SelectTrigger className={`w-[120px] h-7 text-xs font-semibold capitalize border-0 ${
+                                statusColors[creator.status] || 'bg-muted'
+                              }`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="active">Activo</SelectItem>
+                                <SelectItem value="pending">Pendiente</SelectItem>
+                                <SelectItem value="suspended">Suspendido</SelectItem>
+                                <SelectItem value="disqualified">No califica</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+
+                          <td className="p-3 text-center">
+                            <span className={`text-sm font-medium ${
+                              creator.campaigns > 0 ? 'text-foreground' : 'text-muted-foreground'
+                            }`}>{creator.campaigns}</span>
+                          </td>
+
+                          <td className="p-3">
+                            <div className="flex items-center justify-end gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                                title="Ver detalles"
+                                onClick={() => handleViewDetails(creator)}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+
+                              {creator.status === "active" ? (
+                                <Button
+                                  variant="ghost" size="icon"
+                                  className="h-8 w-8 hover:bg-orange-500/10 text-muted-foreground hover:text-orange-500"
+                                  title="Suspender"
+                                  onClick={() => handleSuspend(creator)}
+                                >
+                                  <Ban className="w-4 h-4" />
+                                </Button>
+                              ) : creator.status === "suspended" || creator.status === "disqualified" ? (
+                                <Button
+                                  variant="ghost" size="icon"
+                                  className="h-8 w-8 hover:bg-success/10 text-muted-foreground hover:text-success"
+                                  title="Activar"
+                                  onClick={() => handleActivate(creator)}
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                              ) : (
+                                // pending — show quick action: activate or disqualify
+                                <>
+                                  <Button
+                                    variant="ghost" size="icon"
+                                    className="h-8 w-8 hover:bg-success/10 text-muted-foreground hover:text-success"
+                                    title="Aprobar"
+                                    onClick={() => handleActivate(creator)}
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost" size="icon"
+                                    className="h-8 w-8 hover:bg-muted text-muted-foreground"
+                                    title="No califica (uso interno)"
+                                    onClick={() => handleDisqualify(creator)}
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
+
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-8 w-8 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                title="Eliminar"
+                                onClick={() => handleDelete(creator)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </motion.div>
+
+                {filteredCreators.length === 0 && (
+                  <div className="p-12 text-center">
+                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-semibold mb-2">Sin resultados</h3>
+                    <p className="text-muted-foreground text-sm">Ajusta los filtros para encontrar creadores.</p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ── CARD VIEW ── */}
+            {viewMode === "cards" && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+              >
+                {filteredCreators.map((creator) => (
+                  <motion.div
+                    key={creator.id}
+                    initial={{ opacity: 0, scale: 0.97 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="glass-card rounded-2xl overflow-hidden flex flex-col"
+                  >
+                    {/* Card header */}
+                    <div className="relative">
+                      {/* Status strip */}
+                      <div className={`absolute top-0 left-0 right-0 h-1 ${
+                        creator.status === 'active' ? 'bg-success' :
+                        creator.status === 'pending' ? 'bg-warning' :
+                        creator.status === 'suspended' ? 'bg-destructive' :
+                        'bg-muted-foreground/40'
+                      }`} />
+
+                      <div className="p-4 pt-5 flex items-start gap-3">
+                        <img
+                          src={creator.avatar}
+                          alt={creator.name}
+                          className="w-12 h-12 rounded-xl object-cover ring-2 ring-border flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate" title={creator.name}>{creator.name}</p>
+                          <p className="text-xs text-muted-foreground truncate" title={creator.email}>{creator.email}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{creator.createdAtStr}</p>
+                        </div>
+                        <Badge className={`text-[10px] px-1.5 py-0 h-5 flex-shrink-0 font-semibold ${statusColors[creator.status]}`}>
+                          {statusLabels[creator.status] || creator.status}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Metrics row */}
+                    <div className="px-4 pb-3 grid grid-cols-3 gap-2">
+                      <div className="bg-muted/40 rounded-lg p-2 text-center">
+                        <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
+                          <Users className="w-3 h-3" />
+                        </div>
+                        <p className="text-xs font-semibold">{creator.followers}</p>
+                        <p className="text-[9px] text-muted-foreground">Seguidores</p>
+                      </div>
+                      <div className="bg-muted/40 rounded-lg p-2 text-center">
+                        <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
+                          <TrendingUp className="w-3 h-3" />
+                        </div>
+                        <p className={`text-xs font-semibold ${creator.engagement !== '0%' ? 'text-emerald-500' : ''}`}>
+                          {creator.engagement}
+                        </p>
+                        <p className="text-[9px] text-muted-foreground">Engagement</p>
+                      </div>
+                      <div className="bg-muted/40 rounded-lg p-2 text-center">
+                        <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
+                          <UserCheck className="w-3 h-3" />
+                        </div>
+                        <p className="text-xs font-semibold">{creator.campaigns}</p>
+                        <p className="text-[9px] text-muted-foreground">Collabs</p>
+                      </div>
+                    </div>
+
+                    {/* Social badges */}
+                    <div className="px-4 pb-3 flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                        creator.instagramConnected ? 'bg-pink-500/10 text-pink-500' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        <Instagram className="w-3 h-3" />
+                        {creator.instagramConnected ? 'Instagram' : 'Sin IG'}
+                      </span>
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                        creator.tiktokConnected ? 'bg-sky-500/10 text-sky-500' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        TT {creator.tiktokConnected ? '✓ TikTok' : 'Sin TT'}
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="mt-auto border-t border-border/50 p-3 flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-8 text-xs gap-1.5"
+                        onClick={() => handleViewDetails(creator)}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Ver perfil
+                      </Button>
+
+                      {(creator.status === "pending" || creator.status === "disqualified") && (
+                        <Button
+                          size="sm"
+                          className="h-8 text-xs gap-1.5 bg-success/10 hover:bg-success/20 text-success border border-success/30"
+                          variant="outline"
+                          onClick={() => handleActivate(creator)}
+                          title="Aprobar"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+
+                      {creator.status === "pending" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs gap-1.5 text-muted-foreground hover:bg-muted"
+                          onClick={() => handleDisqualify(creator)}
+                          title="No califica (uso interno, sin correo)"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+
+                      {creator.status === "active" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs hover:bg-orange-500/10 hover:text-orange-500 text-muted-foreground"
+                          onClick={() => handleSuspend(creator)}
+                          title="Suspender"
+                        >
+                          <Ban className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+
+                      {creator.status === "suspended" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs hover:bg-success/10 hover:text-success text-muted-foreground"
+                          onClick={() => handleActivate(creator)}
+                          title="Reactivar"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+
+                {filteredCreators.length === 0 && (
+                  <div className="col-span-full p-12 text-center">
+                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-semibold mb-2">Sin resultados</h3>
+                    <p className="text-muted-foreground text-sm">Ajusta los filtros para encontrar creadores.</p>
+                  </div>
+                )}
+              </motion.div>
+            )}
           </>
         )}
 
@@ -536,9 +755,8 @@ export default function AdminCreators() {
           isOpen={isDetailsOpen}
           onClose={() => setIsDetailsOpen(false)}
           applications={applications}
+          onStatusChange={handleChangeStatus}
         />
-
-
       </main>
     </div>
   );
