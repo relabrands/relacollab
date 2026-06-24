@@ -521,12 +521,23 @@ function registerEmailNotifications(functions, admin, exportsObj) {
         }
 
         try {
-            // Generate the reset link using Firebase Admin SDK
-            const resetUrl = await admin.auth().generatePasswordResetLink(email);
-
-            // Get the user by email to get their display name
+            // Get the user by email to get their display name and VERIFY they exist
+            // Do this FIRST to avoid 'INTERNAL ASSERT FAILED' from generatePasswordResetLink
+            // when Email Enumeration Protection is enabled and the user doesn't exist.
             const userRecord = await admin.auth().getUserByEmail(email);
             let displayName = userRecord.displayName;
+
+            // Generate the reset link using Firebase Admin SDK
+            let resetUrl;
+            try {
+                resetUrl = await admin.auth().generatePasswordResetLink(email);
+            } catch (linkError) {
+                if (linkError.message && linkError.message.includes('INTERNAL ASSERT FAILED')) {
+                    // This happens when the user exists but has no password provider (e.g. Google Sign-in)
+                    throw new functions.https.HttpsError("failed-precondition", "Esta cuenta no usa contraseña (probablemente te registraste con Google/Facebook).");
+                }
+                throw linkError;
+            }
 
             if (!displayName) {
                 // Try to find the user in Firestore to get displayName
@@ -548,7 +559,7 @@ function registerEmailNotifications(functions, admin, exportsObj) {
             if (error && error.code === "auth/user-not-found") {
                 throw new functions.https.HttpsError("not-found", "No se encontró ninguna cuenta con este correo.");
             }
-            throw new functions.https.HttpsError("internal", "Error al enviar el correo.");
+            throw new functions.https.HttpsError("internal", `Error al enviar el correo: ${error.code} - ${error.message}`);
         }
     });
     // 15. Callable: trigger social connection reminders manually
